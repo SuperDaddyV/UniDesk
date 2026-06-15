@@ -399,12 +399,33 @@ public partial class MainWindow : Window
         }
     }
 
-    private static bool ShouldIgnoreScrollPan(DependencyObject? source)
+    private bool ShouldIgnoreScrollPan(DependencyObject? source)
     {
+        if (_viewModel.IsEditingShortcuts && IsInsideShortcutItem(source))
+        {
+            return true;
+        }
+
         var current = source;
         while (current != null)
         {
             if (current is FrameworkElement { Tag: "TodoCheck" } or Button)
+            {
+                return true;
+            }
+
+            current = VisualTreeHelper.GetParent(current);
+        }
+
+        return false;
+    }
+
+    private static bool IsInsideShortcutItem(DependencyObject? source)
+    {
+        var current = source;
+        while (current != null)
+        {
+            if (current is FrameworkElement { DataContext: ShortcutItem })
             {
                 return true;
             }

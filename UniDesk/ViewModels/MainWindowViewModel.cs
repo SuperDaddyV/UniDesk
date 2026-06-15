@@ -1579,7 +1579,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
     }
 
     private bool CanMoveShortcutUp(ShortcutItem? shortcut) =>
-        IsEditingShortcuts && GetShortcutIndex(shortcut) > 0;
+        GetShortcutIndex(shortcut) > 0;
 
     [RelayCommand(CanExecute = nameof(CanMoveShortcutDown))]
     private async Task MoveShortcutDownAsync(ShortcutItem? shortcut)
@@ -1596,7 +1596,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
     private bool CanMoveShortcutDown(ShortcutItem? shortcut)
     {
         var index = GetShortcutIndex(shortcut);
-        return IsEditingShortcuts && index >= 0 && index < _allShortcuts.Count - 1;
+        return index >= 0 && index < _allShortcuts.Count - 1;
     }
 
     [RelayCommand(CanExecute = nameof(CanMoveShortcutToFirst))]
@@ -1611,7 +1611,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
     }
 
     private bool CanMoveShortcutToFirst(ShortcutItem? shortcut) =>
-        IsEditingShortcuts && GetShortcutIndex(shortcut) > 0;
+        GetShortcutIndex(shortcut) > 0;
 
     [RelayCommand(CanExecute = nameof(CanMoveShortcutToLast))]
     private async Task MoveShortcutToLastAsync(ShortcutItem? shortcut)
@@ -1628,7 +1628,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
     private bool CanMoveShortcutToLast(ShortcutItem? shortcut)
     {
         var index = GetShortcutIndex(shortcut);
-        return IsEditingShortcuts && index >= 0 && index < _allShortcuts.Count - 1;
+        return index >= 0 && index < _allShortcuts.Count - 1;
     }
 
     public async Task MoveShortcutAsync(ShortcutItem? source, ShortcutItem? target)

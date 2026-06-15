@@ -101,7 +101,7 @@ UniDesk は、デスクトップをすっきり保ちながら、情報確認、
 現在のインストーラー例：
 
 ```powershell
-UniDesk_Setup_1.3.5.exe
+UniDesk_Setup_1.3.6.exe
 ```
 
 インストールまたはアップグレード前に、起動中の UniDesk を終了することをおすすめします。

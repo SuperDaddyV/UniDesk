@@ -1,5 +1,21 @@
 # UniDesk Release Notes
 
+## v1.3.6
+
+This patch release fixes shortcut ordering regressions found after v1.3.5.
+
+### Changes
+
+- Fixed the shortcut context menu ordering actions so right-click "Move up", "Move down", "Move to first", and "Move to last" work outside edit mode.
+- Fixed shortcut edit mode dragging so icon reordering is not intercepted by the shortcut module scroll panning behavior.
+- Updated application, installer, and README version references to `1.3.6`.
+
+### 中文说明
+
+- 修复快捷方式右键菜单排序操作，正常模式下「上移」「下移」「移到最前」「移到最后」可以生效。
+- 修复快捷方式编辑模式拖拽排序，避免图标拖动被快捷方式模块滚动拖拽逻辑拦截。
+- 将应用、安装包和 README 版本引用更新为 `1.3.6`。
+
 ## v1.3.5
 
 This patch release improves hardware monitor compatibility across CPU, memory, GPU, and network metrics.
