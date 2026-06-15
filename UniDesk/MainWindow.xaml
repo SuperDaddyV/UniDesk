@@ -857,6 +857,7 @@
                                             <Grid x:Name="ShortcutItemRoot"
                                                   Height="72"
                                                   Margin="0,0,0,6"
+                                                  Background="Transparent"
                                                   Tag="{Binding DataContext, RelativeSource={RelativeSource AncestorType=Window}}"
                                                   AllowDrop="True"
                                                   PreviewMouseLeftButtonDown="ShortcutItem_OnPreviewMouseLeftButtonDown"

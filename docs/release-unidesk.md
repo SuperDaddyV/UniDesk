@@ -8,12 +8,14 @@ This patch release fixes the remaining shortcut ordering interaction issues foun
 
 - Renamed shortcut context menu actions from "Move up" and "Move down" to "Move forward" and "Move backward" to match the grid ordering behavior.
 - Reworked shortcut edit-mode drag sorting to use direct pointer hit testing instead of WPF native drag-and-drop events, so icon reordering responds reliably.
+- Fixed shortcut item hit testing so the edit-mode drag handlers receive mouse input from the whole shortcut tile.
 - Updated application, installer, and README version references to `1.3.7`.
 
 ### 中文说明
 
 - 将快捷方式右键菜单中的「上移」「下移」调整为「前移」「后移」，更符合三列网格中的实际排序行为。
 - 重做快捷方式编辑模式拖拽排序，改为直接鼠标命中检测，不再依赖 WPF 原生拖放事件，提升拖动排序可靠性。
+- 修复快捷方式格子的鼠标命中区域，让编辑模式拖拽处理器能接收到整个快捷方式格子的鼠标输入。
 - 将应用、安装包和 README 版本引用更新为 `1.3.7`。
 
 ## v1.3.6
