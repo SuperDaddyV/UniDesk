@@ -1,5 +1,21 @@
 # UniDesk Release Notes
 
+## v1.3.7
+
+This patch release fixes the remaining shortcut ordering interaction issues found after v1.3.6.
+
+### Changes
+
+- Renamed shortcut context menu actions from "Move up" and "Move down" to "Move forward" and "Move backward" to match the grid ordering behavior.
+- Reworked shortcut edit-mode drag sorting to use direct pointer hit testing instead of WPF native drag-and-drop events, so icon reordering responds reliably.
+- Updated application, installer, and README version references to `1.3.7`.
+
+### 中文说明
+
+- 将快捷方式右键菜单中的「上移」「下移」调整为「前移」「后移」，更符合三列网格中的实际排序行为。
+- 重做快捷方式编辑模式拖拽排序，改为直接鼠标命中检测，不再依赖 WPF 原生拖放事件，提升拖动排序可靠性。
+- 将应用、安装包和 README 版本引用更新为 `1.3.7`。
+
 ## v1.3.6
 
 This patch release fixes shortcut ordering regressions found after v1.3.5.

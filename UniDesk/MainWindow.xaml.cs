@@ -19,6 +19,7 @@ public partial class MainWindow : Window
     private ShortcutItem? _draggedShortcut;
     private FrameworkElement? _shortcutDragSourceElement;
     private FrameworkElement? _shortcutDragTargetElement;
+    private bool _isShortcutDragActive;
     private Point _scrollPanStart;
     private double _scrollPanOffsetStart;
     private bool _scrollPanPending;
@@ -401,7 +402,7 @@ public partial class MainWindow : Window
 
     private bool ShouldIgnoreScrollPan(DependencyObject? source)
     {
-        if (_viewModel.IsEditingShortcuts && IsInsideShortcutItem(source))
+        if (_viewModel.IsEditingShortcuts && FindShortcutItemElement(source) != null)
         {
             return true;
         }
@@ -420,20 +421,20 @@ public partial class MainWindow : Window
         return false;
     }
 
-    private static bool IsInsideShortcutItem(DependencyObject? source)
+    private static FrameworkElement? FindShortcutItemElement(DependencyObject? source)
     {
         var current = source;
         while (current != null)
         {
-            if (current is FrameworkElement { DataContext: ShortcutItem })
+            if (current is FrameworkElement { Name: "ShortcutItemRoot", DataContext: ShortcutItem } element)
             {
-                return true;
+                return element;
             }
 
             current = VisualTreeHelper.GetParent(current);
         }
 
-        return false;
+        return null;
     }
 
     private void ShortcutItem_OnPreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -446,21 +447,39 @@ public partial class MainWindow : Window
 
         _shortcutDragStart = e.GetPosition(null);
         _draggedShortcut = (sender as FrameworkElement)?.DataContext as ShortcutItem;
+        _shortcutDragSourceElement = sender as FrameworkElement;
+        _isShortcutDragActive = false;
         if (sender is UIElement element)
         {
             element.CaptureMouse();
         }
     }
 
-    private void ShortcutItem_OnPreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    private async void ShortcutItem_OnPreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
     {
+        var source = _draggedShortcut;
+        var target = _isShortcutDragActive
+            ? GetShortcutItemAt(e.GetPosition(ShortcutItemsControl))
+            : null;
+
         if (sender is UIElement element && element.IsMouseCaptured)
         {
             element.ReleaseMouseCapture();
         }
 
         _draggedShortcut = null;
+        _isShortcutDragActive = false;
         ClearShortcutDragVisuals();
+
+        if (source != null && target != null && source.Id != target.Id)
+        {
+            await _viewModel.MoveShortcutAsync(source, target);
+            e.Handled = true;
+        }
+        else if (target != null)
+        {
+            e.Handled = true;
+        }
     }
 
     private void ShortcutItem_OnPreviewMouseMove(object sender, MouseEventArgs e)
@@ -479,29 +498,35 @@ public partial class MainWindow : Window
             return;
         }
 
-        var data = new DataObject(typeof(ShortcutItem), _draggedShortcut);
-        _draggedShortcut = null;
-        _shortcutDragSourceElement = sender as FrameworkElement;
-        if (_shortcutDragSourceElement != null)
+        if (!_isShortcutDragActive)
         {
-            _shortcutDragSourceElement.Opacity = 0.55;
+            _isShortcutDragActive = true;
+            _shortcutDragSourceElement = sender as FrameworkElement;
+            if (_shortcutDragSourceElement != null)
+            {
+                _shortcutDragSourceElement.Opacity = 0.55;
+            }
         }
 
-        if (sender is UIElement element && element.IsMouseCaptured)
-        {
-            element.ReleaseMouseCapture();
-        }
-
-        try
-        {
-            DragDrop.DoDragDrop((DependencyObject)sender, data, DragDropEffects.Move);
-        }
-        finally
-        {
-            ClearShortcutDragVisuals();
-        }
-
+        SetShortcutDragTarget(GetShortcutItemElementAt(e.GetPosition(ShortcutItemsControl)));
         e.Handled = true;
+    }
+
+    private ShortcutItem? GetShortcutItemAt(Point position) =>
+        GetShortcutItemElementAt(position)?.DataContext as ShortcutItem;
+
+    private FrameworkElement? GetShortcutItemElementAt(Point position)
+    {
+        if (position.X < 0 ||
+            position.Y < 0 ||
+            position.X > ShortcutItemsControl.ActualWidth ||
+            position.Y > ShortcutItemsControl.ActualHeight)
+        {
+            return null;
+        }
+
+        var hit = VisualTreeHelper.HitTest(ShortcutItemsControl, position);
+        return FindShortcutItemElement(hit?.VisualHit);
     }
 
     private void ShortcutItem_OnDragEnter(object sender, DragEventArgs e)
@@ -567,6 +592,7 @@ public partial class MainWindow : Window
 
         _shortcutDragSourceElement = null;
         _shortcutDragTargetElement = null;
+        _isShortcutDragActive = false;
     }
 
     private void Window_OnPreviewDragEnter(object sender, DragEventArgs e) =>

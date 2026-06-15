@@ -838,7 +838,8 @@
                                               PreviewMouseMove="ScrollViewer_OnPreviewMouseMove"
                                               PreviewMouseLeftButtonUp="ScrollViewer_OnPreviewMouseLeftButtonUp"
                                               MouseLeave="ScrollViewer_OnMouseLeave">
-                                <ItemsControl ItemsSource="{Binding ShortcutDisplayEntries}"
+                                <ItemsControl x:Name="ShortcutItemsControl"
+                                              ItemsSource="{Binding ShortcutDisplayEntries}"
                                               HorizontalAlignment="Stretch"
                                               VerticalAlignment="Top">
                                     <ItemsControl.ItemsPanel>
@@ -853,7 +854,8 @@
                                     </ItemsControl.ItemContainerStyle>
                                     <ItemsControl.Resources>
                                         <DataTemplate DataType="{x:Type models:ShortcutItem}">
-                                            <Grid Height="72"
+                                            <Grid x:Name="ShortcutItemRoot"
+                                                  Height="72"
                                                   Margin="0,0,0,6"
                                                   Tag="{Binding DataContext, RelativeSource={RelativeSource AncestorType=Window}}"
                                                   AllowDrop="True"
@@ -866,10 +868,10 @@
                                                   Drop="ShortcutItem_OnDrop">
                                                 <Grid.ContextMenu>
                                                     <ContextMenu DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
-                                                        <MenuItem Header="上移"
+                                                        <MenuItem Header="前移"
                                                                   Command="{Binding PlacementTarget.Tag.MoveShortcutUpCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
                                                                   CommandParameter="{Binding}"/>
-                                                        <MenuItem Header="下移"
+                                                        <MenuItem Header="后移"
                                                                   Command="{Binding PlacementTarget.Tag.MoveShortcutDownCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
                                                                   CommandParameter="{Binding}"/>
                                                         <Separator/>
