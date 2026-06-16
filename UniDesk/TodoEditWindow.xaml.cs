@@ -130,7 +130,7 @@ public partial class TodoEditWindow : Window
 
     private void RefreshCalendarDays()
     {
-        CalendarMonthText.Text = $"{_displayedMonth:yyyy年M月}";
+        CalendarMonthText.Text = _viewModel.FormatCalendarMonth(_displayedMonth);
         CalendarDaysHost.ItemsSource = CalendarDayBuilder.BuildMonth(_displayedMonth, _viewModel.DueDateTime.Date);
     }
 

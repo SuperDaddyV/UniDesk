@@ -8,6 +8,7 @@ namespace UniDesk.ViewModels;
 public partial class TextSnippetEditViewModel : ObservableObject
 {
     private readonly IQuickTextService _quickTextService;
+    private readonly ILocalizationService _localizationService;
     private readonly bool _isNew;
     private readonly int _id;
     private readonly DateTime _createdAt;
@@ -29,11 +30,15 @@ public partial class TextSnippetEditViewModel : ObservableObject
     [ObservableProperty]
     private bool _isPinned;
 
-    public string WindowTitle => _isNew ? "新增常用短语" : "编辑常用短语";
+    public string WindowTitle => _isNew ? L("QuickText.AddSnippet") : L("QuickText.EditSnippet");
 
-    public TextSnippetEditViewModel(IQuickTextService quickTextService, TextSnippet? snippet = null)
+    public TextSnippetEditViewModel(
+        IQuickTextService quickTextService,
+        ILocalizationService localizationService,
+        TextSnippet? snippet = null)
     {
         _quickTextService = quickTextService;
+        _localizationService = localizationService;
 
         if (snippet == null)
         {
@@ -84,4 +89,6 @@ public partial class TextSnippetEditViewModel : ObservableObject
         await _quickTextService.UpdateTextSnippetAsync(snippet);
         return true;
     }
+
+    private string L(string key) => _localizationService.GetString(key);
 }

@@ -31,7 +31,7 @@
             <StackPanel Orientation="Horizontal"
                         HorizontalAlignment="Right">
                 <Button x:Name="CancelButton"
-                        Content="取消"
+                        Content="{DynamicResource Common.Cancel}"
                         Width="72"
                         Height="30"
                         Margin="0,0,8,0"
@@ -54,7 +54,7 @@
                     </Button.Template>
                 </Button>
                 <Button x:Name="ConfirmButton"
-                        Content="确定"
+                        Content="{DynamicResource Common.Confirm}"
                         Width="72"
                         Height="30"
                         FontSize="12"

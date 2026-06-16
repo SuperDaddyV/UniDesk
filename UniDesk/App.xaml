@@ -8,6 +8,7 @@
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="Resources/Themes/Shared.xaml"/>
                 <ResourceDictionary Source="Resources/Themes/Dark.xaml"/>
+                <ResourceDictionary Source="Resources/Strings.zh-CN.xaml"/>
             </ResourceDictionary.MergedDictionaries>
             <FontFamily x:Key="QWeatherIconsFont">pack://application:,,,/icon/QWeather-Icons-1.8.0/font/fonts/#qweather-icons</FontFamily>
         </ResourceDictionary>

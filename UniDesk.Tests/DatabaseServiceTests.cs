@@ -311,6 +311,7 @@ public class DatabaseServiceTests
             "DefaultWeatherApiHostEnc",
             "DefaultWeatherApiKeyEnc",
             "Hotkey",
+            "Language",
             "ModuleSettings",
             "PanelCollapsed",
             "PanelWidth",

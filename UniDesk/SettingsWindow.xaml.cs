@@ -40,7 +40,10 @@ public partial class SettingsWindow : Window
 
         _viewModel.RequestClose += _requestCloseHandler;
         _viewModel.PropertyChanged += ViewModel_OnPropertyChanged;
-        Loaded += (_, _) => UpdateShortcutLimitChipStyles();
+        Loaded += (_, _) =>
+        {
+            UpdateShortcutLimitChipStyles();
+        };
     }
 
     private void OnRequestClose(object? sender, bool saved)
@@ -191,7 +194,7 @@ public partial class SettingsWindow : Window
     {
         while (source != null)
         {
-            if (source is Button or TextBoxBase or Slider or CheckBox or ScrollBar)
+            if (source is Button or TextBoxBase or Slider or CheckBox or ComboBox or ScrollBar)
             {
                 return true;
             }
@@ -251,6 +254,7 @@ public partial class SettingsWindow : Window
     {
         _viewModel.RequestClose -= _requestCloseHandler;
         _viewModel.PropertyChanged -= ViewModel_OnPropertyChanged;
+        _viewModel.Dispose();
         ContentScrollViewer.ReleaseMouseCapture();
         EndWindowDrag();
     }
@@ -348,7 +352,7 @@ public partial class SettingsWindow : Window
     {
         while (source != null)
         {
-            if (source is Button or TextBoxBase or Slider or CheckBox or ScrollBar)
+            if (source is Button or TextBoxBase or Slider or CheckBox or ComboBox or ScrollBar)
             {
                 return false;
             }

@@ -101,7 +101,7 @@ UniDesk 适合希望桌面保持清爽，但又想快速查看信息、打开常
 当前正式安装包示例：
 
 ```powershell
-UniDesk_Setup_1.3.7.exe
+UniDesk_Setup_1.4.1.exe
 ```
 
 建议安装或升级前先退出正在运行的 UniDesk。

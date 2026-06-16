@@ -31,7 +31,7 @@
                     MouseLeftButtonDown="TitleBar_OnMouseLeftButtonDown">
                 <Grid>
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                        <TextBlock Text="源:"
+                        <TextBlock Text="{DynamicResource Common.Source}"
                                    FontSize="15"
                                    Foreground="#69756F"
                                    VerticalAlignment="Center"
@@ -67,13 +67,13 @@
                         <Button Style="{StaticResource HeaderIconButtonStyle}"
                                 Foreground="#59645E"
                                 Click="MinimizeButton_OnClick"
-                                ToolTip="最小化">
+                                ToolTip="{DynamicResource Common.Minimize}">
                             <TextBlock Text="&#xE921;" FontFamily="Segoe MDL2 Assets" FontSize="16"/>
                         </Button>
                         <Button Style="{StaticResource HeaderIconButtonStyle}"
                                 Foreground="#59645E"
                                 Click="CloseButton_OnClick"
-                                ToolTip="关闭">
+                                ToolTip="{DynamicResource Common.Close}">
                             <TextBlock Text="&#xE8BB;" FontFamily="Segoe MDL2 Assets" FontSize="16"/>
                         </Button>
                     </StackPanel>
@@ -113,18 +113,18 @@
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
                     <Button Style="{StaticResource HeaderIconButtonStyle}"
                             Foreground="#59645E"
-                            ToolTip="更多">
+                            ToolTip="{DynamicResource Common.More}">
                         <TextBlock Text="&#xE712;" FontFamily="Segoe MDL2 Assets" FontSize="18"/>
                     </Button>
                     <Button Style="{StaticResource HeaderIconButtonStyle}"
                             Foreground="#59645E"
-                            ToolTip="弹出">
+                            ToolTip="{DynamicResource Common.PopOut}">
                         <TextBlock Text="&#xE8A7;" FontFamily="Segoe MDL2 Assets" FontSize="18"/>
                     </Button>
                 </StackPanel>
 
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                    <Button Content="取消"
+                    <Button Content="{DynamicResource Common.Cancel}"
                             Width="72"
                             Height="34"
                             Margin="0,0,8,0"
@@ -132,7 +132,7 @@
                             Foreground="#4F5C55"
                             BorderThickness="0"
                             Click="CancelButton_OnClick"/>
-                    <Button Content="保存"
+                    <Button Content="{DynamicResource Common.Save}"
                             Width="72"
                             Height="34"
                             IsDefault="True"

@@ -76,7 +76,7 @@
                                     Width="24"
                                     Height="24"
                                     Command="{Binding ToggleTopMostCommand}"
-                                    ToolTip="窗口置顶">
+                                    ToolTip="{DynamicResource Header.TopMost}">
                                 <TextBlock FontFamily="Segoe MDL2 Assets" FontSize="14">
                                     <TextBlock.Style>
                                         <Style TargetType="TextBlock">
@@ -112,14 +112,14 @@
                                     Width="24"
                                     Height="24"
                                     Click="SettingsButton_OnClick"
-                                    ToolTip="设置">
+                                    ToolTip="{DynamicResource Common.Settings}">
                                 <TextBlock Text="&#xE713;" FontFamily="Segoe MDL2 Assets" FontSize="14"/>
                             </Button>
                             <Button Style="{StaticResource HeaderIconButtonStyle}"
                                     Width="24"
                                     Height="24"
                                     Click="MinimizeButton_OnClick"
-                                    ToolTip="最小化到托盘">
+                                    ToolTip="{DynamicResource Header.MinimizeToTray}">
                                 <TextBlock Text="&#xE921;" FontFamily="Segoe MDL2 Assets" FontSize="14"/>
                             </Button>
                             <Button Style="{StaticResource HeaderIconButtonStyle}"
@@ -521,20 +521,20 @@
                                                     <Button Style="{StaticResource HeaderIconButtonStyle}"
                                                             Width="32" Height="30"
                                                             Click="PreviousCalendarMonthButton_OnClick"
-                                                            ToolTip="上个月">
+                                                            ToolTip="{DynamicResource Common.PreviousMonth}">
                                                         <TextBlock Text="&#xE76B;" FontFamily="Segoe MDL2 Assets" FontSize="13" Foreground="#64748B"/>
                                                     </Button>
                                                     <Button Style="{StaticResource HeaderIconButtonStyle}"
                                                             Width="32" Height="30"
                                                             Click="NextCalendarMonthButton_OnClick"
-                                                            ToolTip="下个月">
+                                                            ToolTip="{DynamicResource Common.NextMonth}">
                                                         <TextBlock Text="&#xE76C;" FontFamily="Segoe MDL2 Assets" FontSize="13" Foreground="#64748B"/>
                                                     </Button>
                                                     <Button Style="{StaticResource HeaderIconButtonStyle}"
                                                             Width="32" Height="30"
                                                             Margin="4,0,0,0"
                                                             Click="CloseCalendarButton_OnClick"
-                                                            ToolTip="关闭">
+                                                            ToolTip="{DynamicResource Common.Close}">
                                                         <TextBlock Text="&#xE711;" FontFamily="Segoe MDL2 Assets" FontSize="13" Foreground="#64748B"/>
                                                     </Button>
                                                 </StackPanel>
@@ -547,15 +547,23 @@
                                                        Margin="0,0,0,14"
                                                        TextWrapping="Wrap"/>
 
-                                            <UniformGrid Grid.Row="2" Columns="7" Margin="0,0,0,6">
-                                                <TextBlock Text="一" HorizontalAlignment="Center" Foreground="#64748B" FontSize="13"/>
-                                                <TextBlock Text="二" HorizontalAlignment="Center" Foreground="#64748B" FontSize="13"/>
-                                                <TextBlock Text="三" HorizontalAlignment="Center" Foreground="#64748B" FontSize="13"/>
-                                                <TextBlock Text="四" HorizontalAlignment="Center" Foreground="#64748B" FontSize="13"/>
-                                                <TextBlock Text="五" HorizontalAlignment="Center" Foreground="#64748B" FontSize="13"/>
-                                                <TextBlock Text="六" HorizontalAlignment="Center" Foreground="#64748B" FontSize="13"/>
-                                                <TextBlock Text="日" HorizontalAlignment="Center" Foreground="#64748B" FontSize="13"/>
-                                            </UniformGrid>
+                                            <ItemsControl Grid.Row="2"
+                                                          ItemsSource="{Binding CalendarWeekdayLabels}"
+                                                          Margin="0,0,0,6">
+                                                <ItemsControl.ItemsPanel>
+                                                    <ItemsPanelTemplate>
+                                                        <UniformGrid Columns="7"/>
+                                                    </ItemsPanelTemplate>
+                                                </ItemsControl.ItemsPanel>
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <TextBlock Text="{Binding}"
+                                                                   HorizontalAlignment="Center"
+                                                                   Foreground="#64748B"
+                                                                   FontSize="13"/>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
 
                                             <ItemsControl Grid.Row="3" ItemsSource="{Binding CalendarDays}">
                                                 <ItemsControl.ItemsPanel>
@@ -654,7 +662,7 @@
                                             </Canvas>
                                         </Viewbox>
                                     </Grid>
-                                    <TextBlock Text="硬件监视"
+                                    <TextBlock Text="{DynamicResource Module.HardwareMonitor}"
                                                Style="{StaticResource ModuleHeaderTextStyle}"
                                                FontSize="{Binding FontScale, Converter={StaticResource ScaledFontSizeConverter}, ConverterParameter=12}"/>
                                 </StackPanel>
@@ -743,7 +751,7 @@
                                                     Orientation="Horizontal"
                                                     HorizontalAlignment="Center"
                                                     VerticalAlignment="Center">
-                                            <TextBlock Text="接收RX"
+                                            <TextBlock Text="{DynamicResource Hardware.Receive}"
                                                        FontSize="{Binding FontScale, Converter={StaticResource ScaledFontSizeConverter}, ConverterParameter=10}"
                                                        FontWeight="SemiBold"
                                                        LineHeight="12"
@@ -760,7 +768,7 @@
                                                     Orientation="Horizontal"
                                                     HorizontalAlignment="Center"
                                                     VerticalAlignment="Center">
-                                            <TextBlock Text="发送TX"
+                                            <TextBlock Text="{DynamicResource Hardware.Send}"
                                                        FontSize="{Binding FontScale, Converter={StaticResource ScaledFontSizeConverter}, ConverterParameter=10}"
                                                        FontWeight="SemiBold"
                                                        LineHeight="12"
@@ -801,10 +809,10 @@
                                             <Border Width="7" Height="7" CornerRadius="1.5" Style="{StaticResource ModuleTitleIconFillStyle}"/>
                                             <Border Width="7" Height="7" CornerRadius="1.5" Style="{StaticResource ModuleTitleIconFillStyle}"/>
                                         </UniformGrid>
-                                        <TextBlock Text="快捷方式" Style="{StaticResource ModuleHeaderTextStyle}" FontSize="{Binding FontScale, Converter={StaticResource ScaledFontSizeConverter}, ConverterParameter=12}"/>
+                                        <TextBlock Text="{DynamicResource Module.Shortcuts}" Style="{StaticResource ModuleHeaderTextStyle}" FontSize="{Binding FontScale, Converter={StaticResource ScaledFontSizeConverter}, ConverterParameter=12}"/>
                                     </StackPanel>
                                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                                        <TextBlock Text="拖动图标调整顺序"
+                                        <TextBlock Text="{DynamicResource Shortcut.EditHint}"
                                                    Foreground="{DynamicResource SecondaryTextBrush}"
                                                    FontSize="{Binding FontScale, Converter={StaticResource ScaledFontSizeConverter}, ConverterParameter=10}"
                                                    VerticalAlignment="Center"
@@ -814,10 +822,10 @@
                                                 Command="{Binding ToggleShortcutEditCommand}">
                                             <Button.Style>
                                                 <Style TargetType="Button" BasedOn="{StaticResource GhostButtonStyle}">
-                                                    <Setter Property="Content" Value="编辑"/>
+                                                    <Setter Property="Content" Value="{DynamicResource Common.Edit}"/>
                                                     <Style.Triggers>
                                                         <DataTrigger Binding="{Binding IsEditingShortcuts}" Value="True">
-                                                            <Setter Property="Content" Value="完成"/>
+                                                            <Setter Property="Content" Value="{DynamicResource Common.Done}"/>
                                                         </DataTrigger>
                                                     </Style.Triggers>
                                                 </Style>
@@ -869,17 +877,17 @@
                                                   Drop="ShortcutItem_OnDrop">
                                                 <Grid.ContextMenu>
                                                     <ContextMenu DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
-                                                        <MenuItem Header="前移"
+                                                        <MenuItem Header="{DynamicResource Shortcut.MovePrevious}"
                                                                   Command="{Binding PlacementTarget.Tag.MoveShortcutUpCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
                                                                   CommandParameter="{Binding}"/>
-                                                        <MenuItem Header="后移"
+                                                        <MenuItem Header="{DynamicResource Shortcut.MoveNext}"
                                                                   Command="{Binding PlacementTarget.Tag.MoveShortcutDownCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
                                                                   CommandParameter="{Binding}"/>
                                                         <Separator/>
-                                                        <MenuItem Header="移到最前"
+                                                        <MenuItem Header="{DynamicResource Shortcut.MoveFirst}"
                                                                   Command="{Binding PlacementTarget.Tag.MoveShortcutToFirstCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
                                                                   CommandParameter="{Binding}"/>
-                                                        <MenuItem Header="移到最后"
+                                                        <MenuItem Header="{DynamicResource Shortcut.MoveLast}"
                                                                   Command="{Binding PlacementTarget.Tag.MoveShortcutToLastCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
                                                                   CommandParameter="{Binding}"/>
                                                     </ContextMenu>
@@ -990,7 +998,7 @@
                                                                        VerticalAlignment="Center"/>
                                                         </Border>
                                                     </Button>
-                                                    <TextBlock Text="添加"
+                                                    <TextBlock Text="{DynamicResource Common.Add}"
                                                                FontSize="{Binding DataContext.FontScale, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource ScaledFontSizeConverter}, ConverterParameter=10}"
                                                                Foreground="{DynamicResource PrimaryTextBrush}"
                                                                TextAlignment="Center"
@@ -1025,19 +1033,19 @@
                                                                         Padding="10,6"
                                                                         FontSize="11"
                                                                         Command="{Binding DataContext.AddShortcutFromFileCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                                        Content="文件或程序"/>
+                                                                        Content="{DynamicResource Shortcut.FileOrProgram}"/>
                                                                 <Button Style="{StaticResource GhostButtonStyle}"
                                                                         HorizontalContentAlignment="Left"
                                                                         Padding="10,6"
                                                                         FontSize="11"
                                                                         Command="{Binding DataContext.AddShortcutFromFolderCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                                        Content="文件夹"/>
+                                                                        Content="{DynamicResource Shortcut.Folder}"/>
                                                                 <Button Style="{StaticResource GhostButtonStyle}"
                                                                         HorizontalContentAlignment="Left"
                                                                         Padding="10,6"
                                                                         FontSize="11"
                                                                         Command="{Binding DataContext.OpenSystemAppMenuCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                                        Content="系统应用"/>
+                                                                        Content="{DynamicResource Shortcut.SystemApp}"/>
                                                             </StackPanel>
 
                                                             <StackPanel Grid.IsSharedSizeScope="True"
@@ -1054,7 +1062,7 @@
                                                                         </Grid.ColumnDefinitions>
                                                                         <Border Grid.Column="0" Width="24" Height="20"/>
                                                                         <TextBlock Grid.Column="1"
-                                                                                   Text="返回"
+                                                                                   Text="{DynamicResource Common.Back}"
                                                                                    VerticalAlignment="Center"
                                                                                    Margin="8,0,0,0"/>
                                                                     </Grid>
@@ -1106,7 +1114,7 @@
                                 </ScrollViewer>
 
                                 <TextBlock Grid.Row="1"
-                                           Text="暂无快捷方式，可点击添加，或直接拖入应用、文件、文件夹"
+                                           Text="{DynamicResource Shortcut.Empty}"
                                            Foreground="{DynamicResource SecondaryTextBrush}"
                                            FontSize="{Binding FontScale, Converter={StaticResource ScaledFontSizeConverter}, ConverterParameter=10}"
                                            TextWrapping="Wrap"
@@ -1125,7 +1133,7 @@
                                         Opacity="0.88"
                                         IsHitTestVisible="False"
                                         Visibility="{Binding IsShortcutDropTargetActive, Converter={StaticResource BooleanToVisibilityConverter}}">
-                                    <TextBlock Text="松开以添加快捷方式"
+                                    <TextBlock Text="{DynamicResource Shortcut.DropToAdd}"
                                                Foreground="{DynamicResource PrimaryTextBrush}"
                                                FontSize="{Binding FontScale, Converter={StaticResource ScaledFontSizeConverter}, ConverterParameter=12}"
                                                FontWeight="SemiBold"
@@ -1163,7 +1171,7 @@
                                                       StrokeLineJoin="Round"/>
                                             </Canvas>
                                         </Viewbox>
-                                        <TextBlock Text="待办事项" Style="{StaticResource ModuleHeaderTextStyle}" FontSize="{Binding FontScale, Converter={StaticResource ScaledFontSizeConverter}, ConverterParameter=13}"/>
+                                        <TextBlock Text="{DynamicResource Module.Todos}" Style="{StaticResource ModuleHeaderTextStyle}" FontSize="{Binding FontScale, Converter={StaticResource ScaledFontSizeConverter}, ConverterParameter=13}"/>
                                     </StackPanel>
                                     <Button Style="{StaticResource GhostButtonStyle}"
                                             HorizontalAlignment="Right"
@@ -1309,13 +1317,13 @@
                                                       StrokeEndLineCap="Round"/>
                                             </Canvas>
                                         </Viewbox>
-                                        <TextBlock Text="快速便签"
+                                        <TextBlock Text="{DynamicResource Module.QuickNotes}"
                                                    Style="{StaticResource ModuleHeaderTextStyle}"
                                                    FontSize="{Binding FontScale, Converter={StaticResource ScaledFontSizeConverter}, ConverterParameter=13}"/>
                                     </StackPanel>
                                     <Button Style="{StaticResource GhostButtonStyle}"
                                             HorizontalAlignment="Right"
-                                            Content="+ 新建"
+                                            Content="{DynamicResource QuickNote.NewButton}"
                                             FontSize="{Binding FontScale, Converter={StaticResource ScaledFontSizeConverter}, ConverterParameter=10}"
                                             Padding="6,0"
                                             Command="{Binding NewQuickNoteCommand}"/>
@@ -1346,27 +1354,27 @@
                                                     </Border.InputBindings>
                                                     <Border.ContextMenu>
                                                         <ContextMenu DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
-                                                            <MenuItem Header="编辑"
+                                                            <MenuItem Header="{DynamicResource Common.Edit}"
                                                                       Command="{Binding PlacementTarget.Tag.EditQuickNoteCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
                                                                       CommandParameter="{Binding}"/>
-                                                            <MenuItem Header="复制内容"
+                                                            <MenuItem Header="{DynamicResource QuickNote.CopyContent}"
                                                                       Command="{Binding PlacementTarget.Tag.CopyQuickNoteContentCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
                                                                       CommandParameter="{Binding}"/>
                                                             <MenuItem Command="{Binding PlacementTarget.Tag.ToggleQuickNotePinnedCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
                                                                       CommandParameter="{Binding}">
                                                                 <MenuItem.Style>
                                                                     <Style TargetType="MenuItem">
-                                                                        <Setter Property="Header" Value="置顶"/>
+                                                                            <Setter Property="Header" Value="{DynamicResource Common.Pin}"/>
                                                                         <Style.Triggers>
                                                                             <DataTrigger Binding="{Binding IsPinned}" Value="True">
-                                                                                <Setter Property="Header" Value="取消置顶"/>
+                                                                                    <Setter Property="Header" Value="{DynamicResource Common.Unpin}"/>
                                                                             </DataTrigger>
                                                                         </Style.Triggers>
                                                                     </Style>
                                                                 </MenuItem.Style>
                                                             </MenuItem>
                                                             <Separator/>
-                                                            <MenuItem Header="删除"
+                                                            <MenuItem Header="{DynamicResource Common.Delete}"
                                                                       Command="{Binding PlacementTarget.Tag.DeleteQuickNoteCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
                                                                       CommandParameter="{Binding}"/>
                                                         </ContextMenu>
@@ -1417,7 +1425,7 @@
                                 </ScrollViewer>
 
                                 <TextBlock Grid.Row="1"
-                                           Text="暂无便签，点击新建快速记录"
+                                           Text="{DynamicResource QuickNote.Empty}"
                                            Foreground="{DynamicResource SecondaryTextBrush}"
                                            FontSize="{Binding FontScale, Converter={StaticResource ScaledFontSizeConverter}, ConverterParameter=10}"
                                            TextWrapping="Wrap"
@@ -1455,7 +1463,7 @@
                                                       StrokeLineJoin="Round"/>
                                             </Canvas>
                                         </Viewbox>
-                                        <TextBlock Text="快捷文本"
+                                        <TextBlock Text="{DynamicResource Module.QuickText}"
                                                    Style="{StaticResource ModuleHeaderTextStyle}"
                                                    FontSize="{Binding FontScale, Converter={StaticResource ScaledFontSizeConverter}, ConverterParameter=13}"/>
                                     </StackPanel>
@@ -1487,7 +1495,7 @@
                                             Margin="0,0,4,0"
                                             Command="{Binding SelectQuickTextModeCommand}"
                                             CommandParameter="History"
-                                            Content="历史">
+                                            Content="{DynamicResource QuickText.History}">
                                         <Button.Style>
                                             <Style TargetType="Button" BasedOn="{StaticResource GhostButtonStyle}">
                                                 <Setter Property="Background" Value="Transparent"/>
@@ -1505,7 +1513,7 @@
                                             Margin="4,0,0,0"
                                             Command="{Binding SelectQuickTextModeCommand}"
                                             CommandParameter="Snippets"
-                                            Content="常用">
+                                            Content="{DynamicResource QuickText.Snippets}">
                                         <Button.Style>
                                             <Style TargetType="Button" BasedOn="{StaticResource GhostButtonStyle}">
                                                 <Setter Property="Background" Value="Transparent"/>
@@ -1546,13 +1554,13 @@
                                                         </Border.InputBindings>
                                                         <Border.ContextMenu>
                                                             <ContextMenu DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
-                                                                <MenuItem Header="复制"
+                                                                <MenuItem Header="{DynamicResource Common.Copy}"
                                                                           Command="{Binding PlacementTarget.Tag.CopyClipboardHistoryCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
                                                                           CommandParameter="{Binding}"/>
-                                                                <MenuItem Header="收藏为常用短语"
+                                                                <MenuItem Header="{DynamicResource QuickText.FavoriteAsSnippet}"
                                                                           Command="{Binding PlacementTarget.Tag.FavoriteClipboardHistoryCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
                                                                           CommandParameter="{Binding}"/>
-                                                                <MenuItem Header="删除"
+                                                                <MenuItem Header="{DynamicResource Common.Delete}"
                                                                           Command="{Binding PlacementTarget.Tag.DeleteClipboardHistoryCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
                                                                           CommandParameter="{Binding}"/>
                                                             </ContextMenu>
@@ -1592,13 +1600,13 @@
                                                         </Border.InputBindings>
                                                         <Border.ContextMenu>
                                                             <ContextMenu DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
-                                                                <MenuItem Header="复制"
+                                                                <MenuItem Header="{DynamicResource Common.Copy}"
                                                                           Command="{Binding PlacementTarget.Tag.CopyTextSnippetCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
                                                                           CommandParameter="{Binding}"/>
-                                                                <MenuItem Header="编辑"
+                                                                <MenuItem Header="{DynamicResource Common.Edit}"
                                                                           Command="{Binding PlacementTarget.Tag.EditTextSnippetCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
                                                                           CommandParameter="{Binding}"/>
-                                                                <MenuItem Header="删除"
+                                                                <MenuItem Header="{DynamicResource Common.Delete}"
                                                                           Command="{Binding PlacementTarget.Tag.DeleteTextSnippetCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
                                                                           CommandParameter="{Binding}"/>
                                                             </ContextMenu>
@@ -1634,7 +1642,7 @@
                                         </ItemsControl>
                                     </ScrollViewer>
 
-                                    <TextBlock Text="暂无剪贴板历史"
+                                    <TextBlock Text="{DynamicResource QuickText.EmptyHistory}"
                                                Foreground="{DynamicResource SecondaryTextBrush}"
                                                FontSize="{Binding FontScale, Converter={StaticResource ScaledFontSizeConverter}, ConverterParameter=10}"
                                                TextAlignment="Center"
@@ -1654,7 +1662,7 @@
                                             </Style>
                                         </TextBlock.Style>
                                     </TextBlock>
-                                    <TextBlock Text="暂无常用短语，可新增或从历史收藏"
+                                    <TextBlock Text="{DynamicResource QuickText.EmptySnippets}"
                                                Foreground="{DynamicResource SecondaryTextBrush}"
                                                FontSize="{Binding FontScale, Converter={StaticResource ScaledFontSizeConverter}, ConverterParameter=10}"
                                                TextWrapping="Wrap"
@@ -1680,19 +1688,19 @@
                                 <Grid Grid.Row="3" Margin="0,4,0,0">
                                     <Button Style="{StaticResource GhostButtonStyle}"
                                             HorizontalAlignment="Left"
-                                            Content="清空"
+                                            Content="{DynamicResource Common.Clear}"
                                             FontSize="{Binding FontScale, Converter={StaticResource ScaledFontSizeConverter}, ConverterParameter=10}"
                                             Command="{Binding ClearClipboardHistoryCommand}"
                                             Visibility="{Binding IsQuickTextHistorySelected, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                                     <Button Style="{StaticResource GhostButtonStyle}"
                                             HorizontalAlignment="Right"
-                                            Content="管理"
+                                            Content="{DynamicResource Common.Manage}"
                                             FontSize="{Binding FontScale, Converter={StaticResource ScaledFontSizeConverter}, ConverterParameter=10}"
                                             Command="{Binding OpenQuickTextManagerCommand}"
                                             Visibility="{Binding IsQuickTextSnippetsSelected, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                                     <Button Style="{StaticResource GhostButtonStyle}"
                                             HorizontalAlignment="Right"
-                                            Content="管理"
+                                            Content="{DynamicResource Common.Manage}"
                                             FontSize="{Binding FontScale, Converter={StaticResource ScaledFontSizeConverter}, ConverterParameter=10}"
                                             Command="{Binding OpenQuickTextManagerCommand}"
                                             Visibility="{Binding IsQuickTextHistorySelected, Converter={StaticResource BooleanToVisibilityConverter}}"/>
@@ -1702,7 +1710,7 @@
 
                         <TextBlock x:Name="EmptyModulesMessage"
                                    Grid.RowSpan="6"
-                                   Text="暂无启用模块，请在设置中开启"
+                                   Text="{DynamicResource Module.NoEnabled}"
                                    Foreground="{DynamicResource SecondaryTextBrush}"
                                    FontSize="{Binding FontScale, Converter={StaticResource ScaledFontSizeConverter}, ConverterParameter=12}"
                                    TextAlignment="Center"

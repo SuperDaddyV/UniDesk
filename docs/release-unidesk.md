@@ -1,5 +1,25 @@
 # UniDesk Release Notes
 
+## v1.4.1
+
+This release adds multilingual UI support, update checking, and hardware monitor compatibility improvements after v1.3.7.
+
+### Changes
+
+- Added UI language switching for Simplified Chinese, English, Japanese, and Spanish, using direct language option buttons in Settings.
+- Added GitHub release update checking with a browser redirect fallback when the GitHub API is unavailable or rate-limited.
+- Improved CPU temperature fallback detection for AMD Ryzen systems, including Ryzen 9000 series sensor naming.
+- Improved memory and GPU metric fallback handling when the primary hardware sensor source is unavailable.
+- Updated application, installer, and README version references to `1.4.1`.
+
+### 中文说明
+
+- 新增界面语言切换，支持简体中文、English、日本語、Español，并在设置页改为直接点击语言选项。
+- 新增 GitHub Release 检查更新，在 GitHub API 不可用或触发限流时使用网页跳转兜底。
+- 改进 AMD Ryzen 平台 CPU 温度兜底识别，覆盖 Ryzen 9000 系列传感器命名。
+- 改进内存和 GPU 指标兜底逻辑，降低主传感器源不可用时数据显示失败的概率。
+- 将应用、安装包和 README 版本引用更新为 `1.4.1`。
+
 ## v1.3.7
 
 This patch release fixes the remaining shortcut ordering interaction issues found after v1.3.6.

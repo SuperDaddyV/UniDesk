@@ -11,6 +11,7 @@ namespace UniDesk.ViewModels;
 public partial class TodoEditViewModel : ObservableObject
 {
     private readonly ITodoService _todoService;
+    private readonly ILocalizationService _localizationService;
     private readonly bool _isNew;
     private readonly int _todoId;
     private readonly DateTime _createdAt;
@@ -43,17 +44,27 @@ public partial class TodoEditViewModel : ObservableObject
 
     public int TitleLength => Title?.Length ?? 0;
 
-    public string DateDisplayText => TodoDisplayHelper.FormatDateWithWeekday(DueDateTime.Date);
+    public string DateDisplayText => TodoDisplayHelper.FormatDateWithWeekday(
+        DueDateTime.Date,
+        _localizationService.CurrentLanguage,
+        _localizationService.CurrentCulture);
 
     public string TimeDisplayText => TodoDisplayHelper.FormatTime(DueDateTime);
 
     public ObservableCollection<string> TimeOptions { get; } = BuildTimeOptions();
 
-    public string WindowTitle => _isNew ? "添加待办事项" : "编辑待办事项";
+    public IReadOnlyList<string> CalendarWeekdayLabels =>
+        CalendarDayBuilder.GetWeekdayLabels(_localizationService.CurrentLanguage);
 
-    public TodoEditViewModel(ITodoService todoService, TodoItem? todo = null)
+    public string WindowTitle => _isNew ? L("Todo.Add") : L("Todo.Edit");
+
+    public TodoEditViewModel(
+        ITodoService todoService,
+        ILocalizationService localizationService,
+        TodoItem? todo = null)
     {
         _todoService = todoService;
+        _localizationService = localizationService;
 
         if (todo == null)
         {
@@ -261,4 +272,9 @@ public partial class TodoEditViewModel : ObservableObject
 
         return TodoDatePreset.Custom;
     }
+
+    public string FormatCalendarMonth(DateTime month) =>
+        TodoDisplayHelper.FormatMonth(month, _localizationService.CurrentLanguage, _localizationService.CurrentCulture);
+
+    private string L(string key) => _localizationService.GetString(key);
 }

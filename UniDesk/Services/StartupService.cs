@@ -27,10 +27,14 @@ public class StartupService : IStartupService
     };
 
     private readonly INotificationService _notificationService;
+    private readonly ILocalizationService? _localizationService;
 
-    public StartupService(INotificationService notificationService)
+    public StartupService(
+        INotificationService notificationService,
+        ILocalizationService? localizationService = null)
     {
         _notificationService = notificationService;
+        _localizationService = localizationService;
     }
 
     public bool IsEnabled => HasCurrentStartupEntry() || HasLegacyStartupEntry();
@@ -42,13 +46,13 @@ public class StartupService : IStartupService
             var exePath = GetExecutablePath();
             if (string.IsNullOrEmpty(exePath))
             {
-                _notificationService.ShowErrorMessage("无法获取程序路径，无法设置开机自启。");
+                _notificationService.ShowErrorMessage(L("Settings.StartupPathFailed", "无法获取程序路径，无法设置开机自启。"));
                 return false;
             }
 
             if (!SetRunKeyValue(exePath))
             {
-                _notificationService.ShowErrorMessage("无法写入开机自启设置，开机自启设置失败。");
+                _notificationService.ShowErrorMessage(L("Settings.StartupWriteFailed", "无法写入开机自启设置，开机自启设置失败。"));
                 return false;
             }
 
@@ -57,7 +61,10 @@ public class StartupService : IStartupService
         }
         catch (Exception ex)
         {
-            _notificationService.ShowErrorMessage($"设置开机自启失败：{ex.Message}");
+            _notificationService.ShowErrorMessage(Format(
+                "Settings.StartupEnableFailedFormat",
+                $"设置开机自启失败：{ex.Message}",
+                ex.Message));
             return false;
         }
     }
@@ -81,7 +88,10 @@ public class StartupService : IStartupService
         }
         catch (Exception ex)
         {
-            _notificationService.ShowErrorMessage($"取消开机自启失败：{ex.Message}");
+            _notificationService.ShowErrorMessage(Format(
+                "Settings.StartupDisableFailedFormat",
+                $"取消开机自启失败：{ex.Message}",
+                ex.Message));
             return false;
         }
     }
@@ -390,4 +400,10 @@ public class StartupService : IStartupService
 
         return File.Exists(path) ? path : null;
     }
+
+    private string L(string key, string fallback) =>
+        _localizationService?.GetString(key) ?? fallback;
+
+    private string Format(string key, string fallback, params object?[] args) =>
+        _localizationService?.Format(key, args) ?? fallback;
 }

@@ -11,6 +11,7 @@ public partial class QuickTextManagerViewModel : ObservableObject
     private readonly IQuickTextService _quickTextService;
     private readonly IClipboardMonitorService _clipboardMonitorService;
     private readonly INotificationService _notificationService;
+    private readonly ILocalizationService _localizationService;
     private readonly double _panelWidth;
     private List<ClipboardHistoryItem> _allHistory = [];
     private List<TextSnippet> _allSnippets = [];
@@ -38,11 +39,13 @@ public partial class QuickTextManagerViewModel : ObservableObject
         IQuickTextService quickTextService,
         IClipboardMonitorService clipboardMonitorService,
         INotificationService notificationService,
+        ILocalizationService localizationService,
         double panelWidth)
     {
         _quickTextService = quickTextService;
         _clipboardMonitorService = clipboardMonitorService;
         _notificationService = notificationService;
+        _localizationService = localizationService;
         _panelWidth = panelWidth;
         _ = ReloadAsync();
     }
@@ -85,7 +88,7 @@ public partial class QuickTextManagerViewModel : ObservableObject
         {
             await _quickTextService.RecordClipboardTextAsync(item.Content);
             await ReloadAsync();
-            _notificationService.ShowSuccessMessage("已复制。");
+            _notificationService.ShowSuccessMessage(L("Common.Copied"));
         }
     }
 
@@ -95,13 +98,13 @@ public partial class QuickTextManagerViewModel : ObservableObject
         var snippet = await _quickTextService.CreateSnippetFromHistoryAsync(item);
         if (snippet == null)
         {
-            _notificationService.ShowWarningMessage("收藏失败，请稍后重试。");
+            _notificationService.ShowWarningMessage(L("QuickText.FavoriteFailed"));
             return;
         }
 
         SelectedMode = QuickTextMode.Snippets;
         await ReloadAsync();
-        _notificationService.ShowSuccessMessage("已收藏为常用短语。");
+        _notificationService.ShowSuccessMessage(L("QuickText.Favorited"));
     }
 
     [RelayCommand]
@@ -119,14 +122,14 @@ public partial class QuickTextManagerViewModel : ObservableObject
     [RelayCommand]
     private async Task ClearHistoryAsync()
     {
-        if (!_notificationService.ShowConfirmDialog("确定清空全部剪贴板历史？", "确认清空"))
+        if (!_notificationService.ShowConfirmDialog(L("QuickText.ClearHistoryConfirm"), L("QuickText.ClearHistoryTitle")))
         {
             return;
         }
 
         await _quickTextService.ClearClipboardHistoryAsync();
         await ReloadAsync();
-        _notificationService.ShowSuccessMessage("剪贴板历史已清空。");
+        _notificationService.ShowSuccessMessage(L("QuickText.HistoryCleared"));
     }
 
     [RelayCommand]
@@ -141,14 +144,14 @@ public partial class QuickTextManagerViewModel : ObservableObject
         {
             await _quickTextService.MarkSnippetUsedAsync(snippet.Id);
             await ReloadAsync();
-            _notificationService.ShowSuccessMessage("已复制。");
+            _notificationService.ShowSuccessMessage(L("Common.Copied"));
         }
     }
 
     [RelayCommand]
     private async Task NewSnippetAsync()
     {
-        var window = new TextSnippetEditWindow(new TextSnippetEditViewModel(_quickTextService), _panelWidth)
+        var window = new TextSnippetEditWindow(new TextSnippetEditViewModel(_quickTextService, _localizationService), _panelWidth)
         {
             Owner = App.Current.MainWindow
         };
@@ -166,7 +169,7 @@ public partial class QuickTextManagerViewModel : ObservableObject
             return;
         }
 
-        var window = new TextSnippetEditWindow(new TextSnippetEditViewModel(_quickTextService, snippet), _panelWidth)
+        var window = new TextSnippetEditWindow(new TextSnippetEditViewModel(_quickTextService, _localizationService, snippet), _panelWidth)
         {
             Owner = App.Current.MainWindow
         };
@@ -184,7 +187,9 @@ public partial class QuickTextManagerViewModel : ObservableObject
             return;
         }
 
-        if (!_notificationService.ShowConfirmDialog($"确定删除常用短语「{snippet.DisplayTitle}」？", "删除确认"))
+        if (!_notificationService.ShowConfirmDialog(
+                _localizationService.Format("QuickText.DeleteSnippetConfirmFormat", snippet.DisplayTitle),
+                L("Dialog.DeleteConfirmTitle")))
         {
             return;
         }
@@ -216,4 +221,6 @@ public partial class QuickTextManagerViewModel : ObservableObject
         string.IsNullOrWhiteSpace(query) ||
         (!string.IsNullOrWhiteSpace(value) &&
          value.Contains(query, StringComparison.OrdinalIgnoreCase));
+
+    private string L(string key) => _localizationService.GetString(key);
 }

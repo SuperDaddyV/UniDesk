@@ -23,6 +23,8 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
 {
     private readonly INotificationService _notificationService;
     private readonly ISettingsService _settingsService;
+    private readonly ILocalizationService _localizationService;
+    private readonly IUpdateService _updateService;
     private readonly IWindowService _windowService;
     private readonly ILayoutService _layoutService;
     private readonly IClockService _clockService;
@@ -111,7 +113,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private string _calendarSelectedDetailText = string.Empty;
 
-    public IReadOnlyList<string> CalendarWeekdayLabels => CalendarDayBuilder.WeekdayLabelsList;
+    public IReadOnlyList<string> CalendarWeekdayLabels => CalendarDayBuilder.GetWeekdayLabels(_localizationService.CurrentLanguage);
 
     public ObservableCollection<CalendarDayItem> CalendarDays { get; } = new();
 
@@ -221,9 +223,9 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private string _systemNetworkSentText = "--";
 
-    public string WindowLockToolTip => IsWindowLocked ? "打开锁定" : "锁定窗口";
+    public string WindowLockToolTip => L(IsWindowLocked ? "Header.UnlockWindow" : "Header.LockWindow");
 
-    public string PanelCollapseToolTip => IsPanelCollapsed ? "打开面板" : "收缩面板";
+    public string PanelCollapseToolTip => L(IsPanelCollapsed ? "Header.ExpandPanel" : "Header.CollapsePanel");
 
     [ObservableProperty]
     private TodoItem? _collapsedPanelTodo;
@@ -236,6 +238,8 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
     public MainWindowViewModel(
         INotificationService notificationService,
         ISettingsService settingsService,
+        ILocalizationService localizationService,
+        IUpdateService updateService,
         IWindowService windowService,
         IHotkeyService hotkeyService,
         ILayoutService layoutService,
@@ -253,6 +257,8 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
     {
         _notificationService = notificationService;
         _settingsService = settingsService;
+        _localizationService = localizationService;
+        _updateService = updateService;
         _windowService = windowService;
         _layoutService = layoutService;
         _clockService = clockService;
@@ -268,6 +274,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         _systemMetricsService = systemMetricsService;
         _clipboardMonitorService = clipboardMonitorService;
         _clipboardMonitorService.ClipboardHistoryChanged += ClipboardMonitor_OnHistoryChanged;
+        _localizationService.LanguageChanged += LocalizationService_OnLanguageChanged;
 
         LoadSettings();
         _layoutService.LoadOrGetDefault();
@@ -496,8 +503,8 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         {
             var now = _clockService.CurrentTime;
             ClockTimeText = now.ToString("HH:mm", CultureInfo.InvariantCulture);
-            ClockDateText = $"{now:yyyy年M月d日} {ToChineseDayOfWeek(now.DayOfWeek)}";
-            ClockLunarText = ToChineseLunarText(now);
+            ClockDateText = FormatDateText(now);
+            ClockLunarText = IsChineseLanguage ? ToChineseLunarText(now) : string.Empty;
             if (_calendarSelectedDate.Date == now.Date)
             {
                 CalendarSelectedDetailText = BuildCalendarSelectedDetail(now.Date);
@@ -511,6 +518,17 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         }
     }
 
+    private string FormatDateText(DateTime date)
+    {
+        return _localizationService.CurrentLanguage switch
+        {
+            "en-US" => date.ToString("MMM d, yyyy", _localizationService.CurrentCulture),
+            "ja-JP" => $"{date:yyyy年M月d日}（{ToJapaneseDayOfWeek(date.DayOfWeek)}）",
+            "es-ES" => date.ToString("d MMM yyyy", _localizationService.CurrentCulture),
+            _ => $"{date:yyyy年M月d日} {ToChineseDayOfWeek(date.DayOfWeek)}"
+        };
+    }
+
     private static string ToChineseDayOfWeek(DayOfWeek dayOfWeek) => dayOfWeek switch
     {
         DayOfWeek.Monday => "星期一",
@@ -520,6 +538,18 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         DayOfWeek.Friday => "星期五",
         DayOfWeek.Saturday => "星期六",
         DayOfWeek.Sunday => "星期日",
+        _ => ""
+    };
+
+    private static string ToJapaneseDayOfWeek(DayOfWeek dayOfWeek) => dayOfWeek switch
+    {
+        DayOfWeek.Monday => "月",
+        DayOfWeek.Tuesday => "火",
+        DayOfWeek.Wednesday => "水",
+        DayOfWeek.Thursday => "木",
+        DayOfWeek.Friday => "金",
+        DayOfWeek.Saturday => "土",
+        DayOfWeek.Sunday => "日",
         _ => ""
     };
 
@@ -622,7 +652,13 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
 
     private void RefreshCalendarDays()
     {
-        CalendarMonthTitle = $"{_calendarDisplayMonth:yyyy年M月}";
+        CalendarMonthTitle = _localizationService.CurrentLanguage switch
+        {
+            "en-US" => _calendarDisplayMonth.ToString("MMMM yyyy", _localizationService.CurrentCulture),
+            "ja-JP" => $"{_calendarDisplayMonth:yyyy年M月}",
+            "es-ES" => _calendarDisplayMonth.ToString("MMMM yyyy", _localizationService.CurrentCulture),
+            _ => $"{_calendarDisplayMonth:yyyy年M月}"
+        };
         CalendarSelectedDetailText = BuildCalendarSelectedDetail(_calendarSelectedDate);
         CalendarDays.Clear();
         foreach (var day in CalendarDayBuilder.BuildMonth(_calendarDisplayMonth, _calendarSelectedDate))
@@ -631,8 +667,13 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         }
     }
 
-    private static string BuildCalendarSelectedDetail(DateTime date)
+    private string BuildCalendarSelectedDetail(DateTime date)
     {
+        if (!IsChineseLanguage)
+        {
+            return FormatDateText(date);
+        }
+
         var lunarYear = CalendarDayBuilder.ToChineseLunarYearText(date);
         var lunarDay = CalendarDayBuilder.ToChineseLunarText(date);
         return $"{date:yyyy年M月d日} {ToChineseDayOfWeek(date.DayOfWeek)}  {lunarYear} {lunarDay}".Trim();
@@ -719,6 +760,8 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
 
             viewModel = new SettingsViewModel(
                 _settingsService,
+                _localizationService,
+                _updateService,
                 _windowService,
                 _notificationService,
                 _layoutService,
@@ -741,7 +784,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         catch (Exception ex)
         {
             Logger.LogError(ex, "MainWindowViewModel.OpenSettings");
-            _notificationService.ShowErrorMessage($"打开设置失败：{ex.Message}");
+            _notificationService.ShowErrorMessage(_localizationService.Format("Settings.SaveFailedFormat", ex.Message));
             return;
         }
 
@@ -781,7 +824,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void NewNote()
     {
-        var window = new NoteEditWindow(new NoteEditViewModel(_noteService));
+        var window = new NoteEditWindow(new NoteEditViewModel(_noteService, _localizationService));
         window.Owner = App.Current.MainWindow;
         if (window.ShowDialog() == true)
         {
@@ -793,7 +836,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
     private void EditNote(NoteItem? note)
     {
         if (note == null) return;
-        var window = new NoteEditWindow(new NoteEditViewModel(_noteService, note));
+        var window = new NoteEditWindow(new NoteEditViewModel(_noteService, _localizationService, note));
         window.Owner = App.Current.MainWindow;
         if (window.ShowDialog() == true)
         {
@@ -805,7 +848,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
     private async Task DeleteNoteAsync(NoteItem? note)
     {
         if (note == null) return;
-        if (!_notificationService.ShowConfirmDialog($"确定删除便签「{note.Title}」？", "删除确认"))
+        if (!_notificationService.ShowConfirmDialog(L("QuickNote.DeleteConfirm"), L("Dialog.DeleteConfirmTitle")))
         {
             return;
         }
@@ -836,7 +879,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
             Logger.LogError(ex, "MainWindowViewModel.LoadNotes");
             if (generation == _notesLoadGeneration)
             {
-                _notificationService.ShowWarningMessage("便签列表加载失败，请稍后重试。");
+                _notificationService.ShowWarningMessage(L("Common.OperationFailed"));
             }
         }
     }
@@ -847,7 +890,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
     private void NewQuickNote()
     {
         var window = new QuickNoteEditorWindow(
-            new QuickNoteEditorViewModel(_quickNoteService, _notificationService),
+            new QuickNoteEditorViewModel(_quickNoteService, _notificationService, _localizationService),
             PanelWidth);
         window.Owner = App.Current.MainWindow;
         window.ShowDialog();
@@ -863,7 +906,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         }
 
         var window = new QuickNoteEditorWindow(
-            new QuickNoteEditorViewModel(_quickNoteService, _notificationService, note),
+            new QuickNoteEditorViewModel(_quickNoteService, _notificationService, _localizationService, note),
             PanelWidth);
         window.Owner = App.Current.MainWindow;
         window.ShowDialog();
@@ -878,7 +921,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
             return;
         }
 
-        if (!_notificationService.ShowConfirmDialog($"确定删除便签「{note.DisplayTitle}」？", "删除确认"))
+        if (!_notificationService.ShowConfirmDialog(L("QuickNote.DeleteConfirm"), L("Dialog.DeleteConfirmTitle")))
         {
             return;
         }
@@ -910,19 +953,19 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         var text = string.IsNullOrWhiteSpace(note.Content) ? note.Title : note.Content;
         if (string.IsNullOrWhiteSpace(text))
         {
-            _notificationService.ShowWarningMessage("便签内容为空。");
+            _notificationService.ShowWarningMessage(L("QuickNote.ContentEmpty"));
             return;
         }
 
         try
         {
             Clipboard.SetText(text);
-            _notificationService.ShowSuccessMessage("便签内容已复制。");
+            _notificationService.ShowSuccessMessage(L("Common.Copied"));
         }
         catch (Exception ex)
         {
             Logger.LogError(ex, "MainWindowViewModel.CopyQuickNoteContent");
-            _notificationService.ShowWarningMessage("复制失败，请稍后重试。");
+            _notificationService.ShowWarningMessage(L("Common.CopyFailed"));
         }
     }
 
@@ -950,7 +993,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
             Logger.LogError(ex, "MainWindowViewModel.LoadQuickNotes");
             if (generation == _quickNotesLoadGeneration)
             {
-                _notificationService.ShowWarningMessage("便签列表加载失败，请稍后重试。");
+                _notificationService.ShowWarningMessage(L("Common.OperationFailed"));
             }
         }
     }
@@ -991,11 +1034,11 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         {
             await _quickTextService.RecordClipboardTextAsync(item.Content);
             await LoadQuickTextAsync();
-            _notificationService.ShowSuccessMessage("已复制。");
+            _notificationService.ShowSuccessMessage(L("Common.Copied"));
         }
         else
         {
-            _notificationService.ShowWarningMessage("复制失败，请稍后重试。");
+            _notificationService.ShowWarningMessage(L("Common.CopyFailed"));
         }
     }
 
@@ -1014,14 +1057,14 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private async Task ClearClipboardHistoryAsync()
     {
-        if (!_notificationService.ShowConfirmDialog("确定清空全部剪贴板历史？", "确认清空"))
+        if (!_notificationService.ShowConfirmDialog(L("QuickText.ClearHistoryConfirm"), L("QuickText.ClearHistoryTitle")))
         {
             return;
         }
 
         await _quickTextService.ClearClipboardHistoryAsync();
         await LoadQuickTextAsync();
-        _notificationService.ShowSuccessMessage("剪贴板历史已清空。");
+        _notificationService.ShowSuccessMessage(L("QuickText.HistoryCleared"));
     }
 
     [RelayCommand]
@@ -1030,13 +1073,13 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         var snippet = await _quickTextService.CreateSnippetFromHistoryAsync(item);
         if (snippet == null)
         {
-            _notificationService.ShowWarningMessage("收藏失败，请稍后重试。");
+            _notificationService.ShowWarningMessage(L("QuickText.FavoriteFailed"));
             return;
         }
 
         SelectedQuickTextMode = QuickTextMode.Snippets;
         await LoadQuickTextAsync();
-        _notificationService.ShowSuccessMessage("已收藏为常用短语。");
+        _notificationService.ShowSuccessMessage(L("QuickText.Favorited"));
     }
 
     [RelayCommand]
@@ -1051,11 +1094,11 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         {
             await _quickTextService.MarkSnippetUsedAsync(snippet.Id);
             await LoadQuickTextAsync();
-            _notificationService.ShowSuccessMessage("已复制。");
+            _notificationService.ShowSuccessMessage(L("Common.Copied"));
         }
         else
         {
-            _notificationService.ShowWarningMessage("复制失败，请稍后重试。");
+            _notificationService.ShowWarningMessage(L("Common.CopyFailed"));
         }
     }
 
@@ -1063,7 +1106,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
     private void NewTextSnippet()
     {
         var window = new TextSnippetEditWindow(
-            new TextSnippetEditViewModel(_quickTextService),
+            new TextSnippetEditViewModel(_quickTextService, _localizationService),
             PanelWidth);
         window.Owner = App.Current.MainWindow;
         if (window.ShowDialog() == true)
@@ -1082,7 +1125,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         }
 
         var window = new TextSnippetEditWindow(
-            new TextSnippetEditViewModel(_quickTextService, snippet),
+            new TextSnippetEditViewModel(_quickTextService, _localizationService, snippet),
             PanelWidth);
         window.Owner = App.Current.MainWindow;
         if (window.ShowDialog() == true)
@@ -1099,7 +1142,9 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
             return;
         }
 
-        if (!_notificationService.ShowConfirmDialog($"确定删除常用短语「{snippet.DisplayTitle}」？", "删除确认"))
+        if (!_notificationService.ShowConfirmDialog(
+                _localizationService.Format("QuickText.DeleteSnippetConfirmFormat", snippet.DisplayTitle),
+                L("Dialog.DeleteConfirmTitle")))
         {
             return;
         }
@@ -1116,6 +1161,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
                 _quickTextService,
                 _clipboardMonitorService,
                 _notificationService,
+                _localizationService,
                 PanelWidth),
             PanelWidth)
         {
@@ -1164,7 +1210,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private async Task AddTodoAsync()
     {
-        var window = new TodoEditWindow(new TodoEditViewModel(_todoService), PanelWidth);
+        var window = new TodoEditWindow(new TodoEditViewModel(_todoService, _localizationService), PanelWidth);
         window.Owner = App.Current.MainWindow;
         if (window.ShowDialog() == true)
         {
@@ -1177,7 +1223,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
     {
         if (todo == null) return;
 
-        var window = new TodoEditWindow(new TodoEditViewModel(_todoService, todo), PanelWidth);
+        var window = new TodoEditWindow(new TodoEditViewModel(_todoService, _localizationService, todo), PanelWidth);
         window.Owner = App.Current.MainWindow;
         if (window.ShowDialog() == true)
         {
@@ -1225,7 +1271,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
             Logger.LogError(ex, "MainWindowViewModel.LoadTodos");
             if (generation == _todosLoadGeneration)
             {
-                _notificationService.ShowWarningMessage("待办列表加载失败，请稍后重试。");
+                _notificationService.ShowWarningMessage(L("Todo.LoadFailed"));
             }
         }
     }
@@ -1236,7 +1282,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         CollapsedPanelTodoDueText = BuildTodoDueText(CollapsedPanelTodo);
     }
 
-    private static string BuildTodoDueText(TodoItem? todo)
+    private string BuildTodoDueText(TodoItem? todo)
     {
         if (todo?.DueDate == null)
         {
@@ -1249,12 +1295,12 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
 
         if (due.Date == today)
         {
-            return hasTime ? $"今天 {due:HH:mm}" : "今天";
+            return hasTime ? $"{L("Common.Today")} {due:HH:mm}" : L("Common.Today");
         }
 
         if (due.Date == today.AddDays(1))
         {
-            return hasTime ? $"明天 {due:HH:mm}" : "明天";
+            return hasTime ? $"{L("Common.Tomorrow")} {due:HH:mm}" : L("Common.Tomorrow");
         }
 
         return hasTime
@@ -1339,7 +1385,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
 
         var folderDialog = new Microsoft.Win32.OpenFolderDialog
         {
-            Title = "选择要添加的文件夹"
+            Title = L("Shortcut.SelectFolder")
         };
 
         if (folderDialog.ShowDialog() != true)
@@ -1395,13 +1441,13 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
 
         if (allShortcuts.Count >= maxCount)
         {
-            _notificationService.ShowWarningMessage($"最多只能添加 {maxCount} 个快捷方式。");
+            _notificationService.ShowWarningMessage(_localizationService.Format("Shortcut.LimitExceededFormat", maxCount));
             return;
         }
 
         if (IsDuplicateShortcut(allShortcuts, shortcut))
         {
-            _notificationService.ShowWarningMessage("该快捷方式已添加。");
+            _notificationService.ShowWarningMessage(L("Shortcut.Duplicate"));
             return;
         }
 
@@ -1409,7 +1455,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         var id = await _shortcutService.CreateShortcutAsync(shortcut);
         if (id <= 0)
         {
-            _notificationService.ShowWarningMessage("添加快捷方式失败，请稍后重试。");
+            _notificationService.ShowWarningMessage(L("Shortcut.AddFailed"));
             return;
         }
 
@@ -1490,11 +1536,11 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
 
             if (result.AddedCount > 0)
             {
-                _notificationService.ShowSuccessMessage(result.ToUserMessage());
+                _notificationService.ShowSuccessMessage(result.ToUserMessage(_localizationService));
             }
             else if (result.DuplicateCount > 0 || result.InvalidCount > 0 || result.LimitSkippedCount > 0)
             {
-                _notificationService.ShowWarningMessage(result.ToUserMessage());
+                _notificationService.ShowWarningMessage(result.ToUserMessage(_localizationService));
             }
 
             return result;
@@ -1502,7 +1548,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         catch (Exception ex)
         {
             Logger.LogError(ex, "MainWindowViewModel.AddShortcutsFromPathsAsync");
-            _notificationService.ShowErrorMessage("拖拽添加快捷方式失败，请稍后重试。");
+            _notificationService.ShowErrorMessage(L("Shortcut.DropFailed"));
             result.InvalidCount += incomingPaths.Count;
             return result;
         }
@@ -1723,7 +1769,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
             Logger.LogError(ex, "MainWindowViewModel.LoadShortcuts");
             if (generation == _shortcutsLoadGeneration)
             {
-                _notificationService.ShowWarningMessage("快捷方式列表加载失败，请稍后重试。");
+                _notificationService.ShowWarningMessage(L("Shortcut.LoadFailed"));
             }
         }
     }
@@ -1734,7 +1780,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
 
         if (string.IsNullOrEmpty(_weatherService.GetEffectiveApiKey()))
         {
-            WeatherStatusMessage = "请在设置中配置 API Key";
+            WeatherStatusMessage = L("Weather.ConfigureApiKey");
             return;
         }
 
@@ -1763,7 +1809,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         if (string.IsNullOrEmpty(_weatherService.GetEffectiveApiKey()))
         {
             ApplyWeatherInfo(await _weatherService.GetCachedWeatherAsync());
-            WeatherStatusMessage = "请在设置中配置 API Key";
+            WeatherStatusMessage = L("Weather.ConfigureApiKey");
             return;
         }
 
@@ -1785,7 +1831,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
             ApplyWeatherInfo(await _weatherService.GetCachedWeatherAsync());
             if (notifyUser)
             {
-                _notificationService.ShowWarningMessage("天气刷新失败，请检查网络与 API 配置。");
+                _notificationService.ShowWarningMessage(L("Weather.RefreshFailed"));
             }
         }
         finally
@@ -1799,7 +1845,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         if (info == null)
         {
             HasWeatherData = false;
-            WeatherCity = "天气加载失败，请检查网络或 API 配置";
+            WeatherCity = L("Weather.LoadFailed");
             WeatherTemperature = "--";
             WeatherDescription = string.Empty;
             WeatherDetailLine = string.Empty;
@@ -1824,7 +1870,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
 
         var details = new List<string>
         {
-            string.IsNullOrWhiteSpace(info.AirQuality) ? "空气 --" : info.AirQuality
+            string.IsNullOrWhiteSpace(info.AirQuality) ? L("Weather.AirFallback") : info.AirQuality
         };
 
         if (!string.IsNullOrWhiteSpace(info.Humidity))
@@ -1835,7 +1881,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         var range = BuildTempRange(info.MinTemp, info.MaxTemp);
         WeatherDetailLine = string.Join("  |  ", details);
         WeatherRangeLine = range;
-        WeatherStatusMessage = info.IsExpired ? "数据可能已过期" : string.Empty;
+        WeatherStatusMessage = info.IsExpired ? L("Weather.Expired") : string.Empty;
     }
 
     private static string BuildTempRange(string minTemp, string maxTemp)
@@ -1932,11 +1978,31 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         return $"{value:0.0} GB/s";
     }
 
+    private bool IsChineseLanguage =>
+        string.Equals(_localizationService.CurrentLanguage, ILocalizationService.DefaultLanguage, StringComparison.OrdinalIgnoreCase);
+
+    private void LocalizationService_OnLanguageChanged(object? sender, EventArgs e)
+    {
+        OnPropertyChanged(nameof(WindowLockToolTip));
+        OnPropertyChanged(nameof(PanelCollapseToolTip));
+        OnPropertyChanged(nameof(CalendarWeekdayLabels));
+        UpdateClockText();
+        RefreshCalendarDays();
+        RefreshCollapsedPanelTodo();
+        if (WeatherStatusMessage == "请在设置中配置 API Key" || WeatherStatusMessage == "Configure API Key in Settings")
+        {
+            WeatherStatusMessage = L("Weather.ConfigureApiKey");
+        }
+    }
+
+    private string L(string key) => _localizationService.GetString(key);
+
     public void Dispose()
     {
         if (_disposed) return;
         _disposed = true;
 
+        _localizationService.LanguageChanged -= LocalizationService_OnLanguageChanged;
         _clipboardMonitorService.ClipboardHistoryChanged -= ClipboardMonitor_OnHistoryChanged;
         _weatherRefreshTimer.Stop();
         _systemMetricsTimer.Stop();

@@ -21,13 +21,17 @@ public class HotkeyService : IHotkeyService, IDisposable
 
     private readonly Dictionary<int, (string HotkeyString, Action Callback)> _registeredHotkeys = new();
     private readonly INotificationService _notificationService;
+    private readonly ILocalizationService _localizationService;
     private IntPtr _windowHandle;
     private HwndSource? _hwndSource;
     private int _currentId = 1;
 
-    public HotkeyService(INotificationService notificationService)
+    public HotkeyService(
+        INotificationService notificationService,
+        ILocalizationService localizationService)
     {
         _notificationService = notificationService;
+        _localizationService = localizationService;
     }
 
     public void Initialize(Window window)
@@ -62,7 +66,7 @@ public class HotkeyService : IHotkeyService, IDisposable
         var (modifiers, key) = ParseHotkeyString(hotkeyString);
         if (key == 0)
         {
-            _notificationService.ShowErrorMessage($"无效的热键格式: {hotkeyString}");
+            _notificationService.ShowErrorMessage(_localizationService.Format("Hotkey.InvalidFormat", hotkeyString));
             return false;
         }
 
@@ -71,7 +75,7 @@ public class HotkeyService : IHotkeyService, IDisposable
         if (!RegisterHotKey(_windowHandle, id, modifiers, key))
         {
             var error = Marshal.GetLastWin32Error();
-            _notificationService.ShowWarningMessage($"热键 {hotkeyString} 注册失败，可能被其他程序占用 (错误码: {error})");
+            _notificationService.ShowWarningMessage(_localizationService.Format("Hotkey.RegisterFailedFormat", hotkeyString, error));
             return false;
         }
 

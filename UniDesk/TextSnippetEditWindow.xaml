@@ -109,7 +109,7 @@
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
-                <TextBlock Text="标题" Style="{StaticResource DlgLabel}"/>
+                <TextBlock Text="{DynamicResource Common.Title}" Style="{StaticResource DlgLabel}"/>
                 <TextBox Grid.Row="1"
                          Text="{Binding Title, UpdateSourceTrigger=PropertyChanged}"
                          Height="32"
@@ -128,7 +128,7 @@
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     <StackPanel Grid.Column="0">
-                        <TextBlock Text="分类" Style="{StaticResource DlgLabel}"/>
+                        <TextBlock Text="{DynamicResource Common.Category}" Style="{StaticResource DlgLabel}"/>
                         <ComboBox ItemsSource="{Binding Categories}"
                                   SelectedItem="{Binding Category}"
                                   Height="30"
@@ -137,7 +137,7 @@
                                   Background="{StaticResource DlgInputBackground}"/>
                     </StackPanel>
                     <CheckBox Grid.Column="1"
-                              Content="置顶"
+                              Content="{DynamicResource Common.Pin}"
                               IsChecked="{Binding IsPinned}"
                               FontSize="12"
                               Foreground="{StaticResource DlgTextSecondary}"
@@ -145,7 +145,7 @@
                               Margin="12,0,0,6"/>
                 </Grid>
 
-                <TextBlock Grid.Row="3" Text="内容" Style="{StaticResource DlgLabel}"/>
+                <TextBlock Grid.Row="3" Text="{DynamicResource Common.Content}" Style="{StaticResource DlgLabel}"/>
                 <TextBox Grid.Row="4"
                          Text="{Binding Content, UpdateSourceTrigger=PropertyChanged}"
                          AcceptsReturn="True"
@@ -166,11 +166,11 @@
                     Padding="14,10">
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                     <Button Style="{StaticResource DlgButton}"
-                            Content="取消"
+                            Content="{DynamicResource Common.Cancel}"
                             Margin="0,0,8,0"
                             Click="CloseButton_OnClick"/>
                     <Button Style="{StaticResource DlgPrimaryButton}"
-                            Content="保存"
+                            Content="{DynamicResource Common.Save}"
                             IsDefault="True"
                             Click="SaveButton_OnClick"/>
                 </StackPanel>

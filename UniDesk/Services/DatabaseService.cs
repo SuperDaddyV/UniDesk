@@ -175,6 +175,7 @@ public class DatabaseService : IDatabaseService
             { "WindowTop", "" },
             { "WidgetLayout", "" },
             { "Hotkey", "Ctrl+Alt+Space" },
+            { ILocalizationService.LanguageSettingKey, ILocalizationService.DefaultLanguage },
             { "WeatherApiKey", "" },
             { "WeatherApiHost", "" },
             { WeatherApiDefaults.DefaultApiKeySettingKey, WeatherApiDefaults.BuiltInApiKeyEncrypted },

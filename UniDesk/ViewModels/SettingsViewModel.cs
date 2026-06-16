@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Globalization;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -9,12 +10,15 @@ using CommunityToolkit.Mvvm.Input;
 using UniDesk.Helpers;
 using UniDesk.Models;
 using UniDesk.Services;
+using UniDesk.Windows;
 
 namespace UniDesk.ViewModels;
 
-public partial class SettingsViewModel : ObservableObject
+public partial class SettingsViewModel : ObservableObject, IDisposable
 {
     private readonly ISettingsService _settingsService;
+    private readonly ILocalizationService _localizationService;
+    private readonly IUpdateService _updateService;
     private readonly IWindowService _windowService;
     private readonly INotificationService _notificationService;
     private readonly ILayoutService _layoutService;
@@ -69,7 +73,18 @@ public partial class SettingsViewModel : ObservableObject
     [ObservableProperty]
     private int _clipboardHistoryMaxCount = QuickTextService.DefaultHistoryLimit;
 
+    [ObservableProperty]
+    private string _selectedLanguage = ILocalizationService.DefaultLanguage;
+
+    [ObservableProperty]
+    private bool _isCheckingForUpdates;
+
+    [ObservableProperty]
+    private string _updateStatusMessage = string.Empty;
+
     public IReadOnlyList<int> ClipboardHistoryLimitOptions => QuickTextService.AllowedHistoryLimits;
+
+    public IReadOnlyList<LanguageOption> LanguageOptions => _localizationService.SupportedLanguages;
 
     public ObservableCollection<ModuleSettingOptionViewModel> ModuleSettings { get; } = new();
 
@@ -77,10 +92,18 @@ public partial class SettingsViewModel : ObservableObject
 
     public string FontScaleLabel => FontScale switch
     {
-        <= 0.95 => "小",
-        >= 1.1 => "大",
-        _ => "标准"
+        <= 0.95 => L("Settings.FontSmall"),
+        >= 1.1 => L("Settings.FontLarge"),
+        _ => L("Settings.FontNormal")
     };
+
+    public string CurrentVersionText => _localizationService.Format(
+        "Update.CurrentVersionFormat",
+        AppVersionProvider.CurrentVersionWithPrefix);
+
+    public string ClipboardHistoryCurrentText => _localizationService.Format(
+        "Settings.CurrentCountFormat",
+        ClipboardHistoryMaxCount);
 
     public ObservableCollection<ColorSchemeOptionViewModel> ColorSchemes { get; } = new();
 
@@ -94,6 +117,8 @@ public partial class SettingsViewModel : ObservableObject
 
     public SettingsViewModel(
         ISettingsService settingsService,
+        ILocalizationService localizationService,
+        IUpdateService updateService,
         IWindowService windowService,
         INotificationService notificationService,
         ILayoutService layoutService,
@@ -104,6 +129,8 @@ public partial class SettingsViewModel : ObservableObject
         MainWindowViewModel mainWindowViewModel)
     {
         _settingsService = settingsService;
+        _localizationService = localizationService;
+        _updateService = updateService;
         _windowService = windowService;
         _notificationService = notificationService;
         _layoutService = layoutService;
@@ -118,6 +145,7 @@ public partial class SettingsViewModel : ObservableObject
             ColorSchemes.Add(new ColorSchemeOptionViewModel(scheme));
         }
 
+        _localizationService.LanguageChanged += LocalizationService_OnLanguageChanged;
         LoadSettings();
     }
 
@@ -143,6 +171,9 @@ public partial class SettingsViewModel : ObservableObject
             ClipboardSensitiveFilterEnabled = _settingsService.GetSetting(QuickTextService.SensitiveFilterSettingKey, true);
             ClipboardHistoryMaxCount = QuickTextService.NormalizeHistoryLimit(
                 _settingsService.GetSetting(QuickTextService.HistoryMaxCountSettingKey, QuickTextService.DefaultHistoryLimit));
+            SelectedLanguage = _localizationService.NormalizeLanguage(
+                _settingsService.GetValue(ILocalizationService.LanguageSettingKey, ILocalizationService.DefaultLanguage));
+            SyncSelectedLanguage();
             LoadModuleSettings(_mainWindowViewModel.GetModuleSettingsSnapshot());
 
             PanelWidth = Math.Clamp(PanelWidth, IWindowService.MinPanelWidth, IWindowService.MaxPanelWidth);
@@ -174,6 +205,7 @@ public partial class SettingsViewModel : ObservableObject
         _originalSettings["ClipboardHistoryEnabled"] = ClipboardHistoryEnabled.ToString();
         _originalSettings["ClipboardSensitiveFilterEnabled"] = ClipboardSensitiveFilterEnabled.ToString();
         _originalSettings["ClipboardHistoryMaxCount"] = ClipboardHistoryMaxCount.ToString(CultureInfo.InvariantCulture);
+        _originalSettings["Language"] = SelectedLanguage;
         _originalModuleSettings = ModuleSettings.Select(module => module.ToModel().Clone()).ToList();
     }
 
@@ -204,6 +236,17 @@ public partial class SettingsViewModel : ObservableObject
     }
 
     [RelayCommand]
+    private void SelectLanguage(string? language)
+    {
+        if (string.IsNullOrWhiteSpace(language))
+        {
+            return;
+        }
+
+        SelectedLanguage = _localizationService.NormalizeLanguage(language);
+    }
+
+    [RelayCommand]
     private void SelectClipboardHistoryLimit(string? limitText)
     {
         if (!int.TryParse(limitText, NumberStyles.Integer, CultureInfo.InvariantCulture, out var limit))
@@ -217,14 +260,14 @@ public partial class SettingsViewModel : ObservableObject
     [RelayCommand]
     private async Task ClearClipboardHistoryFromSettingsAsync()
     {
-        if (!_notificationService.ShowConfirmDialog("确定清空全部剪贴板历史？", "确认清空"))
+        if (!_notificationService.ShowConfirmDialog(L("QuickText.ClearHistoryConfirm"), L("QuickText.ClearHistoryTitle")))
         {
             return;
         }
 
         await _quickTextService.ClearClipboardHistoryAsync();
         await _mainWindowViewModel.ReloadQuickTextAsync();
-        _notificationService.ShowSuccessMessage("剪贴板历史已清空。");
+        _notificationService.ShowSuccessMessage(L("QuickText.HistoryCleared"));
     }
 
     [RelayCommand]
@@ -288,6 +331,24 @@ public partial class SettingsViewModel : ObservableObject
 
     partial void OnDisplayTitleChanged(string value) => ApplyWindowPreview();
 
+    partial void OnClipboardHistoryMaxCountChanged(int value) =>
+        OnPropertyChanged(nameof(ClipboardHistoryCurrentText));
+
+    partial void OnSelectedLanguageChanged(string value)
+    {
+        var normalized = _localizationService.NormalizeLanguage(value);
+        if (!string.Equals(value, normalized, StringComparison.Ordinal))
+        {
+            SelectedLanguage = normalized;
+            return;
+        }
+
+        if (!_isLoading)
+        {
+            _localizationService.SetLanguage(normalized);
+        }
+    }
+
     partial void OnShortcutMaxCountChanged(int value) =>
         _mainWindowViewModel.SetShortcutLimitPreview(value);
 
@@ -302,6 +363,7 @@ public partial class SettingsViewModel : ObservableObject
         foreach (var module in DashboardModuleCatalog.Normalize(modules))
         {
             var option = ModuleSettingOptionViewModel.FromModel(module);
+            option.DisplayName = GetModuleDisplayName(option.ModuleId, option.DisplayName);
             option.PropertyChanged += ModuleSetting_OnPropertyChanged;
             ModuleSettings.Add(option);
         }
@@ -405,6 +467,7 @@ public partial class SettingsViewModel : ObservableObject
             _settingsService.SetValue(QuickTextService.HistoryEnabledSettingKey, ClipboardHistoryEnabled.ToString());
             _settingsService.SetValue(QuickTextService.SensitiveFilterSettingKey, ClipboardSensitiveFilterEnabled.ToString());
             _settingsService.SetValue(QuickTextService.HistoryMaxCountSettingKey, ClipboardHistoryMaxCount.ToString(CultureInfo.InvariantCulture));
+            _settingsService.SetValue(ILocalizationService.LanguageSettingKey, _localizationService.NormalizeLanguage(SelectedLanguage));
             _mainWindowViewModel.ApplyModuleSettings(BuildModuleSettings(), persist: true);
 
             await _settingsService.FlushPendingSavesAsync();
@@ -427,7 +490,7 @@ public partial class SettingsViewModel : ObservableObject
         catch (Exception ex)
         {
             RevertToOriginalSettings();
-            _notificationService.ShowErrorMessage($"保存设置失败：{ex.Message}");
+            _notificationService.ShowErrorMessage(_localizationService.Format("Settings.SaveFailedFormat", ex.Message));
             return;
         }
 
@@ -453,7 +516,7 @@ public partial class SettingsViewModel : ObservableObject
                 {
                     _notificationService.ShowWarningMessage(
                         string.IsNullOrWhiteSpace(validation.Message)
-                            ? "和风天气凭据校验失败，请检查 API Host 与 API Key"
+                            ? L("Settings.WeatherCredentialValidationFailed")
                             : validation.Message);
                 }
             }
@@ -465,7 +528,7 @@ public partial class SettingsViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            _notificationService.ShowErrorMessage($"应用天气设置失败：{ex.Message}");
+            _notificationService.ShowErrorMessage(_localizationService.Format("Settings.WeatherApplyFailedFormat", ex.Message));
         }
     }
 
@@ -478,7 +541,7 @@ public partial class SettingsViewModel : ObservableObject
     [RelayCommand]
     private void ResetToDefaults()
     {
-        var result = _notificationService.ShowConfirmDialog("确定要恢复默认设置吗？这将重置所有设置为默认值。", "确认恢复");
+        var result = _notificationService.ShowConfirmDialog(L("Settings.ResetDefaultsConfirm"), L("Settings.ResetConfirmTitle"));
         if (!result) return;
 
         SelectedColorScheme = AppColorSchemeCatalog.DefaultSchemeId;
@@ -495,10 +558,11 @@ public partial class SettingsViewModel : ObservableObject
         ClipboardHistoryEnabled = true;
         ClipboardSensitiveFilterEnabled = true;
         ClipboardHistoryMaxCount = QuickTextService.DefaultHistoryLimit;
+        SelectedLanguage = ILocalizationService.DefaultLanguage;
         LoadModuleSettings(DashboardModuleCatalog.CreateDefaultModules());
         ApplyModulePreview();
 
-        _notificationService.ShowInfoMessage("已恢复默认设置，点击保存后生效");
+        _notificationService.ShowInfoMessage(L("Settings.DefaultsRestored"));
     }
 
     [RelayCommand]
@@ -506,8 +570,8 @@ public partial class SettingsViewModel : ObservableObject
     {
         var dialog = new Microsoft.Win32.SaveFileDialog
         {
-            Title = "备份 UniDesk 数据",
-            Filter = "JSON 文件 (*.json)|*.json",
+            Title = L("Settings.BackupTitle"),
+            Filter = L("Settings.JsonFilter"),
             FileName = $"UniDesk-data-{DateTime.Now:yyyyMMdd-HHmm}.json",
             DefaultExt = ".json"
         };
@@ -520,11 +584,11 @@ public partial class SettingsViewModel : ObservableObject
         try
         {
             await _todoBackupService.ExportToFileAsync(dialog.FileName);
-            _notificationService.ShowSuccessMessage("UniDesk 数据已备份，请妥善保管备份文件。");
+            _notificationService.ShowSuccessMessage(L("Settings.BackupSuccess"));
         }
         catch (Exception ex)
         {
-            _notificationService.ShowErrorMessage($"备份失败：{ex.Message}");
+            _notificationService.ShowErrorMessage(_localizationService.Format("Settings.BackupFailedFormat", ex.Message));
         }
     }
 
@@ -532,8 +596,8 @@ public partial class SettingsViewModel : ObservableObject
     private async Task RestoreTodosAsync()
     {
         var confirmed = _notificationService.ShowConfirmDialog(
-            "还原将覆盖备份文件中包含的设置、快捷方式、待办事项、快速便签和快捷文本，是否继续？",
-            "确认还原");
+            L("Settings.RestoreConfirm"),
+            L("Settings.ResetConfirmTitle"));
         if (!confirmed)
         {
             return;
@@ -541,8 +605,8 @@ public partial class SettingsViewModel : ObservableObject
 
         var dialog = new Microsoft.Win32.OpenFileDialog
         {
-            Title = "还原 UniDesk 数据",
-            Filter = "JSON 文件 (*.json)|*.json"
+            Title = L("Settings.RestoreTitle"),
+            Filter = L("Settings.JsonFilter")
         };
 
         if (dialog.ShowDialog() != true)
@@ -560,35 +624,82 @@ public partial class SettingsViewModel : ObservableObject
                 ApplyStartupSetting();
                 _mainWindowViewModel.ApplyWindowSettings();
                 LoadSettings();
+                _localizationService.SetLanguage(SelectedLanguage);
             }
 
             await _mainWindowViewModel.ReloadShortcutsAsync();
             await _mainWindowViewModel.ReloadTodosAsync();
             await _mainWindowViewModel.ReloadQuickNotesAsync();
             await _mainWindowViewModel.ReloadQuickTextAsync();
-            _notificationService.ShowSuccessMessage(
-                $"已还原 {result.SettingCount} 项设置，{result.ShortcutCount} 个快捷方式，{result.TodoCount} 条待办事项，{result.QuickNoteCount} 条便签，{result.ClipboardHistoryCount} 条历史，{result.TextSnippetCount} 条常用短语。");
+            _notificationService.ShowSuccessMessage(_localizationService.Format(
+                "Settings.RestoreSuccessFormat",
+                result.SettingCount,
+                result.ShortcutCount,
+                result.TodoCount,
+                result.QuickNoteCount,
+                result.ClipboardHistoryCount,
+                result.TextSnippetCount));
         }
         catch (Exception ex)
         {
-            _notificationService.ShowErrorMessage($"还原失败：{ex.Message}");
+            _notificationService.ShowErrorMessage(_localizationService.Format("Settings.RestoreFailedFormat", ex.Message));
         }
     }
 
     [RelayCommand]
     private void ResetLayout()
     {
-        var result = _notificationService.ShowConfirmDialog("确定要恢复默认布局吗？这将重置所有卡片的位置和大小。", "确认恢复");
+        var result = _notificationService.ShowConfirmDialog(L("Settings.ResetLayoutConfirm"), L("Settings.ResetConfirmTitle"));
         if (!result) return;
 
         try
         {
             _layoutService.ResetToDefault();
-            _notificationService.ShowSuccessMessage("布局已重置，重启应用后生效");
+            _notificationService.ShowSuccessMessage(L("Settings.ResetLayoutSuccess"));
         }
         catch (Exception ex)
         {
-            _notificationService.ShowErrorMessage($"重置布局失败：{ex.Message}");
+            _notificationService.ShowErrorMessage(_localizationService.Format("Settings.ResetLayoutFailedFormat", ex.Message));
+        }
+    }
+
+    [RelayCommand]
+    private async Task CheckForUpdatesAsync()
+    {
+        if (IsCheckingForUpdates)
+        {
+            return;
+        }
+
+        IsCheckingForUpdates = true;
+        UpdateStatusMessage = L("Update.Checking");
+        try
+        {
+            var result = await _updateService.CheckForUpdatesAsync();
+            UpdateStatusMessage = BuildUpdateStatusMessage(result);
+
+            switch (result.Status)
+            {
+                case UpdateCheckStatus.UpdateAvailable:
+                    if (UpdateResultWindow.Show(result, _localizationService))
+                    {
+                        OpenReleasePage(result.ReleaseUrl);
+                    }
+                    break;
+                case UpdateCheckStatus.Latest:
+                    _notificationService.ShowInfoMessage(L("Update.Latest"));
+                    break;
+                case UpdateCheckStatus.CurrentNewerThanLatest:
+                    _notificationService.ShowInfoMessage(L("Update.CurrentNewer"));
+                    break;
+                default:
+                    _notificationService.ShowWarningMessage(L("Update.Failed"));
+                    break;
+            }
+        }
+        finally
+        {
+            IsCheckingForUpdates = false;
         }
     }
 
@@ -676,6 +787,12 @@ public partial class SettingsViewModel : ObservableObject
                     int.Parse(clipboardHistoryMaxCount, CultureInfo.InvariantCulture));
             }
 
+            if (_originalSettings.TryGetValue("Language", out var language))
+            {
+                SelectedLanguage = _localizationService.NormalizeLanguage(language);
+                SyncSelectedLanguage();
+            }
+
             LoadModuleSettings(_originalModuleSettings);
         }
         finally
@@ -688,6 +805,7 @@ public partial class SettingsViewModel : ObservableObject
         _mainWindowViewModel.SetShortcutLimitPreview(null);
         _ = _mainWindowViewModel.ReloadShortcutsAsync();
         _mainWindowViewModel.ApplyModuleSettings(_originalModuleSettings, persist: false);
+        _localizationService.SetLanguage(SelectedLanguage);
     }
 
     private bool ReadStartupSetting()
@@ -708,14 +826,86 @@ public partial class SettingsViewModel : ObservableObject
         {
             StartupEnabled = false;
             _settingsService.SetValue("Startup", "false");
-            _notificationService.ShowWarningMessage("开机自启设置失败，已恢复为关闭状态。");
+            _notificationService.ShowWarningMessage(L("Settings.StartupEnableFailed"));
         }
         else if (!desired && wasEnabled && _startupService.IsEnabled)
         {
             StartupEnabled = true;
             _settingsService.SetValue("Startup", "true");
-            _notificationService.ShowWarningMessage("取消开机自启失败，请稍后重试。");
+            _notificationService.ShowWarningMessage(L("Settings.StartupDisableFailed"));
         }
+    }
+
+    private string BuildUpdateStatusMessage(UpdateCheckResult result) => result.Status switch
+    {
+        UpdateCheckStatus.UpdateAvailable => _localizationService.Format("Update.AvailableFormat", result.LatestVersion),
+        UpdateCheckStatus.Latest => L("Update.Latest"),
+        UpdateCheckStatus.CurrentNewerThanLatest => L("Update.CurrentNewer"),
+        _ => L("Update.Failed")
+    };
+
+    private void OpenReleasePage(string releaseUrl)
+    {
+        if (string.IsNullOrWhiteSpace(releaseUrl))
+        {
+            return;
+        }
+
+        try
+        {
+            Process.Start(new ProcessStartInfo(releaseUrl)
+            {
+                UseShellExecute = true
+            });
+        }
+        catch
+        {
+            _notificationService.ShowWarningMessage(_localizationService.Format("Update.OpenFailedFormat", releaseUrl));
+        }
+    }
+
+    private void LocalizationService_OnLanguageChanged(object? sender, EventArgs e)
+    {
+        OnPropertyChanged(nameof(FontScaleLabel));
+        OnPropertyChanged(nameof(CurrentVersionText));
+        OnPropertyChanged(nameof(ClipboardHistoryCurrentText));
+        RefreshModuleDisplayNames();
+        UpdateStatusMessage = string.Empty;
+    }
+
+    private void RefreshModuleDisplayNames()
+    {
+        foreach (var module in ModuleSettings)
+        {
+            module.DisplayName = GetModuleDisplayName(module.ModuleId, module.DisplayName);
+        }
+    }
+
+    private string GetModuleDisplayName(string moduleId, string fallback) => moduleId switch
+    {
+        DashboardModuleIds.TimeWeather => L("Module.TimeWeather"),
+        DashboardModuleIds.HardwareMonitor => L("Module.HardwareMonitor"),
+        DashboardModuleIds.Shortcuts => L("Module.Shortcuts"),
+        DashboardModuleIds.Todos => L("Module.Todos"),
+        DashboardModuleIds.QuickNotes => L("Module.QuickNotes"),
+        DashboardModuleIds.QuickText => L("Module.QuickText"),
+        _ => string.IsNullOrWhiteSpace(fallback) ? moduleId : fallback
+    };
+
+    private void SyncSelectedLanguage()
+    {
+        var normalized = _localizationService.NormalizeLanguage(SelectedLanguage);
+        if (!string.Equals(SelectedLanguage, normalized, StringComparison.Ordinal))
+        {
+            SelectedLanguage = normalized;
+        }
+    }
+
+    private string L(string key) => _localizationService.GetString(key);
+
+    public void Dispose()
+    {
+        _localizationService.LanguageChanged -= LocalizationService_OnLanguageChanged;
     }
 
     public event EventHandler<bool>? RequestClose;

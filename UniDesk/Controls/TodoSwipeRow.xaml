@@ -10,7 +10,7 @@
                 CornerRadius="8"
                 Background="#E53935"
                 Visibility="Collapsed">
-            <Button Content="删除"
+            <Button Content="{DynamicResource Common.Delete}"
                     Foreground="White"
                     FontSize="12"
                     Background="Transparent"

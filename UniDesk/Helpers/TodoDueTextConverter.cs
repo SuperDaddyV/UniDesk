@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Windows.Data;
 using UniDesk.Models;
+using UniDesk.Services;
 
 namespace UniDesk.Helpers;
 
@@ -19,16 +20,18 @@ public class TodoDueTextConverter : IValueConverter
 
         if (due.Date == today)
         {
+            var todayText = LocalizationService.Current?.GetString("Common.Today") ?? "今天";
             return hasTime
-                ? $"今天 {due:HH:mm}"
-                : "今天";
+                ? $"{todayText} {due:HH:mm}"
+                : todayText;
         }
 
         if (due.Date == today.AddDays(1))
         {
+            var tomorrowText = LocalizationService.Current?.GetString("Common.Tomorrow") ?? "明天";
             return hasTime
-                ? $"明天 {due:HH:mm}"
-                : "明天";
+                ? $"{tomorrowText} {due:HH:mm}"
+                : tomorrowText;
         }
 
         return hasTime

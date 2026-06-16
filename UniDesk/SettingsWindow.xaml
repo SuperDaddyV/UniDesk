@@ -2,7 +2,7 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:helpers="clr-namespace:UniDesk.Helpers"
-        Title="设置"
+        Title="{DynamicResource Settings.Title}"
         SizeToContent="Manual"
         WindowStyle="None"
         AllowsTransparency="True"
@@ -18,6 +18,7 @@
 
     <Window.Resources>
         <helpers:InverseBooleanConverter x:Key="InverseBooleanConverter"/>
+        <helpers:StringEqualsConverter x:Key="StringEqualsConverter"/>
         <SolidColorBrush x:Key="DlgBackground" Color="#E6FFFFFF"/>
         <SolidColorBrush x:Key="DlgTextPrimary" Color="#1E293B"/>
         <SolidColorBrush x:Key="DlgTextSecondary" Color="#64748B"/>
@@ -181,7 +182,7 @@
                                    HorizontalAlignment="Center"
                                    VerticalAlignment="Center"/>
                     </Border>
-                    <TextBlock Text="设置"
+                    <TextBlock Text="{DynamicResource Settings.Title}"
                                FontSize="14"
                                FontWeight="SemiBold"
                                Foreground="{StaticResource DlgTextPrimary}"
@@ -212,9 +213,9 @@
                           PreviewMouseLeftButtonUp="ContentScrollViewer_OnPreviewMouseLeftButtonUp"
                           MouseLeave="ContentScrollViewer_OnMouseLeave">
                 <StackPanel>
-                    <TextBlock Text="常规设置" Style="{StaticResource DlgSectionTitle}"/>
+                    <TextBlock Text="{DynamicResource Settings.General}" Style="{StaticResource DlgSectionTitle}"/>
 
-                    <TextBlock Text="主题设置"
+                    <TextBlock Text="{DynamicResource Settings.Theme}"
                                Style="{StaticResource DlgLabel}"
                                Margin="0,0,0,6"
                                VerticalAlignment="Top"/>
@@ -274,7 +275,7 @@
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
 
-                    <TextBlock Text="标题名称"
+                    <TextBlock Text="{DynamicResource Settings.DisplayTitle}"
                                Style="{StaticResource DlgLabel}"
                                Margin="0,0,0,6"
                                VerticalAlignment="Top"/>
@@ -290,7 +291,7 @@
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="44"/>
                         </Grid.ColumnDefinitions>
-                        <TextBlock Text="窗口透明度" Style="{StaticResource DlgLabel}" Margin="0"/>
+                        <TextBlock Text="{DynamicResource Settings.WindowOpacity}" Style="{StaticResource DlgLabel}" Margin="0"/>
                         <TextBlock Grid.Column="1"
                                    Text="{Binding WindowOpacity, StringFormat={}{0:P0}}"
                                    FontSize="11"
@@ -307,7 +308,7 @@
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="52"/>
                         </Grid.ColumnDefinitions>
-                        <TextBlock Text="面板宽度" Style="{StaticResource DlgLabel}" Margin="0"/>
+                        <TextBlock Text="{DynamicResource Settings.PanelWidth}" Style="{StaticResource DlgLabel}" Margin="0"/>
                         <TextBlock Grid.Column="1"
                                    Text="{Binding PanelWidth, StringFormat={}{0:F0}px}"
                                    FontSize="11"
@@ -324,7 +325,7 @@
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="52"/>
                         </Grid.ColumnDefinitions>
-                        <TextBlock Text="面板高度" Style="{StaticResource DlgLabel}" Margin="0"/>
+                        <TextBlock Text="{DynamicResource Settings.PanelHeight}" Style="{StaticResource DlgLabel}" Margin="0"/>
                         <TextBlock Grid.Column="1"
                                    Text="{Binding PanelHeight, StringFormat={}{0:F0}px}"
                                    FontSize="11"
@@ -341,7 +342,7 @@
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="52"/>
                         </Grid.ColumnDefinitions>
-                        <TextBlock Text="字体大小" Style="{StaticResource DlgLabel}" Margin="0"/>
+                        <TextBlock Text="{DynamicResource Settings.FontSize}" Style="{StaticResource DlgLabel}" Margin="0"/>
                         <TextBlock Grid.Column="1"
                                    Text="{Binding FontScaleLabel}"
                                    FontSize="11"
@@ -353,7 +354,7 @@
                             Value="{Binding FontScale, Mode=TwoWay}"
                             TickFrequency="0.125"/>
 
-                    <TextBlock Text="快捷方式数量"
+                    <TextBlock Text="{DynamicResource Settings.ShortcutCount}"
                                Style="{StaticResource DlgLabel}"
                                Margin="0,10,0,6"
                                VerticalAlignment="Top"/>
@@ -370,7 +371,47 @@
                                 Command="{Binding SelectShortcutLimitCommand}" CommandParameter="18"/>
                     </WrapPanel>
 
-                    <TextBlock Text="模块管理" Style="{StaticResource DlgSectionTitle}"/>
+                    <TextBlock Text="{DynamicResource Settings.Language}"
+                               Style="{StaticResource DlgLabel}"
+                               Margin="0,0,0,6"
+                               VerticalAlignment="Top"/>
+                    <ItemsControl ItemsSource="{Binding LanguageOptions}" Margin="0,0,0,14">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Button Content="{Binding DisplayName}"
+                                        Command="{Binding DataContext.SelectLanguageCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                        CommandParameter="{Binding Code}"
+                                        Margin="0,0,6,6">
+                                    <Button.Style>
+                                        <Style TargetType="Button" BasedOn="{StaticResource DlgChipButton}">
+                                            <Setter Property="MinWidth" Value="70"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Value="True">
+                                                    <DataTrigger.Binding>
+                                                        <MultiBinding Converter="{StaticResource StringEqualsConverter}">
+                                                            <Binding Path="Code"/>
+                                                            <Binding Path="DataContext.SelectedLanguage" RelativeSource="{RelativeSource AncestorType=Window}"/>
+                                                        </MultiBinding>
+                                                    </DataTrigger.Binding>
+                                                    <Setter Property="Foreground" Value="{StaticResource DlgAccent}"/>
+                                                    <Setter Property="Background" Value="{StaticResource DlgAccentSoft}"/>
+                                                    <Setter Property="BorderBrush" Value="{StaticResource DlgAccent}"/>
+                                                    <Setter Property="FontWeight" Value="SemiBold"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Button.Style>
+                                </Button>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <TextBlock Text="{DynamicResource Settings.ModuleManagement}" Style="{StaticResource DlgSectionTitle}"/>
                     <ItemsControl ItemsSource="{Binding ModuleSettings}" Margin="0,0,0,14">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
@@ -406,7 +447,7 @@
                                                   IsChecked="{Binding IsEnabled, Mode=TwoWay}"
                                                   VerticalAlignment="Center"
                                                   Margin="8,0,8,0"
-                                                  ToolTip="显示/隐藏"/>
+                                                  ToolTip="{DynamicResource Settings.ShowHide}"/>
                                         <Button Grid.Column="3"
                                                 Style="{StaticResource DlgGhostButton}"
                                                 Content="↑"
@@ -415,7 +456,7 @@
                                                 Padding="0"
                                                 Margin="0,0,4,0"
                                                 IsEnabled="{Binding CanMoveUp}"
-                                                ToolTip="上移"
+                                                ToolTip="{DynamicResource Settings.MoveUp}"
                                                 Command="{Binding DataContext.MoveModuleUpCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                 CommandParameter="{Binding}"/>
                                         <Button Grid.Column="4"
@@ -425,7 +466,7 @@
                                                 Height="24"
                                                 Padding="0"
                                                 IsEnabled="{Binding CanMoveDown}"
-                                                ToolTip="下移"
+                                                ToolTip="{DynamicResource Settings.MoveDown}"
                                                 Command="{Binding DataContext.MoveModuleDownCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                 CommandParameter="{Binding}"/>
                                     </Grid>
@@ -434,23 +475,23 @@
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
 
-                    <TextBlock Text="快捷文本 / 剪贴板" Style="{StaticResource DlgSectionTitle}"/>
+                    <TextBlock Text="{DynamicResource Settings.QuickTextClipboard}" Style="{StaticResource DlgSectionTitle}"/>
                     <Grid Style="{StaticResource DlgToggleRow}">
-                        <TextBlock Text="启用剪贴板历史"
+                        <TextBlock Text="{DynamicResource Settings.EnableClipboardHistory}"
                                    FontSize="12"
                                    Foreground="{StaticResource DlgTextPrimary}"
                                    VerticalAlignment="Center"/>
                         <CheckBox HorizontalAlignment="Right" IsChecked="{Binding ClipboardHistoryEnabled}"/>
                     </Grid>
                     <Grid Style="{StaticResource DlgToggleRow}">
-                        <TextBlock Text="自动过滤敏感内容"
+                        <TextBlock Text="{DynamicResource Settings.FilterSensitive}"
                                    FontSize="12"
                                    Foreground="{StaticResource DlgTextPrimary}"
                                    VerticalAlignment="Center"/>
                         <CheckBox HorizontalAlignment="Right" IsChecked="{Binding ClipboardSensitiveFilterEnabled}"/>
                     </Grid>
                     <Grid Margin="0,0,0,8">
-                        <TextBlock Text="最大保存数量"
+                        <TextBlock Text="{DynamicResource Settings.MaxSavedCount}"
                                    FontSize="12"
                                    Foreground="{StaticResource DlgTextPrimary}"
                                    VerticalAlignment="Center"/>
@@ -489,37 +530,37 @@
                         </WrapPanel>
                     </Grid>
                     <Grid Margin="0,0,0,14">
-                        <TextBlock Text="{Binding ClipboardHistoryMaxCount, StringFormat=当前：{0} 条}"
+                        <TextBlock Text="{Binding ClipboardHistoryCurrentText}"
                                    FontSize="11"
                                    Foreground="{StaticResource DlgTextSecondary}"
                                    VerticalAlignment="Center"/>
                         <Button Style="{StaticResource DlgGhostButton}"
-                                Content="清空历史"
+                                Content="{DynamicResource QuickText.ClearHistory}"
                                 Padding="10,0"
                                 HorizontalAlignment="Right"
                                 Command="{Binding ClearClipboardHistoryFromSettingsCommand}"/>
                     </Grid>
 
-                    <TextBlock Text="系统设置" Style="{StaticResource DlgSectionTitle}"/>
+                    <TextBlock Text="{DynamicResource Settings.System}" Style="{StaticResource DlgSectionTitle}"/>
                     <Grid Margin="0,0,0,10">
-                        <TextBlock Text="设置、快捷方式与本地数据备份还原"
+                        <TextBlock Text="{DynamicResource Settings.BackupDescription}"
                                    FontSize="12"
                                    Foreground="{StaticResource DlgTextPrimary}"
                                    VerticalAlignment="Center"/>
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                             <Button Style="{StaticResource DlgGhostButton}"
-                                    Content="备份"
+                                    Content="{DynamicResource Settings.Backup}"
                                     Padding="12,0"
                                     Margin="0,0,8,0"
                                     Command="{Binding BackupTodosCommand}"/>
                             <Button Style="{StaticResource DlgGhostButton}"
-                                    Content="还原"
+                                    Content="{DynamicResource Settings.Restore}"
                                     Padding="12,0"
                                     Command="{Binding RestoreTodosCommand}"/>
                         </StackPanel>
                     </Grid>
                     <Grid Style="{StaticResource DlgToggleRow}">
-                        <TextBlock Text="开机自启"
+                        <TextBlock Text="{DynamicResource Settings.Startup}"
                                    FontSize="12"
                                    Foreground="{StaticResource DlgTextPrimary}"
                                    VerticalAlignment="Center"/>
@@ -527,35 +568,35 @@
                     </Grid>
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,14">
                         <Button Style="{StaticResource DlgGhostButton}"
-                                Content="恢复默认布局"
+                                Content="{DynamicResource Settings.ResetLayout}"
                                 Padding="10,0"
                                 Margin="0,0,8,0"
                                 Command="{Binding ResetLayoutCommand}"/>
                         <Button Style="{StaticResource DlgGhostButton}"
-                                Content="恢复默认设置"
+                                Content="{DynamicResource Settings.ResetDefaults}"
                                 Padding="10,0"
                                 Command="{Binding ResetToDefaultsCommand}"/>
                     </StackPanel>
 
                     <Grid Margin="0,0,0,4">
-                        <TextBlock Text="天气 API 设置" Style="{StaticResource DlgSectionTitle}" VerticalAlignment="Center"/>
+                        <TextBlock Text="{DynamicResource Settings.WeatherApi}" Style="{StaticResource DlgSectionTitle}" VerticalAlignment="Center"/>
                         <Button HorizontalAlignment="Right"
                                 VerticalAlignment="Center"
                                 Padding="8,2"
                                 Command="{Binding ToggleWeatherApiEditCommand}">
                             <Button.Style>
                                 <Style TargetType="Button" BasedOn="{StaticResource DlgGhostButton}">
-                                    <Setter Property="Content" Value="编辑"/>
+                                    <Setter Property="Content" Value="{DynamicResource Common.Edit}"/>
                                     <Style.Triggers>
                                         <DataTrigger Binding="{Binding IsEditingWeatherApi}" Value="True">
-                                            <Setter Property="Content" Value="完成"/>
+                                            <Setter Property="Content" Value="{DynamicResource Common.Done}"/>
                                         </DataTrigger>
                                     </Style.Triggers>
                                 </Style>
                             </Button.Style>
                         </Button>
                     </Grid>
-                    <TextBlock Text="API Host 与 API Key 需与和风控制台同一项目"
+                    <TextBlock Text="{DynamicResource Settings.WeatherApiHint}"
                                FontSize="10"
                                Foreground="{StaticResource DlgTextSecondary}"
                                TextWrapping="Wrap"
@@ -587,6 +628,25 @@
                                  IsReadOnly="{Binding IsEditingWeatherApi, Converter={StaticResource InverseBooleanConverter}}"
                                  PreviewMouseLeftButtonDown="WeatherApiTextBox_OnPreviewMouseLeftButtonDown"/>
                     </Grid>
+
+                    <TextBlock Text="{DynamicResource Settings.About}" Style="{StaticResource DlgSectionTitle}" Margin="0,14,0,8"/>
+                    <Grid Margin="0,0,0,6">
+                        <TextBlock Text="{Binding CurrentVersionText}"
+                                   FontSize="12"
+                                   Foreground="{StaticResource DlgTextPrimary}"
+                                   VerticalAlignment="Center"/>
+                        <Button Style="{StaticResource DlgGhostButton}"
+                                Content="{DynamicResource Settings.CheckUpdates}"
+                                Padding="10,0"
+                                HorizontalAlignment="Right"
+                                Command="{Binding CheckForUpdatesCommand}"
+                                IsEnabled="{Binding IsCheckingForUpdates, Converter={StaticResource InverseBooleanConverter}}"/>
+                    </Grid>
+                    <TextBlock Text="{Binding UpdateStatusMessage}"
+                               FontSize="11"
+                               Foreground="{StaticResource DlgTextSecondary}"
+                               TextWrapping="Wrap"
+                               Margin="0,0,0,4"/>
                 </StackPanel>
             </ScrollViewer>
 
@@ -596,14 +656,14 @@
                     Padding="14,10">
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                     <Button Style="{StaticResource DlgGhostButton}"
-                            Content="取消"
+                            Content="{DynamicResource Common.Cancel}"
                             Height="32"
                             MinWidth="80"
                             FontSize="13"
                             Margin="0,0,10,0"
                             Command="{Binding CancelCommand}"/>
                     <Button Style="{StaticResource DlgPrimaryButton}"
-                            Content="保存"
+                            Content="{DynamicResource Common.Save}"
                             Command="{Binding SaveCommand}"/>
                 </StackPanel>
             </Border>

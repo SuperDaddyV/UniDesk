@@ -9,6 +9,12 @@ public class NotificationService : INotificationService
 {
     private readonly object _toastLock = new();
     private readonly List<ToastWindow> _activeToasts = new();
+    private readonly ILocalizationService _localizationService;
+
+    public NotificationService(ILocalizationService localizationService)
+    {
+        _localizationService = localizationService;
+    }
 
     public void ShowInfoMessage(string message) => ShowToast(message, ToastKind.Info, 3500);
 
@@ -18,8 +24,10 @@ public class NotificationService : INotificationService
 
     public void ShowSuccessMessage(string message) => ShowToast(message, ToastKind.Success, 3500);
 
-    public bool ShowConfirmDialog(string message, string title = "确认") =>
-        CompactConfirmWindow.Show(message, title);
+    public bool ShowConfirmDialog(string message, string? title = null) =>
+        CompactConfirmWindow.Show(message, string.IsNullOrWhiteSpace(title)
+            ? _localizationService.GetString("Common.Confirm")
+            : title);
 
     private void ShowToast(string message, ToastKind kind, int durationMs)
     {

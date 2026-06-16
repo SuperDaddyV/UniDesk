@@ -13,6 +13,7 @@ public class WeatherService : IWeatherService, IDisposable
     private readonly INotificationService _notificationService;
     private readonly ILocationProvider _locationProvider;
     private readonly QWeatherApiClient _apiClient;
+    private readonly ILocalizationService? _localizationService;
     private readonly string _cacheFilePath;
     private readonly object _refreshLock = new();
 
@@ -26,12 +27,14 @@ public class WeatherService : IWeatherService, IDisposable
         INotificationService notificationService,
         ILocationProvider locationProvider,
         QWeatherApiClient apiClient,
-        string? cacheFilePath = null)
+        string? cacheFilePath = null,
+        ILocalizationService? localizationService = null)
     {
         _settingsService = settingsService;
         _notificationService = notificationService;
         _locationProvider = locationProvider;
         _apiClient = apiClient;
+        _localizationService = localizationService;
         _cacheFilePath = cacheFilePath ?? Path.Combine(DirectoryHelper.DataDirectory, "weather_cache.json");
     }
 
@@ -45,7 +48,7 @@ public class WeatherService : IWeatherService, IDisposable
         {
             if (notifyUser)
             {
-                _notificationService.ShowWarningMessage("请先在设置中配置和风天气 API Key");
+                _notificationService.ShowWarningMessage(L("Weather.ApiKeyMissing", "请先在设置中配置和风天气 API Key"));
             }
 
             return await GetCachedWeatherAsync();
@@ -58,7 +61,7 @@ public class WeatherService : IWeatherService, IDisposable
             {
                 if (notifyUser)
                 {
-                    _notificationService.ShowWarningMessage($"未找到城市: {city}");
+                    _notificationService.ShowWarningMessage(Format("Weather.CityNotFoundFormat", $"未找到城市: {city}", city));
                 }
 
                 return await GetCachedWeatherAsync();
@@ -135,7 +138,7 @@ public class WeatherService : IWeatherService, IDisposable
         {
             if (notifyUser)
             {
-                _notificationService.ShowWarningMessage($"网络请求失败: {ex.Message}");
+                _notificationService.ShowWarningMessage(Format("Weather.NetworkRequestFailedFormat", $"网络请求失败: {ex.Message}", ex.Message));
             }
 
             return await GetCachedWeatherAsync(markExpired: true);
@@ -144,7 +147,7 @@ public class WeatherService : IWeatherService, IDisposable
         {
             if (notifyUser)
             {
-                _notificationService.ShowErrorMessage($"获取天气失败: {ex.Message}");
+                _notificationService.ShowErrorMessage(Format("Weather.GetWeatherFailedFormat", $"获取天气失败: {ex.Message}", ex.Message));
             }
 
             return await GetCachedWeatherAsync(markExpired: true);
@@ -209,7 +212,7 @@ public class WeatherService : IWeatherService, IDisposable
 
                 if (notifyUser)
                 {
-                    _notificationService.ShowWarningMessage("定位失败，请检查网络或在设置中指定城市");
+                    _notificationService.ShowWarningMessage(L("Weather.LocationFailed", "定位失败，请检查网络或在设置中指定城市"));
                 }
 
                 return cached;
@@ -315,14 +318,14 @@ public class WeatherService : IWeatherService, IDisposable
     {
         var message = code switch
         {
-            "400" => "请求错误",
-            "401" => "API Key 无效或已过期",
-            "402" => "超过访问次数限制",
-            "403" => "无访问权限",
-            "404" => $"未找到城市: {city}",
-            "429" => "请求过于频繁，请稍后再试",
-            "500" => "服务器内部错误",
-            _ => $"API 错误: {code}"
+            "400" => L("Weather.ApiError.BadRequest", "请求错误"),
+            "401" => L("Weather.ApiError.InvalidKey", "API Key 无效或已过期"),
+            "402" => L("Weather.ApiError.LimitExceeded", "超过访问次数限制"),
+            "403" => L("Weather.ApiError.Forbidden", "无访问权限"),
+            "404" => Format("Weather.CityNotFoundFormat", $"未找到城市: {city}", city),
+            "429" => L("Weather.ApiError.TooManyRequests", "请求过于频繁，请稍后再试"),
+            "500" => L("Weather.ApiError.ServerError", "服务器内部错误"),
+            _ => Format("Weather.ApiError.UnknownFormat", $"API 错误: {code}", code)
         };
         _notificationService.ShowWarningMessage(message);
     }
@@ -332,7 +335,7 @@ public class WeatherService : IWeatherService, IDisposable
         return string.IsNullOrWhiteSpace(value) ? "" : $"{value}°C";
     }
 
-    private static string FormatAirQuality(QWeatherAirQualityResponse? response)
+    private string FormatAirQuality(QWeatherAirQualityResponse? response)
     {
         if (response?.Indexes == null || response.Indexes.Count == 0)
         {
@@ -355,12 +358,16 @@ public class WeatherService : IWeatherService, IDisposable
             return "";
         }
 
-        return string.IsNullOrWhiteSpace(category) ? $"空气 {aqi}" : $"空气{category} {aqi}";
+        return string.IsNullOrWhiteSpace(category)
+            ? Format("Weather.AirQualityFormat", $"空气 {aqi}", aqi)
+            : Format("Weather.AirQualityWithCategoryFormat", $"空气{category} {aqi}", category, aqi);
     }
 
-    private static string FormatHumidity(string? humidity)
+    private string FormatHumidity(string? humidity)
     {
-        return string.IsNullOrWhiteSpace(humidity) ? "" : $"湿度 {humidity}%";
+        return string.IsNullOrWhiteSpace(humidity)
+            ? ""
+            : Format("Weather.HumidityFormat", $"湿度 {humidity}%", humidity);
     }
 
     private async Task SaveCacheAsync(WeatherInfo info)
@@ -390,6 +397,12 @@ public class WeatherService : IWeatherService, IDisposable
         CancelRefresh();
         ClearRefreshToken();
     }
+
+    private string L(string key, string fallback) =>
+        _localizationService?.GetString(key) ?? fallback;
+
+    private string Format(string key, string fallback, params object?[] args) =>
+        _localizationService?.Format(key, args) ?? fallback;
 
     private class QWeatherNowResponse
     {

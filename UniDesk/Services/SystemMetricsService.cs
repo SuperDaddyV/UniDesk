@@ -78,11 +78,51 @@ public sealed class SystemMetricsService : ISystemMetricsService, IDisposable
 
     private static GpuMetrics SelectGpuMetrics(IEnumerable<GpuMetrics> candidates)
     {
-        return candidates
+        var validCandidates = candidates
             .Where(candidate => candidate.HasAnyValue)
+            .ToList();
+
+        if (validCandidates.Count == 0)
+        {
+            return GpuMetrics.Empty;
+        }
+
+        var selected = validCandidates
             .OrderBy(candidate => candidate.SelectionRank)
             .ThenBy(candidate => candidate.SourcePriority)
-            .FirstOrDefault(GpuMetrics.Empty);
+            .First();
+
+        if (selected.HasAllValues)
+        {
+            return selected;
+        }
+
+        return new GpuMetrics(
+            selected.GpuUsage ?? SelectBestGpuUsage(validCandidates),
+            selected.GpuTemperature ?? SelectBestGpuTemperature(validCandidates),
+            selected.SourceName,
+            selected.SourcePriority,
+            selected.IsDiscrete);
+    }
+
+    private static double? SelectBestGpuUsage(IEnumerable<GpuMetrics> candidates)
+    {
+        return candidates
+            .Where(candidate => candidate.GpuUsage.HasValue)
+            .OrderBy(candidate => candidate.SelectionRank)
+            .ThenBy(candidate => candidate.SourcePriority)
+            .Select(candidate => candidate.GpuUsage)
+            .FirstOrDefault();
+    }
+
+    private static double? SelectBestGpuTemperature(IEnumerable<GpuMetrics> candidates)
+    {
+        return candidates
+            .Where(candidate => candidate.GpuTemperature.HasValue)
+            .OrderBy(candidate => candidate.SelectionRank)
+            .ThenBy(candidate => candidate.SourcePriority)
+            .Select(candidate => candidate.GpuTemperature)
+            .FirstOrDefault();
     }
 
     private static double? SafePercentage(Func<float> read)
@@ -97,15 +137,41 @@ public sealed class SystemMetricsService : ISystemMetricsService, IDisposable
         if (!GlobalMemoryStatusEx(status) || status.ullTotalPhys == 0)
         {
             LogMemoryMetrics("GlobalMemoryStatusEx", status.ullTotalPhys, status.ullAvailPhys, null);
+            return ReadMemoryUsageFromPerformanceInfo();
+        }
+
+        return CreateMemoryMetrics("GlobalMemoryStatusEx", status.ullTotalPhys, status.ullAvailPhys);
+    }
+
+    private MemoryMetrics ReadMemoryUsageFromPerformanceInfo()
+    {
+        if (!GetPerformanceInfo(out var info, (uint)Marshal.SizeOf<PerformanceInformation>()) ||
+            info.PhysicalTotal == UIntPtr.Zero ||
+            info.PageSize == UIntPtr.Zero)
+        {
+            LogMemoryMetrics("GetPerformanceInfo", 0, 0, null);
             return MemoryMetrics.Empty;
         }
 
-        var total = status.ullTotalPhys;
-        var available = Math.Min(status.ullAvailPhys, total);
-        var used = total - available;
+        var pageSize = info.PageSize.ToUInt64();
+        var total = info.PhysicalTotal.ToUInt64() * pageSize;
+        var available = info.PhysicalAvailable.ToUInt64() * pageSize;
+        return CreateMemoryMetrics("GetPerformanceInfo", total, available);
+    }
+
+    private MemoryMetrics CreateMemoryMetrics(string source, ulong total, ulong available)
+    {
+        if (total == 0)
+        {
+            LogMemoryMetrics(source, total, available, null);
+            return MemoryMetrics.Empty;
+        }
+
+        var normalizedAvailable = Math.Min(available, total);
+        var used = total - normalizedAvailable;
         var percent = NormalizePercentage(used / (double)total * 100d);
-        LogMemoryMetrics("GlobalMemoryStatusEx", total, available, percent);
-        return new MemoryMetrics(percent, total, available, used);
+        LogMemoryMetrics(source, total, normalizedAvailable, percent);
+        return new MemoryMetrics(percent, total, normalizedAvailable, used);
     }
 
     public static bool IsValidPercentage(double? value)
@@ -266,6 +332,36 @@ public sealed class SystemMetricsService : ISystemMetricsService, IDisposable
         ];
     }
 
+    public static CpuTemperatureSensorSelection? SelectCpuMotherboardTemperatureSensor(
+        IEnumerable<CpuTemperatureSensorCandidate> sensors,
+        string? cpuHardwareName = null)
+    {
+        var cpuNamedSensors = sensors
+            .Where(sensor => IsValidCpuTemperature(sensor.Value) &&
+                             IsCpuMotherboardTemperatureSensorName(sensor.Name) &&
+                             !IsExcludedMotherboardCpuTemperatureSensor(sensor.Name))
+            .ToList();
+
+        var cpuNamedSelection = SelectCpuTemperatureSensor(cpuNamedSensors, cpuHardwareName);
+        if (cpuNamedSelection.HasValue)
+        {
+            return cpuNamedSelection;
+        }
+
+        if (!IsAmdRyzen9000DesktopCpu(cpuHardwareName))
+        {
+            return null;
+        }
+
+        var pchFallback = sensors
+            .Where(sensor => IsValidCpuTemperature(sensor.Value) && IsPchTemperatureSensor(sensor.Name))
+            .Select(sensor => new CpuTemperatureSensorSelection(sensor.Name, sensor.Value!.Value))
+            .OrderByDescending(sensor => sensor.Value)
+            .FirstOrDefault();
+
+        return string.IsNullOrWhiteSpace(pchFallback.Name) ? null : pchFallback;
+    }
+
     private static CpuTemperatureSensorSelection? PickHighestByKeywords(
         IEnumerable<CpuTemperatureSensorSelection> sensors,
         IReadOnlyCollection<string> keywords)
@@ -332,6 +428,20 @@ public sealed class SystemMetricsService : ISystemMetricsService, IDisposable
 
     private static bool IsExcludedCpuTemperatureSensor(string? name) =>
         ContainsAny(name, "Distance", "TjMax", "Throttle", "Limit");
+
+    private static bool IsExcludedMotherboardCpuTemperatureSensor(string? name) =>
+        IsExcludedCpuTemperatureSensor(name) ||
+        ContainsAny(name, "VRM", "MOS", "Chipset", "Motherboard", "System", "AUX", "DIMM", "Memory", "GPU", "PCI");
+
+    private static bool IsCpuMotherboardTemperatureSensorName(string? name) =>
+        ContainsAny(name, "CPU", "Tctl", "Tdie", "Package");
+
+    private static bool IsPchTemperatureSensor(string? name) =>
+        ContainsAny(name, "PCH");
+
+    private static bool IsAmdRyzen9000DesktopCpu(string? hardwareName) =>
+        ContainsAny(hardwareName, "AMD Ryzen") &&
+        ContainsAny(hardwareName, " 9600X", " 9700X", " 9800X", " 9900X", " 9950X");
 
     private static bool IsCoreTemperatureSensor(string? name) =>
         ContainsAny(name, "Core #", "CPU Core", "Core Max", "Core Average") ||
@@ -438,6 +548,9 @@ public sealed class SystemMetricsService : ISystemMetricsService, IDisposable
     [DllImport("kernel32.dll", SetLastError = true)]
     private static extern bool GlobalMemoryStatusEx([In, Out] MemoryStatusEx lpBuffer);
 
+    [DllImport("psapi.dll", SetLastError = true)]
+    private static extern bool GetPerformanceInfo(out PerformanceInformation performanceInformation, uint cb);
+
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
     private sealed class MemoryStatusEx
     {
@@ -455,6 +568,25 @@ public sealed class SystemMetricsService : ISystemMetricsService, IDisposable
         {
             dwLength = (uint)Marshal.SizeOf(typeof(MemoryStatusEx));
         }
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct PerformanceInformation
+    {
+        public uint cb;
+        public UIntPtr CommitTotal;
+        public UIntPtr CommitLimit;
+        public UIntPtr CommitPeak;
+        public UIntPtr PhysicalTotal;
+        public UIntPtr PhysicalAvailable;
+        public UIntPtr SystemCache;
+        public UIntPtr KernelTotal;
+        public UIntPtr KernelPaged;
+        public UIntPtr KernelNonpaged;
+        public UIntPtr PageSize;
+        public uint HandleCount;
+        public uint ProcessCount;
+        public uint ThreadCount;
     }
 
     private sealed class AsusHardwareReader
@@ -558,9 +690,8 @@ public sealed class SystemMetricsService : ISystemMetricsService, IDisposable
     {
         private Computer? _computer;
         private bool _initialized;
-#if DEBUG
         private DateTime _lastSensorLogUtc = DateTime.MinValue;
-#endif
+        private DateTime _lastReaderErrorLogUtc = DateTime.MinValue;
 
         public CpuMetrics Read()
         {
@@ -571,6 +702,10 @@ public sealed class SystemMetricsService : ISystemMetricsService, IDisposable
                     return CpuMetrics.Empty;
                 }
 
+                var cpuHardwareNames = new List<string>();
+                var loadSensors = new List<CpuUsageSensorCandidate>();
+                var temperatureSensors = new List<CpuTemperatureSensorCandidate>();
+
                 foreach (var hardware in _computer.Hardware)
                 {
                     if (hardware.HardwareType != HardwareType.Cpu)
@@ -578,29 +713,47 @@ public sealed class SystemMetricsService : ISystemMetricsService, IDisposable
                         continue;
                     }
 
-                    hardware.Update();
-                    foreach (var subHardware in hardware.SubHardware)
-                    {
-                        subHardware.Update();
-                    }
+                    cpuHardwareNames.Add(hardware.Name);
+                    UpdateHardwareTree(hardware);
 
                     var allSensors = GetSensors(hardware).ToList();
-                    var loadSensors = allSensors
+                    loadSensors.AddRange(allSensors
                         .Where(sensor => sensor.SensorType == SensorType.Load)
-                        .Select(sensor => new CpuUsageSensorCandidate(sensor.Name, sensor.Value))
-                        .ToList();
-                    var temperatureSensors = allSensors
+                        .Select(sensor => new CpuUsageSensorCandidate(sensor.Name, sensor.Value)));
+                    temperatureSensors.AddRange(allSensors
                         .Where(sensor => sensor.SensorType == SensorType.Temperature)
-                        .Select(sensor => new CpuTemperatureSensorCandidate(sensor.Name, sensor.Value))
-                        .ToList();
-                    var loadSelection = SelectCpuUsageSensor(loadSensors);
-                    var temperatureSelection = SelectCpuTemperatureSensor(temperatureSensors, hardware.Name);
-                    LogCpuSensors(hardware.Name, loadSensors, temperatureSensors, loadSelection, temperatureSelection);
+                        .Select(sensor => new CpuTemperatureSensorCandidate(sensor.Name, sensor.Value)));
+                }
 
-                    if (loadSelection.HasValue || temperatureSelection.HasValue)
-                    {
-                        return new CpuMetrics(loadSelection?.Value, temperatureSelection?.Value);
-                    }
+                var cpuHardwareName = cpuHardwareNames.Count == 0
+                    ? null
+                    : string.Join("; ", cpuHardwareNames);
+                var loadSelection = SelectCpuUsageSensor(loadSensors);
+                var temperatureSelection = SelectCpuTemperatureSensor(temperatureSensors, cpuHardwareName);
+                var motherboardTemperatureSensors = new List<CpuTemperatureSensorCandidate>();
+                CpuTemperatureSensorSelection? motherboardTemperatureSelection = null;
+
+                if (!temperatureSelection.HasValue)
+                {
+                    motherboardTemperatureSensors = ReadMotherboardTemperatureSensors().ToList();
+                    motherboardTemperatureSelection = SelectCpuMotherboardTemperatureSensor(
+                        motherboardTemperatureSensors,
+                        cpuHardwareName);
+                    temperatureSelection = motherboardTemperatureSelection;
+                }
+
+                LogCpuSensors(
+                    cpuHardwareName,
+                    loadSensors,
+                    temperatureSensors,
+                    motherboardTemperatureSensors,
+                    loadSelection,
+                    temperatureSelection,
+                    motherboardTemperatureSelection);
+
+                if (loadSelection.HasValue || temperatureSelection.HasValue)
+                {
+                    return new CpuMetrics(loadSelection?.Value, temperatureSelection?.Value);
                 }
             }
             catch (Exception ex)
@@ -624,7 +777,8 @@ public sealed class SystemMetricsService : ISystemMetricsService, IDisposable
             {
                 _computer = new Computer
                 {
-                    IsCpuEnabled = true
+                    IsCpuEnabled = true,
+                    IsMotherboardEnabled = true
                 };
                 _computer.Open();
                 return true;
@@ -637,6 +791,37 @@ public sealed class SystemMetricsService : ISystemMetricsService, IDisposable
             }
         }
 
+        private IEnumerable<CpuTemperatureSensorCandidate> ReadMotherboardTemperatureSensors()
+        {
+            if (_computer == null)
+            {
+                yield break;
+            }
+
+            foreach (var hardware in _computer.Hardware)
+            {
+                if (hardware.HardwareType != HardwareType.Motherboard)
+                {
+                    continue;
+                }
+
+                UpdateHardwareTree(hardware);
+                foreach (var sensor in GetSensors(hardware).Where(sensor => sensor.SensorType == SensorType.Temperature))
+                {
+                    yield return new CpuTemperatureSensorCandidate(sensor.Name, sensor.Value);
+                }
+            }
+        }
+
+        private static void UpdateHardwareTree(IHardware hardware)
+        {
+            hardware.Update();
+            foreach (var subHardware in hardware.SubHardware)
+            {
+                UpdateHardwareTree(subHardware);
+            }
+        }
+
         private static IEnumerable<ISensor> GetSensors(IHardware hardware)
         {
             foreach (var sensor in hardware.Sensors)
@@ -646,7 +831,7 @@ public sealed class SystemMetricsService : ISystemMetricsService, IDisposable
 
             foreach (var subHardware in hardware.SubHardware)
             {
-                foreach (var sensor in subHardware.Sensors)
+                foreach (var sensor in GetSensors(subHardware))
                 {
                     yield return sensor;
                 }
@@ -664,15 +849,15 @@ public sealed class SystemMetricsService : ISystemMetricsService, IDisposable
             }
         }
 
-        [Conditional("DEBUG")]
         private void LogCpuSensors(
-            string hardwareName,
+            string? hardwareName,
             IReadOnlyCollection<CpuUsageSensorCandidate> loadSensors,
             IReadOnlyCollection<CpuTemperatureSensorCandidate> temperatureSensors,
+            IReadOnlyCollection<CpuTemperatureSensorCandidate> motherboardTemperatureSensors,
             CpuUsageSensorSelection? loadSelection,
-            CpuTemperatureSensorSelection? temperatureSelection)
+            CpuTemperatureSensorSelection? temperatureSelection,
+            CpuTemperatureSensorSelection? motherboardTemperatureSelection)
         {
-#if DEBUG
             var now = DateTime.UtcNow;
             if (now - _lastSensorLogUtc < TimeSpan.FromMinutes(5))
             {
@@ -689,30 +874,43 @@ public sealed class SystemMetricsService : ISystemMetricsService, IDisposable
                 ? "未发现 Temperature 传感器。部分硬件传感器可能需要管理员权限或主板驱动支持。"
                 : string.Join("; ", temperatureSensors.Select(sensor =>
                     $"{sensor.Name}={(sensor.Value.HasValue ? sensor.Value.Value.ToString("0.0") : "null")}"));
+            var motherboardTemperatureSensorText = motherboardTemperatureSensors.Count == 0
+                ? "未发现主板 Temperature 传感器。"
+                : string.Join("; ", motherboardTemperatureSensors.Select(sensor =>
+                    $"{sensor.Name}={(sensor.Value.HasValue ? sensor.Value.Value.ToString("0.0") : "null")}"));
             var selectedLoadText = loadSelection.HasValue
                 ? $"{loadSelection.Value.Name}={loadSelection.Value.Value:0.0}"
                 : "未选择可用 CPU 使用率传感器。";
             var selectedTemperatureText = temperatureSelection.HasValue
                 ? $"{temperatureSelection.Value.Name}={temperatureSelection.Value.Value:0.0}"
                 : "未选择可用 CPU 温度传感器。";
+            var selectedMotherboardTemperatureText = motherboardTemperatureSelection.HasValue
+                ? $"{motherboardTemperatureSelection.Value.Name}={motherboardTemperatureSelection.Value.Value:0.0}"
+                : "未选择主板 CPU 温度传感器。";
             var message =
-                $"CPU 硬件：{hardwareName}; Load 传感器：{loadSensorText}; Temperature 传感器：{temperatureSensorText}; " +
-                $"最终 CPU 使用率：{selectedLoadText}; 最终 CPU 温度：{selectedTemperatureText}";
+                $"CPU 硬件：{(string.IsNullOrWhiteSpace(hardwareName) ? "未发现 CPU 硬件" : hardwareName)}; " +
+                $"Load 传感器：{loadSensorText}; CPU Temperature 传感器：{temperatureSensorText}; " +
+                $"主板 Temperature 传感器：{motherboardTemperatureSensorText}; " +
+                $"最终 CPU 使用率：{selectedLoadText}; 主板兜底温度：{selectedMotherboardTemperatureText}; " +
+                $"最终 CPU 温度：{selectedTemperatureText}";
 
             Debug.WriteLine(message);
             Logger.LogInfo(message, "SystemMetricsService.Cpu");
-#endif
         }
 
-        [Conditional("DEBUG")]
-        private static void LogCpuTemperatureReaderError(Exception ex)
+        private void LogCpuTemperatureReaderError(Exception ex)
         {
-#if DEBUG
+            var now = DateTime.UtcNow;
+            if (now - _lastReaderErrorLogUtc < TimeSpan.FromMinutes(5))
+            {
+                return;
+            }
+
+            _lastReaderErrorLogUtc = now;
             Debug.WriteLine($"CPU 温度读取失败：{ex.GetType().Name}: {ex.Message}");
             Logger.LogWarning(
                 $"CPU 温度读取失败：{ex.GetType().Name}: {ex.Message}。部分硬件传感器可能需要管理员权限或主板驱动支持。",
                 "SystemMetricsService.CpuTemperature");
-#endif
         }
     }
 

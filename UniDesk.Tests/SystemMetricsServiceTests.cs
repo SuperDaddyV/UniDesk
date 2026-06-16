@@ -48,6 +48,65 @@ public class SystemMetricsServiceTests
     }
 
     [Fact]
+    public void SelectCpuTemperatureSensor_ShouldPreferAmdCombinedTctlTdieTemperature()
+    {
+        var selection = SystemMetricsService.SelectCpuTemperatureSensor(
+            [
+                new("PCH", 45),
+                new("Core (Tctl/Tdie)", 62)
+            ],
+            "AMD Ryzen 7 9700X");
+
+        Assert.NotNull(selection);
+        Assert.Equal("Core (Tctl/Tdie)", selection.Value.Name);
+        Assert.Equal(62, selection.Value.Value);
+    }
+
+    [Fact]
+    public void SelectCpuMotherboardTemperatureSensor_ShouldUseCpuNamedSensor()
+    {
+        var selection = SystemMetricsService.SelectCpuMotherboardTemperatureSensor(
+            [
+                new("System", 33),
+                new("CPU", 47),
+                new("CPU VRM", 68)
+            ],
+            "AMD Ryzen 7 9700X");
+
+        Assert.NotNull(selection);
+        Assert.Equal("CPU", selection.Value.Name);
+        Assert.Equal(47, selection.Value.Value);
+    }
+
+    [Fact]
+    public void SelectCpuMotherboardTemperatureSensor_ShouldUsePchFallbackForRyzen9000()
+    {
+        var selection = SystemMetricsService.SelectCpuMotherboardTemperatureSensor(
+            [
+                new("System", 33),
+                new("PCH", 52)
+            ],
+            "AMD Ryzen 7 9700X");
+
+        Assert.NotNull(selection);
+        Assert.Equal("PCH", selection.Value.Name);
+        Assert.Equal(52, selection.Value.Value);
+    }
+
+    [Fact]
+    public void SelectCpuMotherboardTemperatureSensor_ShouldNotUsePchFallbackForUnknownCpu()
+    {
+        var selection = SystemMetricsService.SelectCpuMotherboardTemperatureSensor(
+            [
+                new("System", 33),
+                new("PCH", 52)
+            ],
+            "AMD Ryzen 7 7700X");
+
+        Assert.Null(selection);
+    }
+
+    [Fact]
     public void SelectCpuTemperatureSensor_ShouldUseHighestCoreTemperatureWhenPackageIsMissing()
     {
         var selection = SystemMetricsService.SelectCpuTemperatureSensor(

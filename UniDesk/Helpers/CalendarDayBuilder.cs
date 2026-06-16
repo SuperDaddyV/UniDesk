@@ -5,9 +5,20 @@ namespace UniDesk.Helpers;
 
 public static class CalendarDayBuilder
 {
-    private static readonly string[] WeekdayLabels = ["一", "二", "三", "四", "五", "六", "日"];
+    private static readonly string[] ChineseWeekdayLabels = ["一", "二", "三", "四", "五", "六", "日"];
+    private static readonly string[] EnglishWeekdayLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+    private static readonly string[] JapaneseWeekdayLabels = ["月", "火", "水", "木", "金", "土", "日"];
+    private static readonly string[] SpanishWeekdayLabels = ["lun", "mar", "mié", "jue", "vie", "sáb", "dom"];
 
-    public static IReadOnlyList<string> WeekdayLabelsList => WeekdayLabels;
+    public static IReadOnlyList<string> WeekdayLabelsList => ChineseWeekdayLabels;
+
+    public static IReadOnlyList<string> GetWeekdayLabels(string? language) => language switch
+    {
+        "en-US" => EnglishWeekdayLabels,
+        "ja-JP" => JapaneseWeekdayLabels,
+        "es-ES" => SpanishWeekdayLabels,
+        _ => ChineseWeekdayLabels
+    };
 
     public static IReadOnlyList<CalendarDayItem> BuildMonth(DateTime month, DateTime selectedDate)
     {

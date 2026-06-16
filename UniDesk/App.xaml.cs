@@ -43,18 +43,19 @@ public partial class App : Application
             ConfigureServices(services);
             Services = services.BuildServiceProvider();
 
+            var settingsService = Services.GetRequiredService<ISettingsService>();
+            await settingsService.InitializeAsync();
+            Services.GetRequiredService<ILocalizationService>().Initialize(settingsService);
+
             var notificationService = Services.GetRequiredService<INotificationService>();
             _singleInstanceHelper = new SingleInstanceHelper(notificationService);
 
             if (!_singleInstanceHelper.TryAcquire())
             {
-                notificationService.ShowInfoMessage("UniDesk 已在运行，请在右下角托盘中打开（或先退出托盘中的 UniDesk 再重新启动）。");
+                notificationService.ShowInfoMessage(Services.GetRequiredService<ILocalizationService>().GetString("Common.AlreadyRunning"));
                 Shutdown();
                 return;
             }
-
-            var settingsService = Services.GetRequiredService<ISettingsService>();
-            await settingsService.InitializeAsync();
 
             SyncStartupWithSettings();
 
@@ -199,8 +200,10 @@ public partial class App : Application
         services.AddSingleton<MainWindowViewModel>();
 
         services.AddSingleton<ISettingsService, SettingsService>();
+        services.AddSingleton<ILocalizationService, LocalizationService>();
         services.AddSingleton<IDatabaseService, DatabaseService>();
         services.AddSingleton<INotificationService, NotificationService>();
+        services.AddSingleton<IUpdateService, GitHubUpdateService>();
         services.AddSingleton<IWindowService, WindowService>();
         services.AddSingleton<ITrayService, TrayService>();
         services.AddSingleton<IHotkeyService, HotkeyService>();

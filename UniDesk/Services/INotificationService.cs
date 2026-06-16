@@ -6,5 +6,5 @@ public interface INotificationService
     void ShowWarningMessage(string message);
     void ShowErrorMessage(string message);
     void ShowSuccessMessage(string message);
-    bool ShowConfirmDialog(string message, string title = "确认");
+    bool ShowConfirmDialog(string message, string? title = null);
 }

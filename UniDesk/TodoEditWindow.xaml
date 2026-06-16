@@ -353,7 +353,7 @@
             </Grid>
 
             <StackPanel Grid.Row="1" Margin="14,0,14,0">
-                    <TextBlock Text="内容" Style="{StaticResource DlgLabel}"/>
+                    <TextBlock Text="{DynamicResource Common.Content}" Style="{StaticResource DlgLabel}"/>
                     <Grid Margin="0,0,0,10">
                         <TextBox x:Name="TitleBox"
                                  Text="{Binding Title, UpdateSourceTrigger=PropertyChanged}"
@@ -368,7 +368,7 @@
                                  BorderThickness="1"
                                  Padding="10,6"
                                  VerticalScrollBarVisibility="Disabled"/>
-                        <TextBlock Text="请输入待办事项内容（50字以内）"
+                        <TextBlock Text="{DynamicResource Todo.ContentPlaceholder}"
                                    IsHitTestVisible="False"
                                    Margin="12,8,0,0"
                                    FontSize="12"
@@ -396,7 +396,7 @@
                                    Foreground="{StaticResource DlgTextSecondary}"/>
                     </Grid>
 
-                    <TextBlock Text="时间" Style="{StaticResource DlgLabel}"/>
+                    <TextBlock Text="{DynamicResource Todo.Time}" Style="{StaticResource DlgLabel}"/>
                     <Grid Margin="0,0,0,6">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
@@ -469,14 +469,14 @@
                     </Grid>
 
                     <WrapPanel x:Name="PresetPanel" Margin="0,0,0,10">
-                        <Button Style="{StaticResource DlgPresetButton}" Content="今天" Command="{Binding SelectDatePresetCommand}" CommandParameter="Today" Tag="Today"/>
-                        <Button Style="{StaticResource DlgPresetButton}" Content="明天" Command="{Binding SelectDatePresetCommand}" CommandParameter="Tomorrow" Tag="Tomorrow"/>
-                        <Button Style="{StaticResource DlgPresetButton}" Content="后天" Command="{Binding SelectDatePresetCommand}" CommandParameter="DayAfterTomorrow" Tag="DayAfterTomorrow"/>
-                        <Button Style="{StaticResource DlgPresetButton}" Content="本周" Command="{Binding SelectDatePresetCommand}" CommandParameter="ThisWeek" Tag="ThisWeek"/>
-                        <Button Style="{StaticResource DlgPresetButton}" Content="自定义" Command="{Binding SelectDatePresetCommand}" CommandParameter="Custom" Tag="Custom"/>
+                        <Button Style="{StaticResource DlgPresetButton}" Content="{DynamicResource Common.Today}" Command="{Binding SelectDatePresetCommand}" CommandParameter="Today" Tag="Today"/>
+                        <Button Style="{StaticResource DlgPresetButton}" Content="{DynamicResource Common.Tomorrow}" Command="{Binding SelectDatePresetCommand}" CommandParameter="Tomorrow" Tag="Tomorrow"/>
+                        <Button Style="{StaticResource DlgPresetButton}" Content="{DynamicResource Todo.DayAfterTomorrow}" Command="{Binding SelectDatePresetCommand}" CommandParameter="DayAfterTomorrow" Tag="DayAfterTomorrow"/>
+                        <Button Style="{StaticResource DlgPresetButton}" Content="{DynamicResource Todo.ThisWeek}" Command="{Binding SelectDatePresetCommand}" CommandParameter="ThisWeek" Tag="ThisWeek"/>
+                        <Button Style="{StaticResource DlgPresetButton}" Content="{DynamicResource Todo.Custom}" Command="{Binding SelectDatePresetCommand}" CommandParameter="Custom" Tag="Custom"/>
                     </WrapPanel>
 
-                    <TextBlock Text="优先级" Style="{StaticResource DlgLabel}"/>
+                    <TextBlock Text="{DynamicResource Todo.Priority}" Style="{StaticResource DlgLabel}"/>
                     <UniformGrid x:Name="PriorityPanel" Columns="3" Margin="0,0,0,4">
                         <Button Margin="0,0,6,0"
                                 Style="{StaticResource DlgPriorityButton}"
@@ -485,7 +485,7 @@
                                 Tag="Low">
                             <StackPanel Orientation="Horizontal">
                                 <Ellipse Width="8" Height="8" Fill="#94A3B8" Margin="0,0,6,0"/>
-                                <TextBlock Text="低" FontSize="12" Foreground="{StaticResource DlgTextPrimary}"/>
+                                <TextBlock Text="{DynamicResource Todo.PriorityLow}" FontSize="12" Foreground="{StaticResource DlgTextPrimary}"/>
                             </StackPanel>
                         </Button>
                         <Button Margin="0,0,6,0"
@@ -495,7 +495,7 @@
                                 Tag="Medium">
                             <StackPanel Orientation="Horizontal">
                                 <Ellipse Width="8" Height="8" Fill="#F59E0B" Margin="0,0,6,0"/>
-                                <TextBlock Text="中" FontSize="12" Foreground="{StaticResource DlgTextPrimary}"/>
+                                <TextBlock Text="{DynamicResource Todo.PriorityMedium}" FontSize="12" Foreground="{StaticResource DlgTextPrimary}"/>
                             </StackPanel>
                         </Button>
                         <Button Style="{StaticResource DlgPriorityButton}"
@@ -504,7 +504,7 @@
                                 Tag="High">
                             <StackPanel Orientation="Horizontal">
                                 <Ellipse Width="8" Height="8" Fill="#EF4444" Margin="0,0,6,0"/>
-                                <TextBlock Text="高" FontSize="12" Foreground="{StaticResource DlgTextPrimary}"/>
+                                <TextBlock Text="{DynamicResource Todo.PriorityHigh}" FontSize="12" Foreground="{StaticResource DlgTextPrimary}"/>
                             </StackPanel>
                         </Button>
                     </UniformGrid>
@@ -516,11 +516,11 @@
                     Padding="14,10">
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                     <Button Style="{StaticResource DlgGhostButton}"
-                            Content="取消"
+                            Content="{DynamicResource Common.Cancel}"
                             Margin="0,0,10,0"
                             Click="CancelButton_OnClick"/>
                     <Button Style="{StaticResource DlgPrimaryButton}"
-                            Content="保存"
+                            Content="{DynamicResource Common.Save}"
                             IsDefault="True"
                             Click="SaveButton_OnClick"/>
                 </StackPanel>
@@ -553,15 +553,18 @@
                                     Content="&#xE76C;"
                                     Click="NextMonthButton_OnClick"/>
                         </Grid>
-                        <UniformGrid Columns="7" Margin="0,0,0,4">
-                            <TextBlock Text="一" Style="{StaticResource DlgWeekdayLabel}"/>
-                            <TextBlock Text="二" Style="{StaticResource DlgWeekdayLabel}"/>
-                            <TextBlock Text="三" Style="{StaticResource DlgWeekdayLabel}"/>
-                            <TextBlock Text="四" Style="{StaticResource DlgWeekdayLabel}"/>
-                            <TextBlock Text="五" Style="{StaticResource DlgWeekdayLabel}"/>
-                            <TextBlock Text="六" Style="{StaticResource DlgWeekdayLabel}"/>
-                            <TextBlock Text="日" Style="{StaticResource DlgWeekdayLabel}"/>
-                        </UniformGrid>
+                        <ItemsControl ItemsSource="{Binding CalendarWeekdayLabels}" Margin="0,0,0,4">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <UniformGrid Columns="7"/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding}" Style="{StaticResource DlgWeekdayLabel}"/>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
                         <ItemsControl x:Name="CalendarDaysHost"
                                       ItemTemplate="{StaticResource CalendarDayTemplate}">
                             <ItemsControl.ItemsPanel>

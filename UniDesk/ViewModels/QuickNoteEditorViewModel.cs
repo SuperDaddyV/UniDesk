@@ -12,6 +12,7 @@ public partial class QuickNoteEditorViewModel : ObservableObject, IDisposable
 {
     private readonly IQuickNoteService _quickNoteService;
     private readonly INotificationService _notificationService;
+    private readonly ILocalizationService _localizationService;
     private readonly DispatcherTimer _saveTimer;
     private readonly SemaphoreSlim _saveLock = new(1, 1);
     private readonly DateTime _createdAt;
@@ -30,17 +31,20 @@ public partial class QuickNoteEditorViewModel : ObservableObject, IDisposable
     private bool _isPinned;
 
     [ObservableProperty]
-    private string _saveStatus = "自动保存";
+    private string _saveStatus = string.Empty;
 
-    public string WindowTitle => _noteId > 0 ? "编辑便签" : "新建便签";
+    public string WindowTitle => _noteId > 0 ? L("QuickNote.Edit") : L("QuickNote.New");
 
     public QuickNoteEditorViewModel(
         IQuickNoteService quickNoteService,
         INotificationService notificationService,
+        ILocalizationService localizationService,
         QuickNote? note = null)
     {
         _quickNoteService = quickNoteService;
         _notificationService = notificationService;
+        _localizationService = localizationService;
+        SaveStatus = L("QuickNote.AutoSave");
         _saveTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(700) };
         _saveTimer.Tick += SaveTimer_OnTick;
 
@@ -60,7 +64,7 @@ public partial class QuickNoteEditorViewModel : ObservableObject, IDisposable
             Title = note.Title;
             Content = note.Content;
             IsPinned = note.IsPinned;
-            SaveStatus = "已保存";
+            SaveStatus = L("QuickNote.Saved");
         }
         finally
         {
@@ -88,7 +92,7 @@ public partial class QuickNoteEditorViewModel : ObservableObject, IDisposable
 
     public async Task<bool> DeleteAsync()
     {
-        if (!_notificationService.ShowConfirmDialog("确定删除这条便签？", "删除确认"))
+        if (!_notificationService.ShowConfirmDialog(L("QuickNote.DeleteConfirm"), L("Dialog.DeleteConfirmTitle")))
         {
             return false;
         }
@@ -100,7 +104,7 @@ public partial class QuickNoteEditorViewModel : ObservableObject, IDisposable
         }
 
         _isDeleted = true;
-        _notificationService.ShowSuccessMessage("便签已删除。");
+        _notificationService.ShowSuccessMessage(L("QuickNote.Deleted"));
         return true;
     }
 
@@ -109,19 +113,19 @@ public partial class QuickNoteEditorViewModel : ObservableObject, IDisposable
         var text = string.IsNullOrWhiteSpace(Content) ? Title : Content;
         if (string.IsNullOrWhiteSpace(text))
         {
-            _notificationService.ShowWarningMessage("便签内容为空。");
+            _notificationService.ShowWarningMessage(L("QuickNote.ContentEmpty"));
             return;
         }
 
         try
         {
             Clipboard.SetText(text);
-            _notificationService.ShowSuccessMessage("已复制。");
+            _notificationService.ShowSuccessMessage(L("Common.Copied"));
         }
         catch (Exception ex)
         {
             Logger.LogError(ex, "QuickNoteEditorViewModel.CopyContent");
-            _notificationService.ShowWarningMessage("复制失败，请稍后重试。");
+            _notificationService.ShowWarningMessage(L("Common.CopyFailed"));
         }
     }
 
@@ -136,7 +140,7 @@ public partial class QuickNoteEditorViewModel : ObservableObject, IDisposable
             return;
         }
 
-        SaveStatus = "正在保存...";
+        SaveStatus = L("QuickNote.Saving");
         _saveTimer.Stop();
         _saveTimer.Start();
     }
@@ -151,7 +155,7 @@ public partial class QuickNoteEditorViewModel : ObservableObject, IDisposable
     {
         if (_isDeleted || IsEmpty)
         {
-            SaveStatus = "自动保存";
+            SaveStatus = L("QuickNote.AutoSave");
             return;
         }
 
@@ -173,7 +177,7 @@ public partial class QuickNoteEditorViewModel : ObservableObject, IDisposable
 
                 if (id <= 0)
                 {
-                    SaveStatus = "保存失败";
+                    SaveStatus = L("QuickNote.SaveFailed");
                     return;
                 }
 
@@ -194,12 +198,12 @@ public partial class QuickNoteEditorViewModel : ObservableObject, IDisposable
                 });
             }
 
-            SaveStatus = "已保存";
+            SaveStatus = L("QuickNote.Saved");
         }
         catch (Exception ex)
         {
             Logger.LogError(ex, "QuickNoteEditorViewModel.SaveNowAsync");
-            SaveStatus = "保存失败";
+            SaveStatus = L("QuickNote.SaveFailed");
         }
         finally
         {
@@ -213,4 +217,6 @@ public partial class QuickNoteEditorViewModel : ObservableObject, IDisposable
         _saveTimer.Tick -= SaveTimer_OnTick;
         _saveLock.Dispose();
     }
+
+    private string L(string key) => _localizationService.GetString(key);
 }

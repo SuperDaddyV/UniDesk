@@ -9,6 +9,7 @@ namespace UniDesk.ViewModels;
 public partial class NoteEditViewModel : ObservableObject
 {
     private readonly INoteService _noteService;
+    private readonly ILocalizationService _localizationService;
     private readonly bool _isNew;
     private readonly int _noteId;
     private readonly DateTime _createdAt;
@@ -20,11 +21,15 @@ public partial class NoteEditViewModel : ObservableObject
     [ObservableProperty]
     private string _content = string.Empty;
 
-    public string WindowTitle => _isNew ? "新建便签" : "编辑便签";
+    public string WindowTitle => _isNew ? L("QuickNote.New") : L("QuickNote.Edit");
 
-    public NoteEditViewModel(INoteService noteService, NoteItem? note = null)
+    public NoteEditViewModel(
+        INoteService noteService,
+        ILocalizationService localizationService,
+        NoteItem? note = null)
     {
         _noteService = noteService;
+        _localizationService = localizationService;
 
         if (note == null)
         {
@@ -82,4 +87,6 @@ public partial class NoteEditViewModel : ObservableObject
             return false;
         }
     }
+
+    private string L(string key) => _localizationService.GetString(key);
 }

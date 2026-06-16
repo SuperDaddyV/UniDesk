@@ -140,7 +140,7 @@ public class WeatherServiceTests : IDisposable
         public void ShowWarningMessage(string message) { }
         public void ShowErrorMessage(string message) { }
         public void ShowSuccessMessage(string message) { }
-        public bool ShowConfirmDialog(string message, string title) => false;
+        public bool ShowConfirmDialog(string message, string? title = null) => false;
     }
 
     private sealed class StubLocationProvider : ILocationProvider
