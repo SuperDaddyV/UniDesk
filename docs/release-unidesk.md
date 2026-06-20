@@ -1,5 +1,29 @@
 # UniDesk Release Notes
 
+## v1.4.2
+
+This patch release improves clipboard copy reliability, hardware monitor compatibility, and panel height settings after v1.4.1.
+
+### Changes
+
+- Reworked Quick Text clipboard writes to use a Win32 clipboard writer with async retry, reducing false copy failures and UI stalls when the system clipboard is temporarily busy.
+- Kept Quick Text copy success independent from history refresh and usage-count updates, so post-copy bookkeeping failures no longer report as copy failures.
+- Expanded the panel height limit from `920px` to `1040px`.
+- Refactored CPU temperature selection into multiple providers: LibreHardwareMonitor CPU sensors, LibreHardwareMonitor motherboard fallback sensors, and a low-priority Windows ACPI Thermal Zone fallback.
+- Improved CPU temperature sensor matching for Intel `CPU IA / IA Cores` and AMD `Die` naming, while excluding non-CPU sources such as PCH, VRM, chipset, GPU, and memory temperatures.
+- Added release-build hardware diagnostics for CPU temperature source selection, including CPU name, process privilege, sensor candidates, and final selected source.
+- Updated application, installer, and README version references to `1.4.2`.
+
+### 中文说明
+
+- 重做快捷文本复制写入逻辑，改用 Win32 剪贴板写入与异步重试，降低系统剪贴板短暂占用时的复制失败和界面卡顿。
+- 将快捷文本复制成功与历史刷新、使用次数更新解耦，复制后的附属更新失败不会再误报为复制失败。
+- 将面板高度上限从 `920px` 调整为 `1040px`。
+- 将 CPU 温度选择改为多来源：LibreHardwareMonitor CPU 传感器、LibreHardwareMonitor 主板兜底传感器、低优先级 Windows ACPI Thermal Zone 兜底。
+- 增强 Intel `CPU IA / IA Cores` 和 AMD `Die` 等温度传感器命名匹配，并排除 PCH、VRM、芯片组、GPU、内存等非 CPU 温度来源。
+- 新增 Release 构建下的 CPU 温度诊断日志，记录 CPU 名称、进程权限、候选传感器和最终选择来源。
+- 将应用、安装包和 README 版本引用更新为 `1.4.2`。
+
 ## v1.4.1
 
 This release adds multilingual UI support, update checking, and hardware monitor compatibility improvements after v1.3.7.

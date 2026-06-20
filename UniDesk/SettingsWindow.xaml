@@ -333,7 +333,7 @@
                                    HorizontalAlignment="Right"/>
                     </Grid>
                     <Slider Style="{StaticResource DlgSlider}"
-                            Minimum="560" Maximum="920"
+                            Minimum="560" Maximum="1040"
                             Value="{Binding PanelHeight, Mode=TwoWay}"
                             TickFrequency="20"/>
 

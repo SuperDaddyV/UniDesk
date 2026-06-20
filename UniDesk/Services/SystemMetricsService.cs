@@ -2,9 +2,12 @@ using UniDesk.Models;
 using UniDesk.Helpers;
 using LibreHardwareMonitor.Hardware;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
+using System.Management;
 using System.Net.NetworkInformation;
 using System.Runtime.InteropServices;
+using System.Security.Principal;
 using System.Text;
 
 namespace UniDesk.Services;
@@ -245,6 +248,8 @@ public sealed class SystemMetricsService : ISystemMetricsService, IDisposable
 
     public readonly record struct CpuUsageSensorSelection(string Name, double Value);
 
+    public readonly record struct CpuTemperatureProviderSelection(string Source, string Name, double Value, int Priority);
+
     public readonly record struct GpuSensorCandidate(string Name, double? Value);
 
     public readonly record struct GpuSensorSelection(string Name, double Value);
@@ -287,6 +292,62 @@ public sealed class SystemMetricsService : ISystemMetricsService, IDisposable
             .First();
     }
 
+    public static CpuTemperatureSensorSelection? SelectWindowsThermalZoneTemperatureSensor(
+        IEnumerable<CpuTemperatureSensorCandidate> sensors)
+    {
+        var validSensors = sensors
+            .Where(sensor => IsValidCpuTemperature(sensor.Value))
+            .Select(sensor => new CpuTemperatureSensorSelection(sensor.Name, sensor.Value!.Value))
+            .ToList();
+
+        if (validSensors.Count == 0)
+        {
+            return null;
+        }
+
+        return validSensors
+            .OrderByDescending(sensor => sensor.Value)
+            .First();
+    }
+
+    public static CpuTemperatureProviderSelection? SelectCpuTemperatureProvider(
+        CpuTemperatureSensorSelection? cpuSelection,
+        CpuTemperatureSensorSelection? motherboardSelection,
+        CpuTemperatureSensorSelection? windowsThermalZoneSelection)
+    {
+        var candidates = new List<CpuTemperatureProviderSelection>();
+        if (cpuSelection.HasValue)
+        {
+            candidates.Add(new CpuTemperatureProviderSelection(
+                "LibreHardwareMonitor CPU",
+                cpuSelection.Value.Name,
+                cpuSelection.Value.Value,
+                10));
+        }
+
+        if (motherboardSelection.HasValue)
+        {
+            candidates.Add(new CpuTemperatureProviderSelection(
+                "LibreHardwareMonitor Motherboard",
+                motherboardSelection.Value.Name,
+                motherboardSelection.Value.Value,
+                30));
+        }
+
+        if (windowsThermalZoneSelection.HasValue)
+        {
+            candidates.Add(new CpuTemperatureProviderSelection(
+                "Windows ACPI Thermal Zone",
+                windowsThermalZoneSelection.Value.Name,
+                windowsThermalZoneSelection.Value.Value,
+                80));
+        }
+
+        return candidates.Count == 0
+            ? null
+            : candidates.OrderBy(candidate => candidate.Priority).First();
+    }
+
     private static IReadOnlyList<string[]> GetCpuTemperaturePriorityGroups(string? hardwareName)
     {
         var isAmd = ContainsAny(hardwareName, "AMD", "Ryzen");
@@ -298,6 +359,7 @@ public sealed class SystemMetricsService : ISystemMetricsService, IDisposable
             [
                 ["Tctl"],
                 ["Tdie"],
+                ["Die"],
                 ["CPU Package"],
                 ["Package"],
                 ["Core Max"],
@@ -312,6 +374,8 @@ public sealed class SystemMetricsService : ISystemMetricsService, IDisposable
             [
                 ["CPU Package"],
                 ["Package"],
+                ["CPU IA"],
+                ["IA Cores"],
                 ["Core Max"],
                 ["Core Average"],
                 ["CPU Core"],
@@ -324,6 +388,8 @@ public sealed class SystemMetricsService : ISystemMetricsService, IDisposable
         [
             ["CPU Package"],
             ["Package"],
+            ["CPU IA"],
+            ["IA Cores"],
             ["Core Max"],
             ["Core Average"],
             ["CPU Core"],
@@ -427,7 +493,24 @@ public sealed class SystemMetricsService : ISystemMetricsService, IDisposable
     }
 
     private static bool IsExcludedCpuTemperatureSensor(string? name) =>
-        ContainsAny(name, "Distance", "TjMax", "Throttle", "Limit");
+        ContainsAny(
+            name,
+            "Distance",
+            "TjMax",
+            "Throttle",
+            "Limit",
+            "PCH",
+            "VRM",
+            "MOS",
+            "Chipset",
+            "Motherboard",
+            "System",
+            "AUX",
+            "DIMM",
+            "Memory",
+            "GPU",
+            "GT Cores",
+            "PCI");
 
     private static bool IsExcludedMotherboardCpuTemperatureSensor(string? name) =>
         IsExcludedCpuTemperatureSensor(name) ||
@@ -692,6 +775,7 @@ public sealed class SystemMetricsService : ISystemMetricsService, IDisposable
         private bool _initialized;
         private DateTime _lastSensorLogUtc = DateTime.MinValue;
         private DateTime _lastReaderErrorLogUtc = DateTime.MinValue;
+        private DateTime _lastWindowsThermalZoneErrorLogUtc = DateTime.MinValue;
 
         public CpuMetrics Read()
         {
@@ -705,6 +789,8 @@ public sealed class SystemMetricsService : ISystemMetricsService, IDisposable
                 var cpuHardwareNames = new List<string>();
                 var loadSensors = new List<CpuUsageSensorCandidate>();
                 var temperatureSensors = new List<CpuTemperatureSensorCandidate>();
+                var motherboardTemperatureSensors = new List<CpuTemperatureSensorCandidate>();
+                var windowsThermalZoneSensors = new List<CpuTemperatureSensorCandidate>();
 
                 foreach (var hardware in _computer.Hardware)
                 {
@@ -729,27 +815,40 @@ public sealed class SystemMetricsService : ISystemMetricsService, IDisposable
                     ? null
                     : string.Join("; ", cpuHardwareNames);
                 var loadSelection = SelectCpuUsageSensor(loadSensors);
-                var temperatureSelection = SelectCpuTemperatureSensor(temperatureSensors, cpuHardwareName);
-                var motherboardTemperatureSensors = new List<CpuTemperatureSensorCandidate>();
+                var cpuTemperatureSelection = SelectCpuTemperatureSensor(temperatureSensors, cpuHardwareName);
                 CpuTemperatureSensorSelection? motherboardTemperatureSelection = null;
+                CpuTemperatureSensorSelection? windowsThermalZoneSelection = null;
 
-                if (!temperatureSelection.HasValue)
+                if (!cpuTemperatureSelection.HasValue)
                 {
                     motherboardTemperatureSensors = ReadMotherboardTemperatureSensors().ToList();
                     motherboardTemperatureSelection = SelectCpuMotherboardTemperatureSensor(
                         motherboardTemperatureSensors,
                         cpuHardwareName);
-                    temperatureSelection = motherboardTemperatureSelection;
                 }
+
+                if (!cpuTemperatureSelection.HasValue && !motherboardTemperatureSelection.HasValue)
+                {
+                    windowsThermalZoneSensors = ReadWindowsThermalZoneTemperatureSensors();
+                    windowsThermalZoneSelection = SelectWindowsThermalZoneTemperatureSensor(windowsThermalZoneSensors);
+                }
+
+                var temperatureSelection = SelectCpuTemperatureProvider(
+                    cpuTemperatureSelection,
+                    motherboardTemperatureSelection,
+                    windowsThermalZoneSelection);
 
                 LogCpuSensors(
                     cpuHardwareName,
                     loadSensors,
                     temperatureSensors,
                     motherboardTemperatureSensors,
+                    windowsThermalZoneSensors,
                     loadSelection,
+                    cpuTemperatureSelection,
                     temperatureSelection,
-                    motherboardTemperatureSelection);
+                    motherboardTemperatureSelection,
+                    windowsThermalZoneSelection);
 
                 if (loadSelection.HasValue || temperatureSelection.HasValue)
                 {
@@ -813,6 +912,39 @@ public sealed class SystemMetricsService : ISystemMetricsService, IDisposable
             }
         }
 
+        private List<CpuTemperatureSensorCandidate> ReadWindowsThermalZoneTemperatureSensors()
+        {
+            var sensors = new List<CpuTemperatureSensorCandidate>();
+
+            try
+            {
+                using var searcher = new ManagementObjectSearcher(
+                    "root\\WMI",
+                    "SELECT InstanceName, CurrentTemperature FROM MSAcpi_ThermalZoneTemperature");
+
+                foreach (ManagementObject item in searcher.Get())
+                {
+                    var name = item["InstanceName"]?.ToString();
+                    var rawValue = item["CurrentTemperature"];
+                    if (rawValue == null)
+                    {
+                        continue;
+                    }
+
+                    var celsius = Convert.ToDouble(rawValue, CultureInfo.InvariantCulture) / 10d - 273.15d;
+                    sensors.Add(new CpuTemperatureSensorCandidate(
+                        string.IsNullOrWhiteSpace(name) ? "ACPI Thermal Zone" : $"ACPI {name}",
+                        celsius));
+                }
+            }
+            catch (Exception ex)
+            {
+                LogWindowsThermalZoneReaderError(ex);
+            }
+
+            return sensors;
+        }
+
         private static void UpdateHardwareTree(IHardware hardware)
         {
             hardware.Update();
@@ -854,9 +986,12 @@ public sealed class SystemMetricsService : ISystemMetricsService, IDisposable
             IReadOnlyCollection<CpuUsageSensorCandidate> loadSensors,
             IReadOnlyCollection<CpuTemperatureSensorCandidate> temperatureSensors,
             IReadOnlyCollection<CpuTemperatureSensorCandidate> motherboardTemperatureSensors,
+            IReadOnlyCollection<CpuTemperatureSensorCandidate> windowsThermalZoneSensors,
             CpuUsageSensorSelection? loadSelection,
-            CpuTemperatureSensorSelection? temperatureSelection,
-            CpuTemperatureSensorSelection? motherboardTemperatureSelection)
+            CpuTemperatureSensorSelection? cpuTemperatureSelection,
+            CpuTemperatureProviderSelection? temperatureSelection,
+            CpuTemperatureSensorSelection? motherboardTemperatureSelection,
+            CpuTemperatureSensorSelection? windowsThermalZoneSelection)
         {
             var now = DateTime.UtcNow;
             if (now - _lastSensorLogUtc < TimeSpan.FromMinutes(5))
@@ -878,24 +1013,50 @@ public sealed class SystemMetricsService : ISystemMetricsService, IDisposable
                 ? "未发现主板 Temperature 传感器。"
                 : string.Join("; ", motherboardTemperatureSensors.Select(sensor =>
                     $"{sensor.Name}={(sensor.Value.HasValue ? sensor.Value.Value.ToString("0.0") : "null")}"));
+            var windowsThermalZoneSensorText = windowsThermalZoneSensors.Count == 0
+                ? "未发现 Windows ACPI Thermal Zone。"
+                : string.Join("; ", windowsThermalZoneSensors.Select(sensor =>
+                    $"{sensor.Name}={(sensor.Value.HasValue ? sensor.Value.Value.ToString("0.0") : "null")}"));
             var selectedLoadText = loadSelection.HasValue
                 ? $"{loadSelection.Value.Name}={loadSelection.Value.Value:0.0}"
                 : "未选择可用 CPU 使用率传感器。";
+            var selectedCpuTemperatureText = cpuTemperatureSelection.HasValue
+                ? $"{cpuTemperatureSelection.Value.Name}={cpuTemperatureSelection.Value.Value:0.0}"
+                : "未选择 LibreHardwareMonitor CPU 温度传感器。";
             var selectedTemperatureText = temperatureSelection.HasValue
-                ? $"{temperatureSelection.Value.Name}={temperatureSelection.Value.Value:0.0}"
+                ? $"{temperatureSelection.Value.Source}/{temperatureSelection.Value.Name}={temperatureSelection.Value.Value:0.0}"
                 : "未选择可用 CPU 温度传感器。";
             var selectedMotherboardTemperatureText = motherboardTemperatureSelection.HasValue
                 ? $"{motherboardTemperatureSelection.Value.Name}={motherboardTemperatureSelection.Value.Value:0.0}"
                 : "未选择主板 CPU 温度传感器。";
+            var selectedWindowsThermalZoneText = windowsThermalZoneSelection.HasValue
+                ? $"{windowsThermalZoneSelection.Value.Name}={windowsThermalZoneSelection.Value.Value:0.0}"
+                : "未选择 Windows ACPI Thermal Zone。";
             var message =
                 $"CPU 硬件：{(string.IsNullOrWhiteSpace(hardwareName) ? "未发现 CPU 硬件" : hardwareName)}; " +
+                $"进程权限：{GetProcessPrivilegeText()}; 架构：{RuntimeInformation.ProcessArchitecture}; " +
                 $"Load 传感器：{loadSensorText}; CPU Temperature 传感器：{temperatureSensorText}; " +
-                $"主板 Temperature 传感器：{motherboardTemperatureSensorText}; " +
-                $"最终 CPU 使用率：{selectedLoadText}; 主板兜底温度：{selectedMotherboardTemperatureText}; " +
+                $"主板 Temperature 传感器：{motherboardTemperatureSensorText}; Windows ACPI Thermal Zone：{windowsThermalZoneSensorText}; " +
+                $"最终 CPU 使用率：{selectedLoadText}; LHM CPU 温度：{selectedCpuTemperatureText}; " +
+                $"主板兜底温度：{selectedMotherboardTemperatureText}; Windows 兜底温度：{selectedWindowsThermalZoneText}; " +
                 $"最终 CPU 温度：{selectedTemperatureText}";
 
             Debug.WriteLine(message);
             Logger.LogInfo(message, "SystemMetricsService.Cpu");
+        }
+
+        private static string GetProcessPrivilegeText()
+        {
+            try
+            {
+                using var identity = WindowsIdentity.GetCurrent();
+                var principal = new WindowsPrincipal(identity);
+                return principal.IsInRole(WindowsBuiltInRole.Administrator) ? "管理员" : "普通用户";
+            }
+            catch
+            {
+                return "未知";
+            }
         }
 
         private void LogCpuTemperatureReaderError(Exception ex)
@@ -911,6 +1072,20 @@ public sealed class SystemMetricsService : ISystemMetricsService, IDisposable
             Logger.LogWarning(
                 $"CPU 温度读取失败：{ex.GetType().Name}: {ex.Message}。部分硬件传感器可能需要管理员权限或主板驱动支持。",
                 "SystemMetricsService.CpuTemperature");
+        }
+
+        private void LogWindowsThermalZoneReaderError(Exception ex)
+        {
+            var now = DateTime.UtcNow;
+            if (now - _lastWindowsThermalZoneErrorLogUtc < TimeSpan.FromMinutes(5))
+            {
+                return;
+            }
+
+            _lastWindowsThermalZoneErrorLogUtc = now;
+            Logger.LogWarning(
+                $"Windows ACPI Thermal Zone 读取失败：{ex.GetType().Name}: {ex.Message}。将继续使用其它 CPU 温度来源。",
+                "SystemMetricsService.WindowsThermalZone");
         }
     }
 

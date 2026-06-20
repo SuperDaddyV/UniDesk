@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using UniDesk.Helpers;
 using UniDesk.Models;
 using UniDesk.Services;
 
@@ -84,11 +85,22 @@ public partial class QuickTextManagerViewModel : ObservableObject
             return;
         }
 
-        if (_clipboardMonitorService.TrySetText(item.Content))
+        if (!await _clipboardMonitorService.TrySetTextAsync(item.Content))
+        {
+            _notificationService.ShowWarningMessage(L("Common.CopyFailed"));
+            return;
+        }
+
+        _notificationService.ShowSuccessMessage(L("Common.Copied"));
+
+        try
         {
             await _quickTextService.RecordClipboardTextAsync(item.Content);
             await ReloadAsync();
-            _notificationService.ShowSuccessMessage(L("Common.Copied"));
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "QuickTextManagerViewModel.CopyHistoryAsync.AfterCopy");
         }
     }
 
@@ -140,11 +152,22 @@ public partial class QuickTextManagerViewModel : ObservableObject
             return;
         }
 
-        if (_clipboardMonitorService.TrySetText(snippet.Content))
+        if (!await _clipboardMonitorService.TrySetTextAsync(snippet.Content))
+        {
+            _notificationService.ShowWarningMessage(L("Common.CopyFailed"));
+            return;
+        }
+
+        _notificationService.ShowSuccessMessage(L("Common.Copied"));
+
+        try
         {
             await _quickTextService.MarkSnippetUsedAsync(snippet.Id);
             await ReloadAsync();
-            _notificationService.ShowSuccessMessage(L("Common.Copied"));
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "QuickTextManagerViewModel.CopySnippetAsync.AfterCopy");
         }
     }
 

@@ -1030,15 +1030,22 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
             return;
         }
 
-        if (_clipboardMonitorService.TrySetText(item.Content))
+        if (!await _clipboardMonitorService.TrySetTextAsync(item.Content))
+        {
+            _notificationService.ShowWarningMessage(L("Common.CopyFailed"));
+            return;
+        }
+
+        _notificationService.ShowSuccessMessage(L("Common.Copied"));
+
+        try
         {
             await _quickTextService.RecordClipboardTextAsync(item.Content);
             await LoadQuickTextAsync();
-            _notificationService.ShowSuccessMessage(L("Common.Copied"));
         }
-        else
+        catch (Exception ex)
         {
-            _notificationService.ShowWarningMessage(L("Common.CopyFailed"));
+            Logger.LogError(ex, "MainWindowViewModel.CopyClipboardHistoryAsync.AfterCopy");
         }
     }
 
@@ -1090,15 +1097,22 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
             return;
         }
 
-        if (_clipboardMonitorService.TrySetText(snippet.Content))
+        if (!await _clipboardMonitorService.TrySetTextAsync(snippet.Content))
+        {
+            _notificationService.ShowWarningMessage(L("Common.CopyFailed"));
+            return;
+        }
+
+        _notificationService.ShowSuccessMessage(L("Common.Copied"));
+
+        try
         {
             await _quickTextService.MarkSnippetUsedAsync(snippet.Id);
             await LoadQuickTextAsync();
-            _notificationService.ShowSuccessMessage(L("Common.Copied"));
         }
-        else
+        catch (Exception ex)
         {
-            _notificationService.ShowWarningMessage(L("Common.CopyFailed"));
+            Logger.LogError(ex, "MainWindowViewModel.CopyTextSnippetAsync.AfterCopy");
         }
     }
 

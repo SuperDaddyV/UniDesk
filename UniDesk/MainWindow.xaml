@@ -10,7 +10,7 @@
         mc:Ignorable="d"
         Title="{Binding DisplayTitle}"
         Height="{Binding PanelHeight}" Width="{Binding PanelWidth, Mode=TwoWay}"
-        MinHeight="560" MaxHeight="920" MinWidth="320" MaxWidth="520"
+        MinHeight="560" MaxHeight="1040" MinWidth="320" MaxWidth="520"
         WindowStyle="None"
         AllowsTransparency="True"
         Background="Transparent"

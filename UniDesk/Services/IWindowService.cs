@@ -5,7 +5,7 @@ public interface IWindowService
     const double MinPanelWidth = 320;
     const double MaxPanelWidth = 520;
     const double MinPanelHeight = 560;
-    const double MaxPanelHeight = 920;
+    const double MaxPanelHeight = 1040;
     const double CollapsedPanelWidth = 40;
 
     void SetTopMost(bool topMost);

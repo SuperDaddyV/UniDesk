@@ -32,6 +32,22 @@ public class SystemMetricsServiceTests
     }
 
     [Fact]
+    public void SelectCpuTemperatureSensor_ShouldPreferIntelIaCoresWhenPackageIsMissing()
+    {
+        var selection = SystemMetricsService.SelectCpuTemperatureSensor(
+            [
+                new("CPU GT Cores", 48),
+                new("CPU IA Cores", 64),
+                new("PCH", 44)
+            ],
+            "Intel Core i9-13900");
+
+        Assert.NotNull(selection);
+        Assert.Equal("CPU IA Cores", selection.Value.Name);
+        Assert.Equal(64, selection.Value.Value);
+    }
+
+    [Fact]
     public void SelectCpuTemperatureSensor_ShouldPreferAmdTctlTemperature()
     {
         var selection = SystemMetricsService.SelectCpuTemperatureSensor(
@@ -135,6 +151,62 @@ public class SystemMetricsServiceTests
             "Intel Core i9-13900");
 
         Assert.Null(selection);
+    }
+
+    [Fact]
+    public void SelectCpuTemperatureSensor_ShouldNotUsePchAsDirectCpuTemperature()
+    {
+        var selection = SystemMetricsService.SelectCpuTemperatureSensor(
+            [
+                new("PCH", 52),
+                new("Chipset", 49)
+            ],
+            "AMD Ryzen 7 9700X");
+
+        Assert.Null(selection);
+    }
+
+    [Fact]
+    public void SelectWindowsThermalZoneTemperatureSensor_ShouldUseHighestValidThermalZone()
+    {
+        var selection = SystemMetricsService.SelectWindowsThermalZoneTemperatureSensor(
+            [
+                new("ACPI TZ00", 41),
+                new("ACPI TZ01", 58),
+                new("ACPI TZ02", 0)
+            ]);
+
+        Assert.NotNull(selection);
+        Assert.Equal("ACPI TZ01", selection.Value.Name);
+        Assert.Equal(58, selection.Value.Value);
+    }
+
+    [Fact]
+    public void SelectCpuTemperatureProvider_ShouldPreferCpuBeforeFallbacks()
+    {
+        var selection = SystemMetricsService.SelectCpuTemperatureProvider(
+            new("CPU Package", 61),
+            new("CPU", 45),
+            new("ACPI TZ00", 48));
+
+        Assert.NotNull(selection);
+        Assert.Equal("LibreHardwareMonitor CPU", selection.Value.Source);
+        Assert.Equal("CPU Package", selection.Value.Name);
+        Assert.Equal(61, selection.Value.Value);
+    }
+
+    [Fact]
+    public void SelectCpuTemperatureProvider_ShouldUseWindowsThermalZoneOnlyAsLastFallback()
+    {
+        var selection = SystemMetricsService.SelectCpuTemperatureProvider(
+            null,
+            null,
+            new("ACPI TZ00", 48));
+
+        Assert.NotNull(selection);
+        Assert.Equal("Windows ACPI Thermal Zone", selection.Value.Source);
+        Assert.Equal("ACPI TZ00", selection.Value.Name);
+        Assert.Equal(48, selection.Value.Value);
     }
 
     [Fact]
