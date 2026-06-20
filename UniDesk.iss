@@ -2,14 +2,14 @@
 ; Build the app first, then compile this script with Inno Setup.
 ;
 ; Recommended build command:
-;   dotnet publish UniDesk\UniDesk.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=false -o publish\win-x64
+;   dotnet publish UniDesk\UniDesk.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=false -o publish\win-x64-clean
 
 #define MyAppName "UniDesk"
 #define MyAppVersion "1.4.2"
 #define MyAppPublisher "UniDesk"
 #define MyAppURL "https://github.com/SuperDaddyV/UniDesk"
 #define MyAppExeName "UniDesk.exe"
-#define MyAppSourceDir "publish\win-x64"
+#define MyAppSourceDir "publish\win-x64-clean"
 #define MyAppIconSourceDir "UniDesk\icon"
 #define MyAppIconName "unidesk1-removebg-preview.ico"
 #define MyAppMutex "UniDesk_SingleInstance_Mutex_6B9BD6F1-8E3A-4C5D-9F2B-1A7C8D3E5F9A"
