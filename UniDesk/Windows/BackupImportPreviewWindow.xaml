@@ -1,0 +1,106 @@
+<Window x:Class="UniDesk.Windows.BackupImportPreviewWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="{DynamicResource Settings.ImportPreviewTitle}"
+        Width="680"
+        Height="560"
+        MinWidth="520"
+        MinHeight="420"
+        WindowStartupLocation="CenterOwner"
+        ShowInTaskbar="False">
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock x:Name="SummaryText"
+                   FontSize="14"
+                   FontWeight="SemiBold"
+                   TextWrapping="Wrap"/>
+
+        <TextBlock Grid.Row="1"
+                   Margin="0,12,0,0"
+                   Padding="10"
+                   Text="{DynamicResource Settings.ImportPreviewSensitiveWarning}"
+                   TextWrapping="Wrap"
+                   Foreground="#B91C1C"
+                   Background="#FEF2F2">
+            <TextBlock.Style>
+                <Style TargetType="TextBlock">
+                    <Setter Property="Visibility" Value="Collapsed"/>
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding ContainsSensitivePlaintext}" Value="True">
+                            <Setter Property="Visibility" Value="Visible"/>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </TextBlock.Style>
+        </TextBlock>
+
+        <TextBlock Grid.Row="2"
+                   Margin="0,16,0,8"
+                   FontWeight="SemiBold"
+                   Text="{DynamicResource Settings.ImportPreviewShortcuts}"/>
+
+        <Border Grid.Row="3" BorderBrush="#D1D5DB" BorderThickness="1" CornerRadius="6">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                <ItemsControl ItemsSource="{Binding Shortcuts}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Padding="10" BorderBrush="#E5E7EB" BorderThickness="0,0,0,1">
+                                <Border.Style>
+                                    <Style TargetType="Border">
+                                        <Setter Property="Background" Value="Transparent"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsRisky}" Value="True">
+                                                <Setter Property="Background" Value="#FFF7ED"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Border.Style>
+                                <StackPanel>
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold"/>
+                                        <TextBlock Margin="8,0,0,0"
+                                                   Foreground="#C2410C"
+                                                   Text="{DynamicResource Settings.ImportPreviewRisk}">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsRisky}" Value="True">
+                                                            <Setter Property="Visibility" Value="Visible"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                    </StackPanel>
+                                    <TextBlock Margin="0,4,0,0" Text="{Binding Path}" TextWrapping="Wrap"/>
+                                    <TextBlock Margin="0,3,0,0"
+                                               Foreground="#6B7280"
+                                               Text="{Binding LaunchArguments, StringFormat={}{0}}"
+                                               TextWrapping="Wrap"/>
+                                </StackPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+        </Border>
+
+        <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
+            <Button MinWidth="88" Height="32" Margin="0,0,10,0"
+                    Content="{DynamicResource Common.Cancel}"
+                    Click="CancelButton_OnClick"/>
+            <Button MinWidth="88" Height="32"
+                    Content="{DynamicResource Settings.ImportPreviewApply}"
+                    IsDefault="True"
+                    Click="ImportButton_OnClick"/>
+        </StackPanel>
+    </Grid>
+</Window>

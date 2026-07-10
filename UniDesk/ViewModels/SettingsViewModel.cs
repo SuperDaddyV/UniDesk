@@ -4,7 +4,9 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
+using System.Linq;
 using System.Threading.Tasks;
+using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using UniDesk.Helpers;
@@ -608,14 +610,6 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private async Task RestoreTodosAsync()
     {
-        var confirmed = _notificationService.ShowConfirmDialog(
-            L("Settings.RestoreConfirm"),
-            L("Settings.ResetConfirmTitle"));
-        if (!confirmed)
-        {
-            return;
-        }
-
         var dialog = new Microsoft.Win32.OpenFileDialog
         {
             Title = L("Settings.RestoreTitle"),
@@ -629,7 +623,20 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
 
         try
         {
-            var result = await _todoBackupService.ImportFromFileAsync(dialog.FileName);
+            var plan = await _todoBackupService.PrepareImportAsync(dialog.FileName);
+            var previewWindow = new BackupImportPreviewWindow(plan.Preview, _localizationService)
+            {
+                Owner = Application.Current.Windows
+                    .OfType<Window>()
+                    .FirstOrDefault(window => ReferenceEquals(window.DataContext, this))
+                    ?? App.Current.MainWindow
+            };
+            if (previewWindow.ShowDialog() != true)
+            {
+                return;
+            }
+
+            var result = await _todoBackupService.ApplyImportAsync(plan);
             if (result.SettingCount > 0)
             {
                 var startupText = _settingsService.GetValue("Startup", StartupEnabled.ToString());

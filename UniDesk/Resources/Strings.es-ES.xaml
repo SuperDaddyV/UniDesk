@@ -199,6 +199,12 @@
     <sys:String x:Key="Settings.IncludeClipboardHistoryPrompt">¿Incluir el historial del portapapeles? Cancelar continúa sin incluirlo.</sys:String>
     <sys:String x:Key="Settings.ClipboardPlaintextWarning">Para restaurarlo en otro equipo, el historial será texto legible dentro del JSON. Continúa solo si puedes guardar el archivo de forma segura.</sys:String>
     <sys:String x:Key="Settings.RestoreConfirm">La restauración sobrescribirá ajustes, accesos, tareas, notas y texto rápido incluidos en la copia. ¿Continuar?</sys:String>
+    <sys:String x:Key="Settings.ImportPreviewTitle">Confirmar importación de datos de UniDesk</sys:String>
+    <sys:String x:Key="Settings.ImportPreviewSummaryFormat">Se importarán {0} ajustes, {1} accesos, {2} tareas, {3} notas, {4} elementos del portapapeles y {5} frases.</sys:String>
+    <sys:String x:Key="Settings.ImportPreviewSensitiveWarning">Esta copia contiene texto confidencial legible. Impórtala solo si confías en su origen.</sys:String>
+    <sys:String x:Key="Settings.ImportPreviewShortcuts">Rutas y argumentos de los accesos</sys:String>
+    <sys:String x:Key="Settings.ImportPreviewRisk">Revisar con cuidado</sys:String>
+    <sys:String x:Key="Settings.ImportPreviewApply">Importar</sys:String>
     <sys:String x:Key="Settings.RestoreSuccessFormat">Restaurados {0} ajustes, {1} accesos, {2} tareas, {3} notas, {4} historiales y {5} frases.</sys:String>
     <sys:String x:Key="Settings.RestoreFailedFormat">Error al restaurar: {0}</sys:String>
     <sys:String x:Key="Settings.ResetLayoutConfirm">¿Restablecer posiciones y tamaños de tarjetas?</sys:String>

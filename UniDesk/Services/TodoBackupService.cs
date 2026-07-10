@@ -18,13 +18,26 @@ public class TodoBackupService : ITodoBackupService
     private readonly IShortcutService _shortcutService;
     private readonly ISettingsService _settingsService;
     private readonly IDatabaseService _databaseService;
+    private readonly IUserDataProtector _userDataProtector;
 
-    private static readonly HashSet<string> ExcludedSettingKeys = new(StringComparer.Ordinal)
+    private static readonly HashSet<string> ExportExcludedSettingKeys = new(StringComparer.Ordinal)
     {
         "DatabaseVersion",
         "WeatherApiKey",
         WeatherApiDefaults.DefaultApiKeySettingKey,
         WeatherApiDefaults.DefaultApiHostSettingKey
+    };
+
+    private static readonly HashSet<string> RestoreExcludedSettingKeys = new(StringComparer.Ordinal)
+    {
+        "DatabaseVersion",
+        WeatherApiDefaults.DefaultApiKeySettingKey,
+        WeatherApiDefaults.DefaultApiHostSettingKey
+    };
+
+    private static readonly HashSet<string> RiskyShortcutExtensions = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ".exe", ".com", ".bat", ".cmd", ".ps1", ".vbs", ".js", ".msi", ".lnk"
     };
 
     private static readonly JsonSerializerOptions JsonOptions = new()
@@ -44,6 +57,25 @@ public class TodoBackupService : ITodoBackupService
         IShortcutService shortcutService,
         ISettingsService settingsService,
         IDatabaseService databaseService)
+        : this(
+            todoService,
+            quickNoteService,
+            quickTextService,
+            shortcutService,
+            settingsService,
+            databaseService,
+            new DpapiUserDataProtector())
+    {
+    }
+
+    public TodoBackupService(
+        ITodoService todoService,
+        IQuickNoteService quickNoteService,
+        IQuickTextService quickTextService,
+        IShortcutService shortcutService,
+        ISettingsService settingsService,
+        IDatabaseService databaseService,
+        IUserDataProtector userDataProtector)
     {
         _todoService = todoService;
         _quickNoteService = quickNoteService;
@@ -51,6 +83,7 @@ public class TodoBackupService : ITodoBackupService
         _shortcutService = shortcutService;
         _settingsService = settingsService;
         _databaseService = databaseService;
+        _userDataProtector = userDataProtector;
     }
 
     public async Task ExportToFileAsync(
@@ -86,13 +119,23 @@ public class TodoBackupService : ITodoBackupService
         await File.WriteAllTextAsync(filePath, json, Utf8NoBom);
     }
 
-    public async Task<TodoBackupImportResult> ImportFromFileAsync(string filePath)
+    public async Task<BackupImportPlan> PrepareImportAsync(string filePath)
     {
         var json = await File.ReadAllTextAsync(filePath, Utf8NoBom);
         var payload = JsonSerializer.Deserialize<TodoBackupFile>(json, JsonOptions)
                       ?? throw new InvalidDataException("备份文件格式无效。");
 
         ValidatePayload(payload);
+        return new BackupImportPlan(payload, BuildPreview(payload));
+    }
+
+    public async Task<TodoBackupImportResult> ApplyImportAsync(BackupImportPlan plan)
+    {
+        ArgumentNullException.ThrowIfNull(plan);
+        if (plan.Document is not TodoBackupFile payload)
+        {
+            throw new ArgumentException("导入计划不是由当前备份服务生成。", nameof(plan));
+        }
 
         await _settingsService.FlushPendingSavesAsync();
         var result = await _databaseService.ExecuteInTransactionAsync(
@@ -106,6 +149,42 @@ public class TodoBackupService : ITodoBackupService
         return result;
     }
 
+    private static BackupImportPreview BuildPreview(TodoBackupFile payload)
+    {
+        var shortcuts = payload.Shortcuts?
+            .Select(entry => new BackupShortcutPreview(
+                entry.Name,
+                entry.Path,
+                entry.LaunchArguments,
+                IsRiskyShortcut(entry.Path, entry.LaunchArguments)))
+            .ToArray() ?? [];
+
+        return new BackupImportPreview
+        {
+            SettingCount = payload.Settings?.Count ?? 0,
+            ShortcutCount = shortcuts.Length,
+            TodoCount = payload.Todos?.Count ?? 0,
+            QuickNoteCount = payload.QuickNotes?.Count ?? 0,
+            ClipboardHistoryCount = payload.ClipboardHistory?.Count ?? 0,
+            TextSnippetCount = payload.TextSnippets?.Count ?? 0,
+            ContainsSensitivePlaintext = payload.ContainsSensitivePlaintext ||
+                                         payload.Settings?.ContainsKey("WeatherApiKey") == true ||
+                                         payload.ClipboardHistory is { Count: > 0 },
+            Shortcuts = shortcuts
+        };
+    }
+
+    private static bool IsRiskyShortcut(string path, string? launchArguments)
+    {
+        if (!string.IsNullOrWhiteSpace(launchArguments) ||
+            Uri.TryCreate(path, UriKind.Absolute, out var uri) && !uri.IsFile)
+        {
+            return true;
+        }
+
+        return RiskyShortcutExtensions.Contains(Path.GetExtension(path));
+    }
+
     private async Task<Dictionary<string, string?>> GetSettingsBackupAsync()
     {
         var settings = await _databaseService.QueryAsync(
@@ -115,11 +194,11 @@ public class TodoBackupService : ITodoBackupService
                 reader.IsDBNull(1) ? null : reader.GetString(1)));
 
         return settings
-            .Where(setting => !ExcludedSettingKeys.Contains(setting.Key))
+            .Where(setting => !ExportExcludedSettingKeys.Contains(setting.Key))
             .ToDictionary(setting => setting.Key, setting => setting.Value, StringComparer.Ordinal);
     }
 
-    private static async Task<TodoBackupImportResult> RestorePayloadAsync(
+    private async Task<TodoBackupImportResult> RestorePayloadAsync(
         IDatabaseSession session,
         TodoBackupFile payload)
     {
@@ -129,7 +208,7 @@ public class TodoBackupService : ITodoBackupService
         {
             foreach (var (key, value) in payload.Settings)
             {
-                if (ExcludedSettingKeys.Contains(key))
+                if (RestoreExcludedSettingKeys.Contains(key))
                 {
                     continue;
                 }
@@ -137,6 +216,12 @@ public class TodoBackupService : ITodoBackupService
                 var normalizedValue = key == DashboardModuleCatalog.SettingsKey
                     ? NormalizeModuleSettingsJson(value)
                     : value;
+                if (string.Equals(key, "WeatherApiKey", StringComparison.Ordinal) &&
+                    !string.IsNullOrEmpty(normalizedValue) &&
+                    !_userDataProtector.IsProtected(normalizedValue))
+                {
+                    normalizedValue = _userDataProtector.Protect(normalizedValue);
+                }
                 result.SettingCount += string.IsNullOrEmpty(normalizedValue)
                     ? await session.ExecuteNonQueryAsync("DELETE FROM Settings WHERE Key = @p0", key)
                     : await session.ExecuteNonQueryAsync(
@@ -214,7 +299,7 @@ public class TodoBackupService : ITodoBackupService
                 var lastUsedAt = entry.LastUsedAt == default ? createdAt : entry.LastUsedAt;
                 result.ClipboardHistoryCount += await session.ExecuteNonQueryAsync(
                     "INSERT OR IGNORE INTO ClipboardHistory (Content, ContentHash, CreatedAt, LastUsedAt, UseCount) VALUES (@p0, @p1, @p2, @p3, @p4)",
-                    content,
+                    _userDataProtector.Protect(content),
                     QuickTextService.ComputeHash(content),
                     createdAt.ToString("o", CultureInfo.InvariantCulture),
                     lastUsedAt.ToString("o", CultureInfo.InvariantCulture),

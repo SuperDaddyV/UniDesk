@@ -52,7 +52,7 @@ public class TodoBackupServiceTests
         await db.ExecuteNonQueryAsync("DELETE FROM ClipboardHistory");
         await db.ExecuteNonQueryAsync("DELETE FROM TextSnippets");
 
-        var result = await backupService.ImportFromFileAsync(_backupFile);
+        var result = await ImportAsync(backupService, _backupFile);
 
         Assert.True(result.SettingCount > 0);
         Assert.Equal(1, result.ShortcutCount);
@@ -94,7 +94,7 @@ public class TodoBackupServiceTests
             }
             """);
 
-        var result = await backupService.ImportFromFileAsync(_backupFile);
+        var result = await ImportAsync(backupService, _backupFile);
 
         Assert.Equal(0, result.SettingCount);
         Assert.Equal(0, result.ShortcutCount);
@@ -176,7 +176,7 @@ public class TodoBackupServiceTests
             }
             """);
 
-        await Assert.ThrowsAsync<InvalidDataException>(() => backupService.ImportFromFileAsync(_backupFile));
+        await Assert.ThrowsAsync<InvalidDataException>(() => backupService.PrepareImportAsync(_backupFile));
 
         var todos = await todoService.GetAllTodosAsync();
         Assert.Single(todos);
@@ -206,7 +206,7 @@ public class TodoBackupServiceTests
             }
             """);
 
-        await Assert.ThrowsAsync<InvalidDataException>(() => backupService.ImportFromFileAsync(_backupFile));
+        await Assert.ThrowsAsync<InvalidDataException>(() => backupService.PrepareImportAsync(_backupFile));
 
         var todos = await todoService.GetAllTodosAsync();
         Assert.Single(todos);
@@ -249,14 +249,130 @@ public class TodoBackupServiceTests
             }
             """);
 
+        var plan = await backupService.PrepareImportAsync(_backupFile);
         await Assert.ThrowsAsync<Microsoft.Data.Sqlite.SqliteException>(
-            () => backupService.ImportFromFileAsync(_backupFile));
+            () => backupService.ApplyImportAsync(plan));
 
         var todos = await todoService.GetAllTodosAsync();
         Assert.Single(todos);
         Assert.Equal("保留的待办", todos[0].Title);
         Assert.Equal("320", await settingsService.GetSettingAsync("PanelWidth"));
         Cleanup();
+    }
+
+    [Fact]
+    public async Task PrepareImportAsync_ShouldNotMutateAndShouldPreviewAllShortcuts()
+    {
+        var (_, todoService, _, _, _, _, backupService) = await InitAsync();
+        await todoService.CreateTodoAsync(new TodoItem { Title = "保留的待办" });
+        await File.WriteAllTextAsync(
+            _backupFile,
+            """
+            {
+              "version": 5,
+              "exportedAt": "2026-07-10T00:00:00Z",
+              "containsSensitivePlaintext": true,
+              "settings": { "PanelWidth": "480" },
+              "shortcuts": [
+                {
+                  "name": "安全文件夹",
+                  "path": "C:\\Users\\Public",
+                  "type": 1,
+                  "sortOrder": 0
+                },
+                {
+                  "name": "带参数程序",
+                  "path": "C:\\Tools\\runner.exe",
+                  "launchArguments": "--danger",
+                  "type": 0,
+                  "sortOrder": 1
+                }
+              ],
+              "todos": [
+                {
+                  "title": "待导入待办",
+                  "isCompleted": false,
+                  "priority": 1,
+                  "createdAt": "2026-07-10T00:00:00Z"
+                }
+              ]
+            }
+            """);
+
+        var plan = await backupService.PrepareImportAsync(_backupFile);
+
+        var existingTodos = await todoService.GetAllTodosAsync();
+        Assert.Single(existingTodos);
+        Assert.Equal("保留的待办", existingTodos[0].Title);
+        Assert.Equal(1, plan.Preview.SettingCount);
+        Assert.Equal(2, plan.Preview.ShortcutCount);
+        Assert.Equal(1, plan.Preview.TodoCount);
+        Assert.True(plan.Preview.ContainsSensitivePlaintext);
+        Assert.Collection(
+            plan.Preview.Shortcuts,
+            shortcut =>
+            {
+                Assert.Equal("安全文件夹", shortcut.Name);
+                Assert.Equal(@"C:\Users\Public", shortcut.Path);
+                Assert.False(shortcut.IsRisky);
+            },
+            shortcut =>
+            {
+                Assert.Equal("带参数程序", shortcut.Name);
+                Assert.Equal(@"C:\Tools\runner.exe", shortcut.Path);
+                Assert.Equal("--danger", shortcut.LaunchArguments);
+                Assert.True(shortcut.IsRisky);
+            });
+        Cleanup();
+    }
+
+    [Fact]
+    public async Task ApplyImportAsync_LegacySensitiveValues_ShouldProtectBeforeStorage()
+    {
+        var (db, _, _, quickTextService, _, settingsService, backupService) = await InitAsync();
+        await File.WriteAllTextAsync(
+            _backupFile,
+            """
+            {
+              "version": 4,
+              "exportedAt": "2026-07-10T00:00:00Z",
+              "settings": { "WeatherApiKey": "legacy-weather" },
+              "clipboardHistory": [
+                {
+                  "content": "legacy clipboard",
+                  "createdAt": "2026-07-10T00:00:00Z",
+                  "lastUsedAt": "2026-07-10T00:00:00Z",
+                  "useCount": 1
+                }
+              ]
+            }
+            """);
+
+        var result = await ImportAsync(backupService, _backupFile);
+
+        Assert.Equal(1, result.SettingCount);
+        Assert.Equal(1, result.ClipboardHistoryCount);
+        var rawWeatherKey = await db.QuerySingleAsync(
+            "SELECT Value FROM Settings WHERE Key = 'WeatherApiKey'",
+            reader => reader.GetString(0));
+        var rawClipboard = await db.QuerySingleAsync(
+            "SELECT Content FROM ClipboardHistory LIMIT 1",
+            reader => reader.GetString(0));
+        Assert.StartsWith(DpapiUserDataProtector.Prefix, rawWeatherKey);
+        Assert.StartsWith(DpapiUserDataProtector.Prefix, rawClipboard);
+        Assert.DoesNotContain("legacy-weather", rawWeatherKey);
+        Assert.DoesNotContain("legacy clipboard", rawClipboard);
+        Assert.Equal("legacy-weather", await settingsService.GetSettingAsync("WeatherApiKey"));
+        Assert.Equal("legacy clipboard", Assert.Single(await quickTextService.GetClipboardHistoryAsync()).Content);
+        Cleanup();
+    }
+
+    private static async Task<TodoBackupImportResult> ImportAsync(
+        ITodoBackupService backupService,
+        string filePath)
+    {
+        var plan = await backupService.PrepareImportAsync(filePath);
+        return await backupService.ApplyImportAsync(plan);
     }
 
     private async Task<(DatabaseService Db, TodoService TodoService, QuickNoteService QuickNoteService, QuickTextService QuickTextService, ShortcutService ShortcutService, SettingsService SettingsService, TodoBackupService BackupService)> InitAsync()

@@ -199,6 +199,12 @@
     <sys:String x:Key="Settings.IncludeClipboardHistoryPrompt">Include clipboard history in this backup? Choosing Cancel continues without clipboard history.</sys:String>
     <sys:String x:Key="Settings.ClipboardPlaintextWarning">For cross-device restore, clipboard history will be readable plaintext in the JSON file. Continue only if you can store it securely.</sys:String>
     <sys:String x:Key="Settings.RestoreConfirm">Restore will overwrite settings, shortcuts, todos, notes, and quick text in the backup. Continue?</sys:String>
+    <sys:String x:Key="Settings.ImportPreviewTitle">Confirm UniDesk data import</sys:String>
+    <sys:String x:Key="Settings.ImportPreviewSummaryFormat">Import {0} settings, {1} shortcuts, {2} todos, {3} notes, {4} clipboard items, and {5} phrases.</sys:String>
+    <sys:String x:Key="Settings.ImportPreviewSensitiveWarning">This backup contains readable sensitive text. Import it only if you trust the source.</sys:String>
+    <sys:String x:Key="Settings.ImportPreviewShortcuts">Shortcut paths and launch arguments</sys:String>
+    <sys:String x:Key="Settings.ImportPreviewRisk">Review carefully</sys:String>
+    <sys:String x:Key="Settings.ImportPreviewApply">Import</sys:String>
     <sys:String x:Key="Settings.RestoreSuccessFormat">Restored {0} settings, {1} shortcuts, {2} todos, {3} notes, {4} history items, and {5} phrases.</sys:String>
     <sys:String x:Key="Settings.RestoreFailedFormat">Restore failed: {0}</sys:String>
     <sys:String x:Key="Settings.ResetLayoutConfirm">Reset all card positions and sizes?</sys:String>

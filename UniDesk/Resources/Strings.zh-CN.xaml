@@ -199,6 +199,12 @@
     <sys:String x:Key="Settings.IncludeClipboardHistoryPrompt">是否在备份中包含剪贴板历史？选择“取消”将继续备份，但不包含剪贴板历史。</sys:String>
     <sys:String x:Key="Settings.ClipboardPlaintextWarning">为了支持跨设备恢复，剪贴板历史将以可读明文写入 JSON。仅在你能安全保管该文件时继续。</sys:String>
     <sys:String x:Key="Settings.RestoreConfirm">还原将覆盖备份文件中包含的设置、快捷方式、待办事项、快速便签和快捷文本，是否继续？</sys:String>
+    <sys:String x:Key="Settings.ImportPreviewTitle">确认导入 UniDesk 数据</sys:String>
+    <sys:String x:Key="Settings.ImportPreviewSummaryFormat">将导入 {0} 项设置、{1} 个快捷方式、{2} 条待办、{3} 条便签、{4} 条剪贴板历史和 {5} 条常用短语。</sys:String>
+    <sys:String x:Key="Settings.ImportPreviewSensitiveWarning">此备份包含可读的敏感明文。确认文件来源可信后再导入。</sys:String>
+    <sys:String x:Key="Settings.ImportPreviewShortcuts">快捷方式路径与启动参数</sys:String>
+    <sys:String x:Key="Settings.ImportPreviewRisk">需谨慎检查</sys:String>
+    <sys:String x:Key="Settings.ImportPreviewApply">确认导入</sys:String>
     <sys:String x:Key="Settings.RestoreSuccessFormat">已还原 {0} 项设置，{1} 个快捷方式，{2} 条待办事项，{3} 条便签，{4} 条历史，{5} 条常用短语。</sys:String>
     <sys:String x:Key="Settings.RestoreFailedFormat">还原失败：{0}</sys:String>
     <sys:String x:Key="Settings.ResetLayoutConfirm">确定要恢复默认布局吗？这将重置所有卡片的位置和大小。</sys:String>
