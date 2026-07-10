@@ -403,6 +403,28 @@ public class DatabaseService : IDatabaseService
         await alter.ExecuteNonQueryAsync();
     }
 
+    public async Task<T> ExecuteInTransactionAsync<T>(Func<IDatabaseSession, Task<T>> operation)
+    {
+        ArgumentNullException.ThrowIfNull(operation);
+
+        using var connection = new SqliteConnection(_connectionString);
+        await connection.OpenAsync();
+        using var transaction = connection.BeginTransaction();
+        var session = new DatabaseSession(connection, transaction);
+
+        try
+        {
+            var result = await operation(session);
+            transaction.Commit();
+            return result;
+        }
+        catch
+        {
+            transaction.Rollback();
+            throw;
+        }
+    }
+
     public async Task<int> ExecuteNonQueryAsync(string sql, params object?[] parameters)
     {
         using var connection = new SqliteConnection(_connectionString);

@@ -540,6 +540,32 @@ public class DatabaseServiceTests
         Cleanup();
     }
 
+    [Fact]
+    public async Task ExecuteInTransactionAsync_WhenOperationThrows_ShouldRollback()
+    {
+        var databaseService = GetService();
+        await databaseService.InitializeAsync();
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            databaseService.ExecuteInTransactionAsync<int>(async session =>
+            {
+                await session.ExecuteNonQueryAsync(
+                    "INSERT INTO Todos (Title, IsCompleted, CreatedAt) VALUES (@p0, @p1, @p2)",
+                    "Should Roll Back",
+                    0,
+                    DateTime.UtcNow.ToString("o"));
+                throw new InvalidOperationException("force rollback");
+            }));
+
+        var count = await databaseService.QuerySingleAsync(
+            "SELECT COUNT(*) FROM Todos WHERE Title = @p0",
+            reader => reader.GetInt32(0),
+            "Should Roll Back");
+
+        Assert.Equal(0, count);
+        Cleanup();
+    }
+
     private void Cleanup()
     {
         try

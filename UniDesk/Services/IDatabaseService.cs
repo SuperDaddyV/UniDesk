@@ -1,9 +1,7 @@
 namespace UniDesk.Services;
 
-public interface IDatabaseService
+public interface IDatabaseService : IDatabaseSession
 {
     Task InitializeAsync();
-    Task<int> ExecuteNonQueryAsync(string sql, params object?[] parameters);
-    Task<List<T>> QueryAsync<T>(string sql, Func<Microsoft.Data.Sqlite.SqliteDataReader, T> map, params object?[] parameters);
-    Task<T?> QuerySingleAsync<T>(string sql, Func<Microsoft.Data.Sqlite.SqliteDataReader, T> map, params object?[] parameters);
+    Task<T> ExecuteInTransactionAsync<T>(Func<IDatabaseSession, Task<T>> operation);
 }
