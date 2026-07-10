@@ -312,27 +312,19 @@ public partial class QuickTextService : IQuickTextService
         if (VerificationCodeRegex().IsMatch(trimmed) ||
             ChinaIdRegex().IsMatch(trimmed) ||
             BankCardRegex().IsMatch(trimmed) ||
-            JwtRegex().IsMatch(trimmed))
+            JwtRegex().IsMatch(trimmed) ||
+            OpenAiKeyRegex().IsMatch(trimmed) ||
+            GitHubClassicTokenRegex().IsMatch(trimmed) ||
+            GitHubFineGrainedTokenRegex().IsMatch(trimmed) ||
+            AwsAccessKeyRegex().IsMatch(trimmed) ||
+            PrivateKeyHeaderRegex().IsMatch(trimmed) ||
+            LabeledSecretRegex().IsMatch(trimmed) ||
+            BearerTokenRegex().IsMatch(trimmed))
         {
             return true;
         }
 
-        var lower = trimmed.ToLowerInvariant();
-        string[] keywords =
-        [
-            "password",
-            "passwd",
-            "token",
-            "api_key",
-            "apikey",
-            "secret",
-            "authorization",
-            "bearer",
-            "cookie",
-            "session"
-        ];
-
-        return keywords.Any(lower.Contains);
+        return false;
     }
 
     internal static string NormalizeClipboardText(string? text)
@@ -443,4 +435,29 @@ public partial class QuickTextService : IQuickTextService
 
     [GeneratedRegex(@"^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$")]
     private static partial Regex JwtRegex();
+
+    [GeneratedRegex(@"^sk-(?:proj-)?[A-Za-z0-9_-]{20,}$")]
+    private static partial Regex OpenAiKeyRegex();
+
+    [GeneratedRegex(@"^ghp_[A-Za-z0-9]{30,}$")]
+    private static partial Regex GitHubClassicTokenRegex();
+
+    [GeneratedRegex(@"^github_pat_[A-Za-z0-9_]{20,}$")]
+    private static partial Regex GitHubFineGrainedTokenRegex();
+
+    [GeneratedRegex(@"^AKIA[0-9A-Z]{16}$")]
+    private static partial Regex AwsAccessKeyRegex();
+
+    [GeneratedRegex(@"^-----BEGIN (?:[A-Z0-9]+ )?PRIVATE KEY-----", RegexOptions.Multiline)]
+    private static partial Regex PrivateKeyHeaderRegex();
+
+    [GeneratedRegex(
+        @"(?:^|[^a-z0-9_])(?:password|passwd|token|api[_-]?key|apikey|secret|authorization|cookie|session)\s*[:=]\s*\S+",
+        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    private static partial Regex LabeledSecretRegex();
+
+    [GeneratedRegex(
+        @"(?:^|\s)bearer\s+[A-Za-z0-9._~-]+",
+        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    private static partial Regex BearerTokenRegex();
 }

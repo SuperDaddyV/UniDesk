@@ -79,9 +79,23 @@ public class QuickTextServiceTests
     [InlineData("token: abc")]
     [InlineData("Authorization: Bearer abc")]
     [InlineData("eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIn0.signature")]
+    [InlineData("sk-proj-abcdefghijklmnopqrstuvwxyz012345")]
+    [InlineData("ghp_abcdefghijklmnopqrstuvwxyz0123456789")]
+    [InlineData("github_pat_11AA0_exampleTokenValue0123456789")]
+    [InlineData("AKIAIOSFODNN7EXAMPLE")]
+    [InlineData("-----BEGIN PRIVATE KEY-----\nabc\n-----END PRIVATE KEY-----")]
     public void IsSensitiveContent_ShouldDetectSensitiveText(string text)
     {
         Assert.True(QuickTextService.IsSensitiveContent(text));
+    }
+
+    [Theory]
+    [InlineData("sketch-project")]
+    [InlineData("sessional planning notes")]
+    [InlineData("professional cookiecutter guide")]
+    public void IsSensitiveContent_NearbyHarmlessText_ShouldNotMatch(string text)
+    {
+        Assert.False(QuickTextService.IsSensitiveContent(text));
     }
 
     [Fact]

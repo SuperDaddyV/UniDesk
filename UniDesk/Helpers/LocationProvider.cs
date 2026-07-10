@@ -15,9 +15,6 @@ public interface ILocationProvider
 
 public class LocationProvider : ILocationProvider, IDisposable
 {
-    private const string IpApiEndpoint =
-        "http://ip-api.com/json/?lang=zh-CN&fields=status,city,lat,lon,regionName";
-
     private readonly ISettingsService _settingsService;
     private readonly HttpClient _httpClient;
     private readonly QWeatherApiClient _apiClient;
@@ -43,18 +40,6 @@ public class LocationProvider : ILocationProvider, IDisposable
                 return cityByAmap;
             }
 
-            var coordinates = await GetLocationByIpAsync(cancellationToken);
-            if (coordinates != null)
-            {
-                var city = await GetCityByCoordinatesAsync(
-                    coordinates.Value.Latitude,
-                    coordinates.Value.Longitude,
-                    cancellationToken);
-                if (!string.IsNullOrWhiteSpace(city))
-                {
-                    return city;
-                }
-            }
         }
 
         var savedCity = _settingsService.GetValue("City", "").Trim();
@@ -64,7 +49,7 @@ public class LocationProvider : ILocationProvider, IDisposable
     /// <summary>
     /// 高德 IP 定位（需 Web 服务 Key）。不传 ip 时使用当前出口 IP。
     /// </summary>
-    private async Task<string?> GetCityByAmapIpAsync(CancellationToken cancellationToken)
+    protected virtual async Task<string?> GetCityByAmapIpAsync(CancellationToken cancellationToken)
     {
         var amapKey = AppSecrets.AmapApiKey;
         if (string.IsNullOrEmpty(amapKey))
@@ -90,29 +75,9 @@ public class LocationProvider : ILocationProvider, IDisposable
         }
     }
 
-    public async Task<(double Latitude, double Longitude)?> GetLocationAsync(CancellationToken cancellationToken = default)
-    {
-        return await GetLocationByIpAsync(cancellationToken);
-    }
-
-    private async Task<(double Latitude, double Longitude)?> GetLocationByIpAsync(CancellationToken cancellationToken)
-    {
-        try
-        {
-            var response = await _httpClient.GetStringAsync(IpApiEndpoint, cancellationToken);
-            var result = JsonSerializer.Deserialize<IpApiResponse>(response);
-            if (result?.Status != "success" || result.Latitude == 0 && result.Longitude == 0)
-            {
-                return null;
-            }
-
-            return (result.Latitude, result.Longitude);
-        }
-        catch (Exception)
-        {
-            return null;
-        }
-    }
+    public Task<(double Latitude, double Longitude)?> GetLocationAsync(
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult<(double Latitude, double Longitude)?>(null);
 
     public async Task<string?> GetCityByCoordinatesAsync(
         double latitude,
@@ -245,24 +210,6 @@ public class LocationProvider : ILocationProvider, IDisposable
 
         [JsonPropertyName("city")]
         public string? City { get; set; }
-    }
-
-    private class IpApiResponse
-    {
-        [JsonPropertyName("status")]
-        public string? Status { get; set; }
-
-        [JsonPropertyName("city")]
-        public string? City { get; set; }
-
-        [JsonPropertyName("regionName")]
-        public string? RegionName { get; set; }
-
-        [JsonPropertyName("lat")]
-        public double Latitude { get; set; }
-
-        [JsonPropertyName("lon")]
-        public double Longitude { get; set; }
     }
 
     private class QWeatherGeoResponse
