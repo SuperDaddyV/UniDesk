@@ -8,7 +8,10 @@ public class SettingsService : ISettingsService, IDisposable
     private readonly Dictionary<string, string?> _cache = new();
     private readonly SemaphoreSlim _saveLock = new(1, 1);
     private readonly Dictionary<string, string?> _pendingWrites = new();
+    private readonly object _stateLock = new();
     private CancellationTokenSource? _flushCts;
+    private Task? _flushTask;
+    private bool _disposed;
 
     public SettingsService(IDatabaseService databaseService)
     {
@@ -22,37 +25,68 @@ public class SettingsService : ISettingsService, IDisposable
 
     public async Task<string?> GetSettingAsync(string key)
     {
-        if (_cache.TryGetValue(key, out var value))
+        lock (_stateLock)
         {
-            return value;
+            if (_cache.TryGetValue(key, out var cachedValue))
+            {
+                return cachedValue;
+            }
         }
 
-        value = await GetSettingFromDatabaseAsync(key);
-        _cache[key] = value;
+        var value = await GetSettingFromDatabaseAsync(key);
+        lock (_stateLock)
+        {
+            if (_cache.TryGetValue(key, out var cachedValue))
+            {
+                return cachedValue;
+            }
+
+            _cache[key] = value;
+        }
+
         return value;
     }
 
     public string? GetSetting(string key)
     {
-        if (_cache.TryGetValue(key, out var value))
+        lock (_stateLock)
         {
-            return value;
+            if (_cache.TryGetValue(key, out var cachedValue))
+            {
+                return cachedValue;
+            }
         }
 
-        value = GetSettingFromDatabaseAsync(key).GetAwaiter().GetResult();
-        _cache[key] = value;
+        var value = GetSettingFromDatabaseAsync(key).GetAwaiter().GetResult();
+        lock (_stateLock)
+        {
+            if (_cache.TryGetValue(key, out var cachedValue))
+            {
+                return cachedValue;
+            }
+
+            _cache[key] = value;
+        }
+
         return value;
     }
 
     public async Task SetSettingAsync(string key, string? value)
     {
-        _cache[key] = value;
+        lock (_stateLock)
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+        }
+
         await SaveSettingToDatabaseAsync(key, value);
+        lock (_stateLock)
+        {
+            _cache[key] = value;
+        }
     }
 
     public void SetSetting(string key, string? value)
     {
-        _cache[key] = value;
         QueueSave(key, value);
     }
 
@@ -82,7 +116,10 @@ public class SettingsService : ISettingsService, IDisposable
 
     public void InvalidateCache()
     {
-        _cache.Clear();
+        lock (_stateLock)
+        {
+            _cache.Clear();
+        }
     }
 
     public void FlushPendingSaves()
@@ -94,52 +131,102 @@ public class SettingsService : ISettingsService, IDisposable
         catch (ObjectDisposedException)
         {
         }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "SettingsService.FlushPendingSaves");
+        }
     }
 
     private void QueueSave(string key, string? value)
     {
-        lock (_pendingWrites)
+        CancellationTokenSource? previousCts;
+        CancellationTokenSource currentCts;
+
+        lock (_stateLock)
         {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+            currentCts = new CancellationTokenSource();
+            _cache[key] = value;
             _pendingWrites[key] = value;
+            previousCts = _flushCts;
+            _flushCts = currentCts;
+            _flushTask = Task.Run(() => FlushAfterDelayAsync(currentCts));
         }
 
-        _flushCts?.Cancel();
-        _flushCts?.Dispose();
-        _flushCts = new CancellationTokenSource();
-        var token = _flushCts.Token;
+        previousCts?.Cancel();
+        previousCts?.Dispose();
+    }
 
-        _ = Task.Run(async () =>
+    private async Task FlushAfterDelayAsync(CancellationTokenSource cancellationSource)
+    {
+        try
         {
-            try
+            await Task.Delay(50, cancellationSource.Token).ConfigureAwait(false);
+            if (!cancellationSource.IsCancellationRequested)
             {
-                await Task.Delay(50, token);
-                if (!token.IsCancellationRequested)
+                await FlushPendingSavesAsync().ConfigureAwait(false);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "SettingsService.FlushAfterDelay");
+        }
+        finally
+        {
+            var shouldDispose = false;
+            lock (_stateLock)
+            {
+                if (ReferenceEquals(_flushCts, cancellationSource))
                 {
-                    await FlushPendingSavesAsync();
+                    _flushCts = null;
+                    shouldDispose = true;
                 }
             }
-            catch (OperationCanceledException)
+
+            if (shouldDispose)
             {
+                cancellationSource.Dispose();
             }
-        }, token);
+        }
     }
 
     public async Task FlushPendingSavesAsync()
     {
-        Dictionary<string, string?> batch;
-        lock (_pendingWrites)
-        {
-            if (_pendingWrites.Count == 0) return;
-            batch = new Dictionary<string, string?>(_pendingWrites);
-            _pendingWrites.Clear();
-        }
-
         await _saveLock.WaitAsync();
         try
         {
-            foreach (var (key, value) in batch)
+            Dictionary<string, string?> batch;
+            lock (_stateLock)
             {
-                await SaveSettingToDatabaseAsync(key, value);
+                if (_pendingWrites.Count == 0) return;
+                batch = new Dictionary<string, string?>(_pendingWrites);
+                _pendingWrites.Clear();
+            }
+
+            try
+            {
+                foreach (var (key, value) in batch)
+                {
+                    await SaveSettingToDatabaseAsync(key, value);
+                }
+            }
+            catch
+            {
+                lock (_stateLock)
+                {
+                    foreach (var (key, value) in batch)
+                    {
+                        if (!_pendingWrites.ContainsKey(key))
+                        {
+                            _pendingWrites[key] = value;
+                        }
+                    }
+                }
+
+                throw;
             }
         }
         finally
@@ -184,14 +271,27 @@ public class SettingsService : ISettingsService, IDisposable
         catch (Exception ex)
         {
             Logger.LogError(ex, $"SettingsService.Set({key})");
+            throw;
         }
     }
 
     public void Dispose()
     {
-        _flushCts?.Cancel();
-        _flushCts?.Dispose();
+        CancellationTokenSource? flushCts;
+        Task? flushTask;
+        lock (_stateLock)
+        {
+            if (_disposed) return;
+            _disposed = true;
+            flushCts = _flushCts;
+            flushTask = _flushTask;
+            _flushCts = null;
+            _flushTask = null;
+        }
+
+        flushCts?.Cancel();
+        flushTask?.GetAwaiter().GetResult();
+        flushCts?.Dispose();
         FlushPendingSaves();
-        _saveLock.Dispose();
     }
 }
