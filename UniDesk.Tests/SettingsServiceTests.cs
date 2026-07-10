@@ -170,6 +170,40 @@ public class SettingsServiceTests
     }
 
     [Fact]
+    public async Task WeatherApiKey_ShouldBeProtectedInDatabaseAndPlaintextThroughService()
+    {
+        var databaseService = GetDb();
+        var settingsService = new SettingsService(databaseService, new FakeUserDataProtector());
+        await settingsService.InitializeAsync();
+
+        await settingsService.SetSettingAsync("WeatherApiKey", "weather-secret");
+
+        var stored = await databaseService.QuerySingleAsync(
+            "SELECT Value FROM Settings WHERE Key = @p0",
+            reader => reader.GetString(0),
+            "WeatherApiKey");
+        settingsService.InvalidateCache();
+        Assert.Equal("fake:v1:weather-secret", stored);
+        Assert.Equal("weather-secret", await settingsService.GetSettingAsync("WeatherApiKey"));
+        Cleanup();
+    }
+
+    [Fact]
+    public async Task WeatherApiKey_WhenProtectedValueIsUnreadable_ShouldReturnNull()
+    {
+        var databaseService = GetDb();
+        await databaseService.InitializeAsync();
+        await databaseService.ExecuteNonQueryAsync(
+            "INSERT OR REPLACE INTO Settings (Key, Value) VALUES (@p0, @p1)",
+            "WeatherApiKey",
+            "fake:v1:unreadable");
+        var settingsService = new SettingsService(databaseService, new FakeUserDataProtector());
+
+        Assert.Null(await settingsService.GetSettingAsync("WeatherApiKey"));
+        Cleanup();
+    }
+
+    [Fact]
     public async Task FlushPendingSavesAsync_WriteFailure_ShouldThrowAndRetryPendingValues()
     {
         var databaseService = new RecoverableDatabaseService { FailWrites = true };
@@ -248,5 +282,25 @@ public class SettingsServiceTests
 
         public Task<T> ExecuteInTransactionAsync<T>(Func<IDatabaseSession, Task<T>> operation) =>
             throw new NotSupportedException();
+    }
+
+    private sealed class FakeUserDataProtector : IUserDataProtector
+    {
+        private const string Prefix = "fake:v1:";
+
+        public string Protect(string plaintext) =>
+            string.IsNullOrEmpty(plaintext) ? string.Empty : Prefix + plaintext;
+
+        public bool TryUnprotect(string storedValue, out string plaintext)
+        {
+            plaintext = string.Empty;
+            if (string.IsNullOrEmpty(storedValue)) return true;
+            if (!IsProtected(storedValue) || storedValue == Prefix + "unreadable") return false;
+            plaintext = storedValue[Prefix.Length..];
+            return true;
+        }
+
+        public bool IsProtected(string storedValue) =>
+            storedValue.StartsWith(Prefix, StringComparison.Ordinal);
     }
 }

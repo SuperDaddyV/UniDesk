@@ -4,7 +4,9 @@ namespace UniDesk.Services;
 
 public class SettingsService : ISettingsService, IDisposable
 {
+    private const string WeatherApiKeySetting = "WeatherApiKey";
     private readonly IDatabaseService _databaseService;
+    private readonly IUserDataProtector _userDataProtector;
     private readonly Dictionary<string, string?> _cache = new();
     private readonly SemaphoreSlim _saveLock = new(1, 1);
     private readonly Dictionary<string, string?> _pendingWrites = new();
@@ -14,8 +16,16 @@ public class SettingsService : ISettingsService, IDisposable
     private bool _disposed;
 
     public SettingsService(IDatabaseService databaseService)
+        : this(databaseService, new DpapiUserDataProtector())
+    {
+    }
+
+    public SettingsService(
+        IDatabaseService databaseService,
+        IUserDataProtector userDataProtector)
     {
         _databaseService = databaseService;
+        _userDataProtector = userDataProtector;
     }
 
     public async Task InitializeAsync()
@@ -239,10 +249,11 @@ public class SettingsService : ISettingsService, IDisposable
     {
         try
         {
-            return await _databaseService.QuerySingleAsync(
+            var storedValue = await _databaseService.QuerySingleAsync(
                 "SELECT Value FROM Settings WHERE Key = @p0",
                 reader => reader.GetString(0),
                 key);
+            return DecodeFromStorage(key, storedValue);
         }
         catch (Exception ex)
         {
@@ -263,9 +274,10 @@ public class SettingsService : ISettingsService, IDisposable
             }
             else
             {
+                var storedValue = EncodeForStorage(key, value);
                 await _databaseService.ExecuteNonQueryAsync(
                     "INSERT OR REPLACE INTO Settings (Key, Value) VALUES (@p0, @p1)",
-                    key, value);
+                    key, storedValue);
             }
         }
         catch (Exception ex)
@@ -273,6 +285,31 @@ public class SettingsService : ISettingsService, IDisposable
             Logger.LogError(ex, $"SettingsService.Set({key})");
             throw;
         }
+    }
+
+    private string EncodeForStorage(string key, string value) =>
+        string.Equals(key, WeatherApiKeySetting, StringComparison.Ordinal)
+            ? _userDataProtector.Protect(value)
+            : value;
+
+    private string? DecodeFromStorage(string key, string? storedValue)
+    {
+        if (!string.Equals(key, WeatherApiKeySetting, StringComparison.Ordinal) ||
+            string.IsNullOrEmpty(storedValue) ||
+            !_userDataProtector.IsProtected(storedValue))
+        {
+            return storedValue;
+        }
+
+        if (_userDataProtector.TryUnprotect(storedValue, out var plaintext))
+        {
+            return plaintext;
+        }
+
+        Logger.LogWarning(
+            "WeatherApiKey 的受保护值无法由当前 Windows 用户解密。",
+            "SettingsService.Get");
+        return null;
     }
 
     public void Dispose()
