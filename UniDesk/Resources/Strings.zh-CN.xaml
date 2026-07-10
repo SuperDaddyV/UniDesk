@@ -196,6 +196,8 @@
     <sys:String x:Key="Settings.JsonFilter">JSON 文件 (*.json)|*.json</sys:String>
     <sys:String x:Key="Settings.BackupSuccess">UniDesk 数据已备份，请妥善保管备份文件。</sys:String>
     <sys:String x:Key="Settings.BackupFailedFormat">备份失败：{0}</sys:String>
+    <sys:String x:Key="Settings.IncludeClipboardHistoryPrompt">是否在备份中包含剪贴板历史？选择“取消”将继续备份，但不包含剪贴板历史。</sys:String>
+    <sys:String x:Key="Settings.ClipboardPlaintextWarning">为了支持跨设备恢复，剪贴板历史将以可读明文写入 JSON。仅在你能安全保管该文件时继续。</sys:String>
     <sys:String x:Key="Settings.RestoreConfirm">还原将覆盖备份文件中包含的设置、快捷方式、待办事项、快速便签和快捷文本，是否继续？</sys:String>
     <sys:String x:Key="Settings.RestoreSuccessFormat">已还原 {0} 项设置，{1} 个快捷方式，{2} 条待办事项，{3} 条便签，{4} 条历史，{5} 条常用短语。</sys:String>
     <sys:String x:Key="Settings.RestoreFailedFormat">还原失败：{0}</sys:String>

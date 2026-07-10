@@ -568,6 +568,17 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private async Task BackupTodosAsync()
     {
+        var includeClipboardHistory = _notificationService.ShowConfirmDialog(
+            L("Settings.IncludeClipboardHistoryPrompt"),
+            L("Settings.BackupTitle"));
+        if (includeClipboardHistory &&
+            !_notificationService.ShowConfirmDialog(
+                L("Settings.ClipboardPlaintextWarning"),
+                L("Settings.BackupTitle")))
+        {
+            return;
+        }
+
         var dialog = new Microsoft.Win32.SaveFileDialog
         {
             Title = L("Settings.BackupTitle"),
@@ -583,7 +594,9 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
 
         try
         {
-            await _todoBackupService.ExportToFileAsync(dialog.FileName);
+            await _todoBackupService.ExportToFileAsync(
+                dialog.FileName,
+                new BackupExportOptions(includeClipboardHistory));
             _notificationService.ShowSuccessMessage(L("Settings.BackupSuccess"));
         }
         catch (Exception ex)

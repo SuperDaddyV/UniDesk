@@ -11,7 +11,7 @@ namespace UniDesk.Services;
 
 public class TodoBackupService : ITodoBackupService
 {
-    private const int CurrentBackupVersion = 4;
+    private const int CurrentBackupVersion = 5;
     private readonly ITodoService _todoService;
     private readonly IQuickNoteService _quickNoteService;
     private readonly IQuickTextService _quickTextService;
@@ -22,6 +22,7 @@ public class TodoBackupService : ITodoBackupService
     private static readonly HashSet<string> ExcludedSettingKeys = new(StringComparer.Ordinal)
     {
         "DatabaseVersion",
+        "WeatherApiKey",
         WeatherApiDefaults.DefaultApiKeySettingKey,
         WeatherApiDefaults.DefaultApiHostSettingKey
     };
@@ -52,11 +53,16 @@ public class TodoBackupService : ITodoBackupService
         _databaseService = databaseService;
     }
 
-    public async Task ExportToFileAsync(string filePath)
+    public async Task ExportToFileAsync(
+        string filePath,
+        BackupExportOptions? options = null)
     {
+        options ??= new BackupExportOptions();
         var todos = await _todoService.GetAllTodosAsync();
         var quickNotes = await _quickNoteService.GetAllQuickNotesAsync();
-        var clipboardHistory = await _quickTextService.GetClipboardHistoryAsync(10_000);
+        var clipboardHistory = options.IncludeClipboardHistory
+            ? await _quickTextService.GetClipboardHistoryAsync(10_000)
+            : null;
         var textSnippets = await _quickTextService.GetTextSnippetsAsync();
         var shortcuts = await _shortcutService.GetAllShortcutsAsync();
         var settings = await GetSettingsBackupAsync();
@@ -64,11 +70,15 @@ public class TodoBackupService : ITodoBackupService
         {
             Version = CurrentBackupVersion,
             ExportedAt = DateTime.UtcNow,
+            IncludedSections = options.IncludeClipboardHistory
+                ? ["settings", "shortcuts", "todos", "quickNotes", "clipboardHistory", "textSnippets"]
+                : ["settings", "shortcuts", "todos", "quickNotes", "textSnippets"],
+            ContainsSensitivePlaintext = options.IncludeClipboardHistory,
             Settings = settings,
             Shortcuts = shortcuts.Select(ShortcutBackupEntry.FromShortcut).ToList(),
             Todos = todos.Select(TodoBackupEntry.FromTodo).ToList(),
             QuickNotes = quickNotes.Select(QuickNoteBackupEntry.FromQuickNote).ToList(),
-            ClipboardHistory = clipboardHistory.Select(ClipboardHistoryBackupEntry.FromHistory).ToList(),
+            ClipboardHistory = clipboardHistory?.Select(ClipboardHistoryBackupEntry.FromHistory).ToList(),
             TextSnippets = textSnippets.Select(TextSnippetBackupEntry.FromSnippet).ToList()
         };
 
@@ -323,6 +333,8 @@ public class TodoBackupService : ITodoBackupService
     {
         public int Version { get; set; }
         public DateTime ExportedAt { get; set; }
+        public List<string>? IncludedSections { get; set; }
+        public bool ContainsSensitivePlaintext { get; set; }
         public Dictionary<string, string?>? Settings { get; set; }
         public List<ShortcutBackupEntry>? Shortcuts { get; set; }
         public List<TodoBackupEntry>? Todos { get; set; }

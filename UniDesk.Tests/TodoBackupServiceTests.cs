@@ -1,5 +1,6 @@
 using UniDesk.Models;
 using UniDesk.Services;
+using System.Text.Json;
 using Xunit;
 
 namespace UniDesk.Tests;
@@ -39,7 +40,9 @@ public class TodoBackupServiceTests
             Content = "常用短语"
         });
 
-        await backupService.ExportToFileAsync(_backupFile);
+        await backupService.ExportToFileAsync(
+            _backupFile,
+            new BackupExportOptions(IncludeClipboardHistory: true));
         settingsService.SetValue("PanelWidth", "320");
         settingsService.SetValue("ModuleSettings", "");
         await settingsService.FlushPendingSavesAsync();
@@ -109,6 +112,49 @@ public class TodoBackupServiceTests
     }
 
     [Fact]
+    public async Task ExportToFileAsync_Default_ShouldExcludeWeatherKeyAndClipboardHistory()
+    {
+        var (_, _, _, quickTextService, _, settingsService, backupService) = await InitAsync();
+        await settingsService.SetSettingAsync("WeatherApiKey", "weather-secret");
+        await quickTextService.RecordClipboardTextAsync("portable clipboard");
+
+        await backupService.ExportToFileAsync(_backupFile);
+
+        using var document = JsonDocument.Parse(await File.ReadAllTextAsync(_backupFile));
+        var root = document.RootElement;
+        Assert.Equal(5, root.GetProperty("version").GetInt32());
+        Assert.False(root.GetProperty("settings").TryGetProperty("WeatherApiKey", out _));
+        Assert.False(root.TryGetProperty("clipboardHistory", out _));
+        Assert.False(root.GetProperty("containsSensitivePlaintext").GetBoolean());
+        Assert.DoesNotContain(
+            root.GetProperty("includedSections").EnumerateArray().Select(item => item.GetString()),
+            section => section == "clipboardHistory");
+        Cleanup();
+    }
+
+    [Fact]
+    public async Task ExportToFileAsync_WithClipboardHistory_ShouldDeclareAndWritePortablePlainText()
+    {
+        var (_, _, _, quickTextService, _, _, backupService) = await InitAsync();
+        await quickTextService.RecordClipboardTextAsync("portable clipboard");
+
+        await backupService.ExportToFileAsync(
+            _backupFile,
+            new BackupExportOptions(IncludeClipboardHistory: true));
+
+        using var document = JsonDocument.Parse(await File.ReadAllTextAsync(_backupFile));
+        var root = document.RootElement;
+        Assert.True(root.GetProperty("containsSensitivePlaintext").GetBoolean());
+        Assert.Equal(
+            "portable clipboard",
+            root.GetProperty("clipboardHistory")[0].GetProperty("content").GetString());
+        Assert.Contains(
+            root.GetProperty("includedSections").EnumerateArray().Select(item => item.GetString()),
+            section => section == "clipboardHistory");
+        Cleanup();
+    }
+
+    [Fact]
     public async Task ImportFromFileAsync_InvalidTodo_ShouldPreserveExistingData()
     {
         var (_, todoService, _, _, _, _, backupService) = await InitAsync();
@@ -147,7 +193,7 @@ public class TodoBackupServiceTests
             _backupFile,
             """
             {
-              "version": 5,
+              "version": 6,
               "exportedAt": "2026-07-10T00:00:00Z",
               "todos": [
                 {
@@ -215,6 +261,7 @@ public class TodoBackupServiceTests
 
     private async Task<(DatabaseService Db, TodoService TodoService, QuickNoteService QuickNoteService, QuickTextService QuickTextService, ShortcutService ShortcutService, SettingsService SettingsService, TodoBackupService BackupService)> InitAsync()
     {
+        Cleanup();
         var db = new DatabaseService($"Data Source={_testDbFile}");
         await db.InitializeAsync();
         var todoService = new TodoService(db);

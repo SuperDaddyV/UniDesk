@@ -196,6 +196,8 @@
     <sys:String x:Key="Settings.JsonFilter">Archivos JSON (*.json)|*.json</sys:String>
     <sys:String x:Key="Settings.BackupSuccess">Datos de UniDesk copiados. Guarda bien el archivo.</sys:String>
     <sys:String x:Key="Settings.BackupFailedFormat">Error de copia: {0}</sys:String>
+    <sys:String x:Key="Settings.IncludeClipboardHistoryPrompt">¿Incluir el historial del portapapeles? Cancelar continúa sin incluirlo.</sys:String>
+    <sys:String x:Key="Settings.ClipboardPlaintextWarning">Para restaurarlo en otro equipo, el historial será texto legible dentro del JSON. Continúa solo si puedes guardar el archivo de forma segura.</sys:String>
     <sys:String x:Key="Settings.RestoreConfirm">La restauración sobrescribirá ajustes, accesos, tareas, notas y texto rápido incluidos en la copia. ¿Continuar?</sys:String>
     <sys:String x:Key="Settings.RestoreSuccessFormat">Restaurados {0} ajustes, {1} accesos, {2} tareas, {3} notas, {4} historiales y {5} frases.</sys:String>
     <sys:String x:Key="Settings.RestoreFailedFormat">Error al restaurar: {0}</sys:String>

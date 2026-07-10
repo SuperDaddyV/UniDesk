@@ -196,6 +196,8 @@
     <sys:String x:Key="Settings.JsonFilter">JSON ファイル (*.json)|*.json</sys:String>
     <sys:String x:Key="Settings.BackupSuccess">UniDesk データをバックアップしました。</sys:String>
     <sys:String x:Key="Settings.BackupFailedFormat">バックアップ失敗：{0}</sys:String>
+    <sys:String x:Key="Settings.IncludeClipboardHistoryPrompt">クリップボード履歴をバックアップに含めますか？キャンセルを選ぶと、履歴を含めずに続行します。</sys:String>
+    <sys:String x:Key="Settings.ClipboardPlaintextWarning">端末間で復元できるよう、クリップボード履歴は JSON に読み取り可能な平文で保存されます。安全に保管できる場合のみ続行してください。</sys:String>
     <sys:String x:Key="Settings.RestoreConfirm">復元するとバックアップ内の設定、ショートカット、ToDo、メモ、クイックテキストで上書きされます。続行しますか？</sys:String>
     <sys:String x:Key="Settings.RestoreSuccessFormat">{0} 件の設定、{1} 個のショートカット、{2} 件の ToDo、{3} 件のメモ、{4} 件の履歴、{5} 件の定型文を復元しました。</sys:String>
     <sys:String x:Key="Settings.RestoreFailedFormat">復元失敗：{0}</sys:String>
