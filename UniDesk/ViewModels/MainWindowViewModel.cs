@@ -28,8 +28,6 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
     private readonly IWindowService _windowService;
     private readonly ILayoutService _layoutService;
     private readonly IClockService _clockService;
-    private readonly INoteService _noteService;
-    private readonly IQuickNoteService _quickNoteService;
     private readonly IQuickTextService _quickTextService;
     private readonly IShortcutService _shortcutService;
     private readonly IWeatherService _weatherService;
@@ -39,8 +37,6 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
     private readonly ITodoBackupService _todoBackupService;
     private readonly DispatcherTimer _weatherRefreshTimer;
     private CancellationTokenSource? _weatherRefreshCts;
-    private int _notesLoadGeneration;
-    private int _quickNotesLoadGeneration;
     private int _quickTextLoadGeneration;
     private int _shortcutsLoadGeneration;
     private int? _shortcutLimitPreview;
@@ -117,12 +113,6 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
     private DateTime _calendarSelectedDate = DateTime.Today;
 
     [ObservableProperty]
-    private ObservableCollection<NoteItem> _notes = new();
-
-    [ObservableProperty]
-    private ObservableCollection<QuickNote> _quickNotes = new();
-
-    [ObservableProperty]
     private ObservableCollection<ClipboardHistoryItem> _clipboardHistory = new();
 
     [ObservableProperty]
@@ -140,8 +130,6 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
     public ObservableCollection<ModuleSetting> ModuleSettings { get; } = new();
 
     public bool HasShortcuts => _allShortcuts.Count > 0;
-
-    public bool HasQuickNotes => QuickNotes.Count > 0;
 
     public bool HasClipboardHistory => ClipboardHistory.Count > 0;
 
@@ -203,6 +191,8 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
 
     public TodosViewModel Todos { get; }
 
+    public QuickNotesViewModel QuickNotes { get; }
+
     public MainWindowViewModel(
         INotificationService notificationService,
         ISettingsService settingsService,
@@ -231,8 +221,6 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         _windowService = windowService;
         _layoutService = layoutService;
         _clockService = clockService;
-        _noteService = noteService;
-        _quickNoteService = quickNoteService;
         _quickTextService = quickTextService;
         _shortcutService = shortcutService;
         _weatherService = weatherService;
@@ -247,6 +235,12 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         Todos = new TodosViewModel(
             todoService,
             todoDeletionHandler,
+            notificationService,
+            localizationService,
+            () => PanelWidth);
+        QuickNotes = new QuickNotesViewModel(
+            noteService,
+            quickNoteService,
             notificationService,
             localizationService,
             () => PanelWidth);
@@ -268,10 +262,9 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         };
         _weatherRefreshTimer.Start();
 
-        _ = LoadNotesAsync();
         if (IsModuleEnabled(DashboardModuleIds.QuickNotes))
         {
-            _ = LoadQuickNotesAsync();
+            _ = QuickNotes.ReloadAsync();
         }
 
         if (IsModuleEnabled(DashboardModuleIds.QuickText))
@@ -398,9 +391,9 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
             _ = InitializeWeatherAsync();
         }
 
-        if (IsModuleEnabled(DashboardModuleIds.QuickNotes) && QuickNotes.Count == 0)
+        if (IsModuleEnabled(DashboardModuleIds.QuickNotes) && QuickNotes.QuickNotes.Count == 0)
         {
-            _ = LoadQuickNotesAsync();
+            _ = QuickNotes.ReloadAsync();
         }
 
         if (IsModuleEnabled(DashboardModuleIds.QuickText) &&
@@ -782,185 +775,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
 
     public async Task ReloadShortcutsAsync() => await LoadShortcutsAsync();
 
-    [RelayCommand]
-    private async Task RefreshNotesAsync() => await LoadNotesAsync();
-
-    [RelayCommand]
-    private void NewNote()
-    {
-        var window = new NoteEditWindow(new NoteEditViewModel(_noteService, _localizationService));
-        window.Owner = App.Current.MainWindow;
-        if (window.ShowDialog() == true)
-        {
-            _ = LoadNotesAsync();
-        }
-    }
-
-    [RelayCommand]
-    private void EditNote(NoteItem? note)
-    {
-        if (note == null) return;
-        var window = new NoteEditWindow(new NoteEditViewModel(_noteService, _localizationService, note));
-        window.Owner = App.Current.MainWindow;
-        if (window.ShowDialog() == true)
-        {
-            _ = LoadNotesAsync();
-        }
-    }
-
-    [RelayCommand]
-    private async Task DeleteNoteAsync(NoteItem? note)
-    {
-        if (note == null) return;
-        if (!_notificationService.ShowConfirmDialog(L("QuickNote.DeleteConfirm"), L("Dialog.DeleteConfirmTitle")))
-        {
-            return;
-        }
-
-        await _noteService.DeleteNoteAsync(note.Id);
-        await LoadNotesAsync();
-    }
-
-    private async Task LoadNotesAsync()
-    {
-        var generation = Interlocked.Increment(ref _notesLoadGeneration);
-        try
-        {
-            var notes = await _noteService.GetAllNotesAsync();
-            if (generation != _notesLoadGeneration) return;
-
-            await Application.Current.Dispatcher.InvokeAsync(() =>
-            {
-                Notes.Clear();
-                foreach (var note in notes.OrderByDescending(n => n.UpdatedAt))
-                {
-                    Notes.Add(note);
-                }
-            });
-        }
-        catch (Exception ex)
-        {
-            Logger.LogError(ex, "MainWindowViewModel.LoadNotes");
-            if (generation == _notesLoadGeneration)
-            {
-                _notificationService.ShowWarningMessage(L("Common.OperationFailed"));
-            }
-        }
-    }
-
-    public async Task ReloadQuickNotesAsync() => await LoadQuickNotesAsync();
-
-    [RelayCommand]
-    private void NewQuickNote()
-    {
-        var window = new QuickNoteEditorWindow(
-            new QuickNoteEditorViewModel(_quickNoteService, _notificationService, _localizationService),
-            PanelWidth);
-        window.Owner = App.Current.MainWindow;
-        window.ShowDialog();
-        _ = LoadQuickNotesAsync();
-    }
-
-    [RelayCommand]
-    private void EditQuickNote(QuickNote? note)
-    {
-        if (note == null)
-        {
-            return;
-        }
-
-        var window = new QuickNoteEditorWindow(
-            new QuickNoteEditorViewModel(_quickNoteService, _notificationService, _localizationService, note),
-            PanelWidth);
-        window.Owner = App.Current.MainWindow;
-        window.ShowDialog();
-        _ = LoadQuickNotesAsync();
-    }
-
-    [RelayCommand]
-    private async Task DeleteQuickNoteAsync(QuickNote? note)
-    {
-        if (note == null)
-        {
-            return;
-        }
-
-        if (!_notificationService.ShowConfirmDialog(L("QuickNote.DeleteConfirm"), L("Dialog.DeleteConfirmTitle")))
-        {
-            return;
-        }
-
-        await _quickNoteService.DeleteQuickNoteAsync(note.Id);
-        await LoadQuickNotesAsync();
-    }
-
-    [RelayCommand]
-    private async Task ToggleQuickNotePinnedAsync(QuickNote? note)
-    {
-        if (note == null)
-        {
-            return;
-        }
-
-        await _quickNoteService.SetPinnedAsync(note.Id, !note.IsPinned);
-        await LoadQuickNotesAsync();
-    }
-
-    [RelayCommand]
-    private void CopyQuickNoteContent(QuickNote? note)
-    {
-        if (note == null)
-        {
-            return;
-        }
-
-        var text = string.IsNullOrWhiteSpace(note.Content) ? note.Title : note.Content;
-        if (string.IsNullOrWhiteSpace(text))
-        {
-            _notificationService.ShowWarningMessage(L("QuickNote.ContentEmpty"));
-            return;
-        }
-
-        try
-        {
-            Clipboard.SetText(text);
-            _notificationService.ShowSuccessMessage(L("Common.Copied"));
-        }
-        catch (Exception ex)
-        {
-            Logger.LogError(ex, "MainWindowViewModel.CopyQuickNoteContent");
-            _notificationService.ShowWarningMessage(L("Common.CopyFailed"));
-        }
-    }
-
-    private async Task LoadQuickNotesAsync()
-    {
-        var generation = Interlocked.Increment(ref _quickNotesLoadGeneration);
-        try
-        {
-            var notes = await _quickNoteService.GetAllQuickNotesAsync();
-            if (generation != _quickNotesLoadGeneration) return;
-
-            await Application.Current.Dispatcher.InvokeAsync(() =>
-            {
-                QuickNotes.Clear();
-                foreach (var note in notes.Take(5))
-                {
-                    QuickNotes.Add(note);
-                }
-
-                OnPropertyChanged(nameof(HasQuickNotes));
-            });
-        }
-        catch (Exception ex)
-        {
-            Logger.LogError(ex, "MainWindowViewModel.LoadQuickNotes");
-            if (generation == _quickNotesLoadGeneration)
-            {
-                _notificationService.ShowWarningMessage(L("Common.OperationFailed"));
-            }
-        }
-    }
+    public Task ReloadQuickNotesAsync() => QuickNotes.ReloadAsync();
 
     public async Task ReloadQuickTextAsync() => await LoadQuickTextAsync();
 
