@@ -76,6 +76,7 @@ public partial class App : Application
 
             var settingsService = Services.GetRequiredService<ISettingsService>();
             await settingsService.InitializeAsync();
+            await Services.GetRequiredService<IPrivacyMigrationService>().MigrateAsync();
             Services.GetRequiredService<ILocalizationService>().Initialize(settingsService);
 
             SyncStartupWithSettings();
@@ -242,6 +243,7 @@ public partial class App : Application
 
         services.AddSingleton<ISettingsService, SettingsService>();
         services.AddSingleton<IUserDataProtector, DpapiUserDataProtector>();
+        services.AddSingleton<IPrivacyMigrationService, PrivacyMigrationService>();
         services.AddSingleton<ILocalizationService, LocalizationService>();
         services.AddSingleton<IDatabaseService, DatabaseService>();
         services.AddSingleton<INotificationService, NotificationService>();
