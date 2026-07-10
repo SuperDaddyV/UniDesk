@@ -108,6 +108,66 @@ public class TodoBackupServiceTests
         Cleanup();
     }
 
+    [Fact]
+    public async Task ImportFromFileAsync_InvalidTodo_ShouldPreserveExistingData()
+    {
+        var (_, todoService, _, _, _, _, backupService) = await InitAsync();
+        await todoService.CreateTodoAsync(new TodoItem { Title = "保留的待办" });
+        await File.WriteAllTextAsync(
+            _backupFile,
+            """
+            {
+              "version": 4,
+              "exportedAt": "2026-07-10T00:00:00Z",
+              "todos": [
+                {
+                  "title": "",
+                  "isCompleted": false,
+                  "priority": 1,
+                  "createdAt": "2026-07-10T00:00:00Z"
+                }
+              ]
+            }
+            """);
+
+        await Assert.ThrowsAsync<InvalidDataException>(() => backupService.ImportFromFileAsync(_backupFile));
+
+        var todos = await todoService.GetAllTodosAsync();
+        Assert.Single(todos);
+        Assert.Equal("保留的待办", todos[0].Title);
+        Cleanup();
+    }
+
+    [Fact]
+    public async Task ImportFromFileAsync_FutureVersion_ShouldPreserveExistingData()
+    {
+        var (_, todoService, _, _, _, _, backupService) = await InitAsync();
+        await todoService.CreateTodoAsync(new TodoItem { Title = "保留的待办" });
+        await File.WriteAllTextAsync(
+            _backupFile,
+            """
+            {
+              "version": 5,
+              "exportedAt": "2026-07-10T00:00:00Z",
+              "todos": [
+                {
+                  "title": "未来版本待办",
+                  "isCompleted": false,
+                  "priority": 1,
+                  "createdAt": "2026-07-10T00:00:00Z"
+                }
+              ]
+            }
+            """);
+
+        await Assert.ThrowsAsync<InvalidDataException>(() => backupService.ImportFromFileAsync(_backupFile));
+
+        var todos = await todoService.GetAllTodosAsync();
+        Assert.Single(todos);
+        Assert.Equal("保留的待办", todos[0].Title);
+        Cleanup();
+    }
+
     private async Task<(DatabaseService Db, TodoService TodoService, QuickNoteService QuickNoteService, QuickTextService QuickTextService, ShortcutService ShortcutService, SettingsService SettingsService, TodoBackupService BackupService)> InitAsync()
     {
         var db = new DatabaseService($"Data Source={_testDbFile}");

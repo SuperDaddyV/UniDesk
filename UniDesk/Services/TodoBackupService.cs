@@ -10,6 +10,7 @@ namespace UniDesk.Services;
 
 public class TodoBackupService : ITodoBackupService
 {
+    private const int CurrentBackupVersion = 4;
     private readonly ITodoService _todoService;
     private readonly IQuickNoteService _quickNoteService;
     private readonly IQuickTextService _quickTextService;
@@ -60,7 +61,7 @@ public class TodoBackupService : ITodoBackupService
         var settings = await GetSettingsBackupAsync();
         var payload = new TodoBackupFile
         {
-            Version = 4,
+            Version = CurrentBackupVersion,
             ExportedAt = DateTime.UtcNow,
             Settings = settings,
             Shortcuts = shortcuts.Select(ShortcutBackupEntry.FromShortcut).ToList(),
@@ -80,10 +81,7 @@ public class TodoBackupService : ITodoBackupService
         var payload = JsonSerializer.Deserialize<TodoBackupFile>(json, JsonOptions)
                       ?? throw new InvalidDataException("备份文件格式无效。");
 
-        if (!HasRestorableData(payload))
-        {
-            throw new InvalidDataException("备份文件中没有可还原的数据。");
-        }
+        ValidatePayload(payload);
 
         var result = new TodoBackupImportResult();
 
@@ -254,6 +252,64 @@ public class TodoBackupService : ITodoBackupService
         payload.QuickNotes != null ||
         payload.ClipboardHistory != null ||
         payload.TextSnippets != null;
+
+    private static void ValidatePayload(TodoBackupFile payload)
+    {
+        if (payload.Version is < 1 or > CurrentBackupVersion)
+        {
+            throw new InvalidDataException($"不支持的备份版本：{payload.Version}。");
+        }
+
+        if (!HasRestorableData(payload))
+        {
+            throw new InvalidDataException("备份文件中没有可还原的数据。");
+        }
+
+        if (payload.Settings != null && payload.Settings.Keys.Any(string.IsNullOrWhiteSpace))
+        {
+            throw new InvalidDataException("Settings 包含空白 key。");
+        }
+
+        ValidateEntries(
+            payload.Shortcuts,
+            "Shortcuts",
+            entry => !string.IsNullOrWhiteSpace(entry.Name) && !string.IsNullOrWhiteSpace(entry.Path));
+        ValidateEntries(
+            payload.Todos,
+            "Todos",
+            entry => !string.IsNullOrWhiteSpace(entry.Title));
+        ValidateEntries(
+            payload.QuickNotes,
+            "QuickNotes",
+            entry => !string.IsNullOrWhiteSpace(entry.Title) || !string.IsNullOrWhiteSpace(entry.Content));
+        ValidateEntries(
+            payload.ClipboardHistory,
+            "ClipboardHistory",
+            entry => !string.IsNullOrWhiteSpace(QuickTextService.NormalizeClipboardText(entry.Content)));
+        ValidateEntries(
+            payload.TextSnippets,
+            "TextSnippets",
+            entry => !string.IsNullOrWhiteSpace(entry.Content));
+    }
+
+    private static void ValidateEntries<T>(
+        IReadOnlyList<T>? entries,
+        string section,
+        Func<T, bool> isValid)
+    {
+        if (entries == null)
+        {
+            return;
+        }
+
+        for (var index = 0; index < entries.Count; index++)
+        {
+            if (!isValid(entries[index]))
+            {
+                throw new InvalidDataException($"{section}[{index}] 包含无效数据。");
+            }
+        }
+    }
 
     private sealed class TodoBackupFile
     {
