@@ -6,6 +6,48 @@ namespace UniDesk.Tests;
 public class SystemMetricsServiceTests
 {
     [Fact]
+    public void CpuMetricsReader_ShouldPreferAsusTemperature()
+    {
+        using var reader = new CpuMetricsReader(
+            () => 25,
+            () => 61,
+            () => new CpuMetrics(45, 72));
+
+        var metrics = reader.Read();
+
+        Assert.Equal(25, metrics.CpuUsage);
+        Assert.Equal(61, metrics.CpuTemperature);
+    }
+
+    [Fact]
+    public void CpuMetricsReader_ShouldFillMissingPerformanceUsageFromLibre()
+    {
+        using var reader = new CpuMetricsReader(
+            () => null,
+            () => 61,
+            () => new CpuMetrics(45, 72));
+
+        var metrics = reader.Read();
+
+        Assert.Equal(45, metrics.CpuUsage);
+        Assert.Equal(61, metrics.CpuTemperature);
+    }
+
+    [Fact]
+    public void CpuMetricsReader_InvalidAsusTemperature_ShouldFallBackToLibre()
+    {
+        using var reader = new CpuMetricsReader(
+            () => 25,
+            () => 121,
+            () => new CpuMetrics(45, 72));
+
+        var metrics = reader.Read();
+
+        Assert.Equal(25, metrics.CpuUsage);
+        Assert.Equal(72, metrics.CpuTemperature);
+    }
+
+    [Fact]
     public void Read_ShouldReturnSnapshotWithoutThrowing()
     {
         using var service = new SystemMetricsService();
