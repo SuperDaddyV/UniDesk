@@ -38,9 +38,8 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
     private readonly IClipboardMonitorService _clipboardMonitorService;
     private readonly IStartupService _startupService;
     private readonly ITodoBackupService _todoBackupService;
-    private readonly ISystemMetricsService _systemMetricsService;
+    private readonly ISystemMetricsMonitor _systemMetricsMonitor;
     private readonly DispatcherTimer _weatherRefreshTimer;
-    private readonly DispatcherTimer _systemMetricsTimer;
     private CancellationTokenSource? _weatherRefreshCts;
     private int _notesLoadGeneration;
     private int _quickNotesLoadGeneration;
@@ -252,7 +251,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         IWeatherService weatherService,
         IStartupService startupService,
         ITodoBackupService todoBackupService,
-        ISystemMetricsService systemMetricsService,
+        ISystemMetricsMonitor systemMetricsMonitor,
         IClipboardMonitorService clipboardMonitorService)
     {
         _notificationService = notificationService;
@@ -271,7 +270,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         _hotkeyService = hotkeyService;
         _startupService = startupService;
         _todoBackupService = todoBackupService;
-        _systemMetricsService = systemMetricsService;
+        _systemMetricsMonitor = systemMetricsMonitor;
         _clipboardMonitorService = clipboardMonitorService;
         _clipboardMonitorService.ClipboardHistoryChanged += ClipboardMonitor_OnHistoryChanged;
         _localizationService.LanguageChanged += LocalizationService_OnLanguageChanged;
@@ -294,10 +293,9 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         };
         _weatherRefreshTimer.Start();
 
-        _systemMetricsTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
-        _systemMetricsTimer.Tick += (_, _) => UpdateSystemMetrics();
-        _systemMetricsTimer.Start();
-        UpdateSystemMetrics();
+        _systemMetricsMonitor.SnapshotAvailable += SystemMetricsMonitor_OnSnapshotAvailable;
+        _systemMetricsMonitor.IsEnabled = IsModuleEnabled(DashboardModuleIds.HardwareMonitor);
+        _systemMetricsMonitor.Start();
 
         _ = LoadNotesAsync();
         if (IsModuleEnabled(DashboardModuleIds.QuickNotes))
@@ -422,10 +420,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
             SaveModuleSettings();
         }
 
-        if (IsModuleEnabled(DashboardModuleIds.HardwareMonitor))
-        {
-            UpdateSystemMetrics();
-        }
+        _systemMetricsMonitor.IsEnabled = IsModuleEnabled(DashboardModuleIds.HardwareMonitor);
 
         if (IsModuleEnabled(DashboardModuleIds.TimeWeather) && !HasWeatherData)
         {
@@ -1939,34 +1934,38 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         return WeatherIconResolver.NormalizeIconCode(null, info.WeatherDesc);
     }
 
-    private void UpdateSystemMetrics()
+    private void SystemMetricsMonitor_OnSnapshotAvailable(object? sender, SystemMetricsSnapshot metrics)
     {
-        if (!IsModuleEnabled(DashboardModuleIds.HardwareMonitor))
+        if (_disposed || !IsModuleEnabled(DashboardModuleIds.HardwareMonitor))
         {
             return;
         }
 
-        try
+        var dispatcher = Application.Current?.Dispatcher;
+        if (dispatcher == null || dispatcher.CheckAccess())
         {
-            var metrics = _systemMetricsService.Read();
-            SystemCpuUsageText = FormatPercent(metrics.CpuUsage);
-            SystemCpuTemperatureText = FormatTemperature("CPU", metrics.CpuTemperature);
-            SystemMemoryUsageText = FormatPercent(metrics.MemoryUsage);
-            SystemGpuUsageText = FormatPercent(metrics.GpuUsage);
-            SystemGpuTemperatureText = FormatTemperature("GPU", metrics.GpuTemperature);
-            SystemNetworkReceivedText = FormatSpeed(metrics.NetworkReceivedBytesPerSecond);
-            SystemNetworkSentText = FormatSpeed(metrics.NetworkSentBytesPerSecond);
+            ApplySystemMetrics(metrics);
+            return;
         }
-        catch
+
+        _ = dispatcher.BeginInvoke(() =>
         {
-            SystemCpuUsageText = "--";
-            SystemCpuTemperatureText = "CPU --℃";
-            SystemMemoryUsageText = "--";
-            SystemGpuUsageText = "--";
-            SystemGpuTemperatureText = "GPU --℃";
-            SystemNetworkReceivedText = "--";
-            SystemNetworkSentText = "--";
-        }
+            if (!_disposed && IsModuleEnabled(DashboardModuleIds.HardwareMonitor))
+            {
+                ApplySystemMetrics(metrics);
+            }
+        });
+    }
+
+    private void ApplySystemMetrics(SystemMetricsSnapshot metrics)
+    {
+        SystemCpuUsageText = FormatPercent(metrics.CpuUsage);
+        SystemCpuTemperatureText = FormatTemperature("CPU", metrics.CpuTemperature);
+        SystemMemoryUsageText = FormatPercent(metrics.MemoryUsage);
+        SystemGpuUsageText = FormatPercent(metrics.GpuUsage);
+        SystemGpuTemperatureText = FormatTemperature("GPU", metrics.GpuTemperature);
+        SystemNetworkReceivedText = FormatSpeed(metrics.NetworkReceivedBytesPerSecond);
+        SystemNetworkSentText = FormatSpeed(metrics.NetworkSentBytesPerSecond);
     }
 
     private static string FormatPercent(double? value) => value.HasValue ? $"{value.Value:0}%" : "--";
@@ -2019,7 +2018,8 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         _localizationService.LanguageChanged -= LocalizationService_OnLanguageChanged;
         _clipboardMonitorService.ClipboardHistoryChanged -= ClipboardMonitor_OnHistoryChanged;
         _weatherRefreshTimer.Stop();
-        _systemMetricsTimer.Stop();
+        _systemMetricsMonitor.SnapshotAvailable -= SystemMetricsMonitor_OnSnapshotAvailable;
+        _systemMetricsMonitor.Dispose();
         var weatherRefreshCts = _weatherRefreshCts;
         _weatherRefreshCts = null;
         try
@@ -2031,9 +2031,5 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         }
         weatherRefreshCts?.Dispose();
         _clockService.Stop();
-        if (_systemMetricsService is IDisposable disposableMetrics)
-        {
-            disposableMetrics.Dispose();
-        }
     }
 }

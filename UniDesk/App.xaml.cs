@@ -232,7 +232,12 @@ public partial class App : Application
         services.AddSingleton<ITodoService, TodoService>();
         services.AddSingleton<ITodoBackupService, TodoBackupService>();
         services.AddSingleton<IShortcutService, ShortcutService>();
-        services.AddSingleton<ISystemMetricsService, SystemMetricsService>();
+        services.AddSingleton<ISystemMetricsMonitor>(_ =>
+            new SystemMetricsMonitor(
+                new SystemMetricsService(),
+                TimeSpan.FromSeconds(2),
+                TimeSpan.FromSeconds(2),
+                ownsReader: true));
     }
 
     protected override void OnExit(ExitEventArgs e)
