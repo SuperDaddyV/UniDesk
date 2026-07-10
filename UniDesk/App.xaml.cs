@@ -241,6 +241,7 @@ public partial class App : Application
         services.AddSingleton<MainWindowViewModel>();
 
         services.AddSingleton<ISettingsService, SettingsService>();
+        services.AddSingleton<IUserDataProtector, DpapiUserDataProtector>();
         services.AddSingleton<ILocalizationService, LocalizationService>();
         services.AddSingleton<IDatabaseService, DatabaseService>();
         services.AddSingleton<INotificationService, NotificationService>();
