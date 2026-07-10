@@ -31,8 +31,6 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
     private readonly INoteService _noteService;
     private readonly IQuickNoteService _quickNoteService;
     private readonly IQuickTextService _quickTextService;
-    private readonly ITodoService _todoService;
-    private readonly ITodoDeletionHandler _todoDeletionHandler;
     private readonly IShortcutService _shortcutService;
     private readonly IWeatherService _weatherService;
     private readonly IHotkeyService _hotkeyService;
@@ -44,7 +42,6 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
     private int _notesLoadGeneration;
     private int _quickNotesLoadGeneration;
     private int _quickTextLoadGeneration;
-    private int _todosLoadGeneration;
     private int _shortcutsLoadGeneration;
     private int? _shortcutLimitPreview;
     private List<ShortcutItem> _allShortcuts = [];
@@ -135,9 +132,6 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
     private QuickTextMode _selectedQuickTextMode = QuickTextMode.History;
 
     [ObservableProperty]
-    private ObservableCollection<TodoItem> _todos = new();
-
-    [ObservableProperty]
     private ObservableCollection<ShortcutItem> _shortcuts = new();
 
     /// <summary>快捷方式区展示项（含末尾添加按钮占位）。</summary>
@@ -205,15 +199,9 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
 
     public string PanelCollapseToolTip => L(IsPanelCollapsed ? "Header.ExpandPanel" : "Header.CollapsePanel");
 
-    [ObservableProperty]
-    private TodoItem? _collapsedPanelTodo;
-
-    [ObservableProperty]
-    private string _collapsedPanelTodoDueText = string.Empty;
-
-    public bool HasCollapsedPanelTodo => CollapsedPanelTodo != null;
-
     public HardwareMonitorViewModel HardwareMonitor { get; }
+
+    public TodosViewModel Todos { get; }
 
     public MainWindowViewModel(
         INotificationService notificationService,
@@ -246,8 +234,6 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         _noteService = noteService;
         _quickNoteService = quickNoteService;
         _quickTextService = quickTextService;
-        _todoService = todoService;
-        _todoDeletionHandler = todoDeletionHandler;
         _shortcutService = shortcutService;
         _weatherService = weatherService;
         _hotkeyService = hotkeyService;
@@ -258,6 +244,12 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         _localizationService.LanguageChanged += LocalizationService_OnLanguageChanged;
 
         HardwareMonitor = new HardwareMonitorViewModel(systemMetricsMonitor);
+        Todos = new TodosViewModel(
+            todoService,
+            todoDeletionHandler,
+            notificationService,
+            localizationService,
+            () => PanelWidth);
         LoadSettings();
         _layoutService.LoadOrGetDefault();
 
@@ -287,7 +279,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
             _ = LoadQuickTextAsync();
         }
 
-        _ = LoadTodosAsync();
+        _ = Todos.ReloadAsync();
         _ = LoadShortcutsAsync();
         _ = InitializeWeatherAsync();
     }
@@ -705,9 +697,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         _settingsService.SetValue("WindowTop", top.ToString(CultureInfo.InvariantCulture));
     }
 
-    partial void OnCollapsedPanelTodoChanged(TodoItem? value) => OnPropertyChanged(nameof(HasCollapsedPanelTodo));
-
-    public Task ReloadTodosAsync() => LoadTodosAsync();
+    public Task ReloadTodosAsync() => Todos.ReloadAsync();
 
     [RelayCommand]
     private void ToggleWindowVisibility() => _windowService.ToggleWindow();
@@ -1193,108 +1183,6 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         {
             Logger.LogError(ex, "MainWindowViewModel.LoadQuickText");
         }
-    }
-
-    [RelayCommand]
-    private async Task AddTodoAsync()
-    {
-        var window = new TodoEditWindow(new TodoEditViewModel(_todoService, _localizationService), PanelWidth);
-        window.Owner = App.Current.MainWindow;
-        if (window.ShowDialog() == true)
-        {
-            await LoadTodosAsync();
-        }
-    }
-
-    [RelayCommand]
-    private async Task EditTodoAsync(TodoItem? todo)
-    {
-        if (todo == null) return;
-
-        var window = new TodoEditWindow(new TodoEditViewModel(_todoService, _localizationService, todo), PanelWidth);
-        window.Owner = App.Current.MainWindow;
-        if (window.ShowDialog() == true)
-        {
-            await LoadTodosAsync();
-        }
-    }
-
-    [RelayCommand]
-    private async Task ToggleTodoAsync(TodoItem? todo)
-    {
-        if (todo == null) return;
-        await _todoService.ToggleCompleteAsync(todo.Id);
-        await LoadTodosAsync();
-    }
-
-    [RelayCommand]
-    private async Task DeleteTodoAsync(TodoItem? todo)
-    {
-        if (await _todoDeletionHandler.ConfirmAndDeleteAsync(todo))
-        {
-            await LoadTodosAsync();
-        }
-    }
-
-    private async Task LoadTodosAsync()
-    {
-        var generation = Interlocked.Increment(ref _todosLoadGeneration);
-        try
-        {
-            var todos = await _todoService.GetAllTodosAsync();
-            if (generation != _todosLoadGeneration) return;
-
-            await Application.Current.Dispatcher.InvokeAsync(() =>
-            {
-                Todos.Clear();
-                foreach (var todo in TodoSortHelper.Sort(todos))
-                {
-                    Todos.Add(todo);
-                }
-
-                RefreshCollapsedPanelTodo();
-            });
-        }
-        catch (Exception ex)
-        {
-            Logger.LogError(ex, "MainWindowViewModel.LoadTodos");
-            if (generation == _todosLoadGeneration)
-            {
-                _notificationService.ShowWarningMessage(L("Todo.LoadFailed"));
-            }
-        }
-    }
-
-    private void RefreshCollapsedPanelTodo()
-    {
-        CollapsedPanelTodo = Todos.FirstOrDefault(todo => !todo.IsCompleted) ?? Todos.FirstOrDefault();
-        CollapsedPanelTodoDueText = BuildTodoDueText(CollapsedPanelTodo);
-    }
-
-    private string BuildTodoDueText(TodoItem? todo)
-    {
-        if (todo?.DueDate == null)
-        {
-            return string.Empty;
-        }
-
-        var due = todo.DueDate.Value;
-        var today = DateTime.Today;
-        var hasTime = due.TimeOfDay.TotalSeconds > 0;
-
-        if (due.Date == today)
-        {
-            return hasTime ? $"{L("Common.Today")} {due:HH:mm}" : L("Common.Today");
-        }
-
-        if (due.Date == today.AddDays(1))
-        {
-            return hasTime ? $"{L("Common.Tomorrow")} {due:HH:mm}" : L("Common.Tomorrow");
-        }
-
-        return hasTime
-            ? due.ToString("M/d HH:mm", CultureInfo.CurrentCulture)
-            : due.ToString("M/d", CultureInfo.CurrentCulture);
     }
 
     [RelayCommand]
@@ -1924,7 +1812,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(CalendarWeekdayLabels));
         UpdateClockText();
         RefreshCalendarDays();
-        RefreshCollapsedPanelTodo();
+        Todos.RefreshCollapsedPanelTodo();
         if (WeatherStatusMessage == "请在设置中配置 API Key" || WeatherStatusMessage == "Configure API Key in Settings")
         {
             WeatherStatusMessage = L("Weather.ConfigureApiKey");
