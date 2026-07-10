@@ -17,6 +17,7 @@ public partial class App : Application
     private MainWindow? _mainWindow;
     private TrayService? _trayService;
     private HotkeyService? _hotkeyService;
+    private int _activationPending;
 
     public App()
     {
@@ -51,6 +52,21 @@ public partial class App : Application
 
         try
         {
+            _singleInstanceHelper = new SingleInstanceHelper();
+            if (!_singleInstanceHelper.TryAcquire())
+            {
+                if (!await _singleInstanceHelper.SignalExistingInstanceAsync())
+                {
+                    Logger.LogWarning("无法连接首实例的激活管道。", "App.OnStartup");
+                }
+
+                Shutdown();
+                return;
+            }
+
+            _singleInstanceHelper.ActivationRequested += OnActivationRequested;
+            _singleInstanceHelper.StartListening();
+
             var services = new ServiceCollection();
             ConfigureServices(services);
             Services = services.BuildServiceProvider();
@@ -58,16 +74,6 @@ public partial class App : Application
             var settingsService = Services.GetRequiredService<ISettingsService>();
             await settingsService.InitializeAsync();
             Services.GetRequiredService<ILocalizationService>().Initialize(settingsService);
-
-            var notificationService = Services.GetRequiredService<INotificationService>();
-            _singleInstanceHelper = new SingleInstanceHelper(notificationService);
-
-            if (!_singleInstanceHelper.TryAcquire())
-            {
-                notificationService.ShowInfoMessage(Services.GetRequiredService<ILocalizationService>().GetString("Common.AlreadyRunning"));
-                Shutdown();
-                return;
-            }
 
             SyncStartupWithSettings();
 
@@ -92,6 +98,10 @@ public partial class App : Application
             };
 
             _mainWindow.Show();
+            if (Interlocked.Exchange(ref _activationPending, 0) == 1)
+            {
+                windowService?.ActivateWindow();
+            }
 
             _trayService = Services.GetRequiredService<ITrayService>() as TrayService;
             _trayService?.Initialize();
@@ -112,6 +122,22 @@ public partial class App : Application
                 MessageBoxImage.Error);
             Shutdown(-1);
         }
+    }
+
+    private void OnActivationRequested()
+    {
+        _ = Dispatcher.BeginInvoke(
+            DispatcherPriority.Send,
+            new Action(() =>
+            {
+                if (_mainWindow == null || Services == null)
+                {
+                    Interlocked.Exchange(ref _activationPending, 1);
+                    return;
+                }
+
+                Services.GetService<IWindowService>()?.ActivateWindow();
+            }));
     }
 
     private void SyncStartupWithSettings()
@@ -242,20 +268,25 @@ public partial class App : Application
 
     protected override void OnExit(ExitEventArgs e)
     {
-        if (Services.GetService(typeof(MainWindowViewModel)) is IDisposable disposableVm)
+        var services = Services;
+        if (services?.GetService(typeof(MainWindowViewModel)) is IDisposable disposableVm)
         {
             disposableVm.Dispose();
         }
 
-        if (Services.GetService(typeof(ISettingsService)) is SettingsService settingsService)
+        if (services?.GetService(typeof(ISettingsService)) is SettingsService settingsService)
         {
             settingsService.FlushPendingSaves();
         }
 
         _hotkeyService?.Dispose();
         _trayService?.Dispose();
+        if (_singleInstanceHelper != null)
+        {
+            _singleInstanceHelper.ActivationRequested -= OnActivationRequested;
+        }
         _singleInstanceHelper?.Dispose();
-        Services?.Dispose();
+        services?.Dispose();
         base.OnExit(e);
     }
 }

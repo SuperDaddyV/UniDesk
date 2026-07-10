@@ -20,7 +20,17 @@ public class WindowService : IWindowService
 
     public void ShowWindow()
     {
+        ActivateWindow();
+    }
+
+    public void ActivateWindow()
+    {
         if (_mainWindow == null) return;
+
+        if (_mainWindow.WindowState == WindowState.Minimized)
+        {
+            _mainWindow.WindowState = WindowState.Normal;
+        }
 
         _mainWindow.Show();
         _mainWindow.Activate();
