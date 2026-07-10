@@ -1,4 +1,5 @@
 using System.IO;
+using System.Globalization;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
@@ -83,111 +84,13 @@ public class TodoBackupService : ITodoBackupService
 
         ValidatePayload(payload);
 
-        var result = new TodoBackupImportResult();
-
-        if (payload.Settings != null)
-        {
-            result.SettingCount = await RestoreSettingsAsync(payload.Settings);
-        }
-
+        await _settingsService.FlushPendingSavesAsync();
+        var result = await _databaseService.ExecuteInTransactionAsync(
+            session => RestorePayloadAsync(session, payload));
+        _settingsService.InvalidateCache();
         if (payload.Shortcuts != null)
         {
-            await _databaseService.ExecuteNonQueryAsync("DELETE FROM Shortcuts");
-
-            foreach (var entry in payload.Shortcuts)
-            {
-                if (string.IsNullOrWhiteSpace(entry.Name) || string.IsNullOrWhiteSpace(entry.Path))
-                {
-                    continue;
-                }
-
-                var shortcut = entry.ToShortcut();
-                var id = await _shortcutService.CreateShortcutAsync(shortcut);
-                if (id > 0)
-                {
-                    result.ShortcutCount++;
-                }
-            }
-
-            await _shortcutService.NormalizeSortOrderAsync();
-        }
-
-        if (payload.Todos != null)
-        {
-            await _databaseService.ExecuteNonQueryAsync("DELETE FROM Todos");
-
-            foreach (var entry in payload.Todos)
-            {
-                if (string.IsNullOrWhiteSpace(entry.Title))
-                {
-                    continue;
-                }
-
-                await _todoService.CreateTodoAsync(entry.ToTodo());
-                result.TodoCount++;
-            }
-        }
-
-        if (payload.QuickNotes != null)
-        {
-            await _databaseService.ExecuteNonQueryAsync("DELETE FROM QuickNotes");
-
-            foreach (var entry in payload.QuickNotes)
-            {
-                if (string.IsNullOrWhiteSpace(entry.Title) && string.IsNullOrWhiteSpace(entry.Content))
-                {
-                    continue;
-                }
-
-                await _quickNoteService.CreateQuickNoteAsync(entry.ToQuickNote());
-                result.QuickNoteCount++;
-            }
-        }
-
-        if (payload.ClipboardHistory != null)
-        {
-            await _databaseService.ExecuteNonQueryAsync("DELETE FROM ClipboardHistory");
-
-            foreach (var entry in payload.ClipboardHistory)
-            {
-                var content = QuickTextService.NormalizeClipboardText(entry.Content);
-                if (string.IsNullOrWhiteSpace(content))
-                {
-                    continue;
-                }
-
-                var hash = string.IsNullOrWhiteSpace(entry.ContentHash)
-                    ? QuickTextService.ComputeHash(content)
-                    : entry.ContentHash;
-                var now = DateTime.UtcNow;
-                var createdAt = entry.CreatedAt == default ? now : entry.CreatedAt;
-                var lastUsedAt = entry.LastUsedAt == default ? createdAt : entry.LastUsedAt;
-
-                await _databaseService.ExecuteNonQueryAsync(
-                    "INSERT OR IGNORE INTO ClipboardHistory (Content, ContentHash, CreatedAt, LastUsedAt, UseCount) VALUES (@p0, @p1, @p2, @p3, @p4)",
-                    content,
-                    hash,
-                    createdAt.ToString("o", System.Globalization.CultureInfo.InvariantCulture),
-                    lastUsedAt.ToString("o", System.Globalization.CultureInfo.InvariantCulture),
-                    Math.Max(1, entry.UseCount));
-                result.ClipboardHistoryCount++;
-            }
-        }
-
-        if (payload.TextSnippets != null)
-        {
-            await _databaseService.ExecuteNonQueryAsync("DELETE FROM TextSnippets");
-
-            foreach (var entry in payload.TextSnippets)
-            {
-                if (string.IsNullOrWhiteSpace(entry.Content))
-                {
-                    continue;
-                }
-
-                await _quickTextService.CreateTextSnippetAsync(entry.ToSnippet());
-                result.TextSnippetCount++;
-            }
+            await _shortcutService.RefreshMissingIconsAsync();
         }
 
         return result;
@@ -206,25 +109,130 @@ public class TodoBackupService : ITodoBackupService
             .ToDictionary(setting => setting.Key, setting => setting.Value, StringComparer.Ordinal);
     }
 
-    private async Task<int> RestoreSettingsAsync(Dictionary<string, string?> settings)
+    private static async Task<TodoBackupImportResult> RestorePayloadAsync(
+        IDatabaseSession session,
+        TodoBackupFile payload)
     {
-        var restored = 0;
-        foreach (var (key, value) in settings)
+        var result = new TodoBackupImportResult();
+
+        if (payload.Settings != null)
         {
-            if (string.IsNullOrWhiteSpace(key) || ExcludedSettingKeys.Contains(key))
+            foreach (var (key, value) in payload.Settings)
             {
-                continue;
+                if (ExcludedSettingKeys.Contains(key))
+                {
+                    continue;
+                }
+
+                var normalizedValue = key == DashboardModuleCatalog.SettingsKey
+                    ? NormalizeModuleSettingsJson(value)
+                    : value;
+                result.SettingCount += string.IsNullOrEmpty(normalizedValue)
+                    ? await session.ExecuteNonQueryAsync("DELETE FROM Settings WHERE Key = @p0", key)
+                    : await session.ExecuteNonQueryAsync(
+                        "INSERT OR REPLACE INTO Settings (Key, Value) VALUES (@p0, @p1)",
+                        key,
+                        normalizedValue);
             }
-
-            var normalizedValue = key == DashboardModuleCatalog.SettingsKey
-                ? NormalizeModuleSettingsJson(value)
-                : value;
-
-            await _settingsService.SetSettingAsync(key, normalizedValue);
-            restored++;
         }
 
-        return restored;
+        if (payload.Shortcuts != null)
+        {
+            await session.ExecuteNonQueryAsync("DELETE FROM Shortcuts");
+            var orderedShortcuts = payload.Shortcuts
+                .Select((entry, index) => new { Entry = entry, Index = index })
+                .OrderBy(item => item.Entry.SortOrder)
+                .ThenBy(item => item.Index)
+                .ToList();
+
+            for (var sortOrder = 0; sortOrder < orderedShortcuts.Count; sortOrder++)
+            {
+                var shortcut = orderedShortcuts[sortOrder].Entry.ToShortcut();
+                result.ShortcutCount += await session.ExecuteNonQueryAsync(
+                    "INSERT INTO Shortcuts (Name, Path, Type, IconPath, SortOrder, CreatedAt, LaunchArguments) VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6)",
+                    shortcut.Name,
+                    shortcut.Path,
+                    shortcut.Type.ToString(),
+                    null,
+                    sortOrder,
+                    shortcut.CreatedAt.ToString("o", CultureInfo.InvariantCulture),
+                    shortcut.LaunchArguments);
+            }
+        }
+
+        if (payload.Todos != null)
+        {
+            await session.ExecuteNonQueryAsync("DELETE FROM Todos");
+            foreach (var entry in payload.Todos)
+            {
+                var todo = entry.ToTodo();
+                result.TodoCount += await session.ExecuteNonQueryAsync(
+                    "INSERT INTO Todos (Title, IsCompleted, DueDate, CreatedAt, CompletedAt, Priority) VALUES (@p0, @p1, @p2, @p3, @p4, @p5)",
+                    todo.Title,
+                    todo.IsCompleted ? 1 : 0,
+                    todo.DueDate?.ToString("o", CultureInfo.InvariantCulture),
+                    todo.CreatedAt.ToString("o", CultureInfo.InvariantCulture),
+                    todo.CompletedAt?.ToString("o", CultureInfo.InvariantCulture),
+                    (int)todo.Priority);
+            }
+        }
+
+        if (payload.QuickNotes != null)
+        {
+            await session.ExecuteNonQueryAsync("DELETE FROM QuickNotes");
+            foreach (var entry in payload.QuickNotes)
+            {
+                var note = entry.ToQuickNote();
+                result.QuickNoteCount += await session.ExecuteNonQueryAsync(
+                    "INSERT INTO QuickNotes (Title, Content, IsPinned, SortOrder, CreatedAt, UpdatedAt) VALUES (@p0, @p1, @p2, @p3, @p4, @p5)",
+                    note.Title,
+                    note.Content,
+                    note.IsPinned ? 1 : 0,
+                    note.SortOrder,
+                    note.CreatedAt.ToString("o", CultureInfo.InvariantCulture),
+                    note.UpdatedAt.ToString("o", CultureInfo.InvariantCulture));
+            }
+        }
+
+        if (payload.ClipboardHistory != null)
+        {
+            await session.ExecuteNonQueryAsync("DELETE FROM ClipboardHistory");
+            foreach (var entry in payload.ClipboardHistory)
+            {
+                var content = QuickTextService.NormalizeClipboardText(entry.Content);
+                var createdAt = entry.CreatedAt == default ? DateTime.UtcNow : entry.CreatedAt;
+                var lastUsedAt = entry.LastUsedAt == default ? createdAt : entry.LastUsedAt;
+                result.ClipboardHistoryCount += await session.ExecuteNonQueryAsync(
+                    "INSERT OR IGNORE INTO ClipboardHistory (Content, ContentHash, CreatedAt, LastUsedAt, UseCount) VALUES (@p0, @p1, @p2, @p3, @p4)",
+                    content,
+                    QuickTextService.ComputeHash(content),
+                    createdAt.ToString("o", CultureInfo.InvariantCulture),
+                    lastUsedAt.ToString("o", CultureInfo.InvariantCulture),
+                    Math.Max(1, entry.UseCount));
+            }
+        }
+
+        if (payload.TextSnippets != null)
+        {
+            await session.ExecuteNonQueryAsync("DELETE FROM TextSnippets");
+            foreach (var entry in payload.TextSnippets)
+            {
+                var snippet = entry.ToSnippet();
+                result.TextSnippetCount += await session.ExecuteNonQueryAsync(
+                    "INSERT INTO TextSnippets (Title, Content, Category, IsPinned, SortOrder, UseCount, CreatedAt, UpdatedAt, LastUsedAt) VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8)",
+                    snippet.Title,
+                    snippet.Content,
+                    snippet.Category,
+                    snippet.IsPinned ? 1 : 0,
+                    snippet.SortOrder,
+                    snippet.UseCount,
+                    snippet.CreatedAt.ToString("o", CultureInfo.InvariantCulture),
+                    snippet.UpdatedAt.ToString("o", CultureInfo.InvariantCulture),
+                    snippet.LastUsedAt?.ToString("o", CultureInfo.InvariantCulture));
+            }
+        }
+
+        return result;
     }
 
     private static string? NormalizeModuleSettingsJson(string? json)

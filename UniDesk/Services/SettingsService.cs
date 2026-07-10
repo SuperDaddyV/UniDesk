@@ -80,6 +80,11 @@ public class SettingsService : ISettingsService, IDisposable
         SetSetting(key, value);
     }
 
+    public void InvalidateCache()
+    {
+        _cache.Clear();
+    }
+
     public void FlushPendingSaves()
     {
         try

@@ -168,6 +168,51 @@ public class TodoBackupServiceTests
         Cleanup();
     }
 
+    [Fact]
+    public async Task ImportFromFileAsync_InsertFailure_ShouldRollbackSettingsAndTodos()
+    {
+        var (db, todoService, _, _, _, settingsService, backupService) = await InitAsync();
+        await settingsService.SetSettingAsync("PanelWidth", "320");
+        await todoService.CreateTodoAsync(new TodoItem { Title = "保留的待办" });
+        await db.ExecuteNonQueryAsync(
+            """
+            CREATE TRIGGER fail_todo_restore
+            BEFORE INSERT ON Todos
+            WHEN NEW.Title = '强制失败'
+            BEGIN
+                SELECT RAISE(ABORT, 'forced restore failure');
+            END
+            """);
+        await File.WriteAllTextAsync(
+            _backupFile,
+            """
+            {
+              "version": 4,
+              "exportedAt": "2026-07-10T00:00:00Z",
+              "settings": {
+                "PanelWidth": "480"
+              },
+              "todos": [
+                {
+                  "title": "强制失败",
+                  "isCompleted": false,
+                  "priority": 1,
+                  "createdAt": "2026-07-10T00:00:00Z"
+                }
+              ]
+            }
+            """);
+
+        await Assert.ThrowsAsync<Microsoft.Data.Sqlite.SqliteException>(
+            () => backupService.ImportFromFileAsync(_backupFile));
+
+        var todos = await todoService.GetAllTodosAsync();
+        Assert.Single(todos);
+        Assert.Equal("保留的待办", todos[0].Title);
+        Assert.Equal("320", await settingsService.GetSettingAsync("PanelWidth"));
+        Cleanup();
+    }
+
     private async Task<(DatabaseService Db, TodoService TodoService, QuickNoteService QuickNoteService, QuickTextService QuickTextService, ShortcutService ShortcutService, SettingsService SettingsService, TodoBackupService BackupService)> InitAsync()
     {
         var db = new DatabaseService($"Data Source={_testDbFile}");

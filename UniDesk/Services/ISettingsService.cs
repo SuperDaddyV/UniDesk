@@ -10,5 +10,6 @@ public interface ISettingsService
     T GetSetting<T>(string key, T defaultValue);
     string GetValue(string key, string defaultValue);
     void SetValue(string key, string value);
+    void InvalidateCache();
     Task FlushPendingSavesAsync();
 }

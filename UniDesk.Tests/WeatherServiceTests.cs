@@ -131,6 +131,8 @@ public class WeatherServiceTests : IDisposable
 
         public void SetValue(string key, string value) => SetSetting(key, value);
 
+        public void InvalidateCache() => _values.Clear();
+
         public Task FlushPendingSavesAsync() => Task.CompletedTask;
     }
 

@@ -166,6 +166,34 @@ public class ShortcutService : IShortcutService
         }
     }
 
+    public async Task RefreshMissingIconsAsync()
+    {
+        try
+        {
+            var shortcuts = await _databaseService.QueryAsync(
+                $"{ShortcutSelectSql} WHERE IconPath IS NULL OR IconPath = '' ORDER BY Id ASC",
+                MapShortcut);
+
+            foreach (var shortcut in shortcuts)
+            {
+                var iconPath = ExtractAndSaveIcon(shortcut.Path, shortcut.Id);
+                if (string.IsNullOrEmpty(iconPath))
+                {
+                    continue;
+                }
+
+                await _databaseService.ExecuteNonQueryAsync(
+                    "UPDATE Shortcuts SET IconPath = @p0 WHERE Id = @p1",
+                    iconPath,
+                    shortcut.Id);
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "ShortcutService.RefreshMissingIconsAsync");
+        }
+    }
+
     public async Task LaunchShortcutAsync(int id)
     {
         try
