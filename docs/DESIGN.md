@@ -28,7 +28,7 @@
 UniDesk 是运行于 Windows 11 的桌面侧边助手应用，以悬浮右侧面板形式呈现，集成时钟天气、硬件监视、快捷方式、待办事项、快速便签和快捷文本等核心功能，帮助用户在不中断主要工作流的情况下快速访问信息和启动应用。
 
 ### 核心目标
-- **顺滑稳定**：耗时任务不阻塞 UI 线程，交互与动画顺滑，未处理异常不导致进程崩溃
+- **顺滑稳定**：耗时任务不阻塞 UI 线程，交互与动画顺滑，未处理 UI 异常会提示并安全终止，避免在未知状态下继续运行
 - **美观现代**：遵循 Fluent Design（Windows 11 风格），统一圆角、阴影、间距与字体
 - **数据私密**：所有数据本地存储于 SQLite，无云同步
 - **易用友好**：托盘、热键、开机自启、主题跟随系统等桌面助手体验特性齐全
@@ -50,7 +50,7 @@ UniDesk 是运行于 Windows 11 的桌面侧边助手应用，以悬浮右侧面
 - 列表类 UI（待办列表、快捷启动网格）采用虚拟化或分页策略，数据量增大时保持流畅
 
 ### 可靠性
-- 捕获关键异常并以用户可理解的方式提示，未处理异常不得导致进程直接崩溃
+- 捕获可恢复异常并以用户可理解的方式提示；未处理 UI 异常记录并只提示一次，随后安全终止进程
 - 通过全局热键呼出 MainWindow 时，窗口在 500ms 内变为可交互；隐藏 MainWindow 在 300ms 内完成
 
 ---
@@ -113,10 +113,12 @@ UniDesk 是运行于 Windows 11 的桌面侧边助手应用，以悬浮右侧面
 - ViewModel 仅在最终需要更新绑定属性时切回 UI 线程，避免在 UI 线程执行 I/O 或复杂计算
 - 拖拽预览、列表刷新、天气状态切换等高频 UI 更新采用节流/合批策略，默认节流窗口 50-100ms
 - 待办列表使用支持虚拟化的列表控件（`ListBox` / `ListView` + `VirtualizingStackPanel`）；快捷启动区固定最多 8 项，无需额外虚拟化
+- `SystemMetricsMonitor` 在后台串行调用同步硬件 reader；同一时间最多一个采样，隐藏硬件模块时暂停读取，完成后才调度绑定属性更新
 
 #### 异常、日志与用户提示
 - App 启动时注册 `DispatcherUnhandledException`、`AppDomain.CurrentDomain.UnhandledException`、`TaskScheduler.UnobservedTaskException`
-- 异常统一写入 `%LOCALAPPDATA%\UniDesk\logs\`，日志按日期滚动
+- 到达 `DispatcherUnhandledException` 的异常视为不可恢复：使用原子一次性保护，提示后调用 `Shutdown(-1)`，不继续运行应用
+- 异常统一写入 `%LOCALAPPDATA%\UniDesk\logs\`，日志按日期滚动；首实例启动时仅删除第一层中超过 7 天且严格命名为 `yyyy-MM-dd.log` 的文件
 - 面向用户的错误提示统一通过 `INotificationService` 输出，避免 Service 直接弹窗
 - 关键失败路径必须保留可恢复状态，例如天气失败回退缓存、导入失败保留原数据库、热键注册失败回退旧配置
 - 数据库初始化失败必须记录后向上抛出，由启动流程明确提示并终止启动
@@ -363,6 +365,7 @@ public enum TodoPriority { Low, Medium, High }
   - 复选框：勾选状态切换
   - 标题：完成状态显示删除线
   - 完成时间提示（可选）
+- 所有删除入口共用 `DeleteTodoCommand`，删除前显示包含待办标题的本地化确认框；取消确认不得调用数据库删除
 
 #### 快速新增区
 ```
@@ -1054,9 +1057,10 @@ UniDesk/
 
 **实现方案**：
 - 使用 `Mutex` 检测重复启动
-- 若检测到重复实例，发送 Windows 消息唤醒主窗口
+- 首实例监听仅限当前用户的命名管道；重复实例发送 `Activate` 后退出
+- 首实例通过 WPF Dispatcher 调用 `IWindowService.ActivateWindow()` 恢复并激活自有窗口，不按窗口标题查找全局窗口
 
-**关键代码位置**：`App.xaml.cs` 中的 `OnStartup()`
+**关键代码位置**：`Helpers/SingleInstanceHelper.cs`、`App.xaml.cs` 中的 `OnStartup()`
 
 ### 8. 全局热键呼出/隐藏
 

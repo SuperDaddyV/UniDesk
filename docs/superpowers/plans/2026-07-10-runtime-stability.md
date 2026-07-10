@@ -33,7 +33,7 @@
 - Produces: `bool FatalExceptionCoordinator.TryBeginShutdown()`.
 - Consumes: existing `Logger`, `DirectoryHelper.LogsDirectory`, and `ILocalizationService`.
 
-- [ ] Add the failing one-shot test:
+- [x] Add the failing one-shot test:
 
 ```csharp
 [Fact]
@@ -46,8 +46,8 @@ public void TryBeginShutdown_ShouldSucceedOnlyOnce()
 }
 ```
 
-- [ ] Run `dotnet test UniDesk.Tests/UniDesk.Tests.csproj -c Release --no-restore --filter "FullyQualifiedName~FatalExceptionCoordinatorTests"`; expect a compile failure because the coordinator does not exist.
-- [ ] Add the coordinator:
+- [x] Run `dotnet test UniDesk.Tests/UniDesk.Tests.csproj -c Release --no-restore --filter "FullyQualifiedName~FatalExceptionCoordinatorTests"`; expect a compile failure because the coordinator does not exist.
+- [x] Add the coordinator:
 
 ```csharp
 namespace UniDesk.Helpers;
@@ -61,7 +61,7 @@ public sealed class FatalExceptionCoordinator
 }
 ```
 
-- [ ] Replace the anonymous Dispatcher handler with a named handler and one-shot shutdown:
+- [x] Replace the anonymous Dispatcher handler with a named handler and one-shot shutdown:
 
 ```csharp
 private readonly FatalExceptionCoordinator _fatalExceptionCoordinator = new();
@@ -90,9 +90,9 @@ private void OnDispatcherUnhandledException(
 }
 ```
 
-- [ ] Add `App.FatalErrorFormat` to all four resource dictionaries with equivalent localized text and a `{0}` log-directory placeholder.
-- [ ] Re-run the focused test, then `dotnet test UniDesk.sln -c Release --no-restore`; expect all tests pass.
-- [ ] Commit:
+- [x] Add `App.FatalErrorFormat` to all four resource dictionaries with equivalent localized text and a `{0}` log-directory placeholder.
+- [x] Re-run the focused test, then `dotnet test UniDesk.sln -c Release --no-restore`; expect all tests pass.
+- [x] Commit:
 
 ```powershell
 git add -- UniDesk/Helpers/FatalExceptionCoordinator.cs UniDesk/App.xaml.cs UniDesk/Resources/Strings.*.xaml UniDesk.Tests/FatalExceptionCoordinatorTests.cs
@@ -112,7 +112,7 @@ git commit -m "fix: shut down safely after fatal UI errors"
 - Consumes: `ISystemMetricsService.Read()`.
 - Produces: `event EventHandler<SystemMetricsSnapshot>? SnapshotAvailable`, `Start()`, `Stop()`, and `Dispose()` on `ISystemMetricsMonitor`.
 
-- [ ] Add a coordinated fake reader and failing tests proving reads do not overlap and late results are ignored after disposal:
+- [x] Add a coordinated fake reader and failing tests proving reads do not overlap and late results are ignored after disposal:
 
 ```csharp
 [Fact]
@@ -168,8 +168,8 @@ private sealed class BlockingMetricsReader : ISystemMetricsService
 }
 ```
 
-- [ ] Run the focused test; expect a compile failure because the monitor types do not exist.
-- [ ] Add the monitor contract:
+- [x] Run the focused test; expect a compile failure because the monitor types do not exist.
+- [x] Add the monitor contract:
 
 ```csharp
 using UniDesk.Models;
@@ -184,8 +184,8 @@ public interface ISystemMetricsMonitor : IDisposable
 }
 ```
 
-- [ ] Implement `SystemMetricsMonitor` with one owned loop task. `Start` creates one CTS and uses `Task.Run(RunAsync)`; `RunAsync` calls `_reader.Read()` directly on that worker, publishes only when not stopped, logs errors, logs samples slower than `_slowThreshold`, then awaits `_interval`. `Stop` atomically detaches and cancels the CTS. `Dispose` calls `Stop`, suppresses late events through `_disposed`, and disposes an owned reader only after the loop completes.
-- [ ] Register the runtime monitor as an owner of its reader so DI cannot dispose the reader while a read is in flight:
+- [x] Implement `SystemMetricsMonitor` with one owned loop task. `Start` creates one CTS and uses `Task.Run(RunAsync)`; `RunAsync` calls `_reader.Read()` directly on that worker, publishes only when not stopped, logs errors, logs samples slower than `_slowThreshold`, then awaits `_interval`. `Stop` atomically detaches and cancels the CTS. `Dispose` calls `Stop`, suppresses late events through `_disposed`, and disposes an owned reader only after the loop completes.
+- [x] Register the runtime monitor as an owner of its reader so DI cannot dispose the reader while a read is in flight:
 
 ```csharp
 services.AddSingleton<ISystemMetricsMonitor>(_ =>
@@ -196,9 +196,9 @@ services.AddSingleton<ISystemMetricsMonitor>(_ =>
         ownsReader: true));
 ```
 
-- [ ] Replace `_systemMetricsService` and `_systemMetricsTimer` in `MainWindowViewModel` with `_systemMetricsMonitor`. Subscribe before `Start()`, dispatch completed snapshots through `Application.Current.Dispatcher`, keep existing formatting methods, and unsubscribe/dispose in `Dispose()`.
-- [ ] Re-run the focused tests and the full Release suite; expect all tests pass.
-- [ ] Commit:
+- [x] Replace `_systemMetricsService` and `_systemMetricsTimer` in `MainWindowViewModel` with `_systemMetricsMonitor`. Subscribe before `Start()`, dispatch completed snapshots through `Application.Current.Dispatcher`, keep existing formatting methods, and unsubscribe/dispose in `Dispose()`.
+- [x] Re-run the focused tests and the full Release suite; expect all tests pass.
+- [x] Commit:
 
 ```powershell
 git add -- UniDesk/Services/ISystemMetricsMonitor.cs UniDesk/Services/SystemMetricsMonitor.cs UniDesk/App.xaml.cs UniDesk/ViewModels/MainWindowViewModel.cs UniDesk.Tests/SystemMetricsMonitorTests.cs
@@ -218,7 +218,7 @@ git commit -m "fix: sample system metrics off the UI thread"
 - Produces: `StartListening()`, `Task<bool> SignalExistingInstanceAsync(CancellationToken)`, and `event Action? ActivationRequested` on `SingleInstanceHelper`.
 - Produces: `void ActivateWindow()` on `IWindowService`.
 
-- [ ] Add an integration test using a random instance name:
+- [x] Add an integration test using a random instance name:
 
 ```csharp
 [Fact]
@@ -238,10 +238,10 @@ public async Task SecondInstance_ShouldSignalFirstInstance()
 }
 ```
 
-- [ ] Run the focused test; expect a compile failure because the constructor and pipe API do not exist.
-- [ ] Rewrite `SingleInstanceHelper` to derive a mutex name and pipe name from the supplied instance name, create `NamedPipeServerStream` with `PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly`, loop one connection at a time, and raise `ActivationRequested` only for the exact UTF-8 line `Activate`. Remove `FindWindow`, `ShowWindow`, and `SetForegroundWindow` P/Invokes.
-- [ ] Implement signaling with five attempts, 100 ms connect timeouts, and 100 ms delays between attempts. Return `false` after the bounded retries; do not throw from the second-instance path.
-- [ ] Add and implement `IWindowService.ActivateWindow()`:
+- [x] Run the focused test; expect a compile failure because the constructor and pipe API do not exist.
+- [x] Rewrite `SingleInstanceHelper` to derive a mutex name and pipe name from the supplied instance name, create `NamedPipeServerStream` with `PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly`, loop one connection at a time, and raise `ActivationRequested` only for the exact UTF-8 line `Activate`. Remove `FindWindow`, `ShowWindow`, and `SetForegroundWindow` P/Invokes.
+- [x] Implement signaling with five attempts, 100 ms connect timeouts, and 100 ms delays between attempts. Return `false` after the bounded retries; do not throw from the second-instance path.
+- [x] Add and implement `IWindowService.ActivateWindow()`:
 
 ```csharp
 public void ActivateWindow()
@@ -255,9 +255,9 @@ public void ActivateWindow()
 }
 ```
 
-- [ ] Move mutex acquisition to the beginning of `OnStartup`, before database initialization. On a second instance, await `SignalExistingInstanceAsync`, call `Shutdown()`, and return. In the first instance, subscribe to `ActivationRequested`, start listening after `IWindowService` has the main window, and dispatch `ActivateWindow()` through the WPF Dispatcher.
-- [ ] Re-run the focused test and full Release suite; expect all tests pass.
-- [ ] Commit:
+- [x] Move mutex acquisition to the beginning of `OnStartup`, before database initialization. On a second instance, await `SignalExistingInstanceAsync`, call `Shutdown()`, and return. In the first instance, subscribe to `ActivationRequested`, start listening after `IWindowService` has the main window, and dispatch `ActivateWindow()` through the WPF Dispatcher.
+- [x] Re-run the focused test and full Release suite; expect all tests pass.
+- [x] Commit:
 
 ```powershell
 git add -- UniDesk/Helpers/SingleInstanceHelper.cs UniDesk/App.xaml.cs UniDesk/Services/IWindowService.cs UniDesk/Services/WindowService.cs UniDesk.Tests/SingleInstanceHelperTests.cs
@@ -274,12 +274,12 @@ git commit -m "fix: activate the owned UniDesk instance"
 **Interfaces:**
 - Produces: `int LogRetentionService.DeleteExpiredLogs(string directory, DateOnly today, int retentionDays = 7)`.
 
-- [ ] Add a test directory containing an eight-day-old standard log, a six-day-old log, `notes.log`, and a nested old log. Assert that only the first file is deleted.
-- [ ] Run the focused test; expect a compile failure because `LogRetentionService` does not exist.
-- [ ] Implement exact-name parsing with `DateOnly.TryParseExact(Path.GetFileNameWithoutExtension(file), "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var date)`, reject non-`.log` extensions, enumerate only `SearchOption.TopDirectoryOnly`, and delete when `date < today.AddDays(-(retentionDays - 1))`.
-- [ ] Call the service immediately after `DirectoryHelper.EnsureDirectoriesExist()` in first-instance startup. Catch per-file `IOException` and `UnauthorizedAccessException`; cleanup cannot fail startup.
-- [ ] Re-run focused and full Release tests; expect all tests pass.
-- [ ] Commit:
+- [x] Add a test directory containing an eight-day-old standard log, a six-day-old log, `notes.log`, and a nested old log. Assert that only the first file is deleted.
+- [x] Run the focused test; expect a compile failure because `LogRetentionService` does not exist.
+- [x] Implement exact-name parsing with `DateOnly.TryParseExact(Path.GetFileNameWithoutExtension(file), "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var date)`, reject non-`.log` extensions, enumerate only `SearchOption.TopDirectoryOnly`, and delete when `date < today.AddDays(-(retentionDays - 1))`.
+- [x] Call the service immediately after `DirectoryHelper.EnsureDirectoriesExist()` in first-instance startup. Catch per-file `IOException` and `UnauthorizedAccessException`; cleanup cannot fail startup.
+- [x] Re-run focused and full Release tests; expect all tests pass.
+- [x] Commit:
 
 ```powershell
 git add -- UniDesk/Helpers/LogRetentionService.cs UniDesk/App.xaml.cs UniDesk.Tests/LogRetentionServiceTests.cs
@@ -302,9 +302,9 @@ git commit -m "fix: retain seven days of application logs"
 **Interfaces:**
 - Produces: `Task<bool> ConfirmAndDeleteAsync(TodoItem? todo)`.
 
-- [ ] Add tests using complete fakes for `ITodoService`, `INotificationService`, and `ILocalizationService`: cancellation must leave `DeletedIds` empty; confirmation must add the Todo id and return `true`.
-- [ ] Run the focused test; expect a compile failure because the handler does not exist.
-- [ ] Implement the handler:
+- [x] Add tests using complete fakes for `ITodoService`, `INotificationService`, and `ILocalizationService`: cancellation must leave `DeletedIds` empty; confirmation must add the Todo id and return `true`.
+- [x] Run the focused test; expect a compile failure because the handler does not exist.
+- [x] Implement the handler:
 
 ```csharp
 public async Task<bool> ConfirmAndDeleteAsync(TodoItem? todo)
@@ -320,9 +320,9 @@ public async Task<bool> ConfirmAndDeleteAsync(TodoItem? todo)
 }
 ```
 
-- [ ] Add `Todo.DeleteConfirmFormat` in all four languages, register `ITodoDeletionHandler`, inject it into `MainWindowViewModel`, and change `DeleteTodoAsync` to reload only when the handler returns `true`.
-- [ ] Re-run focused and full Release tests; expect all tests pass.
-- [ ] Commit:
+- [x] Add `Todo.DeleteConfirmFormat` in all four languages, register `ITodoDeletionHandler`, inject it into `MainWindowViewModel`, and change `DeleteTodoAsync` to reload only when the handler returns `true`.
+- [x] Re-run focused and full Release tests; expect all tests pass.
+- [x] Commit:
 
 ```powershell
 git add -- UniDesk/Services/ITodoDeletionHandler.cs UniDesk/Services/TodoDeletionHandler.cs UniDesk/App.xaml.cs UniDesk/ViewModels/MainWindowViewModel.cs UniDesk/Resources/Strings.*.xaml UniDesk.Tests/TodoDeletionHandlerTests.cs
@@ -335,10 +335,10 @@ git commit -m "fix: confirm before deleting todos"
 - Modify: `docs/DESIGN.md`
 - Modify: `docs/superpowers/plans/2026-07-10-runtime-stability.md`
 
-- [ ] Record the fatal-exit policy, background non-overlapping sampling, named-pipe activation, seven-day retention, and Todo confirmation in `docs/DESIGN.md`.
-- [ ] Run `dotnet test UniDesk.sln -c Release --no-restore`; expect zero failures.
-- [ ] Run `git diff --check` and `git status --short`; expect no whitespace errors and only phase 3 documentation changes after implementation commits.
-- [ ] Mark completed checkboxes in this plan and commit:
+- [x] Record the fatal-exit policy, background non-overlapping sampling, named-pipe activation, seven-day retention, and Todo confirmation in `docs/DESIGN.md`.
+- [x] Run `dotnet test UniDesk.sln -c Release --no-restore`; expect zero failures.
+- [x] Run `git diff --check` and `git status --short`; expect no whitespace errors and only phase 3 documentation changes after implementation commits.
+- [x] Mark completed checkboxes in this plan and commit:
 
 ```powershell
 git add -- docs/DESIGN.md docs/superpowers/plans/2026-07-10-runtime-stability.md
