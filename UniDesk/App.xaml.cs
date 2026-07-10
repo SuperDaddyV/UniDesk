@@ -12,6 +12,7 @@ namespace UniDesk;
 public partial class App : Application
 {
     public ServiceProvider Services { get; private set; } = null!;
+    private readonly FatalExceptionCoordinator _fatalExceptionCoordinator = new();
     private SingleInstanceHelper? _singleInstanceHelper;
     private MainWindow? _mainWindow;
     private TrayService? _trayService;
@@ -23,11 +24,22 @@ public partial class App : Application
         RenderOptions.ProcessRenderMode = RenderMode.SoftwareOnly;
 #endif
 
-        DispatcherUnhandledException += (_, args) =>
-        {
-            Logger.LogError(args.Exception, "DispatcherUnhandledException");
-            args.Handled = true;
-        };
+        DispatcherUnhandledException += OnDispatcherUnhandledException;
+    }
+
+    private void OnDispatcherUnhandledException(
+        object sender,
+        DispatcherUnhandledExceptionEventArgs args)
+    {
+        Logger.LogError(args.Exception, "DispatcherUnhandledException");
+        args.Handled = true;
+        if (!_fatalExceptionCoordinator.TryBeginShutdown()) return;
+
+        var localization = Services?.GetService<ILocalizationService>();
+        var message = localization?.Format("App.FatalErrorFormat", DirectoryHelper.LogsDirectory)
+            ?? $"UniDesk 遇到无法恢复的错误，即将退出。\n日志：{DirectoryHelper.LogsDirectory}";
+        MessageBox.Show(message, "UniDesk", MessageBoxButton.OK, MessageBoxImage.Error);
+        Shutdown(-1);
     }
 
     protected override async void OnStartup(StartupEventArgs e)

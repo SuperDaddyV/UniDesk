@@ -232,4 +232,5 @@
     <sys:String x:Key="Dialog.FileNotFound">File not found</sys:String>
     <sys:String x:Key="Dialog.DatabaseError">Database error</sys:String>
     <sys:String x:Key="Dialog.NetworkError">Network error</sys:String>
+    <sys:String x:Key="App.FatalErrorFormat">UniDesk encountered an unrecoverable error and will exit.&#10;Log: {0}</sys:String>
 </ResourceDictionary>

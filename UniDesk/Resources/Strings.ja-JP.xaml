@@ -232,4 +232,5 @@
     <sys:String x:Key="Dialog.FileNotFound">ファイルが存在しません</sys:String>
     <sys:String x:Key="Dialog.DatabaseError">データベースエラー</sys:String>
     <sys:String x:Key="Dialog.NetworkError">ネットワークエラー</sys:String>
+    <sys:String x:Key="App.FatalErrorFormat">UniDesk で回復不能なエラーが発生したため終了します。&#10;ログ：{0}</sys:String>
 </ResourceDictionary>

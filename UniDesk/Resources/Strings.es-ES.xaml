@@ -232,4 +232,5 @@
     <sys:String x:Key="Dialog.FileNotFound">El archivo no existe</sys:String>
     <sys:String x:Key="Dialog.DatabaseError">Error de base de datos</sys:String>
     <sys:String x:Key="Dialog.NetworkError">Error de red</sys:String>
+    <sys:String x:Key="App.FatalErrorFormat">UniDesk encontró un error irrecuperable y se cerrará.&#10;Registro: {0}</sys:String>
 </ResourceDictionary>

@@ -232,4 +232,5 @@
     <sys:String x:Key="Dialog.FileNotFound">文件不存在</sys:String>
     <sys:String x:Key="Dialog.DatabaseError">数据库错误</sys:String>
     <sys:String x:Key="Dialog.NetworkError">网络错误</sys:String>
+    <sys:String x:Key="App.FatalErrorFormat">UniDesk 遇到无法恢复的错误，即将退出。&#10;日志：{0}</sys:String>
 </ResourceDictionary>
