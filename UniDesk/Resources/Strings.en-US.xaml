@@ -116,6 +116,7 @@
     <sys:String x:Key="Todo.PriorityHigh">High</sys:String>
     <sys:String x:Key="Todo.LoadFailed">Failed to load todos. Try again later.</sys:String>
     <sys:String x:Key="Todo.NoData">No todos</sys:String>
+    <sys:String x:Key="Todo.DeleteConfirmFormat">Delete the todo “{0}”?</sys:String>
 
     <sys:String x:Key="QuickNote.New">New Note</sys:String>
     <sys:String x:Key="QuickNote.Edit">Edit Note</sys:String>

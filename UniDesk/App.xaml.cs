@@ -259,6 +259,7 @@ public partial class App : Application
         services.AddSingleton<IQuickTextService, QuickTextService>();
         services.AddSingleton<IClipboardMonitorService, ClipboardMonitorService>();
         services.AddSingleton<ITodoService, TodoService>();
+        services.AddSingleton<ITodoDeletionHandler, TodoDeletionHandler>();
         services.AddSingleton<ITodoBackupService, TodoBackupService>();
         services.AddSingleton<IShortcutService, ShortcutService>();
         services.AddSingleton<ISystemMetricsMonitor>(_ =>

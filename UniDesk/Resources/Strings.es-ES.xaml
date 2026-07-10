@@ -116,6 +116,7 @@
     <sys:String x:Key="Todo.PriorityHigh">Alta</sys:String>
     <sys:String x:Key="Todo.LoadFailed">No se pudieron cargar las tareas.</sys:String>
     <sys:String x:Key="Todo.NoData">Sin tareas</sys:String>
+    <sys:String x:Key="Todo.DeleteConfirmFormat">¿Eliminar la tarea «{0}»?</sys:String>
 
     <sys:String x:Key="QuickNote.New">Nueva nota</sys:String>
     <sys:String x:Key="QuickNote.Edit">Editar nota</sys:String>

@@ -116,6 +116,7 @@
     <sys:String x:Key="Todo.PriorityHigh">高</sys:String>
     <sys:String x:Key="Todo.LoadFailed">ToDo の読み込みに失敗しました。</sys:String>
     <sys:String x:Key="Todo.NoData">ToDo はありません</sys:String>
+    <sys:String x:Key="Todo.DeleteConfirmFormat">ToDo「{0}」を削除しますか？</sys:String>
 
     <sys:String x:Key="QuickNote.New">メモを作成</sys:String>
     <sys:String x:Key="QuickNote.Edit">メモを編集</sys:String>

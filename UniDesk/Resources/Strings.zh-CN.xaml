@@ -116,6 +116,7 @@
     <sys:String x:Key="Todo.PriorityHigh">高</sys:String>
     <sys:String x:Key="Todo.LoadFailed">待办列表加载失败，请稍后重试。</sys:String>
     <sys:String x:Key="Todo.NoData">暂无待办事项</sys:String>
+    <sys:String x:Key="Todo.DeleteConfirmFormat">确定删除待办“{0}”？</sys:String>
 
     <sys:String x:Key="QuickNote.New">新建便签</sys:String>
     <sys:String x:Key="QuickNote.Edit">编辑便签</sys:String>

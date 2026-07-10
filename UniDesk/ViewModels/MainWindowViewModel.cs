@@ -32,6 +32,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
     private readonly IQuickNoteService _quickNoteService;
     private readonly IQuickTextService _quickTextService;
     private readonly ITodoService _todoService;
+    private readonly ITodoDeletionHandler _todoDeletionHandler;
     private readonly IShortcutService _shortcutService;
     private readonly IWeatherService _weatherService;
     private readonly IHotkeyService _hotkeyService;
@@ -247,6 +248,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         IQuickNoteService quickNoteService,
         IQuickTextService quickTextService,
         ITodoService todoService,
+        ITodoDeletionHandler todoDeletionHandler,
         IShortcutService shortcutService,
         IWeatherService weatherService,
         IStartupService startupService,
@@ -265,6 +267,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         _quickNoteService = quickNoteService;
         _quickTextService = quickTextService;
         _todoService = todoService;
+        _todoDeletionHandler = todoDeletionHandler;
         _shortcutService = shortcutService;
         _weatherService = weatherService;
         _hotkeyService = hotkeyService;
@@ -1251,9 +1254,10 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private async Task DeleteTodoAsync(TodoItem? todo)
     {
-        if (todo == null) return;
-        await _todoService.DeleteTodoAsync(todo.Id);
-        await LoadTodosAsync();
+        if (await _todoDeletionHandler.ConfirmAndDeleteAsync(todo))
+        {
+            await LoadTodosAsync();
+        }
     }
 
     private async Task LoadTodosAsync()
