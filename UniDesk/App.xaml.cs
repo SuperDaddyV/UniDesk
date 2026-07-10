@@ -64,6 +64,9 @@ public partial class App : Application
                 return;
             }
 
+            LogRetentionService.DeleteExpiredLogs(
+                DirectoryHelper.LogsDirectory,
+                DateOnly.FromDateTime(DateTime.Today));
             _singleInstanceHelper.ActivationRequested += OnActivationRequested;
             _singleInstanceHelper.StartListening();
 
