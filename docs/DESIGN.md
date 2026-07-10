@@ -140,7 +140,9 @@ UniDesk 是运行于 Windows 11 的桌面侧边助手应用，以悬浮右侧面
 - 天气缓存：`weather_cache.json`
 - 图标缓存：`icons\`
 - 日志目录：`logs\`
-- 导入数据库时先复制到临时文件并校验表结构，通过后再执行原子替换，避免直接覆盖导致数据库损坏
+- `WeatherApiKey` 与 `ClipboardHistory.Content` 使用 Windows DPAPI `CurrentUser` 范围保护，存储前缀为 `dpapi:v1:`；服务层对调用方保持明文语义
+- 数据库初始化后、首次读取设置前，`PrivacyMigrationService` 在一个事务中迁移既有明文；已保护值跳过，任一步失败则整体回滚
+- 当前 Windows 用户无法解密的数据不回退为明文：天气密钥返回空，剪贴板记录从显示结果中省略，日志只记录键名或记录 ID
 
 ---
 
@@ -273,22 +275,17 @@ public class WeatherInfo
 ```
 
 #### 定位策略
-1. 启动时：读取 Settings 表中的城市设置
-2. 如未设置：执行自动定位
-   - 优先使用和风天气 IP 定位 API 获取城市
-   - 若 IP 定位不可用或超时，降级到 ipapi.co 定位获取坐标，再通过和风天气逆地理编码获取城市
-   - 定位失败时提示用户在 SettingsWindow 中手动指定城市
-3. 用户修改：立即清除缓存并重新获取
+1. 启用自动定位时，优先通过 HTTPS 高德 IP 定位接口获取城市
+2. 高德不可用、未配置 Key 或请求超时时，回退到 Settings 表中保存的城市
+3. 不再调用明文 HTTP IP 定位服务；没有获批的坐标提供方时，`GetLocationAsync()` 返回空
+4. 用户修改：立即清除缓存并重新获取
 
 **LocationProvider 实现方案**：
 ```csharp
 public class LocationProvider
 {
-    // 方案1：和风天气 IP 定位（快速，精度到城市级）
-    private async Task<string?> GetCityByQWeatherIpAsync()
-    // 方案2：IP 坐标定位 + 逆地理编码
-    private async Task<string?> GetCityByCoordinatesAsync()
-    // 主方法：尝试方案1，失败后降级到方案2
+    // HTTPS 高德 IP 定位，失败时由主流程读取已保存城市
+    protected virtual async Task<string?> GetCityByAmapIpAsync()
     public async Task<string?> ResolveCityAsync()
 }
 ```
@@ -489,8 +486,8 @@ public class ShortcutItem
 | 全局热键 | HotkeyBox | Ctrl+Alt+Space | 呼出/隐藏 MainWindow（可配置并持久化） |
 | 天气 API Key | TextBox | 空 | 和风天气 API Key |
 | 恢复默认布局 | Button | - | 重置 WidgetLayout 与 PanelWidth 并立即应用 |
-| 导出数据 | Button | - | 导出 UniDesk.db |
-| 导入数据 | Button | - | 导入 UniDesk.db |
+| 导出数据 | Button | - | 导出版本化 JSON 备份 |
+| 导入数据 | Button | - | 预检并导入 JSON 备份 |
 
 #### 数据持久化
 所有配置存储在 SQLite Settings 表：
@@ -504,7 +501,7 @@ Key: "WindowOpacity" → Value: "0.85"
 Key: "PanelWidth" → Value: "360"
 Key: "WidgetLayout" → Value: "{...json...}"
 Key: "Hotkey" → Value: "Ctrl+Alt+Space"
-Key: "WeatherApiKey" → Value: "xxx"
+Key: "WeatherApiKey" → Value: "dpapi:v1:..."（Windows 当前用户范围）
 ```
 
 #### 主题系统设计
@@ -551,18 +548,18 @@ Value: "C:\Path\To\UniDesk.exe"
 #### 数据导入导出
 - **导出**：
   1. 点击"导出数据"
-  2. 打开文件保存对话框
-  3. 用户选择目标路径
-  4. 读取设置、快捷方式、待办、快速便签、剪贴板历史和快捷文本
-  5. 写入 UTF-8 JSON 备份文件
+  2. 默认排除 `WeatherApiKey` 和剪贴板历史
+  3. 用户可显式包含剪贴板历史；确认后再次提示该部分将以可读明文写入便携 JSON
+  4. 打开文件保存对话框并写入 UTF-8、版本 5 JSON；`includedSections` 与 `containsSensitivePlaintext` 明确声明内容
 
 - **导入**：
   1. 点击"导入数据"
   2. 打开文件打开对话框
   3. 用户选择 JSON 备份文件
-  4. 在任何写入前验证版本、包含的分区和每条记录；无效时保留原数据库不变
-  5. flush 既有设置写入，在单连接、单事务内恢复所有包含的分区
-  6. 任一步失败回滚全部修改并提示失败；成功后刷新设置缓存和界面数据
+  4. `PrepareImportAsync` 在任何写入前读取、反序列化、校验版本与记录，并生成不可变导入计划
+  5. 预览页显示各分区数量、敏感明文警告，以及所有快捷方式路径和启动参数；可执行文件、URI 或带参数项突出显示
+  6. 仅在用户明确确认后调用 `ApplyImportAsync`，先 flush 既有设置写入，再在单连接、单事务内恢复全部分区
+  7. 旧备份中的天气密钥与剪贴板正文在直接插入前使用 DPAPI 保护；任一步失败回滚全部修改，成功后刷新缓存和界面
 
 #### SettingsWindow 交互流程
 - 打开时：从 SettingsService 加载当前配置并填充控件

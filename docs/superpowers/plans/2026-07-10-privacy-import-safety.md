@@ -30,10 +30,10 @@
 **Interfaces:**
 - Produces: `string Protect(string plaintext)`, `bool TryUnprotect(string storedValue, out string plaintext)`, and `bool IsProtected(string storedValue)`.
 
-- [ ] Add tests for round-trip, empty string, wrong prefix, and malformed Base64.
-- [ ] Run the focused test; expect a compile failure because the protection types do not exist.
-- [ ] Implement `DpapiUserDataProtector` using `ProtectedData.Protect` and `ProtectedData.Unprotect`, `DataProtectionScope.CurrentUser`, UTF-8, fixed application entropy `SHA256.HashData("UniDesk.UserData.v1"u8.ToArray())`, and prefix `dpapi:v1:`. `TryUnprotect` catches `FormatException` and `CryptographicException`, clears the out value, and returns `false` without logging ciphertext.
-- [ ] Register `IUserDataProtector` as a singleton, re-run focused and full Release tests, then commit:
+- [x] Add tests for round-trip, empty string, wrong prefix, and malformed Base64.
+- [x] Run the focused test; expect a compile failure because the protection types do not exist.
+- [x] Implement `DpapiUserDataProtector` using `ProtectedData.Protect` and `ProtectedData.Unprotect`, `DataProtectionScope.CurrentUser`, UTF-8, fixed application entropy `SHA256.HashData("UniDesk.UserData.v1"u8.ToArray())`, and prefix `dpapi:v1:`. `TryUnprotect` catches `FormatException` and `CryptographicException`, clears the out value, and returns `false` without logging ciphertext.
+- [x] Register `IUserDataProtector` as a singleton, re-run focused and full Release tests, then commit:
 
 ```powershell
 git add -- UniDesk/Services/IUserDataProtector.cs UniDesk/Services/DpapiUserDataProtector.cs UniDesk/App.xaml.cs UniDesk.Tests/DpapiUserDataProtectorTests.cs
@@ -51,11 +51,11 @@ git commit -m "feat: add versioned user data protection"
 - Consumes: `IUserDataProtector` from Task 1.
 - Preserves: existing public `ISettingsService` plaintext semantics.
 
-- [ ] Add a deterministic fake protector and tests asserting that `SetSettingAsync("WeatherApiKey", "secret")` stores only `fake:v1:secret`, `GetSettingAsync` returns `secret`, and a malformed protected value returns empty without exposing ciphertext.
-- [ ] Run focused tests; expect raw plaintext storage under the current implementation.
-- [ ] Inject `IUserDataProtector` into `SettingsService`. Add private `EncodeForStorage(key, value)` and `DecodeFromStorage(key, value)` methods that act only on `WeatherApiKey`, preserve null/empty deletion behavior, avoid double protection, and log only the key name on decode failure.
-- [ ] Apply encoding inside `SaveSettingToDatabaseAsync` and decoding inside `GetSettingFromDatabaseAsync`. Keep `_cache` plaintext.
-- [ ] Update tests and service construction to supply the fake or real protector. Re-run Settings tests and the full Release suite, then commit:
+- [x] Add a deterministic fake protector and tests asserting that `SetSettingAsync("WeatherApiKey", "secret")` stores only `fake:v1:secret`, `GetSettingAsync` returns `secret`, and a malformed protected value returns empty without exposing ciphertext.
+- [x] Run focused tests; expect raw plaintext storage under the current implementation.
+- [x] Inject `IUserDataProtector` into `SettingsService`. Add private `EncodeForStorage(key, value)` and `DecodeFromStorage(key, value)` methods that act only on `WeatherApiKey`, preserve null/empty deletion behavior, avoid double protection, and log only the key name on decode failure.
+- [x] Apply encoding inside `SaveSettingToDatabaseAsync` and decoding inside `GetSettingFromDatabaseAsync`. Keep `_cache` plaintext.
+- [x] Update tests and service construction to supply the fake or real protector. Re-run Settings tests and the full Release suite, then commit:
 
 ```powershell
 git add -- UniDesk/Services/SettingsService.cs UniDesk.Tests
@@ -73,11 +73,11 @@ git commit -m "fix: protect the user weather key at rest"
 - Consumes: `IUserDataProtector`.
 - Preserves: `IQuickTextService` returns plaintext `ClipboardHistoryItem.Content`.
 
-- [ ] Replace the existing plaintext test with a test that queries raw SQLite and asserts the body is absent while the service returns the original text. Add a malformed protected-row test that omits that row from results and does not delete it.
-- [ ] Run focused tests; expect the raw database assertion to fail.
-- [ ] Inject the protector. Protect normalized content in the clipboard insert statement, retain `ComputeHash(normalized)` for `ContentHash`, and change history mapping to a `TryMapHistory` path that decrypts protected values and treats unprotected values as legacy plaintext until migration runs.
-- [ ] Ensure lookup by hash and duplicate updates remain unchanged. Text snippets remain plaintext.
-- [ ] Re-run QuickText tests and the full Release suite, then commit:
+- [x] Replace the existing plaintext test with a test that queries raw SQLite and asserts the body is absent while the service returns the original text. Add a malformed protected-row test that omits that row from results and does not delete it.
+- [x] Run focused tests; expect the raw database assertion to fail.
+- [x] Inject the protector. Protect normalized content in the clipboard insert statement, retain `ComputeHash(normalized)` for `ContentHash`, and change history mapping to a `TryMapHistory` path that decrypts protected values and treats unprotected values as legacy plaintext until migration runs.
+- [x] Ensure lookup by hash and duplicate updates remain unchanged. Text snippets remain plaintext.
+- [x] Re-run QuickText tests and the full Release suite, then commit:
 
 ```powershell
 git add -- UniDesk/Services/QuickTextService.cs UniDesk.Tests
@@ -96,12 +96,12 @@ git commit -m "fix: protect clipboard history at rest"
 - Produces: `Task MigrateAsync()`.
 - Consumes: `IDatabaseService.ExecuteInTransactionAsync` and `IUserDataProtector`.
 
-- [ ] Add real-SQLite tests for: plaintext key and clipboard rows become protected; a second migration performs zero writes; a forced clipboard update trigger rolls back the weather-key update.
-- [ ] Run focused tests; expect a compile failure because the migration service does not exist.
-- [ ] Implement one transaction that queries `Settings` for `WeatherApiKey`, queries `ClipboardHistory` id/content, filters null/empty/already-protected values, protects plaintext, and updates rows by key/id. Do not alter `ContentHash`.
-- [ ] Register the migration service and call it after `ISettingsService.InitializeAsync()` but before localization initialization and main-window construction. Allow failures to reach the existing startup-failure dialog.
-- [ ] Invalidate the settings cache after migration so the first key read cannot return the pre-migration raw value.
-- [ ] Re-run focused and full Release tests, then commit:
+- [x] Add real-SQLite tests for: plaintext key and clipboard rows become protected; a second migration performs zero writes; a forced clipboard update trigger rolls back the weather-key update.
+- [x] Run focused tests; expect a compile failure because the migration service does not exist.
+- [x] Implement one transaction that queries `Settings` for `WeatherApiKey`, queries `ClipboardHistory` id/content, filters null/empty/already-protected values, protects plaintext, and updates rows by key/id. Do not alter `ContentHash`.
+- [x] Register the migration service and call it after `ISettingsService.InitializeAsync()` but before localization initialization and main-window construction. Allow failures to reach the existing startup-failure dialog.
+- [x] Invalidate the settings cache after migration so the first key read cannot return the pre-migration raw value.
+- [x] Re-run focused and full Release tests, then commit:
 
 ```powershell
 git add -- UniDesk/Services/IPrivacyMigrationService.cs UniDesk/Services/PrivacyMigrationService.cs UniDesk/App.xaml.cs UniDesk.Tests/PrivacyMigrationServiceTests.cs
@@ -122,11 +122,11 @@ git commit -m "fix: migrate sensitive data to DPAPI atomically"
 - Produces: `Task ExportToFileAsync(string filePath, BackupExportOptions? options = null)`.
 - Produces: `BackupExportOptions(bool IncludeClipboardHistory = false)`.
 
-- [ ] Add export tests asserting: default JSON has version 5, omits `WeatherApiKey`, and has no clipboard section; explicit inclusion emits plaintext clipboard content and `containsSensitivePlaintext: true`.
-- [ ] Update the future-version rejection test from version 5 to version 6, then run focused tests; expect failures under backup v4 behavior.
-- [ ] Increment `CurrentBackupVersion` to 5. Always add `WeatherApiKey` to excluded setting keys. Add v5 metadata fields `includedSections` and `containsSensitivePlaintext`. Populate clipboard entries only when `IncludeClipboardHistory` is true.
-- [ ] In `SettingsViewModel.BackupTodosAsync`, ask whether to include clipboard history before opening the save dialog. If included, show a second localized warning that the portable JSON contains readable clipboard text; cancellation returns before export.
-- [ ] Preserve v1-v4 import acceptance. Re-run focused and full Release tests, then commit:
+- [x] Add export tests asserting: default JSON has version 5, omits `WeatherApiKey`, and has no clipboard section; explicit inclusion emits plaintext clipboard content and `containsSensitivePlaintext: true`.
+- [x] Update the future-version rejection test from version 5 to version 6, then run focused tests; expect failures under backup v4 behavior.
+- [x] Increment `CurrentBackupVersion` to 5. Always add `WeatherApiKey` to excluded setting keys. Add v5 metadata fields `includedSections` and `containsSensitivePlaintext`. Populate clipboard entries only when `IncludeClipboardHistory` is true.
+- [x] In `SettingsViewModel.BackupTodosAsync`, ask whether to include clipboard history before opening the save dialog. If included, show a second localized warning that the portable JSON contains readable clipboard text; cancellation returns before export.
+- [x] Preserve v1-v4 import acceptance. Re-run focused and full Release tests, then commit:
 
 ```powershell
 git add -- UniDesk/Models/BackupExportOptions.cs UniDesk/Services/ITodoBackupService.cs UniDesk/Services/TodoBackupService.cs UniDesk/ViewModels/SettingsViewModel.cs UniDesk/Resources/Strings.*.xaml UniDesk.Tests/TodoBackupServiceTests.cs
@@ -152,14 +152,14 @@ git commit -m "feat: add privacy-safe backup v5 exports"
 - Produces: `Task<TodoBackupImportResult> ApplyImportAsync(BackupImportPlan plan)`.
 - `BackupImportPlan` exposes `BackupImportPreview Preview` and keeps the normalized backup document internal.
 
-- [ ] Add tests proving `PrepareImportAsync` performs no write, preview lists every shortcut path/argument, an invalid file fails before a plan exists, and `ApplyImportAsync` preserves the existing rollback test.
-- [ ] Run focused tests; expect compile failures for missing plan APIs.
-- [ ] Move file read, deserialization, validation, version checks, and normalization into `PrepareImportAsync`. Build immutable preview counts and a shortcut list where `IsRisky` is true for non-empty arguments, URI paths, or `.exe`, `.com`, `.bat`, `.cmd`, `.ps1`, `.vbs`, `.js`, `.msi`, and `.lnk` extensions.
-- [ ] Move flush, transaction, cache invalidation, and icon refresh into `ApplyImportAsync`. Reject null or externally constructed plans by making the plan constructor internal.
-- [ ] Before direct inserts, use `IUserDataProtector` to encode legacy `WeatherApiKey` settings and clipboard bodies. Preserve clipboard hash recomputation from plaintext.
-- [ ] Build a scrollable preview window bound to `BackupImportPreview`, showing section counts, sensitive-plaintext warning, and every shortcut path/argument with risky rows emphasized. It returns `true` only from the explicit import button.
-- [ ] Change restore UI order to select file, prepare, show preview, and apply only after confirmation. Remove the old pre-file confirmation.
-- [ ] Re-run focused and full Release tests, then commit:
+- [x] Add tests proving `PrepareImportAsync` performs no write, preview lists every shortcut path/argument, an invalid file fails before a plan exists, and `ApplyImportAsync` preserves the existing rollback test.
+- [x] Run focused tests; expect compile failures for missing plan APIs.
+- [x] Move file read, deserialization, validation, version checks, and normalization into `PrepareImportAsync`. Build immutable preview counts and a shortcut list where `IsRisky` is true for non-empty arguments, URI paths, or `.exe`, `.com`, `.bat`, `.cmd`, `.ps1`, `.vbs`, `.js`, `.msi`, and `.lnk` extensions.
+- [x] Move flush, transaction, cache invalidation, and icon refresh into `ApplyImportAsync`. Reject null or externally constructed plans by making the plan constructor internal.
+- [x] Before direct inserts, use `IUserDataProtector` to encode legacy `WeatherApiKey` settings and clipboard bodies. Preserve clipboard hash recomputation from plaintext.
+- [x] Build a scrollable preview window bound to `BackupImportPreview`, showing section counts, sensitive-plaintext warning, and every shortcut path/argument with risky rows emphasized. It returns `true` only from the explicit import button.
+- [x] Change restore UI order to select file, prepare, show preview, and apply only after confirmation. Remove the old pre-file confirmation.
+- [x] Re-run focused and full Release tests, then commit:
 
 ```powershell
 git add -- UniDesk/Models/BackupImportPreview.cs UniDesk/Models/BackupShortcutPreview.cs UniDesk/Services/BackupImportPlan.cs UniDesk/Windows/BackupImportPreviewWindow.xaml UniDesk/Windows/BackupImportPreviewWindow.xaml.cs UniDesk/Services/ITodoBackupService.cs UniDesk/Services/TodoBackupService.cs UniDesk/ViewModels/SettingsViewModel.cs UniDesk/Resources/Strings.*.xaml UniDesk.Tests/TodoBackupServiceTests.cs
@@ -174,12 +174,12 @@ git commit -m "feat: preview validated backups before import"
 - Modify: `UniDesk.Tests/QuickTextServiceTests.cs`
 - Create: `UniDesk.Tests/LocationProviderTests.cs`
 
-- [ ] Add sensitive positive cases for `sk-proj-...`, `ghp_...`, `github_pat_...`, `AKIA...`, and `-----BEGIN PRIVATE KEY-----`; add nearby negative cases such as `sketch-project` and ordinary words containing `session` only as part of a larger harmless word.
-- [ ] Change `GetCityByAmapIpAsync` to `protected virtual`, derive a test provider that returns null from that method, and add a behavior test proving `ResolveCityAsync` returns the saved city. The final source search separately proves the HTTP endpoint is absent.
-- [ ] Run focused tests; expect at least the raw-key cases to fail.
-- [ ] Remove `IpApiEndpoint`, `IpApiResponse`, and `GetLocationByIpAsync`. `ResolveCityAsync` tries only HTTPS Amap automatic location and then saved city. `GetLocationAsync` returns null because no approved coordinate-only provider remains.
-- [ ] Add anchored/generated regexes for the approved secret forms. Keep keyword detection for labeled values, but avoid substring-only false positives by applying word-boundary or separator rules.
-- [ ] Re-run focused and full Release tests. Run `rg -n "http://ip-api\.com" UniDesk`; expect no matches. Commit:
+- [x] Add sensitive positive cases for `sk-proj-...`, `ghp_...`, `github_pat_...`, `AKIA...`, and `-----BEGIN PRIVATE KEY-----`; add nearby negative cases such as `sketch-project` and ordinary words containing `session` only as part of a larger harmless word.
+- [x] Change `GetCityByAmapIpAsync` to `protected virtual`, derive a test provider that returns null from that method, and add a behavior test proving `ResolveCityAsync` returns the saved city. The final source search separately proves the HTTP endpoint is absent.
+- [x] Run focused tests; expect at least the raw-key cases to fail.
+- [x] Remove `IpApiEndpoint`, `IpApiResponse`, and `GetLocationByIpAsync`. `ResolveCityAsync` tries only HTTPS Amap automatic location and then saved city. `GetLocationAsync` returns null because no approved coordinate-only provider remains.
+- [x] Add anchored/generated regexes for the approved secret forms. Keep keyword detection for labeled values, but avoid substring-only false positives by applying word-boundary or separator rules.
+- [x] Re-run focused and full Release tests. Run `rg -n "http://ip-api\.com" UniDesk`; expect no matches. Commit:
 
 ```powershell
 git add -- UniDesk/Helpers/LocationProvider.cs UniDesk/Services/QuickTextService.cs UniDesk.Tests/QuickTextServiceTests.cs UniDesk.Tests/LocationProviderTests.cs
@@ -192,11 +192,11 @@ git commit -m "fix: remove insecure location fallback"
 - Modify: `docs/DESIGN.md`
 - Modify: `docs/superpowers/plans/2026-07-10-privacy-import-safety.md`
 
-- [ ] Record DPAPI scope, prefix, migration timing, unreadable-data behavior, v5 backup privacy defaults, preview/apply separation, and location fallback removal.
-- [ ] Run `dotnet test UniDesk.sln -c Release --no-restore`; expect zero failures.
-- [ ] Query a test SQLite database and assert no known weather key or clipboard fixture appears in raw text fields.
-- [ ] Run `git diff --check`, `git status --short`, and a scope review; expect only phase 4 documentation changes after implementation commits.
-- [ ] Mark plan checkboxes complete and commit:
+- [x] Record DPAPI scope, prefix, migration timing, unreadable-data behavior, v5 backup privacy defaults, preview/apply separation, and location fallback removal.
+- [x] Run `dotnet test UniDesk.sln -c Release --no-restore`; expect zero failures.
+- [x] Query a test SQLite database and assert no known weather key or clipboard fixture appears in raw text fields.
+- [x] Run `git diff --check`, `git status --short`, and a scope review; expect only phase 4 documentation changes after implementation commits.
+- [x] Mark plan checkboxes complete and commit:
 
 ```powershell
 git add -- docs/DESIGN.md docs/superpowers/plans/2026-07-10-privacy-import-safety.md
