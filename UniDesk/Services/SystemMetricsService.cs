@@ -34,7 +34,7 @@ public sealed class SystemMetricsService : ISystemMetricsService, IDisposable
     public SystemMetricsSnapshot Read()
     {
         var cpuUsage = SafePercentage(() => _cpuCounter.NextValue());
-        var cpuTemperature = NormalizeTemperature(_asusReader.ReadCpuPackageTemperature());
+        var cpuTemperature = SensorSelection.NormalizeTemperature(_asusReader.ReadCpuPackageTemperature());
         var cpuFallback = CpuMetrics.Empty;
 #if DEBUG
         cpuFallback = _libreHardwareCpuReader.Read();
@@ -130,7 +130,7 @@ public sealed class SystemMetricsService : ISystemMetricsService, IDisposable
 
     private static double? SafePercentage(Func<float> read)
     {
-        try { return NormalizePercentage(read()); }
+        try { return SensorSelection.NormalizePercentage(read()); }
         catch { return null; }
     }
 
@@ -172,44 +172,11 @@ public sealed class SystemMetricsService : ISystemMetricsService, IDisposable
 
         var normalizedAvailable = Math.Min(available, total);
         var used = total - normalizedAvailable;
-        var percent = NormalizePercentage(used / (double)total * 100d);
+        var percent = SensorSelection.NormalizePercentage(used / (double)total * 100d);
         LogMemoryMetrics(source, total, normalizedAvailable, percent);
         return new MemoryMetrics(percent, total, normalizedAvailable, used);
     }
 
-    public static bool IsValidPercentage(double? value)
-    {
-        if (!value.HasValue)
-        {
-            return false;
-        }
-
-        var percentage = value.Value;
-        return !double.IsNaN(percentage) &&
-               !double.IsInfinity(percentage) &&
-               percentage >= 0 &&
-               percentage <= 100;
-    }
-
-    public static bool IsValidTemperature(double? value)
-    {
-        if (!value.HasValue)
-        {
-            return false;
-        }
-
-        var temperature = value.Value;
-        return !double.IsNaN(temperature) &&
-               !double.IsInfinity(temperature) &&
-               temperature > 0 &&
-               temperature <= 120;
-    }
-
-    private static double? NormalizePercentage(double? value) =>
-        IsValidPercentage(value) ? value!.Value : null;
-
-    private static double? NormalizeTemperature(double? value) =>
-        IsValidTemperature(value) ? value!.Value : null;
 
     public void Dispose()
     {
@@ -240,393 +207,6 @@ public sealed class SystemMetricsService : ISystemMetricsService, IDisposable
 #endif
     }
 
-    public readonly record struct CpuTemperatureSensorCandidate(string Name, double? Value);
-
-    public readonly record struct CpuTemperatureSensorSelection(string Name, double Value);
-
-    public readonly record struct CpuUsageSensorCandidate(string Name, double? Value);
-
-    public readonly record struct CpuUsageSensorSelection(string Name, double Value);
-
-    public readonly record struct CpuTemperatureProviderSelection(string Source, string Name, double Value, int Priority);
-
-    public readonly record struct GpuSensorCandidate(string Name, double? Value);
-
-    public readonly record struct GpuSensorSelection(string Name, double Value);
-
-    public static CpuTemperatureSensorSelection? SelectCpuTemperatureSensor(
-        IEnumerable<CpuTemperatureSensorCandidate> sensors,
-        string? hardwareName = null)
-    {
-        var validSensors = sensors
-            .Where(sensor => IsValidCpuTemperature(sensor.Value) && !IsExcludedCpuTemperatureSensor(sensor.Name))
-            .Select(sensor => new CpuTemperatureSensorSelection(sensor.Name, sensor.Value!.Value))
-            .ToList();
-
-        if (validSensors.Count == 0)
-        {
-            return null;
-        }
-
-        var keywordGroups = GetCpuTemperaturePriorityGroups(hardwareName);
-        foreach (var group in keywordGroups)
-        {
-            var match = PickHighestByKeywords(validSensors, group);
-            if (match.HasValue)
-            {
-                return match;
-            }
-        }
-
-        var coreMax = validSensors
-            .Where(sensor => IsCoreTemperatureSensor(sensor.Name))
-            .OrderByDescending(sensor => sensor.Value)
-            .FirstOrDefault();
-        if (!string.IsNullOrWhiteSpace(coreMax.Name))
-        {
-            return coreMax;
-        }
-
-        return validSensors
-            .OrderByDescending(sensor => sensor.Value)
-            .First();
-    }
-
-    public static CpuTemperatureSensorSelection? SelectWindowsThermalZoneTemperatureSensor(
-        IEnumerable<CpuTemperatureSensorCandidate> sensors)
-    {
-        var validSensors = sensors
-            .Where(sensor => IsValidCpuTemperature(sensor.Value))
-            .Select(sensor => new CpuTemperatureSensorSelection(sensor.Name, sensor.Value!.Value))
-            .ToList();
-
-        if (validSensors.Count == 0)
-        {
-            return null;
-        }
-
-        return validSensors
-            .OrderByDescending(sensor => sensor.Value)
-            .First();
-    }
-
-    public static CpuTemperatureProviderSelection? SelectCpuTemperatureProvider(
-        CpuTemperatureSensorSelection? cpuSelection,
-        CpuTemperatureSensorSelection? motherboardSelection,
-        CpuTemperatureSensorSelection? windowsThermalZoneSelection)
-    {
-        var candidates = new List<CpuTemperatureProviderSelection>();
-        if (cpuSelection.HasValue)
-        {
-            candidates.Add(new CpuTemperatureProviderSelection(
-                "LibreHardwareMonitor CPU",
-                cpuSelection.Value.Name,
-                cpuSelection.Value.Value,
-                10));
-        }
-
-        if (motherboardSelection.HasValue)
-        {
-            candidates.Add(new CpuTemperatureProviderSelection(
-                "LibreHardwareMonitor Motherboard",
-                motherboardSelection.Value.Name,
-                motherboardSelection.Value.Value,
-                30));
-        }
-
-        if (windowsThermalZoneSelection.HasValue)
-        {
-            candidates.Add(new CpuTemperatureProviderSelection(
-                "Windows ACPI Thermal Zone",
-                windowsThermalZoneSelection.Value.Name,
-                windowsThermalZoneSelection.Value.Value,
-                80));
-        }
-
-        return candidates.Count == 0
-            ? null
-            : candidates.OrderBy(candidate => candidate.Priority).First();
-    }
-
-    private static IReadOnlyList<string[]> GetCpuTemperaturePriorityGroups(string? hardwareName)
-    {
-        var isAmd = ContainsAny(hardwareName, "AMD", "Ryzen");
-        var isIntel = ContainsAny(hardwareName, "Intel", "Core");
-
-        if (isAmd)
-        {
-            return
-            [
-                ["Tctl"],
-                ["Tdie"],
-                ["Die"],
-                ["CPU Package"],
-                ["Package"],
-                ["Core Max"],
-                ["Core Average"],
-                ["CPU Core"]
-            ];
-        }
-
-        if (isIntel)
-        {
-            return
-            [
-                ["CPU Package"],
-                ["Package"],
-                ["CPU IA"],
-                ["IA Cores"],
-                ["Core Max"],
-                ["Core Average"],
-                ["CPU Core"],
-                ["Tctl"],
-                ["Tdie"]
-            ];
-        }
-
-        return
-        [
-            ["CPU Package"],
-            ["Package"],
-            ["CPU IA"],
-            ["IA Cores"],
-            ["Core Max"],
-            ["Core Average"],
-            ["CPU Core"],
-            ["Tctl"],
-            ["Tdie"]
-        ];
-    }
-
-    public static CpuTemperatureSensorSelection? SelectCpuMotherboardTemperatureSensor(
-        IEnumerable<CpuTemperatureSensorCandidate> sensors,
-        string? cpuHardwareName = null)
-    {
-        var cpuNamedSensors = sensors
-            .Where(sensor => IsValidCpuTemperature(sensor.Value) &&
-                             IsCpuMotherboardTemperatureSensorName(sensor.Name) &&
-                             !IsExcludedMotherboardCpuTemperatureSensor(sensor.Name))
-            .ToList();
-
-        var cpuNamedSelection = SelectCpuTemperatureSensor(cpuNamedSensors, cpuHardwareName);
-        if (cpuNamedSelection.HasValue)
-        {
-            return cpuNamedSelection;
-        }
-
-        if (!IsAmdRyzen9000DesktopCpu(cpuHardwareName))
-        {
-            return null;
-        }
-
-        var pchFallback = sensors
-            .Where(sensor => IsValidCpuTemperature(sensor.Value) && IsPchTemperatureSensor(sensor.Name))
-            .Select(sensor => new CpuTemperatureSensorSelection(sensor.Name, sensor.Value!.Value))
-            .OrderByDescending(sensor => sensor.Value)
-            .FirstOrDefault();
-
-        return string.IsNullOrWhiteSpace(pchFallback.Name) ? null : pchFallback;
-    }
-
-    private static CpuTemperatureSensorSelection? PickHighestByKeywords(
-        IEnumerable<CpuTemperatureSensorSelection> sensors,
-        IReadOnlyCollection<string> keywords)
-    {
-        var match = sensors
-            .Where(sensor => ContainsAny(sensor.Name, keywords))
-            .OrderByDescending(sensor => sensor.Value)
-            .FirstOrDefault();
-
-        return string.IsNullOrWhiteSpace(match.Name) ? null : match;
-    }
-
-    private static bool IsValidCpuTemperature(double? value)
-    {
-        if (!value.HasValue)
-        {
-            return false;
-        }
-
-        return IsValidTemperature(value);
-    }
-
-    public static CpuUsageSensorSelection? SelectCpuUsageSensor(IEnumerable<CpuUsageSensorCandidate> sensors)
-    {
-        var validSensors = sensors
-            .Where(sensor => IsValidPercentage(sensor.Value))
-            .Select(sensor => new CpuUsageSensorSelection(sensor.Name, sensor.Value!.Value))
-            .ToList();
-
-        if (validSensors.Count == 0)
-        {
-            return null;
-        }
-
-        foreach (var keywords in new[]
-                 {
-                     new[] { "CPU Total" },
-                     new[] { "Total" },
-                     new[] { "CPU Package" },
-                     new[] { "Package" }
-                 })
-        {
-            var match = PickHighestByKeywords(
-                validSensors.Select(sensor => new CpuTemperatureSensorSelection(sensor.Name, sensor.Value)),
-                keywords);
-            if (match.HasValue)
-            {
-                return new CpuUsageSensorSelection(match.Value.Name, match.Value.Value);
-            }
-        }
-
-        var coreLoads = validSensors
-            .Where(sensor => IsCoreTemperatureSensor(sensor.Name))
-            .ToList();
-        if (coreLoads.Count > 0)
-        {
-            return new CpuUsageSensorSelection("CPU Core Average", coreLoads.Average(sensor => sensor.Value));
-        }
-
-        return validSensors
-            .OrderByDescending(sensor => sensor.Value)
-            .First();
-    }
-
-    private static bool IsExcludedCpuTemperatureSensor(string? name) =>
-        ContainsAny(
-            name,
-            "Distance",
-            "TjMax",
-            "Throttle",
-            "Limit",
-            "PCH",
-            "VRM",
-            "MOS",
-            "Chipset",
-            "Motherboard",
-            "System",
-            "AUX",
-            "DIMM",
-            "Memory",
-            "GPU",
-            "GT Cores",
-            "PCI");
-
-    private static bool IsExcludedMotherboardCpuTemperatureSensor(string? name) =>
-        IsExcludedCpuTemperatureSensor(name) ||
-        ContainsAny(name, "VRM", "MOS", "Chipset", "Motherboard", "System", "AUX", "DIMM", "Memory", "GPU", "PCI");
-
-    private static bool IsCpuMotherboardTemperatureSensorName(string? name) =>
-        ContainsAny(name, "CPU", "Tctl", "Tdie", "Package");
-
-    private static bool IsPchTemperatureSensor(string? name) =>
-        ContainsAny(name, "PCH");
-
-    private static bool IsAmdRyzen9000DesktopCpu(string? hardwareName) =>
-        ContainsAny(hardwareName, "AMD Ryzen") &&
-        ContainsAny(hardwareName, " 9600X", " 9700X", " 9800X", " 9900X", " 9950X");
-
-    private static bool IsCoreTemperatureSensor(string? name) =>
-        ContainsAny(name, "Core #", "CPU Core", "Core Max", "Core Average") ||
-        (!string.IsNullOrWhiteSpace(name) &&
-         name.StartsWith("Core ", StringComparison.OrdinalIgnoreCase));
-
-    public static GpuSensorSelection? SelectGpuUsageSensor(IEnumerable<GpuSensorCandidate> sensors)
-    {
-        var validSensors = sensors
-            .Where(sensor => IsValidPercentage(sensor.Value))
-            .Select(sensor => new GpuSensorSelection(sensor.Name, sensor.Value!.Value))
-            .ToList();
-
-        if (validSensors.Count == 0)
-        {
-            return null;
-        }
-
-        foreach (var keywords in new[]
-                 {
-                     new[] { "GPU Core" },
-                     new[] { "GPU 3D" },
-                     new[] { "D3D 3D" },
-                     new[] { "Graphics" },
-                     new[] { "Render" },
-                     new[] { "Overall" },
-                     new[] { "GPU" },
-                     new[] { "Core" }
-                 })
-        {
-            var match = PickHighestGpuByKeywords(validSensors, keywords);
-            if (match.HasValue)
-            {
-                return match;
-            }
-        }
-
-        return validSensors
-            .OrderByDescending(sensor => sensor.Value)
-            .First();
-    }
-
-    public static GpuSensorSelection? SelectGpuTemperatureSensor(IEnumerable<GpuSensorCandidate> sensors)
-    {
-        var validSensors = sensors
-            .Where(sensor => IsValidTemperature(sensor.Value))
-            .Select(sensor => new GpuSensorSelection(sensor.Name, sensor.Value!.Value))
-            .ToList();
-
-        if (validSensors.Count == 0)
-        {
-            return null;
-        }
-
-        foreach (var keywords in new[]
-                 {
-                     new[] { "GPU Core" },
-                     new[] { "GPU Hot Spot" },
-                     new[] { "Hot Spot" },
-                     new[] { "GPU Memory Junction" },
-                     new[] { "Memory Junction" },
-                     new[] { "GPU Temperature" },
-                     new[] { "Temperature" },
-                     new[] { "Core" }
-                 })
-        {
-            var match = PickHighestGpuByKeywords(validSensors, keywords);
-            if (match.HasValue)
-            {
-                return match;
-            }
-        }
-
-        return validSensors
-            .OrderByDescending(sensor => sensor.Value)
-            .First();
-    }
-
-    private static GpuSensorSelection? PickHighestGpuByKeywords(
-        IEnumerable<GpuSensorSelection> sensors,
-        IReadOnlyCollection<string> keywords)
-    {
-        var match = sensors
-            .Where(sensor => ContainsAny(sensor.Name, keywords))
-            .OrderByDescending(sensor => sensor.Value)
-            .FirstOrDefault();
-
-        return string.IsNullOrWhiteSpace(match.Name) ? null : match;
-    }
-
-    private static bool ContainsAny(string? text, params string[] keywords) =>
-        ContainsAny(text, (IReadOnlyCollection<string>)keywords);
-
-    private static bool ContainsAny(string? text, IReadOnlyCollection<string> keywords)
-    {
-        if (string.IsNullOrWhiteSpace(text))
-        {
-            return false;
-        }
-
-        return keywords.Any(keyword => text.Contains(keyword, StringComparison.OrdinalIgnoreCase));
-    }
 
     [DllImport("kernel32.dll", SetLastError = true)]
     private static extern bool GlobalMemoryStatusEx([In, Out] MemoryStatusEx lpBuffer);
@@ -814,15 +394,15 @@ public sealed class SystemMetricsService : ISystemMetricsService, IDisposable
                 var cpuHardwareName = cpuHardwareNames.Count == 0
                     ? null
                     : string.Join("; ", cpuHardwareNames);
-                var loadSelection = SelectCpuUsageSensor(loadSensors);
-                var cpuTemperatureSelection = SelectCpuTemperatureSensor(temperatureSensors, cpuHardwareName);
+                var loadSelection = SensorSelection.SelectCpuUsageSensor(loadSensors);
+                var cpuTemperatureSelection = SensorSelection.SelectCpuTemperatureSensor(temperatureSensors, cpuHardwareName);
                 CpuTemperatureSensorSelection? motherboardTemperatureSelection = null;
                 CpuTemperatureSensorSelection? windowsThermalZoneSelection = null;
 
                 if (!cpuTemperatureSelection.HasValue)
                 {
                     motherboardTemperatureSensors = ReadMotherboardTemperatureSensors().ToList();
-                    motherboardTemperatureSelection = SelectCpuMotherboardTemperatureSensor(
+                    motherboardTemperatureSelection = SensorSelection.SelectCpuMotherboardTemperatureSensor(
                         motherboardTemperatureSensors,
                         cpuHardwareName);
                 }
@@ -830,10 +410,10 @@ public sealed class SystemMetricsService : ISystemMetricsService, IDisposable
                 if (!cpuTemperatureSelection.HasValue && !motherboardTemperatureSelection.HasValue)
                 {
                     windowsThermalZoneSensors = ReadWindowsThermalZoneTemperatureSensors();
-                    windowsThermalZoneSelection = SelectWindowsThermalZoneTemperatureSensor(windowsThermalZoneSensors);
+                    windowsThermalZoneSelection = SensorSelection.SelectWindowsThermalZoneTemperatureSensor(windowsThermalZoneSensors);
                 }
 
-                var temperatureSelection = SelectCpuTemperatureProvider(
+                var temperatureSelection = SensorSelection.SelectCpuTemperatureProvider(
                     cpuTemperatureSelection,
                     motherboardTemperatureSelection,
                     windowsThermalZoneSelection);
@@ -1138,13 +718,13 @@ public sealed class SystemMetricsService : ISystemMetricsService, IDisposable
                         double? temp = null;
                         double? usage = null;
                         if (data.sensors[SensorGpuTemperatureEdge].supported != 0 &&
-                            IsValidTemperature(data.sensors[SensorGpuTemperatureEdge].value))
+                            SensorSelection.IsValidTemperature(data.sensors[SensorGpuTemperatureEdge].value))
                         {
                             temp = data.sensors[SensorGpuTemperatureEdge].value;
                         }
 
                         if (data.sensors[SensorGpuActivity].supported != 0 &&
-                            IsValidPercentage(data.sensors[SensorGpuActivity].value))
+                            SensorSelection.IsValidPercentage(data.sensors[SensorGpuActivity].value))
                         {
                             usage = data.sensors[SensorGpuActivity].value;
                         }
@@ -1263,13 +843,13 @@ public sealed class SystemMetricsService : ISystemMetricsService, IDisposable
                     double? usage = null;
 
                     if (nvmlDeviceGetTemperature(device, NvmlTemperatureGpu, out var rawTemp) == NvmlSuccess &&
-                        IsValidTemperature(rawTemp))
+                        SensorSelection.IsValidTemperature(rawTemp))
                     {
                         temp = rawTemp;
                     }
 
                     if (nvmlDeviceGetUtilizationRates(device, out var utilization) == NvmlSuccess &&
-                        IsValidPercentage(utilization.gpu))
+                        SensorSelection.IsValidPercentage(utilization.gpu))
                     {
                         usage = utilization.gpu;
                     }
@@ -1419,8 +999,8 @@ public sealed class SystemMetricsService : ISystemMetricsService, IDisposable
                 .Where(sensor => sensor.SensorType == SensorType.Temperature)
                 .Select(sensor => new GpuSensorCandidate(sensor.Name, sensor.Value))
                 .ToList();
-            var usageSelection = SelectGpuUsageSensor(loadSensors);
-            var temperatureSelection = SelectGpuTemperatureSensor(temperatureSensors);
+            var usageSelection = SensorSelection.SelectGpuUsageSensor(loadSensors);
+            var temperatureSelection = SensorSelection.SelectGpuTemperatureSensor(temperatureSensors);
             LogGpuSensors(hardware, loadSensors, temperatureSensors, usageSelection, temperatureSelection);
 
             return new GpuMetrics(

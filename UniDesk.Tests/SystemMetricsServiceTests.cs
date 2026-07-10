@@ -18,7 +18,7 @@ public class SystemMetricsServiceTests
     [Fact]
     public void SelectCpuTemperatureSensor_ShouldPreferIntelPackageTemperature()
     {
-        var selection = SystemMetricsService.SelectCpuTemperatureSensor(
+        var selection = SensorSelection.SelectCpuTemperatureSensor(
             [
                 new("Core #1", 54),
                 new("CPU Package", 61),
@@ -34,7 +34,7 @@ public class SystemMetricsServiceTests
     [Fact]
     public void SelectCpuTemperatureSensor_ShouldPreferIntelIaCoresWhenPackageIsMissing()
     {
-        var selection = SystemMetricsService.SelectCpuTemperatureSensor(
+        var selection = SensorSelection.SelectCpuTemperatureSensor(
             [
                 new("CPU GT Cores", 48),
                 new("CPU IA Cores", 64),
@@ -50,7 +50,7 @@ public class SystemMetricsServiceTests
     [Fact]
     public void SelectCpuTemperatureSensor_ShouldPreferAmdTctlTemperature()
     {
-        var selection = SystemMetricsService.SelectCpuTemperatureSensor(
+        var selection = SensorSelection.SelectCpuTemperatureSensor(
             [
                 new("CPU Package", 58),
                 new("Tdie", 57),
@@ -66,7 +66,7 @@ public class SystemMetricsServiceTests
     [Fact]
     public void SelectCpuTemperatureSensor_ShouldPreferAmdCombinedTctlTdieTemperature()
     {
-        var selection = SystemMetricsService.SelectCpuTemperatureSensor(
+        var selection = SensorSelection.SelectCpuTemperatureSensor(
             [
                 new("PCH", 45),
                 new("Core (Tctl/Tdie)", 62)
@@ -81,7 +81,7 @@ public class SystemMetricsServiceTests
     [Fact]
     public void SelectCpuMotherboardTemperatureSensor_ShouldUseCpuNamedSensor()
     {
-        var selection = SystemMetricsService.SelectCpuMotherboardTemperatureSensor(
+        var selection = SensorSelection.SelectCpuMotherboardTemperatureSensor(
             [
                 new("System", 33),
                 new("CPU", 47),
@@ -97,7 +97,7 @@ public class SystemMetricsServiceTests
     [Fact]
     public void SelectCpuMotherboardTemperatureSensor_ShouldUsePchFallbackForRyzen9000()
     {
-        var selection = SystemMetricsService.SelectCpuMotherboardTemperatureSensor(
+        var selection = SensorSelection.SelectCpuMotherboardTemperatureSensor(
             [
                 new("System", 33),
                 new("PCH", 52)
@@ -112,7 +112,7 @@ public class SystemMetricsServiceTests
     [Fact]
     public void SelectCpuMotherboardTemperatureSensor_ShouldNotUsePchFallbackForUnknownCpu()
     {
-        var selection = SystemMetricsService.SelectCpuMotherboardTemperatureSensor(
+        var selection = SensorSelection.SelectCpuMotherboardTemperatureSensor(
             [
                 new("System", 33),
                 new("PCH", 52)
@@ -125,7 +125,7 @@ public class SystemMetricsServiceTests
     [Fact]
     public void SelectCpuTemperatureSensor_ShouldUseHighestCoreTemperatureWhenPackageIsMissing()
     {
-        var selection = SystemMetricsService.SelectCpuTemperatureSensor(
+        var selection = SensorSelection.SelectCpuTemperatureSensor(
             [
                 new("Core #1", 49),
                 new("Core #2", 56),
@@ -141,7 +141,7 @@ public class SystemMetricsServiceTests
     [Fact]
     public void SelectCpuTemperatureSensor_ShouldIgnoreInvalidTemperatures()
     {
-        var selection = SystemMetricsService.SelectCpuTemperatureSensor(
+        var selection = SensorSelection.SelectCpuTemperatureSensor(
             [
                 new("CPU Package", null),
                 new("Package", double.NaN),
@@ -156,7 +156,7 @@ public class SystemMetricsServiceTests
     [Fact]
     public void SelectCpuTemperatureSensor_ShouldNotUsePchAsDirectCpuTemperature()
     {
-        var selection = SystemMetricsService.SelectCpuTemperatureSensor(
+        var selection = SensorSelection.SelectCpuTemperatureSensor(
             [
                 new("PCH", 52),
                 new("Chipset", 49)
@@ -169,7 +169,7 @@ public class SystemMetricsServiceTests
     [Fact]
     public void SelectWindowsThermalZoneTemperatureSensor_ShouldUseHighestValidThermalZone()
     {
-        var selection = SystemMetricsService.SelectWindowsThermalZoneTemperatureSensor(
+        var selection = SensorSelection.SelectWindowsThermalZoneTemperatureSensor(
             [
                 new("ACPI TZ00", 41),
                 new("ACPI TZ01", 58),
@@ -184,7 +184,7 @@ public class SystemMetricsServiceTests
     [Fact]
     public void SelectCpuTemperatureProvider_ShouldPreferCpuBeforeFallbacks()
     {
-        var selection = SystemMetricsService.SelectCpuTemperatureProvider(
+        var selection = SensorSelection.SelectCpuTemperatureProvider(
             new("CPU Package", 61),
             new("CPU", 45),
             new("ACPI TZ00", 48));
@@ -198,7 +198,7 @@ public class SystemMetricsServiceTests
     [Fact]
     public void SelectCpuTemperatureProvider_ShouldUseWindowsThermalZoneOnlyAsLastFallback()
     {
-        var selection = SystemMetricsService.SelectCpuTemperatureProvider(
+        var selection = SensorSelection.SelectCpuTemperatureProvider(
             null,
             null,
             new("ACPI TZ00", 48));
@@ -212,7 +212,7 @@ public class SystemMetricsServiceTests
     [Fact]
     public void SelectCpuUsageSensor_ShouldPreferCpuTotal()
     {
-        var selection = SystemMetricsService.SelectCpuUsageSensor(
+        var selection = SensorSelection.SelectCpuUsageSensor(
             [
                 new("CPU Core #1", 80),
                 new("CPU Total", 34),
@@ -227,7 +227,7 @@ public class SystemMetricsServiceTests
     [Fact]
     public void SelectCpuUsageSensor_ShouldAverageCoreLoadsWhenTotalIsMissing()
     {
-        var selection = SystemMetricsService.SelectCpuUsageSensor(
+        var selection = SensorSelection.SelectCpuUsageSensor(
             [
                 new("CPU Core #1", 30),
                 new("CPU Core #2", 50)
@@ -241,7 +241,7 @@ public class SystemMetricsServiceTests
     [Fact]
     public void SelectGpuUsageSensor_ShouldPrefer3DOrGraphicsLoad()
     {
-        var selection = SystemMetricsService.SelectGpuUsageSensor(
+        var selection = SensorSelection.SelectGpuUsageSensor(
             [
                 new("Memory Controller", 70),
                 new("GPU 3D", 42),
@@ -256,7 +256,7 @@ public class SystemMetricsServiceTests
     [Fact]
     public void SelectGpuUsageSensor_ShouldSupportIntelGraphicsNames()
     {
-        var selection = SystemMetricsService.SelectGpuUsageSensor(
+        var selection = SensorSelection.SelectGpuUsageSensor(
             [
                 new("Render", 18),
                 new("Video", 9)
@@ -270,7 +270,7 @@ public class SystemMetricsServiceTests
     [Fact]
     public void SelectGpuTemperatureSensor_ShouldPreferGpuCore()
     {
-        var selection = SystemMetricsService.SelectGpuTemperatureSensor(
+        var selection = SensorSelection.SelectGpuTemperatureSensor(
             [
                 new("GPU Hot Spot", 82),
                 new("GPU Core", 66),
@@ -285,7 +285,7 @@ public class SystemMetricsServiceTests
     [Fact]
     public void SelectGpuTemperatureSensor_ShouldSupportHotSpotWhenCoreIsMissing()
     {
-        var selection = SystemMetricsService.SelectGpuTemperatureSensor(
+        var selection = SensorSelection.SelectGpuTemperatureSensor(
             [
                 new("GPU Memory Junction", 78),
                 new("GPU Hot Spot", 82)
@@ -299,13 +299,13 @@ public class SystemMetricsServiceTests
     [Fact]
     public void SensorSelection_ShouldIgnoreInvalidPercentagesAndTemperatures()
     {
-        var usage = SystemMetricsService.SelectGpuUsageSensor(
+        var usage = SensorSelection.SelectGpuUsageSensor(
             [
                 new("GPU Core", -1),
                 new("GPU 3D", 101),
                 new("Graphics", double.PositiveInfinity)
             ]);
-        var temperature = SystemMetricsService.SelectGpuTemperatureSensor(
+        var temperature = SensorSelection.SelectGpuTemperatureSensor(
             [
                 new("GPU Core", -1),
                 new("GPU Temperature", 999),
@@ -314,5 +314,55 @@ public class SystemMetricsServiceTests
 
         Assert.Null(usage);
         Assert.Null(temperature);
+    }
+
+    [Fact]
+    public void SensorSelection_ShouldAcceptBoundaryPercentagesAndTemperature()
+    {
+        var zeroUsage = SensorSelection.SelectCpuUsageSensor([new("CPU Total", 0)]);
+        var fullUsage = SensorSelection.SelectGpuUsageSensor([new("GPU Core", 100)]);
+        var maxTemperature = SensorSelection.SelectGpuTemperatureSensor([new("GPU Core", 120)]);
+
+        Assert.Equal(0, zeroUsage?.Value);
+        Assert.Equal(100, fullUsage?.Value);
+        Assert.Equal(120, maxTemperature?.Value);
+    }
+
+    [Fact]
+    public void SelectGpuUsageSensor_ShouldPreferSourceKeywordPriorityOverHigherValue()
+    {
+        var selection = SensorSelection.SelectGpuUsageSensor(
+            [
+                new("Overall", 95),
+                new("Graphics", 80),
+                new("GPU Core", 35)
+            ]);
+
+        Assert.NotNull(selection);
+        Assert.Equal("GPU Core", selection.Value.Name);
+        Assert.Equal(35, selection.Value.Value);
+    }
+
+    [Fact]
+    public void SensorSelection_MixedCandidates_ShouldChooseOnlyValidPreferredValues()
+    {
+        var usage = SensorSelection.SelectCpuUsageSensor(
+            [
+                new("CPU Total", double.NaN),
+                new("CPU Core #1", 20),
+                new("CPU Core #2", 60),
+                new("CPU Core #3", 101)
+            ]);
+        var temperature = SensorSelection.SelectCpuTemperatureSensor(
+            [
+                new("CPU Package", 121),
+                new("Core #1", 58),
+                new("PCH", 45)
+            ],
+            "Intel Core");
+
+        Assert.Equal(40, usage?.Value);
+        Assert.Equal("Core #1", temperature?.Name);
+        Assert.Equal(58, temperature?.Value);
     }
 }
