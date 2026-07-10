@@ -1,10 +1,83 @@
 using UniDesk.Services;
+using System.Net.NetworkInformation;
 using Xunit;
 
 namespace UniDesk.Tests;
 
 public class SystemMetricsServiceTests
 {
+    [Fact]
+    public void GpuMetricsReader_ShouldPreferCompleteDiscreteGpu()
+    {
+        using var reader = new GpuMetricsReader(
+            () => new GpuMetrics(45, 61, "Discrete", 10, true),
+            () => new GpuMetrics(80, 55, "Integrated", 20, false),
+            () => GpuMetrics.Empty);
+
+        var metrics = reader.Read();
+
+        Assert.Equal("Discrete", metrics.SourceName);
+        Assert.Equal(45, metrics.GpuUsage);
+        Assert.Equal(61, metrics.GpuTemperature);
+    }
+
+    [Fact]
+    public void GpuMetricsReader_ShouldMergePartialCandidates()
+    {
+        using var reader = new GpuMetricsReader(
+            () => new GpuMetrics(45, null, "Usage source", 10, true),
+            () => new GpuMetrics(null, 63, "Temperature source", 20, true),
+            () => GpuMetrics.Empty);
+
+        var metrics = reader.Read();
+
+        Assert.Equal("Usage source", metrics.SourceName);
+        Assert.Equal(45, metrics.GpuUsage);
+        Assert.Equal(63, metrics.GpuTemperature);
+    }
+
+    [Fact]
+    public void WindowsMemoryMetricsReader_CreateMetrics_ShouldNormalizeAvailableBytes()
+    {
+        var normal = WindowsMemoryMetricsReader.CreateMetrics(1_000, 250);
+        var overReportedAvailable = WindowsMemoryMetricsReader.CreateMetrics(1_000, 1_200);
+
+        Assert.Equal(75, normal.UsagePercent);
+        Assert.Equal((ulong)750, normal.UsedBytes);
+        Assert.Equal(0, overReportedAvailable.UsagePercent);
+        Assert.Equal((ulong)1_000, overReportedAvailable.AvailableBytes);
+    }
+
+    [Fact]
+    public void NetworkMetricsReader_ShouldClampNegativeDeltaToZero()
+    {
+        var samples = new Queue<NetworkSample>(
+        [
+            new(DateTimeOffset.UnixEpoch, 100, 100),
+            new(DateTimeOffset.UnixEpoch.AddSeconds(1), 90, 120)
+        ]);
+        using var reader = new NetworkMetricsReader(() => samples.Dequeue());
+
+        _ = reader.Read();
+        var metrics = reader.Read();
+
+        Assert.Equal(0, metrics.ReceivedBytesPerSecond);
+        Assert.Equal(0, metrics.SentBytesPerSecond);
+    }
+
+    [Theory]
+    [InlineData("vEthernet (Default Switch)", "Hyper-V Virtual Ethernet Adapter")]
+    [InlineData("Ethernet", "VMware Virtual Ethernet Adapter")]
+    [InlineData("WireGuard Tunnel", "WireGuard")]
+    public void NetworkMetricsReader_VirtualAdapter_ShouldBeExcluded(string name, string description)
+    {
+        Assert.False(NetworkMetricsReader.IsUsableAdapter(
+            OperationalStatus.Up,
+            NetworkInterfaceType.Ethernet,
+            name,
+            description));
+    }
+
     [Fact]
     public void CpuMetricsReader_ShouldPreferAsusTemperature()
     {
