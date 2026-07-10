@@ -2,7 +2,7 @@ using System.Windows;
 
 namespace UniDesk.Services;
 
-public interface IHotkeyService
+public interface IHotkeyService : IDisposable
 {
     void Initialize(Window window);
     bool RegisterHotkey(string hotkeyString, Action callback);

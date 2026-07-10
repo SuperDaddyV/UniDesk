@@ -7,7 +7,7 @@ public class WindowService : IWindowService
 {
     private MainWindow? _mainWindow;
 
-    public void SetMainWindow(MainWindow mainWindow)
+    public void Initialize(MainWindow mainWindow)
     {
         _mainWindow = mainWindow;
     }

@@ -1,6 +1,6 @@
 namespace UniDesk.Services;
 
-public interface ITrayService
+public interface ITrayService : IDisposable
 {
     void Initialize();
     void ShowBalloonTip(string title, string message);

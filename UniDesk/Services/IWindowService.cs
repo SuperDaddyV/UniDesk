@@ -8,6 +8,7 @@ public interface IWindowService
     const double MaxPanelHeight = 1040;
     const double CollapsedPanelWidth = 40;
 
+    void Initialize(MainWindow mainWindow);
     void ActivateWindow();
     void SetTopMost(bool topMost);
     void ShowWindow();

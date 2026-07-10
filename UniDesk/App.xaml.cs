@@ -15,8 +15,8 @@ public partial class App : Application
     private readonly FatalExceptionCoordinator _fatalExceptionCoordinator = new();
     private SingleInstanceHelper? _singleInstanceHelper;
     private MainWindow? _mainWindow;
-    private TrayService? _trayService;
-    private HotkeyService? _hotkeyService;
+    private ITrayService? _trayService;
+    private IHotkeyService? _hotkeyService;
     private int _activationPending;
 
     public App()
@@ -82,10 +82,10 @@ public partial class App : Application
             SyncStartupWithSettings();
 
             _mainWindow = Services.GetRequiredService<MainWindow>();
-            var windowService = Services.GetRequiredService<IWindowService>() as WindowService;
-            windowService?.SetMainWindow(_mainWindow);
+            var windowService = Services.GetRequiredService<IWindowService>();
+            windowService.Initialize(_mainWindow);
 
-            _hotkeyService = Services.GetRequiredService<IHotkeyService>() as HotkeyService;
+            _hotkeyService = Services.GetRequiredService<IHotkeyService>();
 
             _mainWindow.Loaded += (_, _) =>
             {
@@ -104,17 +104,14 @@ public partial class App : Application
             _mainWindow.Show();
             if (Interlocked.Exchange(ref _activationPending, 0) == 1)
             {
-                windowService?.ActivateWindow();
+                windowService.ActivateWindow();
             }
 
-            _trayService = Services.GetRequiredService<ITrayService>() as TrayService;
-            _trayService?.Initialize();
-            if (_trayService != null)
-            {
-                _trayService.TrayIconDoubleClick += OnTrayToggleWindow;
-                _trayService.SettingsRequested += OnTrayOpenSettings;
-                _trayService.ExitRequested += OnExitRequested;
-            }
+            _trayService = Services.GetRequiredService<ITrayService>();
+            _trayService.Initialize();
+            _trayService.TrayIconDoubleClick += OnTrayToggleWindow;
+            _trayService.SettingsRequested += OnTrayOpenSettings;
+            _trayService.ExitRequested += OnExitRequested;
         }
         catch (Exception ex)
         {
