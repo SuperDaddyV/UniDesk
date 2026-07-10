@@ -1,4 +1,5 @@
 using Microsoft.Data.Sqlite;
+using System.IO;
 using UniDesk.Helpers;
 using UniDesk.Models;
 
@@ -21,40 +22,92 @@ public class DatabaseService : IDatabaseService
         {
             using var connection = new SqliteConnection(_connectionString);
             await connection.OpenAsync();
+            await EnableWalAsync(connection);
 
-            var version = await GetDatabaseVersionAsync(connection);
-            if (version == null)
+            var transactionStarted = false;
+            try
             {
-                await CreateTablesAsync(connection);
-                await SetDatabaseVersionAsync(connection, DatabaseVersion);
-            }
-            else if (version != DatabaseVersion)
-            {
-                await MigrateDatabaseAsync(connection, version, DatabaseVersion);
-                await SetDatabaseVersionAsync(connection, DatabaseVersion);
-            }
+                await ExecuteConnectionCommandAsync(connection, "BEGIN IMMEDIATE");
+                transactionStarted = true;
 
-            await EnsureSchemaUpdatesAsync(connection);
+                var version = await GetDatabaseVersionAsync(connection);
+                if (version == null)
+                {
+                    await CreateTablesAsync(connection);
+                    await SetDatabaseVersionAsync(connection, DatabaseVersion);
+                }
+                else
+                {
+                    var comparison = CompareDatabaseVersions(version, DatabaseVersion);
+                    if (comparison > 0)
+                    {
+                        throw new InvalidDataException(
+                            $"数据库版本 {version} 高于当前支持的版本 {DatabaseVersion}。");
+                    }
+
+                    if (comparison < 0)
+                    {
+                        await MigrateDatabaseAsync(connection, version, DatabaseVersion);
+                        await SetDatabaseVersionAsync(connection, DatabaseVersion);
+                    }
+                }
+
+                await EnsureSchemaUpdatesAsync(connection);
+                await ExecuteConnectionCommandAsync(connection, "COMMIT");
+                transactionStarted = false;
+            }
+            catch
+            {
+                if (transactionStarted)
+                {
+                    try
+                    {
+                        await ExecuteConnectionCommandAsync(connection, "ROLLBACK");
+                    }
+                    catch (Exception rollbackException)
+                    {
+                        Logger.LogError(rollbackException, "DatabaseService.Initialize.Rollback");
+                    }
+                }
+
+                throw;
+            }
         }
         catch (Exception ex)
         {
             Logger.LogError(ex, "DatabaseService.Initialize");
+            throw;
         }
+    }
+
+    private static async Task EnableWalAsync(SqliteConnection connection)
+    {
+        var command = connection.CreateCommand();
+        command.CommandText = "PRAGMA journal_mode=WAL";
+        await command.ExecuteScalarAsync();
+    }
+
+    private static async Task ExecuteConnectionCommandAsync(SqliteConnection connection, string sql)
+    {
+        var command = connection.CreateCommand();
+        command.CommandText = sql;
+        await command.ExecuteNonQueryAsync();
     }
 
     private async Task<string?> GetDatabaseVersionAsync(SqliteConnection connection)
     {
-        try
-        {
-            var command = connection.CreateCommand();
-            command.CommandText = "SELECT Value FROM Settings WHERE Key = 'DatabaseVersion'";
-            var result = await command.ExecuteScalarAsync();
-            return result?.ToString();
-        }
-        catch
+        var tableCheck = connection.CreateCommand();
+        tableCheck.CommandText =
+            "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'Settings'";
+        if (Convert.ToInt32(await tableCheck.ExecuteScalarAsync()) == 0)
         {
             return null;
         }
+
+        var command = connection.CreateCommand();
+        command.CommandText = "SELECT Value FROM Settings WHERE Key = 'DatabaseVersion'";
+        var result = await command.ExecuteScalarAsync();
+        return result?.ToString();
     }
 
     private async Task SetDatabaseVersionAsync(SqliteConnection connection, string version)
@@ -206,26 +259,26 @@ public class DatabaseService : IDatabaseService
             await TryAddColumnAsync(connection, "Todos", "Priority", "INTEGER NOT NULL DEFAULT 1");
         }
 
-        if (string.Compare(fromVersion, "1.2", StringComparison.Ordinal) < 0 &&
-            string.Compare(toVersion, "1.2", StringComparison.Ordinal) >= 0)
+        if (CompareDatabaseVersions(fromVersion, "1.2") < 0 &&
+            CompareDatabaseVersions(toVersion, "1.2") >= 0)
         {
             await TryAddColumnAsync(connection, "Shortcuts", "LaunchArguments", "TEXT");
         }
 
-        if (string.Compare(fromVersion, "1.3", StringComparison.Ordinal) < 0 &&
-            string.Compare(toVersion, "1.3", StringComparison.Ordinal) >= 0)
+        if (CompareDatabaseVersions(fromVersion, "1.3") < 0 &&
+            CompareDatabaseVersions(toVersion, "1.3") >= 0)
         {
             await EnsureEncryptedWeatherDefaultsAsync(connection);
         }
 
-        if (string.Compare(fromVersion, "1.4", StringComparison.Ordinal) < 0 &&
-            string.Compare(toVersion, "1.4", StringComparison.Ordinal) >= 0)
+        if (CompareDatabaseVersions(fromVersion, "1.4") < 0 &&
+            CompareDatabaseVersions(toVersion, "1.4") >= 0)
         {
             await EnsureQuickNotesTableAsync(connection);
         }
 
-        if (string.Compare(fromVersion, "1.5", StringComparison.Ordinal) < 0 &&
-            string.Compare(toVersion, "1.5", StringComparison.Ordinal) >= 0)
+        if (CompareDatabaseVersions(fromVersion, "1.5") < 0 &&
+            CompareDatabaseVersions(toVersion, "1.5") >= 0)
         {
             await EnsureQuickTextTablesAsync(connection);
             await EnsureQuickTextSettingsAsync(connection);
@@ -423,6 +476,21 @@ public class DatabaseService : IDatabaseService
             transaction.Rollback();
             throw;
         }
+    }
+
+    private static int CompareDatabaseVersions(string left, string right)
+    {
+        if (!Version.TryParse(left, out var leftVersion))
+        {
+            throw new InvalidDataException($"数据库版本格式无效：{left}。");
+        }
+
+        if (!Version.TryParse(right, out var rightVersion))
+        {
+            throw new InvalidDataException($"数据库版本格式无效：{right}。");
+        }
+
+        return leftVersion.CompareTo(rightVersion);
     }
 
     public async Task<int> ExecuteNonQueryAsync(string sql, params object?[] parameters)

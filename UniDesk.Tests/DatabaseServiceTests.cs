@@ -566,6 +566,89 @@ public class DatabaseServiceTests
         Cleanup();
     }
 
+    [Fact]
+    public async Task InitializeAsync_InvalidPath_ShouldThrow()
+    {
+        Cleanup();
+        var missingDirectory = Path.Combine(
+            AppDomain.CurrentDomain.BaseDirectory,
+            $"missing-{Guid.NewGuid():N}",
+            "test.db");
+        var databaseService = new DatabaseService($"Data Source={missingDirectory}");
+
+        await Assert.ThrowsAsync<SqliteException>(() => databaseService.InitializeAsync());
+    }
+
+    [Fact]
+    public async Task InitializeAsync_ShouldEnableWalMode()
+    {
+        Cleanup();
+        var databaseService = GetService();
+        await databaseService.InitializeAsync();
+
+        var mode = await databaseService.QuerySingleAsync(
+            "PRAGMA journal_mode",
+            reader => reader.GetString(0));
+
+        Assert.Equal("wal", mode, ignoreCase: true);
+        Cleanup();
+    }
+
+    [Fact]
+    public async Task InitializeAsync_FutureDatabaseVersion_ShouldThrowAndPreserveVersion()
+    {
+        Cleanup();
+        var databaseService = GetService();
+        await databaseService.InitializeAsync();
+        await databaseService.ExecuteNonQueryAsync(
+            "UPDATE Settings SET Value = @p0 WHERE Key = 'DatabaseVersion'",
+            "1.10");
+
+        await Assert.ThrowsAsync<InvalidDataException>(() => databaseService.InitializeAsync());
+
+        var version = await databaseService.QuerySingleAsync(
+            "SELECT Value FROM Settings WHERE Key = 'DatabaseVersion'",
+            reader => reader.GetString(0));
+        Assert.Equal("1.10", version);
+        Cleanup();
+    }
+
+    [Fact]
+    public async Task InitializeAsync_MigrationFailure_ShouldRollbackEarlierMigrationWrites()
+    {
+        Cleanup();
+        await using (var connection = new SqliteConnection($"Data Source={_testDbFile}"))
+        {
+            await connection.OpenAsync();
+            var command = connection.CreateCommand();
+            command.CommandText =
+                """
+                CREATE TABLE Settings (Key TEXT PRIMARY KEY, Value TEXT);
+                INSERT INTO Settings (Key, Value) VALUES ('DatabaseVersion', '1.2');
+                CREATE VIEW QuickNotes AS SELECT 1 AS Id;
+                """;
+            await command.ExecuteNonQueryAsync();
+        }
+
+        var databaseService = GetService();
+        await Assert.ThrowsAsync<SqliteException>(() => databaseService.InitializeAsync());
+
+        await using (var verifyConnection = new SqliteConnection($"Data Source={_testDbFile}"))
+        {
+            await verifyConnection.OpenAsync();
+            var verifyCommand = verifyConnection.CreateCommand();
+            verifyCommand.CommandText =
+                "SELECT COUNT(*) FROM Settings WHERE Key IN ('DefaultWeatherApiKeyEnc', 'DefaultWeatherApiHostEnc')";
+            var insertedDefaultCount = Convert.ToInt32(await verifyCommand.ExecuteScalarAsync());
+            Assert.Equal(0, insertedDefaultCount);
+
+            verifyCommand.CommandText = "SELECT Value FROM Settings WHERE Key = 'DatabaseVersion'";
+            Assert.Equal("1.2", await verifyCommand.ExecuteScalarAsync());
+        }
+
+        Cleanup();
+    }
+
     private void Cleanup()
     {
         try
