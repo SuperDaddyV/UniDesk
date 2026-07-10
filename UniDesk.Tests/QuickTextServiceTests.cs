@@ -11,6 +11,7 @@ public class QuickTextServiceTests
 
     private async Task<(DatabaseService Db, SettingsService Settings, QuickTextService Service)> InitAsync()
     {
+        Cleanup();
         var db = new DatabaseService($"Data Source={_testDbFile}");
         await db.InitializeAsync();
         var settings = new SettingsService(db);
@@ -19,17 +20,43 @@ public class QuickTextServiceTests
     }
 
     [Fact]
-    public async Task RecordClipboardTextAsync_ShouldInsertPlainText()
+    public async Task RecordClipboardTextAsync_ShouldProtectStoredContentAndReturnPlainText()
     {
-        var (_, _, service) = await InitAsync();
+        var (db, _, service) = await InitAsync();
 
         var recorded = await service.RecordClipboardTextAsync("hello clipboard");
 
         Assert.True(recorded);
+        var stored = await db.QuerySingleAsync(
+            "SELECT Content FROM ClipboardHistory LIMIT 1",
+            reader => reader.GetString(0));
+        Assert.NotNull(stored);
+        Assert.StartsWith("dpapi:v1:", stored, StringComparison.Ordinal);
+        Assert.DoesNotContain("hello clipboard", stored, StringComparison.Ordinal);
         var items = await service.GetClipboardHistoryAsync();
         Assert.Single(items);
         Assert.Equal("hello clipboard", items[0].Content);
 
+        Cleanup();
+    }
+
+    [Fact]
+    public async Task GetClipboardHistoryAsync_UnreadableProtectedRow_ShouldOmitWithoutDeleting()
+    {
+        var (db, _, service) = await InitAsync();
+        await db.ExecuteNonQueryAsync(
+            "INSERT INTO ClipboardHistory (Content, ContentHash, CreatedAt, LastUsedAt, UseCount) VALUES (@p0, @p1, @p2, @p3, @p4)",
+            "dpapi:v1:not-base64",
+            "unreadable-hash",
+            DateTime.UtcNow.ToString("o"),
+            DateTime.UtcNow.ToString("o"),
+            1);
+
+        Assert.Empty(await service.GetClipboardHistoryAsync());
+        var count = await db.QuerySingleAsync(
+            "SELECT COUNT(*) FROM ClipboardHistory",
+            reader => reader.GetInt32(0));
+        Assert.Equal(1, count);
         Cleanup();
     }
 

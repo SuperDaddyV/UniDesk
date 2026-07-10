@@ -20,6 +20,7 @@ public partial class QuickTextService : IQuickTextService
 
     private readonly IDatabaseService _databaseService;
     private readonly ISettingsService _settingsService;
+    private readonly IUserDataProtector _userDataProtector;
 
     private const string HistoryColumns =
         "Id, Content, ContentHash, CreatedAt, LastUsedAt, UseCount";
@@ -28,9 +29,18 @@ public partial class QuickTextService : IQuickTextService
         "Id, Title, Content, Category, IsPinned, SortOrder, UseCount, CreatedAt, UpdatedAt, LastUsedAt";
 
     public QuickTextService(IDatabaseService databaseService, ISettingsService settingsService)
+        : this(databaseService, settingsService, new DpapiUserDataProtector())
+    {
+    }
+
+    public QuickTextService(
+        IDatabaseService databaseService,
+        ISettingsService settingsService,
+        IUserDataProtector userDataProtector)
     {
         _databaseService = databaseService;
         _settingsService = settingsService;
+        _userDataProtector = userDataProtector;
     }
 
     public async Task<List<ClipboardHistoryItem>> GetClipboardHistoryAsync(int? limit = null)
@@ -38,10 +48,11 @@ public partial class QuickTextService : IQuickTextService
         try
         {
             var take = Math.Max(1, limit ?? GetHistoryMaxCount());
-            return await _databaseService.QueryAsync(
+            var items = await _databaseService.QueryAsync<ClipboardHistoryItem?>(
                 $"SELECT {HistoryColumns} FROM ClipboardHistory ORDER BY LastUsedAt DESC LIMIT @p0",
-                MapHistory,
+                TryMapHistory,
                 take);
+            return items.OfType<ClipboardHistoryItem>().ToList();
         }
         catch (Exception ex)
         {
@@ -96,8 +107,8 @@ public partial class QuickTextService : IQuickTextService
         try
         {
             var latest = await _databaseService.QuerySingleAsync(
-                $"SELECT {HistoryColumns} FROM ClipboardHistory ORDER BY LastUsedAt DESC LIMIT 1",
-                MapHistory);
+                "SELECT Id, ContentHash FROM ClipboardHistory ORDER BY LastUsedAt DESC LIMIT 1",
+                MapHistoryIdentity);
 
             if (string.Equals(latest?.ContentHash, hash, StringComparison.Ordinal))
             {
@@ -105,8 +116,8 @@ public partial class QuickTextService : IQuickTextService
             }
 
             var existing = await _databaseService.QuerySingleAsync(
-                $"SELECT {HistoryColumns} FROM ClipboardHistory WHERE ContentHash = @p0",
-                MapHistory,
+                "SELECT Id, ContentHash FROM ClipboardHistory WHERE ContentHash = @p0",
+                MapHistoryIdentity,
                 hash);
 
             if (existing != null)
@@ -120,7 +131,7 @@ public partial class QuickTextService : IQuickTextService
             {
                 await _databaseService.ExecuteNonQueryAsync(
                     "INSERT INTO ClipboardHistory (Content, ContentHash, CreatedAt, LastUsedAt, UseCount) VALUES (@p0, @p1, @p2, @p3, @p4)",
-                    normalized,
+                    _userDataProtector.Protect(normalized),
                     hash,
                     now.ToString("o", CultureInfo.InvariantCulture),
                     now.ToString("o", CultureInfo.InvariantCulture),
@@ -355,15 +366,41 @@ public partial class QuickTextService : IQuickTextService
     private static string NormalizeCategory(string? category) =>
         string.IsNullOrWhiteSpace(category) ? "默认" : category.Trim();
 
-    private static ClipboardHistoryItem MapHistory(SqliteDataReader reader) => new()
+    private ClipboardHistoryItem? TryMapHistory(SqliteDataReader reader)
     {
-        Id = reader.GetInt32(0),
-        Content = reader.IsDBNull(1) ? string.Empty : reader.GetString(1),
-        ContentHash = reader.IsDBNull(2) ? string.Empty : reader.GetString(2),
-        CreatedAt = ParseDateTime(reader.IsDBNull(3) ? null : reader.GetString(3)) ?? DateTime.UtcNow,
-        LastUsedAt = ParseDateTime(reader.IsDBNull(4) ? null : reader.GetString(4)) ?? DateTime.UtcNow,
-        UseCount = reader.IsDBNull(5) ? 0 : reader.GetInt32(5)
-    };
+        var id = reader.GetInt32(0);
+        var storedContent = reader.IsDBNull(1) ? string.Empty : reader.GetString(1);
+        string content;
+        if (_userDataProtector.IsProtected(storedContent))
+        {
+            if (!_userDataProtector.TryUnprotect(storedContent, out content))
+            {
+                Logger.LogWarning(
+                    $"剪贴板历史 ID {id} 无法由当前 Windows 用户解密，已从显示结果中省略。",
+                    "QuickTextService.GetClipboardHistoryAsync");
+                return null;
+            }
+        }
+        else
+        {
+            content = storedContent;
+        }
+
+        return new ClipboardHistoryItem
+        {
+            Id = id,
+            Content = content,
+            ContentHash = reader.IsDBNull(2) ? string.Empty : reader.GetString(2),
+            CreatedAt = ParseDateTime(reader.IsDBNull(3) ? null : reader.GetString(3)) ?? DateTime.UtcNow,
+            LastUsedAt = ParseDateTime(reader.IsDBNull(4) ? null : reader.GetString(4)) ?? DateTime.UtcNow,
+            UseCount = reader.IsDBNull(5) ? 0 : reader.GetInt32(5)
+        };
+    }
+
+    private static HistoryIdentity MapHistoryIdentity(SqliteDataReader reader) =>
+        new(reader.GetInt32(0), reader.IsDBNull(1) ? string.Empty : reader.GetString(1));
+
+    private sealed record HistoryIdentity(int Id, string ContentHash);
 
     private static TextSnippet MapSnippet(SqliteDataReader reader) => new()
     {
