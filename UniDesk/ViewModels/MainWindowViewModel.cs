@@ -39,7 +39,6 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
     private readonly IClipboardMonitorService _clipboardMonitorService;
     private readonly IStartupService _startupService;
     private readonly ITodoBackupService _todoBackupService;
-    private readonly ISystemMetricsMonitor _systemMetricsMonitor;
     private readonly DispatcherTimer _weatherRefreshTimer;
     private CancellationTokenSource? _weatherRefreshCts;
     private int _notesLoadGeneration;
@@ -202,27 +201,6 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private bool _hasWeatherData;
 
-    [ObservableProperty]
-    private string _systemCpuUsageText = "--";
-
-    [ObservableProperty]
-    private string _systemCpuTemperatureText = "CPU --";
-
-    [ObservableProperty]
-    private string _systemMemoryUsageText = "--";
-
-    [ObservableProperty]
-    private string _systemGpuUsageText = "--";
-
-    [ObservableProperty]
-    private string _systemGpuTemperatureText = "GPU --";
-
-    [ObservableProperty]
-    private string _systemNetworkReceivedText = "--";
-
-    [ObservableProperty]
-    private string _systemNetworkSentText = "--";
-
     public string WindowLockToolTip => L(IsWindowLocked ? "Header.UnlockWindow" : "Header.LockWindow");
 
     public string PanelCollapseToolTip => L(IsPanelCollapsed ? "Header.ExpandPanel" : "Header.CollapsePanel");
@@ -234,6 +212,8 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
     private string _collapsedPanelTodoDueText = string.Empty;
 
     public bool HasCollapsedPanelTodo => CollapsedPanelTodo != null;
+
+    public HardwareMonitorViewModel HardwareMonitor { get; }
 
     public MainWindowViewModel(
         INotificationService notificationService,
@@ -273,11 +253,11 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         _hotkeyService = hotkeyService;
         _startupService = startupService;
         _todoBackupService = todoBackupService;
-        _systemMetricsMonitor = systemMetricsMonitor;
         _clipboardMonitorService = clipboardMonitorService;
         _clipboardMonitorService.ClipboardHistoryChanged += ClipboardMonitor_OnHistoryChanged;
         _localizationService.LanguageChanged += LocalizationService_OnLanguageChanged;
 
+        HardwareMonitor = new HardwareMonitorViewModel(systemMetricsMonitor);
         LoadSettings();
         _layoutService.LoadOrGetDefault();
 
@@ -295,10 +275,6 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
             }
         };
         _weatherRefreshTimer.Start();
-
-        _systemMetricsMonitor.SnapshotAvailable += SystemMetricsMonitor_OnSnapshotAvailable;
-        _systemMetricsMonitor.IsEnabled = IsModuleEnabled(DashboardModuleIds.HardwareMonitor);
-        _systemMetricsMonitor.Start();
 
         _ = LoadNotesAsync();
         if (IsModuleEnabled(DashboardModuleIds.QuickNotes))
@@ -423,7 +399,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
             SaveModuleSettings();
         }
 
-        _systemMetricsMonitor.IsEnabled = IsModuleEnabled(DashboardModuleIds.HardwareMonitor);
+        HardwareMonitor.IsEnabled = IsModuleEnabled(DashboardModuleIds.HardwareMonitor);
 
         if (IsModuleEnabled(DashboardModuleIds.TimeWeather) && !HasWeatherData)
         {
@@ -1938,63 +1914,6 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         return WeatherIconResolver.NormalizeIconCode(null, info.WeatherDesc);
     }
 
-    private void SystemMetricsMonitor_OnSnapshotAvailable(object? sender, SystemMetricsSnapshot metrics)
-    {
-        if (_disposed || !IsModuleEnabled(DashboardModuleIds.HardwareMonitor))
-        {
-            return;
-        }
-
-        var dispatcher = Application.Current?.Dispatcher;
-        if (dispatcher == null || dispatcher.CheckAccess())
-        {
-            ApplySystemMetrics(metrics);
-            return;
-        }
-
-        _ = dispatcher.BeginInvoke(() =>
-        {
-            if (!_disposed && IsModuleEnabled(DashboardModuleIds.HardwareMonitor))
-            {
-                ApplySystemMetrics(metrics);
-            }
-        });
-    }
-
-    private void ApplySystemMetrics(SystemMetricsSnapshot metrics)
-    {
-        SystemCpuUsageText = FormatPercent(metrics.CpuUsage);
-        SystemCpuTemperatureText = FormatTemperature("CPU", metrics.CpuTemperature);
-        SystemMemoryUsageText = FormatPercent(metrics.MemoryUsage);
-        SystemGpuUsageText = FormatPercent(metrics.GpuUsage);
-        SystemGpuTemperatureText = FormatTemperature("GPU", metrics.GpuTemperature);
-        SystemNetworkReceivedText = FormatSpeed(metrics.NetworkReceivedBytesPerSecond);
-        SystemNetworkSentText = FormatSpeed(metrics.NetworkSentBytesPerSecond);
-    }
-
-    private static string FormatPercent(double? value) => value.HasValue ? $"{value.Value:0}%" : "--";
-
-    private static string FormatTemperature(string label, double? value) =>
-        value.HasValue ? $"{label} {value.Value:0}℃" : $"{label} --℃";
-
-    private static string FormatSpeed(double? bytesPerSecond)
-    {
-        if (!bytesPerSecond.HasValue) return "--";
-
-        var value = Math.Max(0, bytesPerSecond.Value);
-        if (value < 1) return "0 B/s";
-        if (value < 1024) return $"{value:0} B/s";
-
-        value /= 1024;
-        if (value < 1024) return $"{value:0} KB/s";
-
-        value /= 1024;
-        if (value < 1024) return $"{value:0.0} MB/s";
-
-        value /= 1024;
-        return $"{value:0.0} GB/s";
-    }
-
     private bool IsChineseLanguage =>
         string.Equals(_localizationService.CurrentLanguage, ILocalizationService.DefaultLanguage, StringComparison.OrdinalIgnoreCase);
 
@@ -2022,8 +1941,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         _localizationService.LanguageChanged -= LocalizationService_OnLanguageChanged;
         _clipboardMonitorService.ClipboardHistoryChanged -= ClipboardMonitor_OnHistoryChanged;
         _weatherRefreshTimer.Stop();
-        _systemMetricsMonitor.SnapshotAvailable -= SystemMetricsMonitor_OnSnapshotAvailable;
-        _systemMetricsMonitor.Dispose();
+        HardwareMonitor.Dispose();
         var weatherRefreshCts = _weatherRefreshCts;
         _weatherRefreshCts = null;
         try
