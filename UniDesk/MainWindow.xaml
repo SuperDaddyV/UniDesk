@@ -23,7 +23,6 @@
         <Border x:Name="WindowContainer"
                 Style="{StaticResource GlassWindowBorderStyle}"
                 ClipToBounds="True"
-                Opacity="{Binding WindowOpacity}"
                 SizeChanged="WindowContainer_OnSizeChanged">
             <Grid>
                 <Grid.RowDefinitions>
@@ -31,8 +30,13 @@
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
 
+                <Border x:Name="MainGlassBackground"
+                        Grid.RowSpan="2"
+                        Style="{StaticResource GlassBackgroundLayerStyle}"
+                        Opacity="{Binding WindowOpacity}"/>
+
                 <Border Grid.Row="0"
-                        Padding="18,5,16,3"
+                        Padding="18,8,14,6"
                         MouseLeftButtonDown="TitleBar_OnMouseLeftButtonDown">
                     <Grid>
                         <TextBlock Text="{Binding DisplayTitle}"
@@ -42,8 +46,8 @@
                                    VerticalAlignment="Center"/>
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                             <Button Style="{StaticResource HeaderIconButtonStyle}"
-                                    Width="24"
-                                    Height="24"
+                                    Width="28"
+                                    Height="28"
                                     Command="{Binding ToggleTopMostCommand}"
                                     ToolTip="{DynamicResource Header.TopMost}">
                                 <TextBlock FontFamily="Segoe MDL2 Assets" FontSize="14">
@@ -60,8 +64,8 @@
                                 </TextBlock>
                             </Button>
                             <Button Style="{StaticResource HeaderIconButtonStyle}"
-                                    Width="24"
-                                    Height="24"
+                                    Width="28"
+                                    Height="28"
                                     Command="{Binding ToggleWindowLockCommand}"
                                     ToolTip="{Binding WindowLockToolTip}">
                                 <TextBlock FontFamily="Segoe MDL2 Assets" FontSize="14">
@@ -78,22 +82,22 @@
                                 </TextBlock>
                             </Button>
                             <Button Style="{StaticResource HeaderIconButtonStyle}"
-                                    Width="24"
-                                    Height="24"
+                                    Width="28"
+                                    Height="28"
                                     Click="SettingsButton_OnClick"
                                     ToolTip="{DynamicResource Common.Settings}">
                                 <TextBlock Text="&#xE713;" FontFamily="Segoe MDL2 Assets" FontSize="14"/>
                             </Button>
                             <Button Style="{StaticResource HeaderIconButtonStyle}"
-                                    Width="24"
-                                    Height="24"
+                                    Width="28"
+                                    Height="28"
                                     Click="MinimizeButton_OnClick"
                                     ToolTip="{DynamicResource Header.MinimizeToTray}">
                                 <TextBlock Text="&#xE921;" FontFamily="Segoe MDL2 Assets" FontSize="14"/>
                             </Button>
                             <Button Style="{StaticResource HeaderIconButtonStyle}"
-                                    Width="24"
-                                    Height="24"
+                                    Width="28"
+                                    Height="28"
                                     Command="{Binding TogglePanelCollapseCommand}"
                                     ToolTip="{Binding PanelCollapseToolTip}">
                                 <TextBlock FontFamily="Segoe MDL2 Assets" FontSize="14">
