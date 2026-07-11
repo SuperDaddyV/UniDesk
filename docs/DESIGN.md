@@ -101,11 +101,34 @@ UniDesk 是运行于 Windows 11 的桌面侧边助手应用，以悬浮右侧面
 
 ---
 
+### 仪表盘模块边界
+
+- `MainWindowViewModel` 仅负责窗口状态、模块布局、设置协调、子模块组合，以及供 Settings 恢复流程调用的兼容委托；不直接承载模块 CRUD。
+- 六个可见模块分别由 `TimeWeatherViewModel`、`HardwareMonitorViewModel`、`ShortcutsViewModel`、`TodosViewModel`、`QuickNotesViewModel`、`QuickTextViewModel` 管理状态与命令。
+- 六个 WPF 视图分别位于 `Controls/*ModuleView.xaml`；主窗口只组合控件并按 `DashboardModuleIds` 管理显示、顺序和高度。
+- 快捷方式鼠标排序、文件拖放和添加弹层状态归 `ShortcutsModuleView`／`ShortcutsViewModel`；主窗口 code-behind 不处理模块内部输入。
+- 子模块自行持有事件、计时器和取消源，并在 `Dispose()` 中解除订阅；主壳统一触发子模块清理。
+
+### 系统指标读取边界
+
+- `SystemMetricsService` 只组合 CPU、GPU、内存和网络四类读取结果，不直接包含原生 API 或传感器选择实现。
+- `SensorSelection` 是无状态选择策略；CPU、GPU、内存和网络读取器位于 `Services/SystemMetrics/`，各自拥有原生资源与释放责任。
+- `SystemMetricsMonitor` 继续负责后台串行采样、禁用暂停、迟到结果抑制和向硬件监控 ViewModel 发布快照。
+
+### 持续集成
+
+- `.github/workflows/ci.yml` 在 `main` 推送和 Pull Request 上使用 `windows-latest`、.NET `9.0.x` 执行 restore、Release build 和 Release test。
+- CI 不执行发布、制品上传、部署或密钥读取。
+
+---
+
 ### 横切设计约束
 
 #### 异步与取消
 - 所有网络请求、数据库读写、文件读写、图标提取、数据导入导出均使用异步 API，并接受 `CancellationToken`
 - ViewModel 持有当前长任务的取消源；重复触发同一任务时先取消旧任务，再启动新任务
+- 取消源由其对应任务在结束后释放；后继任务只负责取消旧任务，不提前释放旧任务仍可能访问的资源
+- 可重入刷新使用 generation／身份校验，仅当前请求可以写回绑定状态或结束加载指示，迟到请求只做清理
 - WeatherService 刷新、数据导入/导出在收到取消后仅做必要清理，目标是在 200ms 内停止后续 I/O 与 UI 更新
 
 #### UI 线程与节流

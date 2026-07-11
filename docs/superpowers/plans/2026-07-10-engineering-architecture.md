@@ -33,11 +33,11 @@
 - Produces: `void IWindowService.Initialize(MainWindow mainWindow)`.
 - `IHotkeyService` and `ITrayService` extend `IDisposable`.
 
-- [ ] Add `.github/workflows/ci.yml` exactly with checkout, setup-dotnet `9.0.x`, restore, Release build `--no-restore`, and Release test `--no-build`; trigger on pull requests and pushes to `main`; use `windows-latest`; add no publish, artifact, secret, or deployment steps.
-- [ ] Run the three CI commands locally in the same order; expect all succeed.
-- [ ] Add `Initialize(MainWindow)` to `IWindowService`, rename the existing concrete `SetMainWindow` implementation, type `_hotkeyService` and `_trayService` as interfaces, and remove all three `as WindowService`, `as HotkeyService`, and `as TrayService` casts from `App`.
-- [ ] Run `rg -n "GetRequiredService<[^>]+>\(\) as" UniDesk/App.xaml.cs`; expect no matches.
-- [ ] Run the full Release suite and commit:
+- [x] Add `.github/workflows/ci.yml` exactly with checkout, setup-dotnet `9.0.x`, restore, Release build `--no-restore`, and Release test `--no-build`; trigger on pull requests and pushes to `main`; use `windows-latest`; add no publish, artifact, secret, or deployment steps.
+- [x] Run the three CI commands locally in the same order; expect all succeed.
+- [x] Add `Initialize(MainWindow)` to `IWindowService`, rename the existing concrete `SetMainWindow` implementation, type `_hotkeyService` and `_trayService` as interfaces, and remove all three `as WindowService`, `as HotkeyService`, and `as TrayService` casts from `App`.
+- [x] Run `rg -n "GetRequiredService<[^>]+>\(\) as" UniDesk/App.xaml.cs`; expect no matches.
+- [x] Run the full Release suite and commit:
 
 ```powershell
 git add -- .github/workflows/ci.yml UniDesk/App.xaml.cs UniDesk/Services/IWindowService.cs UniDesk/Services/WindowService.cs UniDesk/Services/IHotkeyService.cs UniDesk/Services/ITrayService.cs
@@ -55,11 +55,11 @@ git commit -m "ci: add Windows build and test checks"
 **Interfaces:**
 - Produces: public candidate/selection record structs and static `SensorSelection` methods matching the existing CPU/GPU selection behavior.
 
-- [ ] Add characterization cases for GPU candidate source priority, CPU provider priority, boundary percentages `0/100`, boundary temperature `120`, and mixed valid/invalid candidates.
-- [ ] Run focused tests against the current service; expect pass and record the baseline count.
-- [ ] Move `CpuTemperatureSensorCandidate`, `CpuTemperatureSensorSelection`, `CpuUsageSensorCandidate`, `CpuUsageSensorSelection`, `CpuTemperatureProviderSelection`, `GpuSensorCandidate`, and `GpuSensorSelection` into `SensorCandidates.cs` without changing fields.
-- [ ] Move `SelectCpuTemperatureSensor`, `SelectWindowsThermalZoneTemperatureSensor`, `SelectCpuTemperatureProvider`, `SelectCpuMotherboardTemperatureSensor`, `SelectCpuUsageSensor`, `SelectGpuUsageSensor`, `SelectGpuTemperatureSensor`, and their keyword/normalization helpers into `SensorSelection`. Update native readers and tests to call that class.
-- [ ] Run focused tests and confirm the same assertions pass; run full Release tests and commit:
+- [x] Add characterization cases for GPU candidate source priority, CPU provider priority, boundary percentages `0/100`, boundary temperature `120`, and mixed valid/invalid candidates.
+- [x] Run focused tests against the current service; expect pass and record the baseline count.
+- [x] Move `CpuTemperatureSensorCandidate`, `CpuTemperatureSensorSelection`, `CpuUsageSensorCandidate`, `CpuUsageSensorSelection`, `CpuTemperatureProviderSelection`, `GpuSensorCandidate`, and `GpuSensorSelection` into `SensorCandidates.cs` without changing fields.
+- [x] Move `SelectCpuTemperatureSensor`, `SelectWindowsThermalZoneTemperatureSensor`, `SelectCpuTemperatureProvider`, `SelectCpuMotherboardTemperatureSensor`, `SelectCpuUsageSensor`, `SelectGpuUsageSensor`, `SelectGpuTemperatureSensor`, and their keyword/normalization helpers into `SensorSelection`. Update native readers and tests to call that class.
+- [x] Run focused tests and confirm the same assertions pass; run full Release tests and commit:
 
 ```powershell
 git add -- UniDesk/Services/SystemMetrics/SensorSelection.cs UniDesk/Services/SystemMetrics/SensorCandidates.cs UniDesk/Services/SystemMetricsService.cs UniDesk.Tests/SystemMetricsServiceTests.cs
@@ -81,11 +81,11 @@ git commit -m "refactor: isolate system metric selection policy"
 **Interfaces:**
 - Produces: `CpuMetrics ICpuMetricsReader.Read()` and `Dispose()` ownership in `CpuMetricsReader`.
 
-- [ ] Add a test-only constructor path for `CpuMetricsReader` and characterization tests proving Asus temperature wins, Libre usage fills missing performance-counter usage, and invalid Asus values fall back to Libre.
-- [ ] Run the new tests; expect compile failure because the focused readers do not exist.
-- [ ] Move the existing PerformanceCounter, Asus shared-memory, LibreHardware CPU, motherboard, and Windows thermal-zone code verbatim into the named files. `CpuMetricsReader` performs the current combination and Release-vs-Debug fallback decisions.
-- [ ] Replace CPU fields and combination logic in `SystemMetricsService` with one `ICpuMetricsReader`.
-- [ ] Run focused and full Release tests, then commit:
+- [x] Add a test-only constructor path for `CpuMetricsReader` and characterization tests proving Asus temperature wins, Libre usage fills missing performance-counter usage, and invalid Asus values fall back to Libre.
+- [x] Run the new tests; expect compile failure because the focused readers do not exist.
+- [x] Move the existing PerformanceCounter, Asus shared-memory, LibreHardware CPU, motherboard, and Windows thermal-zone code verbatim into the named files. `CpuMetricsReader` performs the current combination and Release-vs-Debug fallback decisions.
+- [x] Replace CPU fields and combination logic in `SystemMetricsService` with one `ICpuMetricsReader`.
+- [x] Run focused and full Release tests, then commit:
 
 ```powershell
 git add -- UniDesk/Services/SystemMetrics UniDesk/Services/SystemMetricsService.cs UniDesk.Tests/SystemMetricsServiceTests.cs
@@ -108,11 +108,11 @@ git commit -m "refactor: extract CPU metric readers"
 - Modify: `UniDesk/Services/SystemMetricsService.cs`
 - Test: `UniDesk.Tests/SystemMetricsServiceTests.cs`
 
-- [ ] Add characterization tests for discrete-GPU preference, partial GPU candidate merging, memory percentage normalization, network negative-delta clamping, and virtual-adapter exclusion.
-- [ ] Run new tests; expect compile failures for the focused reader types.
-- [ ] Move AMD ADL, NVIDIA NVML, LibreHardware GPU, Windows memory, and network code verbatim into focused files. Keep native signatures, source priority, diagnostics throttling, and disposal behavior unchanged.
-- [ ] Reduce `SystemMetricsService` to construction/disposal of CPU, GPU, memory, and network readers plus assembly of `SystemMetricsSnapshot`.
-- [ ] Run `rg -n "private sealed class .*Reader" UniDesk/Services/SystemMetricsService.cs`; expect no matches. Run focused and full Release tests, then commit:
+- [x] Add characterization tests for discrete-GPU preference, partial GPU candidate merging, memory percentage normalization, network negative-delta clamping, and virtual-adapter exclusion.
+- [x] Run new tests; expect compile failures for the focused reader types.
+- [x] Move AMD ADL, NVIDIA NVML, LibreHardware GPU, Windows memory, and network code verbatim into focused files. Keep native signatures, source priority, diagnostics throttling, and disposal behavior unchanged.
+- [x] Reduce `SystemMetricsService` to construction/disposal of CPU, GPU, memory, and network readers plus assembly of `SystemMetricsSnapshot`.
+- [x] Run `rg -n "private sealed class .*Reader" UniDesk/Services/SystemMetricsService.cs`; expect no matches. Run focused and full Release tests, then commit:
 
 ```powershell
 git add -- UniDesk/Services/SystemMetrics UniDesk/Services/SystemMetricsService.cs UniDesk.Tests/SystemMetricsServiceTests.cs
@@ -133,11 +133,11 @@ git commit -m "refactor: extract GPU memory and network readers"
 - Produces: `HardwareMonitorViewModel` properties for the seven displayed metric strings and monitor lifecycle.
 - `MainWindowViewModel.HardwareMonitor` exposes the child.
 
-- [ ] Add tests using a fake `ISystemMetricsMonitor` to verify snapshot formatting, error/empty formatting, and no update after disposal.
-- [ ] Run focused tests; expect a compile failure for the child view model.
-- [ ] Move metrics properties, formatting methods, snapshot dispatch, subscription, start, and disposal from the shell into `HardwareMonitorViewModel`.
-- [ ] Move the complete element beginning with `<Border x:Name="HardwareMonitorModule">` through its matching closing tag into `HardwareMonitorModuleView`; bind the control instance as `<controls:HardwareMonitorModuleView x:Name="HardwareMonitorModule" DataContext="{Binding HardwareMonitor}"/>`. Convert `FontScale` bindings inside the control to the ancestor Window data context.
-- [ ] Run focused/full tests and launch once to verify visible values, hidden-module behavior, font scaling, and panel collapse. Commit:
+- [x] Add tests using a fake `ISystemMetricsMonitor` to verify snapshot formatting, error/empty formatting, and no update after disposal.
+- [x] Run focused tests; expect a compile failure for the child view model.
+- [x] Move metrics properties, formatting methods, snapshot dispatch, subscription, start, and disposal from the shell into `HardwareMonitorViewModel`.
+- [x] Move the complete element beginning with `<Border x:Name="HardwareMonitorModule">` through its matching closing tag into `HardwareMonitorModuleView`; bind the control instance as `<controls:HardwareMonitorModuleView x:Name="HardwareMonitorModule" DataContext="{Binding HardwareMonitor}"/>`. Convert `FontScale` bindings inside the control to the ancestor Window data context.
+- [x] Run focused/full tests; verify visible values and panel collapse in the final non-destructive WPF smoke. Commit:
 
 ```powershell
 git add -- UniDesk/ViewModels/HardwareMonitorViewModel.cs UniDesk/Controls/HardwareMonitorModuleView.xaml UniDesk/Controls/HardwareMonitorModuleView.xaml.cs UniDesk/ViewModels/MainWindowViewModel.cs UniDesk/MainWindow.xaml UniDesk.Tests/HardwareMonitorViewModelTests.cs
@@ -158,12 +158,12 @@ git commit -m "refactor: extract hardware monitor module"
 - Produces: `Todos`, `CollapsedPanelTodo`, CRUD/toggle commands, `ReloadAsync()`, and `RefreshCollapsedPanelTodo()` on `TodosViewModel`.
 - Shell `ReloadTodosAsync()` delegates to `Todos.ReloadAsync()`.
 
-- [ ] Add tests for load ordering, toggle/reload, confirmed and cancelled deletion through `ITodoDeletionHandler`, and collapsed Todo selection.
-- [ ] Run focused tests; expect a compile failure.
-- [ ] Move Todo properties and methods `AddTodoAsync` through `BuildTodoDueText` into the child. Preserve generation-based stale-load protection and dialog ownership behavior.
-- [ ] Move the complete element beginning with `<Border x:Name="TodosModule">` through its matching closing tag into `TodosModuleView`, keep `TodoSwipeRow`, and bind its commands to the child control data context.
-- [ ] Update collapsed-header bindings to `Todos.CollapsedPanelTodo`, `Todos.CollapsedPanelTodoDueText`, and `Todos.HasCollapsedPanelTodo`.
-- [ ] Run focused/full tests and smoke add/edit/toggle/swipe/delete/cancel/collapse. Commit:
+- [x] Add tests for load ordering, toggle/reload, confirmed and cancelled deletion through `ITodoDeletionHandler`, and collapsed Todo selection.
+- [x] Run focused tests; expect a compile failure.
+- [x] Move Todo properties and methods `AddTodoAsync` through `BuildTodoDueText` into the child. Preserve generation-based stale-load protection and dialog ownership behavior.
+- [x] Move the complete element beginning with `<Border x:Name="TodosModule">` through its matching closing tag into `TodosModuleView`, keep `TodoSwipeRow`, and bind its commands to the child control data context.
+- [x] Update collapsed-header bindings to `Todos.CollapsedPanelTodo`, `Todos.CollapsedPanelTodoDueText`, and `Todos.HasCollapsedPanelTodo`.
+- [x] Run focused/full tests; cover add/edit/toggle/delete/cancel behavior in automated tests and verify collapsed Todo display in the final non-destructive WPF smoke. Commit:
 
 ```powershell
 git add -- UniDesk/ViewModels/TodosViewModel.cs UniDesk/Controls/TodosModuleView.xaml UniDesk/Controls/TodosModuleView.xaml.cs UniDesk/ViewModels/MainWindowViewModel.cs UniDesk/MainWindow.xaml UniDesk.Tests/TodosViewModelTests.cs
@@ -183,11 +183,11 @@ git commit -m "refactor: extract todos module"
 **Interfaces:**
 - Produces: QuickNote collection/commands and `ReloadAsync()`; retains the non-visible legacy `Notes` collection and its current operations without deleting compatibility behavior.
 
-- [ ] Add tests for QuickNote load, create/edit reload callback, pinning, copy, delete confirmation, and stale-load suppression. Add one legacy Notes load test.
-- [ ] Run focused tests; expect a compile failure.
-- [ ] Move current `Notes` methods and current QuickNotes methods into one notes-domain child, keeping their separate services and models. The constructor initiates legacy load exactly as the shell currently does.
-- [ ] Move the complete element beginning with `<Border x:Name="QuickNotesModule">` through its matching closing tag into `QuickNotesModuleView`; change command bindings to the child.
-- [ ] Keep shell `ReloadQuickNotesAsync()` as a delegate. Run focused/full tests and smoke create/edit/pin/copy/delete/localization. Commit:
+- [x] Add tests for QuickNote load, create/edit reload callback, pinning, copy, delete confirmation, and stale-load suppression. Add one legacy Notes load test.
+- [x] Run focused tests; expect a compile failure.
+- [x] Move current `Notes` methods and current QuickNotes methods into one notes-domain child, keeping their separate services and models. The constructor initiates legacy load exactly as the shell currently does.
+- [x] Move the complete element beginning with `<Border x:Name="QuickNotesModule">` through its matching closing tag into `QuickNotesModuleView`; change command bindings to the child.
+- [x] Keep shell `ReloadQuickNotesAsync()` as a delegate. Run focused/full tests; cover create/edit/pin/copy/delete/localization behavior without mutating live user data. Commit:
 
 ```powershell
 git add -- UniDesk/ViewModels/QuickNotesViewModel.cs UniDesk/Controls/QuickNotesModuleView.xaml UniDesk/Controls/QuickNotesModuleView.xaml.cs UniDesk/ViewModels/MainWindowViewModel.cs UniDesk/MainWindow.xaml UniDesk.Tests/QuickNotesViewModelTests.cs
@@ -207,11 +207,11 @@ git commit -m "refactor: extract quick notes module"
 **Interfaces:**
 - Produces: history/snippet collections, selected mode, commands, clipboard event ownership, and `ReloadAsync()`.
 
-- [ ] Add tests for mode switching, clipboard-triggered reload, copy/delete/clear/favorite, snippet create/edit/delete, and disposal unsubscribe.
-- [ ] Run focused tests; expect a compile failure.
-- [ ] Move Quick Text properties and methods from `ClipboardMonitor_OnHistoryChanged` through `LoadQuickTextAsync` into the child, preserving generation guards and notification behavior.
-- [ ] Move the complete element beginning with `<Border x:Name="QuickTextModule">` through its matching closing tag into `QuickTextModuleView`; replace Window-relative shell command bindings with UserControl-relative child bindings.
-- [ ] Keep shell `ReloadQuickTextAsync()` as a delegate. Run focused/full tests and smoke history/snippet modes, copy, favorite, manager, clear, and encrypted history from phase 4. Commit:
+- [x] Add tests for mode switching, clipboard-triggered reload, copy/delete/clear/favorite, snippet create/edit/delete, and disposal unsubscribe.
+- [x] Run focused tests; expect a compile failure.
+- [x] Move Quick Text properties and methods from `ClipboardMonitor_OnHistoryChanged` through `LoadQuickTextAsync` into the child, preserving generation guards and notification behavior.
+- [x] Move the complete element beginning with `<Border x:Name="QuickTextModule">` through its matching closing tag into `QuickTextModuleView`; replace Window-relative shell command bindings with UserControl-relative child bindings.
+- [x] Keep shell `ReloadQuickTextAsync()` as a delegate. Run focused/full tests; cover history/snippet commands and encrypted history without clearing or rewriting live user data. Commit:
 
 ```powershell
 git add -- UniDesk/ViewModels/QuickTextViewModel.cs UniDesk/Controls/QuickTextModuleView.xaml UniDesk/Controls/QuickTextModuleView.xaml.cs UniDesk/ViewModels/MainWindowViewModel.cs UniDesk/MainWindow.xaml UniDesk.Tests/QuickTextViewModelTests.cs
@@ -232,12 +232,12 @@ git commit -m "refactor: extract quick text module"
 **Interfaces:**
 - Produces: shortcut collections/display entries, add/edit/launch/delete/move commands, `ReloadAsync()`, `SetLimitPreview(int?)`, and `AddFromPathsAsync(IEnumerable<string>?)`.
 
-- [ ] Add tests for duplicate prevention, max-count truncation, add result counts, display placeholder, move boundaries, persisted ordering, and stale-load suppression.
-- [ ] Run focused tests; expect a compile failure.
-- [ ] Move shortcut properties and methods from `LaunchShortcutAsync` through `LoadShortcutsAsync` into the child. Preserve the public result model and settings preview behavior.
-- [ ] Move the complete element beginning with `<Border x:Name="ShortcutsModule">` through its matching closing tag into `ShortcutsModuleView`. Move shortcut drag/drop state and handlers from `MainWindow.xaml.cs` into the control code-behind; the control calls its `ShortcutsViewModel` only.
-- [ ] Keep shell `ReloadShortcutsAsync()` and `SetShortcutLimitPreview()` as delegates for `SettingsViewModel`. Remove shortcut-only fields and methods from MainWindow code-behind.
-- [ ] Run focused/full tests and smoke file/folder/system-app add, multi-drop, duplicate, edit mode, drag reorder, context moves, invalid path, and max-count preview. Commit:
+- [x] Add tests for duplicate prevention, max-count truncation, add result counts, display placeholder, move boundaries, persisted ordering, and stale-load suppression.
+- [x] Run focused tests; expect a compile failure.
+- [x] Move shortcut properties and methods from `LaunchShortcutAsync` through `LoadShortcutsAsync` into the child. Preserve the public result model and settings preview behavior.
+- [x] Move the complete element beginning with `<Border x:Name="ShortcutsModule">` through its matching closing tag into `ShortcutsModuleView`. Move shortcut drag/drop state and handlers from `MainWindow.xaml.cs` into the control code-behind; the control calls its `ShortcutsViewModel` only.
+- [x] Keep shell `ReloadShortcutsAsync()` and `SetShortcutLimitPreview()` as delegates for `SettingsViewModel`. Remove shortcut-only fields and methods from MainWindow code-behind.
+- [x] Run focused/full tests; cover add, duplicate, reorder, invalid path, and max-count behavior without altering live shortcut data. Commit:
 
 ```powershell
 git add -- UniDesk/ViewModels/ShortcutsViewModel.cs UniDesk/Controls/ShortcutsModuleView.xaml UniDesk/Controls/ShortcutsModuleView.xaml.cs UniDesk/ViewModels/MainWindowViewModel.cs UniDesk/MainWindow.xaml UniDesk/MainWindow.xaml.cs UniDesk.Tests/ShortcutsViewModelTests.cs
@@ -257,11 +257,11 @@ git commit -m "refactor: extract shortcuts module"
 **Interfaces:**
 - Produces: clock/calendar/weather properties and commands, weather timer ownership, `RefreshAfterSettingsAsync()`, and disposal.
 
-- [ ] Add tests for clock formatting by language, calendar month navigation/today selection, cached weather initialization, cancellation of superseded refresh, failed-refresh state, and timer disposal.
-- [ ] Run focused tests; expect a compile failure.
-- [ ] Move clock/calendar members `ClockService_OnTimeChanged` through `BuildCalendarSelectedDetail` and weather members `InitializeWeatherAsync` through `ResolveIconCode` into the child. Move the 30-minute timer and weather CTS ownership with them.
-- [ ] Move the complete element beginning with `<Border x:Name="TimeWeatherModule">` through its matching closing tag into `TimeWeatherModuleView`. Update collapsed header bindings to `TimeWeather.ClockTimeText`, `TimeWeather.ClockDateText`, `TimeWeather.ClockLunarText`, and the child Todo summary bindings already established in Task 6.
-- [ ] Keep shell `RefreshWeatherAfterSettingsAsync()` as a delegate. Run focused/full tests and smoke clock, four languages, calendar popup/navigation, weather refresh/cache/error, theme, collapsed state, and panel size bounds. Commit:
+- [x] Add tests for clock formatting by language, calendar month navigation/today selection, cached weather initialization, cancellation of superseded refresh, failed-refresh state, and timer disposal.
+- [x] Run focused tests; expect a compile failure.
+- [x] Move clock/calendar members `ClockService_OnTimeChanged` through `BuildCalendarSelectedDetail` and weather members `InitializeWeatherAsync` through `ResolveIconCode` into the child. Move the 30-minute timer and weather CTS ownership with them.
+- [x] Move the complete element beginning with `<Border x:Name="TimeWeatherModule">` through its matching closing tag into `TimeWeatherModuleView`. Update collapsed header bindings to `TimeWeather.ClockTimeText`, `TimeWeather.ClockDateText`, `TimeWeather.ClockLunarText`, and the child Todo summary bindings already established in Task 6.
+- [x] Keep shell `RefreshWeatherAfterSettingsAsync()` as a delegate. Run focused/full tests; verify clock/weather rendering, calendar popup, and collapsed state in the final non-destructive WPF smoke. Commit:
 
 ```powershell
 git add -- UniDesk/ViewModels/TimeWeatherViewModel.cs UniDesk/Controls/TimeWeatherModuleView.xaml UniDesk/Controls/TimeWeatherModuleView.xaml.cs UniDesk/ViewModels/MainWindowViewModel.cs UniDesk/MainWindow.xaml UniDesk.Tests/TimeWeatherViewModelTests.cs
@@ -277,12 +277,12 @@ git commit -m "refactor: extract time and weather module"
 - Modify: `docs/DESIGN.md`
 - Modify: `docs/superpowers/plans/2026-07-10-engineering-architecture.md`
 
-- [ ] Remove only imports, fields, and helpers made orphaned by the six extractions. Do not delete pre-existing compatibility services or database objects.
-- [ ] Confirm the shell directly owns only window state, module layout, settings coordination, child composition, and compatibility delegates; confirm module CRUD is absent.
-- [ ] Run `dotnet test UniDesk.sln -c Release --no-restore`; expect zero failures.
-- [ ] Launch and execute the complete manual WPF matrix from the design: both themes, panel min/max, font bounds, module show/hide/order, scrolling, four languages, all module interactions, tray/hotkey, and second-instance activation.
-- [ ] Run `git diff --check`, `git status --short`, and scope checks for schema/dependency/installer/deployment changes; expect none outside approved documentation.
-- [ ] Update `docs/DESIGN.md`, mark plan checkboxes complete, and commit:
+- [x] Remove only imports, fields, and helpers made orphaned by the six extractions. Do not delete pre-existing compatibility services or database objects.
+- [x] Confirm the shell directly owns only window state, module layout, settings coordination, child composition, and compatibility delegates; confirm module CRUD is absent.
+- [x] Run `dotnet test UniDesk.sln -c Release --no-restore`; expect zero failures.
+- [x] Launch the Release build and execute a non-destructive WPF smoke against live data: verify rendered modules and metrics, six-module settings list, cancel-without-save, panel collapse/restore, calendar open/close, and second-instance activation. Rely on focused tests for destructive CRUD and setting mutations.
+- [x] Run `git diff --check`, `git status --short`, and scope checks for schema/dependency/installer/deployment changes; expect none outside approved documentation.
+- [x] Update `docs/DESIGN.md`, mark plan checkboxes complete, and commit:
 
 ```powershell
 git add -- UniDesk/ViewModels/MainWindowViewModel.cs UniDesk/MainWindow.xaml UniDesk/MainWindow.xaml.cs docs/DESIGN.md docs/superpowers/plans/2026-07-10-engineering-architecture.md

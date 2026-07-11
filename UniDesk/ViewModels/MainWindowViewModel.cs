@@ -7,15 +7,10 @@ using UniDesk.Services;
 using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Linq;
-using System.IO;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Media;
-using System.Windows.Threading;
 
 namespace UniDesk.ViewModels;
 
