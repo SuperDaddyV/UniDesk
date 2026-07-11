@@ -78,16 +78,35 @@ public partial class QuickNoteEditorViewModel : ObservableObject, IDisposable
 
     partial void OnIsPinnedChanged(bool value) => ScheduleSave();
 
-    public async Task FlushAndCleanupAsync()
+    public async Task<bool> FlushAndCleanupAsync()
     {
         _saveTimer.Stop();
-        await SaveNowAsync();
+        if (!await SaveNowAsync())
+        {
+            return false;
+        }
 
         if (!_isDeleted && _noteId > 0 && IsEmpty)
         {
-            await _quickNoteService.DeleteQuickNoteAsync(_noteId);
-            _noteId = 0;
+            try
+            {
+                if (!await _quickNoteService.DeleteQuickNoteAsync(_noteId))
+                {
+                    SaveStatus = L("QuickNote.SaveFailed");
+                    return false;
+                }
+
+                _noteId = 0;
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, "QuickNoteEditorViewModel.FlushAndCleanupAsync");
+                SaveStatus = L("QuickNote.SaveFailed");
+                return false;
+            }
         }
+
+        return true;
     }
 
     public async Task<bool> DeleteAsync()
@@ -100,7 +119,11 @@ public partial class QuickNoteEditorViewModel : ObservableObject, IDisposable
         _saveTimer.Stop();
         if (_noteId > 0)
         {
-            await _quickNoteService.DeleteQuickNoteAsync(_noteId);
+            if (!await _quickNoteService.DeleteQuickNoteAsync(_noteId))
+            {
+                _notificationService.ShowWarningMessage(L("Common.OperationFailed"));
+                return false;
+            }
         }
 
         _isDeleted = true;
@@ -151,12 +174,12 @@ public partial class QuickNoteEditorViewModel : ObservableObject, IDisposable
         await SaveNowAsync();
     }
 
-    private async Task SaveNowAsync()
+    private async Task<bool> SaveNowAsync()
     {
         if (_isDeleted || IsEmpty)
         {
             SaveStatus = L("QuickNote.AutoSave");
-            return;
+            return true;
         }
 
         await _saveLock.WaitAsync();
@@ -178,7 +201,7 @@ public partial class QuickNoteEditorViewModel : ObservableObject, IDisposable
                 if (id <= 0)
                 {
                     SaveStatus = L("QuickNote.SaveFailed");
-                    return;
+                    return false;
                 }
 
                 _noteId = id;
@@ -186,7 +209,7 @@ public partial class QuickNoteEditorViewModel : ObservableObject, IDisposable
             }
             else
             {
-                await _quickNoteService.UpdateQuickNoteAsync(new QuickNote
+                var updated = await _quickNoteService.UpdateQuickNoteAsync(new QuickNote
                 {
                     Id = _noteId,
                     Title = Title ?? string.Empty,
@@ -196,14 +219,21 @@ public partial class QuickNoteEditorViewModel : ObservableObject, IDisposable
                     CreatedAt = _createdAt,
                     UpdatedAt = now
                 });
+                if (!updated)
+                {
+                    SaveStatus = L("QuickNote.SaveFailed");
+                    return false;
+                }
             }
 
             SaveStatus = L("QuickNote.Saved");
+            return true;
         }
         catch (Exception ex)
         {
             Logger.LogError(ex, "QuickNoteEditorViewModel.SaveNowAsync");
             SaveStatus = L("QuickNote.SaveFailed");
+            return false;
         }
         finally
         {

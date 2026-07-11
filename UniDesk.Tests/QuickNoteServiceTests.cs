@@ -107,6 +107,19 @@ public class QuickNoteServiceTests
         Cleanup();
     }
 
+    [Fact]
+    public async Task UpdateAndDeleteMissingQuickNote_ShouldReturnFalse()
+    {
+        var svc = await InitAsync();
+
+        var updated = await svc.UpdateQuickNoteAsync(new QuickNote { Id = 999, Title = "missing" });
+        var deleted = await svc.DeleteQuickNoteAsync(999);
+
+        Assert.False(updated);
+        Assert.False(deleted);
+        Cleanup();
+    }
+
     private void Cleanup()
     {
         try

@@ -75,38 +75,40 @@ public class QuickNoteService : IQuickNoteService
         }
     }
 
-    public async Task UpdateQuickNoteAsync(QuickNote note)
+    public async Task<bool> UpdateQuickNoteAsync(QuickNote note)
     {
         try
         {
             var updatedAt = note.UpdatedAt == default ? DateTime.UtcNow : note.UpdatedAt;
 
-            await _databaseService.ExecuteNonQueryAsync(
+            return await _databaseService.ExecuteNonQueryAsync(
                 "UPDATE QuickNotes SET Title = @p0, Content = @p1, IsPinned = @p2, SortOrder = @p3, UpdatedAt = @p4 WHERE Id = @p5",
                 note.Title ?? string.Empty,
                 note.Content ?? string.Empty,
                 note.IsPinned ? 1 : 0,
                 note.SortOrder,
                 updatedAt.ToString("o", CultureInfo.InvariantCulture),
-                note.Id);
+                note.Id) > 0;
         }
         catch (Exception ex)
         {
             Logger.LogError(ex, $"QuickNoteService.UpdateQuickNoteAsync({note.Id})");
+            return false;
         }
     }
 
-    public async Task DeleteQuickNoteAsync(int id)
+    public async Task<bool> DeleteQuickNoteAsync(int id)
     {
         try
         {
-            await _databaseService.ExecuteNonQueryAsync(
+            return await _databaseService.ExecuteNonQueryAsync(
                 "DELETE FROM QuickNotes WHERE Id = @p0",
-                id);
+                id) > 0;
         }
         catch (Exception ex)
         {
             Logger.LogError(ex, $"QuickNoteService.DeleteQuickNoteAsync({id})");
+            return false;
         }
     }
 

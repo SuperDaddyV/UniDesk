@@ -4,6 +4,7 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
+using UniDesk.Helpers;
 using UniDesk.Services;
 using UniDesk.ViewModels;
 
@@ -12,7 +13,8 @@ namespace UniDesk;
 public partial class QuickNoteEditorWindow : Window
 {
     private readonly QuickNoteEditorViewModel _viewModel;
-    private bool _isClosing;
+    private bool _closeRequested;
+    private bool _allowClose;
 
     public QuickNoteEditorWindow(QuickNoteEditorViewModel viewModel, double panelWidth)
     {
@@ -84,18 +86,43 @@ public partial class QuickNoteEditorWindow : Window
         e.Handled = true;
     }
 
-    protected override async void OnClosing(CancelEventArgs e)
+    protected override void OnClosing(CancelEventArgs e)
     {
-        if (_isClosing)
+        if (_allowClose)
         {
             base.OnClosing(e);
             return;
         }
 
         e.Cancel = true;
-        _isClosing = true;
-        await _viewModel.FlushAndCleanupAsync();
-        Close();
+        if (_closeRequested)
+        {
+            return;
+        }
+
+        _closeRequested = true;
+        _ = FlushAndCloseAsync();
+    }
+
+    private async Task FlushAndCloseAsync()
+    {
+        try
+        {
+            if (!await _viewModel.FlushAndCleanupAsync())
+            {
+                _closeRequested = false;
+                return;
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "QuickNoteEditorWindow.FlushAndClose");
+            _closeRequested = false;
+            return;
+        }
+
+        _allowClose = true;
+        _ = Dispatcher.BeginInvoke(new Action(Close));
     }
 
     protected override void OnClosed(EventArgs e)

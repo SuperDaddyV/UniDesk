@@ -74,7 +74,8 @@
                                          StrokeThickness="2"
                                          Margin="0,0,8,0"
                                          VerticalAlignment="Center"
-                                         Cursor="Hand">
+                                         Cursor="Hand"
+                                         MouseLeftButtonUp="TodoCheck_OnMouseLeftButtonUp">
                                     <Ellipse.Style>
                                         <Style TargetType="Ellipse">
                                             <Setter Property="Fill" Value="Transparent"/>
@@ -89,11 +90,6 @@
                                             </Style.Triggers>
                                         </Style>
                                     </Ellipse.Style>
-                                    <Ellipse.InputBindings>
-                                        <MouseBinding Gesture="LeftClick"
-                                                      Command="{Binding DataContext.ToggleTodoCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                      CommandParameter="{Binding}"/>
-                                    </Ellipse.InputBindings>
                                 </Ellipse>
                                 <Grid Grid.Column="2" VerticalAlignment="Center">
                                     <TextBlock Text="{Binding Title}"

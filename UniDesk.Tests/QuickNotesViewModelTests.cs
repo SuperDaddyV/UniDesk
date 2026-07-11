@@ -159,8 +159,8 @@ public class QuickNotesViewModelTests
         }
         public Task<QuickNote?> GetQuickNoteAsync(int id) => Task.FromResult<QuickNote?>(null);
         public Task<int> CreateQuickNoteAsync(QuickNote note) => Task.FromResult(1);
-        public Task UpdateQuickNoteAsync(QuickNote note) => Task.CompletedTask;
-        public Task DeleteQuickNoteAsync(int id) { DeletedIds.Add(id); return Task.CompletedTask; }
+        public Task<bool> UpdateQuickNoteAsync(QuickNote note) => Task.FromResult(true);
+        public Task<bool> DeleteQuickNoteAsync(int id) { DeletedIds.Add(id); return Task.FromResult(true); }
         public Task SetPinnedAsync(int id, bool isPinned) { PinCalls.Add((id, isPinned)); return Task.CompletedTask; }
     }
 
@@ -170,8 +170,8 @@ public class QuickNotesViewModelTests
         public Task<List<QuickNote>> GetAllQuickNotesAsync() => loads[_index++];
         public Task<QuickNote?> GetQuickNoteAsync(int id) => Task.FromResult<QuickNote?>(null);
         public Task<int> CreateQuickNoteAsync(QuickNote note) => Task.FromResult(1);
-        public Task UpdateQuickNoteAsync(QuickNote note) => Task.CompletedTask;
-        public Task DeleteQuickNoteAsync(int id) => Task.CompletedTask;
+        public Task<bool> UpdateQuickNoteAsync(QuickNote note) => Task.FromResult(true);
+        public Task<bool> DeleteQuickNoteAsync(int id) => Task.FromResult(true);
         public Task SetPinnedAsync(int id, bool isPinned) => Task.CompletedTask;
     }
 

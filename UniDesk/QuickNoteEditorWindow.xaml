@@ -193,7 +193,7 @@
                                 Click="DeleteButton_OnClick"/>
                     </StackPanel>
                     <Button Style="{StaticResource DlgGhostButton}"
-                            Content="{DynamicResource Common.Close}"
+                            Content="{DynamicResource Common.Done}"
                             HorizontalAlignment="Right"
                             Click="CloseButton_OnClick"/>
                 </Grid>

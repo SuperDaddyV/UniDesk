@@ -2,6 +2,8 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using UniDesk.Models;
+using UniDesk.ViewModels;
 
 namespace UniDesk.Controls;
 
@@ -21,6 +23,19 @@ public partial class TodosModuleView : UserControl
     {
         if (sender is not ScrollViewer viewer) return;
         viewer.ScrollToVerticalOffset(viewer.VerticalOffset - e.Delta);
+        e.Handled = true;
+    }
+
+    private void TodoCheck_OnMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is not FrameworkElement { DataContext: TodoItem todo } ||
+            DataContext is not TodosViewModel viewModel ||
+            !viewModel.ToggleTodoCommand.CanExecute(todo))
+        {
+            return;
+        }
+
+        viewModel.ToggleTodoCommand.Execute(todo);
         e.Handled = true;
     }
 

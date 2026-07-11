@@ -127,7 +127,12 @@ public partial class QuickNotesViewModel : ObservableObject
             return;
         }
 
-        await _quickNoteService.DeleteQuickNoteAsync(note.Id);
+        if (!await _quickNoteService.DeleteQuickNoteAsync(note.Id))
+        {
+            _notificationService.ShowWarningMessage(L("Common.OperationFailed"));
+            return;
+        }
+
         await ReloadAsync();
     }
 
