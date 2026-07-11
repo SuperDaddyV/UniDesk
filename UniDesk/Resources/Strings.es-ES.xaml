@@ -152,6 +152,13 @@
 
     <sys:String x:Key="Settings.Title">Ajustes</sys:String>
     <sys:String x:Key="Settings.General">General</sys:String>
+    <sys:String x:Key="Settings.NavGeneral">General</sys:String>
+    <sys:String x:Key="Settings.NavAppearance">Apariencia</sys:String>
+    <sys:String x:Key="Settings.NavModules">Módulos</sys:String>
+    <sys:String x:Key="Settings.NavDesktop">Escritorio</sys:String>
+    <sys:String x:Key="Settings.NavData">Datos y copias</sys:String>
+    <sys:String x:Key="Settings.NavShortcuts">Accesos directos</sys:String>
+    <sys:String x:Key="Settings.NavAbout">Acerca de</sys:String>
     <sys:String x:Key="Settings.Theme">Tema</sys:String>
     <sys:String x:Key="Settings.DisplayTitle">Título</sys:String>
     <sys:String x:Key="Settings.WindowOpacity">Opacidad de ventana</sys:String>

@@ -1,0 +1,41 @@
+<UserControl x:Class="UniDesk.Controls.Settings.DataSettingsPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <StackPanel>
+        <TextBlock Text="{DynamicResource Settings.NavData}" Style="{StaticResource GlassPageTitleStyle}"/>
+        <Border Style="{StaticResource GlassSectionStyle}">
+            <StackPanel>
+                <TextBlock Text="{DynamicResource Settings.BackupDescription}" Style="{StaticResource GlassSectionTitleStyle}"/>
+                <TextBlock Text="{DynamicResource Settings.BackupDescription}"
+                           Foreground="{DynamicResource SecondaryTextBrush}" TextWrapping="Wrap" Margin="0,0,0,14"/>
+                <StackPanel Orientation="Horizontal">
+                    <Button Style="{StaticResource GlassPrimaryButtonStyle}" Content="{DynamicResource Settings.Backup}"
+                            Margin="0,0,10,0" Command="{Binding BackupTodosCommand}"/>
+                    <Button Style="{StaticResource GlassSecondaryButtonStyle}" Content="{DynamicResource Settings.Restore}"
+                            Command="{Binding RestoreTodosCommand}"/>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <Border Style="{StaticResource GlassSectionStyle}">
+            <StackPanel>
+                <TextBlock Text="{DynamicResource Settings.QuickTextClipboard}" Style="{StaticResource GlassSectionTitleStyle}"/>
+                <Grid>
+                    <TextBlock Text="{Binding ClipboardHistoryCurrentText}"
+                               Foreground="{DynamicResource SecondaryTextBrush}" VerticalAlignment="Center"/>
+                    <Button HorizontalAlignment="Right" Style="{StaticResource GlassSecondaryButtonStyle}"
+                            Content="{DynamicResource QuickText.ClearHistory}"
+                            Command="{Binding ClearClipboardHistoryFromSettingsCommand}"/>
+                </Grid>
+            </StackPanel>
+        </Border>
+
+        <Border Style="{StaticResource GlassSectionStyle}">
+            <StackPanel>
+                <TextBlock Text="{DynamicResource Settings.System}" Style="{StaticResource GlassSectionTitleStyle}"/>
+                <Button HorizontalAlignment="Left" Style="{StaticResource GlassSecondaryButtonStyle}"
+                        Content="{DynamicResource Settings.ResetLayout}" Command="{Binding ResetLayoutCommand}"/>
+            </StackPanel>
+        </Border>
+    </StackPanel>
+</UserControl>

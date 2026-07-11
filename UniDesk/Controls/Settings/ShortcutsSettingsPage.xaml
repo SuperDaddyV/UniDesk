@@ -1,0 +1,24 @@
+<UserControl x:Class="UniDesk.Controls.Settings.ShortcutsSettingsPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <StackPanel>
+        <TextBlock Text="{DynamicResource Settings.NavShortcuts}" Style="{StaticResource GlassPageTitleStyle}"/>
+        <Border Style="{StaticResource GlassSectionStyle}">
+            <StackPanel>
+                <TextBlock Text="{DynamicResource Settings.ShortcutCount}" Style="{StaticResource GlassSectionTitleStyle}"/>
+                <WrapPanel x:Name="ShortcutLimitPanel">
+                    <Button Style="{StaticResource GlassChipButtonStyle}" Content="6" Tag="6"
+                            Command="{Binding SelectShortcutLimitCommand}" CommandParameter="6"/>
+                    <Button Style="{StaticResource GlassChipButtonStyle}" Content="9" Tag="9"
+                            Command="{Binding SelectShortcutLimitCommand}" CommandParameter="9"/>
+                    <Button Style="{StaticResource GlassChipButtonStyle}" Content="12" Tag="12"
+                            Command="{Binding SelectShortcutLimitCommand}" CommandParameter="12"/>
+                    <Button Style="{StaticResource GlassChipButtonStyle}" Content="15" Tag="15"
+                            Command="{Binding SelectShortcutLimitCommand}" CommandParameter="15"/>
+                    <Button Style="{StaticResource GlassChipButtonStyle}" Content="18" Tag="18"
+                            Command="{Binding SelectShortcutLimitCommand}" CommandParameter="18"/>
+                </WrapPanel>
+            </StackPanel>
+        </Border>
+    </StackPanel>
+</UserControl>

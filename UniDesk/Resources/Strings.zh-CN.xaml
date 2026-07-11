@@ -152,6 +152,13 @@
 
     <sys:String x:Key="Settings.Title">设置</sys:String>
     <sys:String x:Key="Settings.General">常规设置</sys:String>
+    <sys:String x:Key="Settings.NavGeneral">常规</sys:String>
+    <sys:String x:Key="Settings.NavAppearance">外观</sys:String>
+    <sys:String x:Key="Settings.NavModules">模块管理</sys:String>
+    <sys:String x:Key="Settings.NavDesktop">桌面体验</sys:String>
+    <sys:String x:Key="Settings.NavData">数据与备份</sys:String>
+    <sys:String x:Key="Settings.NavShortcuts">快捷方式</sys:String>
+    <sys:String x:Key="Settings.NavAbout">关于</sys:String>
     <sys:String x:Key="Settings.Theme">主题设置</sys:String>
     <sys:String x:Key="Settings.DisplayTitle">标题名称</sys:String>
     <sys:String x:Key="Settings.WindowOpacity">窗口透明度</sys:String>

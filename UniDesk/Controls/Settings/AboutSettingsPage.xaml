@@ -1,0 +1,21 @@
+<UserControl x:Class="UniDesk.Controls.Settings.AboutSettingsPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <StackPanel>
+        <TextBlock Text="{DynamicResource Settings.NavAbout}" Style="{StaticResource GlassPageTitleStyle}"/>
+        <Border Style="{StaticResource GlassSectionStyle}">
+            <StackPanel>
+                <TextBlock Text="UniDesk" FontSize="24" FontWeight="SemiBold"
+                           Foreground="{DynamicResource PrimaryTextBrush}"/>
+                <TextBlock Text="{Binding CurrentVersionText}" Margin="0,6,0,18"
+                           Foreground="{DynamicResource SecondaryTextBrush}"/>
+                <Button HorizontalAlignment="Left" Style="{StaticResource GlassPrimaryButtonStyle}"
+                        Content="{DynamicResource Settings.CheckUpdates}"
+                        Command="{Binding CheckForUpdatesCommand}"
+                        IsEnabled="{Binding IsCheckingForUpdates, Converter={StaticResource InverseBooleanConverter}}"/>
+                <TextBlock Text="{Binding UpdateStatusMessage}" Margin="0,14,0,0"
+                           Foreground="{DynamicResource SecondaryTextBrush}" TextWrapping="Wrap"/>
+            </StackPanel>
+        </Border>
+    </StackPanel>
+</UserControl>

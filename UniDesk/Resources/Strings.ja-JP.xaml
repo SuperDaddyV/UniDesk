@@ -152,6 +152,13 @@
 
     <sys:String x:Key="Settings.Title">設定</sys:String>
     <sys:String x:Key="Settings.General">一般</sys:String>
+    <sys:String x:Key="Settings.NavGeneral">一般</sys:String>
+    <sys:String x:Key="Settings.NavAppearance">外観</sys:String>
+    <sys:String x:Key="Settings.NavModules">モジュール</sys:String>
+    <sys:String x:Key="Settings.NavDesktop">デスクトップ</sys:String>
+    <sys:String x:Key="Settings.NavData">データとバックアップ</sys:String>
+    <sys:String x:Key="Settings.NavShortcuts">ショートカット</sys:String>
+    <sys:String x:Key="Settings.NavAbout">バージョン情報</sys:String>
     <sys:String x:Key="Settings.Theme">テーマ</sys:String>
     <sys:String x:Key="Settings.DisplayTitle">タイトル</sys:String>
     <sys:String x:Key="Settings.WindowOpacity">ウィンドウ透明度</sys:String>

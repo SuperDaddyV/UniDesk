@@ -1,10 +1,8 @@
-using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Threading;
 using UniDesk.Helpers;
 using UniDesk.ViewModels;
 
@@ -34,16 +32,13 @@ public partial class SettingsWindow : Window
 
         AppIconHelper.ApplyWindowIcon(this);
         DesktopWidgetWindowHelper.Configure(this);
+        SourceInitialized += (_, _) =>
+            BackdropMaterialService.Apply(this, BackdropKind.TransientWindow);
 
         ApplySizeFromOwner(ownerWidth, ownerHeight);
         SetDefaultPosition();
 
         _viewModel.RequestClose += _requestCloseHandler;
-        _viewModel.PropertyChanged += ViewModel_OnPropertyChanged;
-        Loaded += (_, _) =>
-        {
-            UpdateShortcutLimitChipStyles();
-        };
     }
 
     private void OnRequestClose(object? sender, bool saved)
@@ -65,13 +60,13 @@ public partial class SettingsWindow : Window
 
     private void ApplySizeFromOwner(double ownerWidth, double ownerHeight)
     {
-        const double widthRatio = 0.9;
-        const double heightRatio = 0.88;
-
-        Width = Math.Max(300, ownerWidth * widthRatio);
-        Height = Math.Min(520, Math.Max(400, ownerHeight * heightRatio));
-        MinWidth = Math.Max(280, ownerWidth * 0.75);
-        MinHeight = 380;
+        _ = ownerWidth;
+        _ = ownerHeight;
+        var workArea = SystemParameters.WorkArea;
+        Width = Math.Min(720, Math.Max(680, workArea.Width - 32));
+        Height = Math.Min(620, Math.Max(560, workArea.Height - 32));
+        MinWidth = 680;
+        MinHeight = 560;
     }
 
     private void SetDefaultPosition()
@@ -88,34 +83,10 @@ public partial class SettingsWindow : Window
             Left = workArea.Left + (workArea.Width - Width) / 2;
             Top = workArea.Top + (workArea.Height - Height) / 2;
         }
-    }
 
-    private void ViewModel_OnPropertyChanged(object? sender, PropertyChangedEventArgs e)
-    {
-        if (e.PropertyName == nameof(SettingsViewModel.ShortcutMaxCount))
-        {
-            UpdateShortcutLimitChipStyles();
-        }
-        else if (e.PropertyName == nameof(SettingsViewModel.IsEditingWeatherApi) && _viewModel.IsEditingWeatherApi)
-        {
-            Dispatcher.BeginInvoke(() =>
-            {
-                WeatherApiHostTextBox.Focus();
-                Keyboard.Focus(WeatherApiHostTextBox);
-                WeatherApiHostTextBox.SelectAll();
-            }, DispatcherPriority.Input);
-        }
-    }
-
-    private void UpdateShortcutLimitChipStyles()
-    {
-        foreach (var child in ShortcutLimitPanel.Children)
-        {
-            if (child is not Button button) continue;
-
-            var isActive = button.Tag?.ToString() == _viewModel.ShortcutMaxCount.ToString();
-            button.Style = (Style)FindResource(isActive ? "DlgChipButtonActive" : "DlgChipButton");
-        }
+        var work = SystemParameters.WorkArea;
+        Left = Math.Clamp(Left, work.Left, Math.Max(work.Left, work.Right - Width));
+        Top = Math.Clamp(Top, work.Top, Math.Max(work.Top, work.Bottom - Height));
     }
 
     private void Window_OnPreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -253,7 +224,6 @@ public partial class SettingsWindow : Window
     private void SettingsWindow_OnClosed(object? sender, EventArgs e)
     {
         _viewModel.RequestClose -= _requestCloseHandler;
-        _viewModel.PropertyChanged -= ViewModel_OnPropertyChanged;
         _viewModel.Dispose();
         ContentScrollViewer.ReleaseMouseCapture();
         EndWindowDrag();
@@ -269,14 +239,6 @@ public partial class SettingsWindow : Window
 
     private void ContentScrollViewer_OnPreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
-        var source = e.OriginalSource as DependencyObject;
-        if (IsInsideElement(source, DisplayTitleTextBox) ||
-            IsInsideElement(source, WeatherApiHostTextBox) ||
-            IsInsideElement(source, WeatherApiKeyTextBox))
-        {
-            return;
-        }
-
         if (!CanStartScrollDrag(e.OriginalSource as DependencyObject))
         {
             return;

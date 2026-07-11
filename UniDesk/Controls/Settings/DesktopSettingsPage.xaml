@@ -1,0 +1,35 @@
+<UserControl x:Class="UniDesk.Controls.Settings.DesktopSettingsPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <StackPanel>
+        <TextBlock Text="{DynamicResource Settings.NavDesktop}" Style="{StaticResource GlassPageTitleStyle}"/>
+        <Border Style="{StaticResource GlassSectionStyle}">
+            <StackPanel>
+                <TextBlock Text="{DynamicResource Settings.QuickTextClipboard}" Style="{StaticResource GlassSectionTitleStyle}"/>
+                <Grid Style="{StaticResource GlassToggleRowStyle}">
+                    <TextBlock Text="{DynamicResource Settings.EnableClipboardHistory}"
+                               Foreground="{DynamicResource PrimaryTextBrush}" VerticalAlignment="Center"/>
+                    <CheckBox HorizontalAlignment="Right" IsChecked="{Binding ClipboardHistoryEnabled}"/>
+                </Grid>
+                <Grid Style="{StaticResource GlassToggleRowStyle}">
+                    <TextBlock Text="{DynamicResource Settings.FilterSensitive}"
+                               Foreground="{DynamicResource PrimaryTextBrush}" VerticalAlignment="Center"/>
+                    <CheckBox HorizontalAlignment="Right" IsChecked="{Binding ClipboardSensitiveFilterEnabled}"/>
+                </Grid>
+                <TextBlock Text="{DynamicResource Settings.MaxSavedCount}" Style="{StaticResource GlassSettingLabelStyle}" Margin="0,4,0,8"/>
+                <WrapPanel>
+                    <Button Style="{StaticResource GlassChipButtonStyle}" Content="20"
+                            Command="{Binding SelectClipboardHistoryLimitCommand}" CommandParameter="20"/>
+                    <Button Style="{StaticResource GlassChipButtonStyle}" Content="50"
+                            Command="{Binding SelectClipboardHistoryLimitCommand}" CommandParameter="50"/>
+                    <Button Style="{StaticResource GlassChipButtonStyle}" Content="100"
+                            Command="{Binding SelectClipboardHistoryLimitCommand}" CommandParameter="100"/>
+                    <Button Style="{StaticResource GlassChipButtonStyle}" Content="200"
+                            Command="{Binding SelectClipboardHistoryLimitCommand}" CommandParameter="200"/>
+                </WrapPanel>
+                <TextBlock Text="{Binding ClipboardHistoryCurrentText}"
+                           Foreground="{DynamicResource SecondaryTextBrush}" Margin="0,4,0,0"/>
+            </StackPanel>
+        </Border>
+    </StackPanel>
+</UserControl>

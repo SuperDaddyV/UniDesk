@@ -1,0 +1,85 @@
+<UserControl x:Class="UniDesk.Controls.Settings.AppearanceSettingsPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <StackPanel>
+        <TextBlock Text="{DynamicResource Settings.NavAppearance}" Style="{StaticResource GlassPageTitleStyle}"/>
+
+        <Border Style="{StaticResource GlassSectionStyle}">
+            <StackPanel>
+                <TextBlock Text="{DynamicResource Settings.Theme}" Style="{StaticResource GlassSectionTitleStyle}"/>
+                <ItemsControl ItemsSource="{Binding ColorSchemes}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Button Width="36" Height="36" Margin="0,0,10,8"
+                                    Background="Transparent" BorderThickness="0"
+                                    ToolTip="{Binding DisplayName}"
+                                    Command="{Binding DataContext.SelectColorSchemeCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                    CommandParameter="{Binding Id}" Cursor="Hand">
+                                <Button.Template>
+                                    <ControlTemplate TargetType="Button">
+                                        <Grid>
+                                            <Ellipse Width="26" Height="26" Fill="{Binding SwatchBrush}"
+                                                     Stroke="{DynamicResource DividerBrush}" StrokeThickness="1"/>
+                                            <Ellipse x:Name="SelectedRing" Width="34" Height="34"
+                                                     Stroke="{DynamicResource AccentBrush}" StrokeThickness="2"
+                                                     Visibility="Collapsed"/>
+                                        </Grid>
+                                        <ControlTemplate.Triggers>
+                                            <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                                                <Setter TargetName="SelectedRing" Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Button.Template>
+                            </Button>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+        </Border>
+
+        <Border Style="{StaticResource GlassSectionStyle}">
+            <StackPanel>
+                <TextBlock Text="{DynamicResource Settings.DisplayTitle}" Style="{StaticResource GlassSettingLabelStyle}" Margin="0,0,0,6"/>
+                <TextBox Style="{StaticResource GlassTextBoxStyle}"
+                         Text="{Binding DisplayTitle, UpdateSourceTrigger=PropertyChanged}"
+                         MaxLength="20" Margin="0,0,0,16"/>
+
+                <Grid Margin="0,0,0,4">
+                    <TextBlock Text="{DynamicResource Settings.WindowOpacity}" Style="{StaticResource GlassSettingLabelStyle}"/>
+                    <TextBlock Text="{Binding WindowOpacity, StringFormat={}{0:P0}}" HorizontalAlignment="Right"
+                               Foreground="{DynamicResource SecondaryTextBrush}"/>
+                </Grid>
+                <Slider Style="{StaticResource GlassSliderStyle}" Minimum="0.6" Maximum="1.0"
+                        Value="{Binding WindowOpacity, Mode=TwoWay}" TickFrequency="0.05" Margin="0,0,0,14"/>
+
+                <Grid Margin="0,0,0,4">
+                    <TextBlock Text="{DynamicResource Settings.PanelWidth}" Style="{StaticResource GlassSettingLabelStyle}"/>
+                    <TextBlock Text="{Binding PanelWidth, StringFormat={}{0:F0}px}" HorizontalAlignment="Right"
+                               Foreground="{DynamicResource SecondaryTextBrush}"/>
+                </Grid>
+                <Slider Style="{StaticResource GlassSliderStyle}" Minimum="320" Maximum="520"
+                        Value="{Binding PanelWidth, Mode=TwoWay}" TickFrequency="20" Margin="0,0,0,14"/>
+
+                <Grid Margin="0,0,0,4">
+                    <TextBlock Text="{DynamicResource Settings.PanelHeight}" Style="{StaticResource GlassSettingLabelStyle}"/>
+                    <TextBlock Text="{Binding PanelHeight, StringFormat={}{0:F0}px}" HorizontalAlignment="Right"
+                               Foreground="{DynamicResource SecondaryTextBrush}"/>
+                </Grid>
+                <Slider Style="{StaticResource GlassSliderStyle}" Minimum="560" Maximum="1040"
+                        Value="{Binding PanelHeight, Mode=TwoWay}" TickFrequency="20" Margin="0,0,0,14"/>
+
+                <Grid Margin="0,0,0,4">
+                    <TextBlock Text="{DynamicResource Settings.FontSize}" Style="{StaticResource GlassSettingLabelStyle}"/>
+                    <TextBlock Text="{Binding FontScaleLabel}" HorizontalAlignment="Right"
+                               Foreground="{DynamicResource SecondaryTextBrush}"/>
+                </Grid>
+                <Slider Style="{StaticResource GlassSliderStyle}" Minimum="0.9" Maximum="1.15"
+                        Value="{Binding FontScale, Mode=TwoWay}" TickFrequency="0.125"/>
+            </StackPanel>
+        </Border>
+    </StackPanel>
+</UserControl>

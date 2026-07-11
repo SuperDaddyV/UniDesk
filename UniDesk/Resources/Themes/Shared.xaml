@@ -78,6 +78,67 @@
         <Setter Property="VerticalAlignment" Value="Center"/>
     </Style>
 
+    <Style x:Key="GlassSectionTitleStyle" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="14"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
+        <Setter Property="Margin" Value="0,0,0,12"/>
+    </Style>
+
+    <Style x:Key="GlassChipButtonStyle" TargetType="Button">
+        <Setter Property="MinWidth" Value="52"/>
+        <Setter Property="Height" Value="30"/>
+        <Setter Property="Margin" Value="0,0,8,8"/>
+        <Setter Property="Padding" Value="12,0"/>
+        <Setter Property="Background" Value="{DynamicResource GlassHighlightBrush}"/>
+        <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource DividerBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="ChipBorder"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="8"
+                            Padding="{TemplateBinding Padding}">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="ChipBorder" Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="ChipBorder" Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
+                            <Setter TargetName="ChipBorder" Property="BorderThickness" Value="2"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="GlassSliderStyle" TargetType="Slider">
+        <Setter Property="Height" Value="22"/>
+        <Setter Property="Margin" Value="0,6,0,0"/>
+        <Setter Property="IsMoveToPointEnabled" Value="True"/>
+        <Setter Property="IsSnapToTickEnabled" Value="True"/>
+    </Style>
+
+    <Style x:Key="GlassChipButtonActiveStyle" TargetType="Button" BasedOn="{StaticResource GlassChipButtonStyle}">
+        <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
+        <Setter Property="Background" Value="{DynamicResource GlassHighlightBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
+        <Setter Property="BorderThickness" Value="2"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+    </Style>
+
+    <Style x:Key="GlassToggleRowStyle" TargetType="Grid">
+        <Setter Property="Margin" Value="0,0,0,12"/>
+    </Style>
+
     <Style x:Key="ModuleCardStyle" TargetType="Border">
         <Setter Property="Background" Value="{DynamicResource ModuleBackgroundBrush}"/>
         <Setter Property="CornerRadius" Value="10"/>
