@@ -2,11 +2,11 @@
 
 **Date:** 2026-07-11  
 **Status:** Approved for implementation  
-**Scope:** Visual redesign only. No new end-user features, data schema changes, or workflow changes.
+**Scope:** Shared visual redesign integrated with the separately specified global search and system-theme features. No database schema changes.
 
 ## Goal
 
-Give UniDesk v2.0.0 a visibly coherent identity by refining the main desktop sidebar and rebuilding Settings as a medium-width glass settings center. Preserve all existing commands, persistence semantics, module behavior, and supported Windows versions.
+Give UniDesk v2.0.0 a visibly coherent identity by refining the main desktop sidebar and rebuilding Settings as a medium-width glass settings center. Reserve integrated surfaces for the approved global search and system-theme features while preserving existing module behavior and supported Windows versions.
 
 ## Product Direction
 
@@ -45,7 +45,7 @@ The main window keeps the current module controls and data bindings. The visual 
 - Keep the time/weather module as the leading visual card and keep all modules in one vertical column.
 - Preserve current panel width, height, scrolling, drag behavior, top-most behavior, lock behavior, and collapse behavior.
 
-No module is added, removed, renamed, or functionally changed.
+No dashboard module is added, removed, renamed, or functionally changed. Global search is a title-bar workspace rather than a dashboard module.
 
 ## Settings Center
 
@@ -59,7 +59,7 @@ Settings uses a two-column layout:
 The navigation pages are:
 
 1. General: language, startup, and weather API settings.
-2. Appearance: theme, display title, background opacity, panel width, panel height, and font scale.
+2. Appearance: theme, follow-system theme settings, display title, background opacity, panel width, panel height, and font scale.
 3. Modules: module visibility and order.
 4. Desktop experience: clipboard-history and sensitive-content controls.
 5. Data and backup: backup, restore, clear history, reset layout, and reset defaults.
@@ -101,7 +101,7 @@ Implementation is accepted only when:
 
 ## Out of Scope
 
-- Global search, command palette, reminders, notifications, or other new product features.
+- Command palette, reminders, notifications, or other product features beyond the separately approved global search and system-theme specifications.
 - Database schema or data migration.
 - Changes to backup semantics.
 - WinUI migration, Windows App SDK, new UI framework, or new NuGet packages.
