@@ -1,5 +1,33 @@
 # UniDesk Release Notes
 
+## v2.0.0
+
+This major release hardens runtime stability and local-data privacy, introduces validated backup import, and restructures the dashboard into independently testable modules.
+
+### Changes
+
+- Added fatal UI exception shutdown coordination, background system-metric sampling, reliable single-instance activation, seven-day log retention, and Todo deletion confirmation.
+- Protected the weather API key and clipboard history with Windows DPAPI, including an atomic migration path for existing plaintext values.
+- Added privacy-safe v5 backups, semantic import validation, import preview, and transactional restore behavior.
+- Removed the insecure IP-location fallback and retained only secure location providers.
+- Split hardware readers and the six dashboard modules into focused services, view models, and WPF controls, with Windows CI build and test checks.
+- Fixed Quick Note closing so auto-save completes before the editor closes; renamed the primary action from Close to Done.
+- Fixed the Todo completion circle so clicking it reliably toggles completion.
+- Excluded debug symbol files from the installer.
+- Updated application, installer, and README version references to `2.0.0`.
+
+### 中文说明
+
+- 新增致命 UI 异常退出协调、后台系统指标采样、可靠的单实例激活、7 天日志保留和待办删除确认。
+- 使用 Windows DPAPI 保护天气 API Key 与剪贴板历史，并以原子方式迁移已有明文数据。
+- 新增隐私安全的 v5 备份、导入语义校验、导入预览和事务化恢复。
+- 移除不安全的 IP 定位兜底，仅保留安全定位来源。
+- 将硬件读取器和六个仪表盘模块拆分为独立 Service、ViewModel 与 WPF 控件，并增加 Windows CI 构建和测试。
+- 修复快速便签关闭时的致命异常，确保自动保存完成后再关闭，并将主操作从「关闭」改为「完成」。
+- 修复待办完成圆圈无法点击的问题。
+- 安装包不再包含调试符号文件。
+- 将应用、安装包和 README 版本引用更新为 `2.0.0`。
+
 ## v1.4.2
 
 This patch release improves clipboard copy reliability, hardware monitor compatibility, and panel height settings after v1.4.1.

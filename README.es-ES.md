@@ -101,7 +101,7 @@ Descarga el instalador más reciente desde [GitHub Releases](https://github.com/
 Ejemplo del instalador actual:
 
 ```powershell
-UniDesk_Setup_1.4.2.exe
+UniDesk_Setup_2.0.0.exe
 ```
 
 Se recomienda cerrar UniDesk antes de instalar o actualizar.

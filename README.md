@@ -101,7 +101,7 @@ Download the latest installer from [GitHub Releases](https://github.com/SuperDad
 Current installer example:
 
 ```powershell
-UniDesk_Setup_1.4.2.exe
+UniDesk_Setup_2.0.0.exe
 ```
 
 It is recommended to exit any running UniDesk instance before installing or upgrading.

@@ -1,7 +1,7 @@
 # UniDesk 设计文档
 
-**版本**: 1.4.2
-**最后更新**: 2026年7月10日
+**版本**: 2.0.0
+**最后更新**: 2026年7月11日
 **项目**: UniDesk - Windows 11 桌面侧边助手应用
 
 ---
@@ -107,6 +107,9 @@ UniDesk 是运行于 Windows 11 的桌面侧边助手应用，以悬浮右侧面
 - 六个可见模块分别由 `TimeWeatherViewModel`、`HardwareMonitorViewModel`、`ShortcutsViewModel`、`TodosViewModel`、`QuickNotesViewModel`、`QuickTextViewModel` 管理状态与命令。
 - 六个 WPF 视图分别位于 `Controls/*ModuleView.xaml`；主窗口只组合控件并按 `DashboardModuleIds` 管理显示、顺序和高度。
 - 快捷方式鼠标排序、文件拖放和添加弹层状态归 `ShortcutsModuleView`／`ShortcutsViewModel`；主窗口 code-behind 不处理模块内部输入。
+- 待办完成圆圈由 `TodosModuleView` 的显式鼠标处理器调用 `TodosViewModel.ToggleTodoCommand`，不使用脱离可视树后无法解析祖先绑定的 `MouseBinding`。
+- 便签编辑器的主操作文案为「完成」；窗口关闭必须先完成保存清理，保存失败时保持编辑器打开，成功后再调度到 Dispatcher 下一轮执行真正关闭，不得在 `OnClosing` 调用栈内递归 `Close()`。
+- `QuickNoteService` 更新和删除返回实际成功状态；编辑器与列表只有在数据库确实受影响后才关闭或刷新。
 - 子模块自行持有事件、计时器和取消源，并在 `Dispose()` 中解除订阅；主壳统一触发子模块清理。
 
 ### 系统指标读取边界

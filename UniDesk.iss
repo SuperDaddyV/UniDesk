@@ -5,7 +5,7 @@
 ;   dotnet publish UniDesk\UniDesk.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=false -o publish\win-x64-clean
 
 #define MyAppName "UniDesk"
-#define MyAppVersion "1.4.2"
+#define MyAppVersion "2.0.0"
 #define MyAppPublisher "UniDesk"
 #define MyAppURL "https://github.com/SuperDaddyV/UniDesk"
 #define MyAppExeName "UniDesk.exe"
