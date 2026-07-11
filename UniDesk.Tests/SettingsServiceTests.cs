@@ -3,6 +3,7 @@ using UniDesk.Services;
 using UniDesk.Helpers;
 using System.IO;
 using System.Collections.Concurrent;
+using System.Reflection;
 using Microsoft.Data.Sqlite;
 
 namespace UniDesk.Tests;
@@ -247,6 +248,30 @@ public class SettingsServiceTests
         settingsService.Dispose();
     }
 
+    [Fact]
+    public async Task QueueSave_ShouldNotDisposeCancellationSourceBeforeItsFlushTaskCompletes()
+    {
+        var databaseService = new BlockingDatabaseService();
+        var settingsService = new SettingsService(databaseService);
+
+        settingsService.SetValue("First", "1");
+        await databaseService.WriteStarted.Task.WaitAsync(TimeSpan.FromSeconds(2));
+
+        var ctsField = typeof(SettingsService).GetField("_flushCts", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        var taskField = typeof(SettingsService).GetField("_flushTask", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        var firstCts = Assert.IsType<CancellationTokenSource>(ctsField.GetValue(settingsService));
+        var firstTask = Assert.IsAssignableFrom<Task>(taskField.GetValue(settingsService));
+
+        settingsService.SetValue("Second", "2");
+
+        Assert.False(firstTask.IsCompleted);
+        Assert.Null(Record.Exception(() => _ = firstCts.Token));
+
+        databaseService.AllowWrite.TrySetResult();
+        await settingsService.FlushPendingSavesAsync();
+        settingsService.Dispose();
+    }
+
     private sealed class RecoverableDatabaseService : IDatabaseService
     {
         public ConcurrentDictionary<string, string?> Values { get; } = new();
@@ -268,6 +293,37 @@ public class SettingsServiceTests
 
             Values[(string)parameters[0]!] = (string?)parameters[1];
             return Task.FromResult(1);
+        }
+
+        public Task<List<T>> QueryAsync<T>(
+            string sql,
+            Func<SqliteDataReader, T> map,
+            params object?[] parameters) => Task.FromResult(new List<T>());
+
+        public Task<T?> QuerySingleAsync<T>(
+            string sql,
+            Func<SqliteDataReader, T> map,
+            params object?[] parameters) => Task.FromResult<T?>(default);
+
+        public Task<T> ExecuteInTransactionAsync<T>(Func<IDatabaseSession, Task<T>> operation) =>
+            throw new NotSupportedException();
+    }
+
+    private sealed class BlockingDatabaseService : IDatabaseService
+    {
+        public TaskCompletionSource WriteStarted { get; } =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public TaskCompletionSource AllowWrite { get; } =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public Task InitializeAsync() => Task.CompletedTask;
+
+        public async Task<int> ExecuteNonQueryAsync(string sql, params object?[] parameters)
+        {
+            WriteStarted.TrySetResult();
+            await AllowWrite.Task;
+            return 1;
         }
 
         public Task<List<T>> QueryAsync<T>(

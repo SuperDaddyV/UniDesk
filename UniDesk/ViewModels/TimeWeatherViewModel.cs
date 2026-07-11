@@ -18,7 +18,9 @@ public partial class TimeWeatherViewModel : ObservableObject, IDisposable
     private readonly INotificationService _notificationService;
     private readonly ILocalizationService _localizationService;
     private readonly DispatcherTimer _weatherRefreshTimer;
+    private readonly object _weatherRefreshLock = new();
     private CancellationTokenSource? _weatherRefreshCts;
+    private int _weatherRefreshGeneration;
     private DateTime _calendarDisplayMonth = DateTime.Today;
     private DateTime _calendarSelectedDate = DateTime.Today;
     private bool _disposed;
@@ -282,46 +284,117 @@ public partial class TimeWeatherViewModel : ObservableObject, IDisposable
     
     private async Task RefreshWeatherCoreAsync(bool notifyUser)
     {
-        if (!IsEnabled)
+        if (!IsEnabled || _disposed)
         {
             return;
         }
-    
-        _weatherRefreshCts?.Cancel();
-        _weatherRefreshCts?.Dispose();
-        _weatherRefreshCts = new CancellationTokenSource();
-    
-        if (string.IsNullOrEmpty(_weatherService.GetEffectiveApiKey()))
+
+        var refreshCts = new CancellationTokenSource();
+        CancellationTokenSource? previousCts;
+        int generation;
+        lock (_weatherRefreshLock)
         {
-            ApplyWeatherInfo(await _weatherService.GetCachedWeatherAsync());
-            WeatherStatusMessage = L("Weather.ConfigureApiKey");
-            return;
+            if (_disposed)
+            {
+                refreshCts.Dispose();
+                return;
+            }
+
+            generation = ++_weatherRefreshGeneration;
+            previousCts = _weatherRefreshCts;
+            _weatherRefreshCts = refreshCts;
         }
-    
-        IsWeatherLoading = true;
-        WeatherStatusMessage = string.Empty;
-    
+
+        CancelRefreshSafely(previousCts);
+
         try
         {
-            var info = await _weatherService.RefreshWeatherAsync(_weatherRefreshCts.Token, notifyUser);
-            ApplyWeatherInfo(info ?? await _weatherService.GetCachedWeatherAsync());
+            if (string.IsNullOrEmpty(_weatherService.GetEffectiveApiKey()))
+            {
+                var cached = await _weatherService.GetCachedWeatherAsync();
+                if (IsCurrentWeatherRefresh(refreshCts, generation))
+                {
+                    ApplyWeatherInfo(cached);
+                    WeatherStatusMessage = L("Weather.ConfigureApiKey");
+                }
+
+                return;
+            }
+
+            if (IsCurrentWeatherRefresh(refreshCts, generation))
+            {
+                IsWeatherLoading = true;
+                WeatherStatusMessage = string.Empty;
+            }
+
+            var info = await _weatherService.RefreshWeatherAsync(refreshCts.Token, notifyUser);
+            var resolvedInfo = info ?? await _weatherService.GetCachedWeatherAsync();
+            if (IsCurrentWeatherRefresh(refreshCts, generation))
+            {
+                ApplyWeatherInfo(resolvedInfo);
+            }
         }
         catch (OperationCanceledException)
         {
-            ApplyWeatherInfo(await _weatherService.GetCachedWeatherAsync());
+            var cached = await _weatherService.GetCachedWeatherAsync();
+            if (IsCurrentWeatherRefresh(refreshCts, generation))
+            {
+                ApplyWeatherInfo(cached);
+            }
         }
         catch (Exception ex)
         {
             Logger.LogError(ex, "TimeWeatherViewModel.RefreshWeather");
-            ApplyWeatherInfo(await _weatherService.GetCachedWeatherAsync());
-            if (notifyUser)
+            var cached = await _weatherService.GetCachedWeatherAsync();
+            if (IsCurrentWeatherRefresh(refreshCts, generation))
             {
-                _notificationService.ShowWarningMessage(L("Weather.RefreshFailed"));
+                ApplyWeatherInfo(cached);
+                if (notifyUser)
+                {
+                    _notificationService.ShowWarningMessage(L("Weather.RefreshFailed"));
+                }
             }
         }
         finally
         {
-            IsWeatherLoading = false;
+            var isCurrent = false;
+            lock (_weatherRefreshLock)
+            {
+                if (generation == _weatherRefreshGeneration &&
+                    ReferenceEquals(_weatherRefreshCts, refreshCts))
+                {
+                    _weatherRefreshCts = null;
+                    isCurrent = true;
+                }
+            }
+
+            if (isCurrent)
+            {
+                IsWeatherLoading = false;
+            }
+
+            refreshCts.Dispose();
+        }
+    }
+
+    private bool IsCurrentWeatherRefresh(CancellationTokenSource refreshCts, int generation)
+    {
+        lock (_weatherRefreshLock)
+        {
+            return !_disposed &&
+                   generation == _weatherRefreshGeneration &&
+                   ReferenceEquals(_weatherRefreshCts, refreshCts);
+        }
+    }
+
+    private static void CancelRefreshSafely(CancellationTokenSource? refreshCts)
+    {
+        try
+        {
+            refreshCts?.Cancel();
+        }
+        catch (ObjectDisposedException)
+        {
         }
     }
     
@@ -432,16 +505,21 @@ public partial class TimeWeatherViewModel : ObservableObject, IDisposable
 
     public void Dispose()
     {
-        if (_disposed) return;
-        _disposed = true;
+        CancellationTokenSource? refreshCts;
+        lock (_weatherRefreshLock)
+        {
+            if (_disposed) return;
+            _disposed = true;
+            _weatherRefreshGeneration++;
+            refreshCts = _weatherRefreshCts;
+            _weatherRefreshCts = null;
+        }
+
         _localizationService.LanguageChanged -= LocalizationService_OnLanguageChanged;
         _clockService.TimeChanged -= ClockService_OnTimeChanged;
         _weatherRefreshTimer.Stop();
         _weatherRefreshTimer.Tick -= WeatherRefreshTimer_OnTick;
-        var refreshCts = _weatherRefreshCts;
-        _weatherRefreshCts = null;
-        try { refreshCts?.Cancel(); } catch (ObjectDisposedException) { }
-        refreshCts?.Dispose();
+        CancelRefreshSafely(refreshCts);
         _clockService.Stop();
     }
 }

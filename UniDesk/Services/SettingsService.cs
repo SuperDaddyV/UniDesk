@@ -164,7 +164,6 @@ public class SettingsService : ISettingsService, IDisposable
         }
 
         previousCts?.Cancel();
-        previousCts?.Dispose();
     }
 
     private async Task FlushAfterDelayAsync(CancellationTokenSource cancellationSource)
@@ -186,20 +185,15 @@ public class SettingsService : ISettingsService, IDisposable
         }
         finally
         {
-            var shouldDispose = false;
             lock (_stateLock)
             {
                 if (ReferenceEquals(_flushCts, cancellationSource))
                 {
                     _flushCts = null;
-                    shouldDispose = true;
                 }
             }
 
-            if (shouldDispose)
-            {
-                cancellationSource.Dispose();
-            }
+            cancellationSource.Dispose();
         }
     }
 
@@ -327,8 +321,14 @@ public class SettingsService : ISettingsService, IDisposable
         }
 
         flushCts?.Cancel();
-        flushTask?.GetAwaiter().GetResult();
-        flushCts?.Dispose();
+        if (flushTask != null)
+        {
+            flushTask.GetAwaiter().GetResult();
+        }
+        else
+        {
+            flushCts?.Dispose();
+        }
         FlushPendingSaves();
     }
 }

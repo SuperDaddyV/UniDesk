@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Reflection;
 using UniDesk.Models;
 using UniDesk.Services;
 using UniDesk.ViewModels;
@@ -8,6 +9,19 @@ namespace UniDesk.Tests;
 
 public class TimeWeatherViewModelTests
 {
+    [Fact]
+    public void CancelRefreshSafely_WhenSourceIsAlreadyDisposed_ShouldNotThrow()
+    {
+        var method = typeof(TimeWeatherViewModel).GetMethod(
+            "CancelRefreshSafely",
+            BindingFlags.Static | BindingFlags.NonPublic);
+        using var cts = new CancellationTokenSource();
+        cts.Dispose();
+
+        Assert.NotNull(method);
+        Assert.Null(Record.Exception(() => method.Invoke(null, [cts])));
+    }
+
     [Fact]
     public void ClockAndCalendar_ShouldFormatAndNavigate()
     {
@@ -61,6 +75,52 @@ public class TimeWeatherViewModelTests
     }
 
     [Fact]
+    public async Task SupersededRefresh_WhenOldCompletesFirst_ShouldKeepLoadingForCurrentRequest()
+    {
+        var weather = new FakeWeatherService
+        {
+            ApiKey = "key",
+            RefreshResult = new WeatherInfo { City = "Initial" }
+        };
+        using var viewModel = CreateViewModel(new FakeClockService(), weather);
+        var oldResponse = weather.EnqueueRefresh();
+        var currentResponse = weather.EnqueueRefresh();
+
+        var oldRefresh = viewModel.RefreshAfterSettingsAsync();
+        var currentRefresh = viewModel.RefreshAfterSettingsAsync();
+        oldResponse.SetResult(new WeatherInfo { City = "Old" });
+        await oldRefresh;
+
+        Assert.True(viewModel.IsWeatherLoading);
+
+        currentResponse.SetResult(new WeatherInfo { City = "Current" });
+        await currentRefresh;
+    }
+
+    [Fact]
+    public async Task SupersededRefresh_WhenOldCompletesLast_ShouldKeepCurrentResult()
+    {
+        var weather = new FakeWeatherService
+        {
+            ApiKey = "key",
+            RefreshResult = new WeatherInfo { City = "Initial" }
+        };
+        using var viewModel = CreateViewModel(new FakeClockService(), weather);
+        var oldResponse = weather.EnqueueRefresh();
+        var currentResponse = weather.EnqueueRefresh();
+
+        var oldRefresh = viewModel.RefreshAfterSettingsAsync();
+        var currentRefresh = viewModel.RefreshAfterSettingsAsync();
+        currentResponse.SetResult(new WeatherInfo { City = "Current" });
+        await currentRefresh;
+        oldResponse.SetResult(new WeatherInfo { City = "Old" });
+        await oldRefresh;
+
+        Assert.Equal("Current", viewModel.WeatherCity);
+        Assert.False(viewModel.IsWeatherLoading);
+    }
+
+    [Fact]
     public void Dispose_ShouldStopClockAndIgnoreFurtherTicks()
     {
         var clock = new FakeClockService { CurrentTime = new DateTime(2026, 1, 1, 10, 0, 0) };
@@ -95,12 +155,22 @@ public class TimeWeatherViewModelTests
 
     private sealed class FakeWeatherService : IWeatherService
     {
+        private readonly Queue<TaskCompletionSource<WeatherInfo?>> _queuedRefreshes = new();
+
         public WeatherInfo? Cached { get; set; }
         public WeatherInfo? RefreshResult { get; set; }
         public string ApiKey { get; set; } = string.Empty;
         public Task<WeatherInfo?> GetWeatherAsync(string city, CancellationToken cancellationToken = default, bool notifyUser = true) => Task.FromResult(RefreshResult);
         public Task<WeatherInfo?> GetCachedWeatherAsync() => Task.FromResult(Cached);
-        public Task<WeatherInfo?> RefreshWeatherAsync(CancellationToken cancellationToken = default, bool notifyUser = true) => Task.FromResult(RefreshResult);
+        public TaskCompletionSource<WeatherInfo?> EnqueueRefresh()
+        {
+            var response = new TaskCompletionSource<WeatherInfo?>(TaskCreationOptions.RunContinuationsAsynchronously);
+            _queuedRefreshes.Enqueue(response);
+            return response;
+        }
+
+        public Task<WeatherInfo?> RefreshWeatherAsync(CancellationToken cancellationToken = default, bool notifyUser = true) =>
+            _queuedRefreshes.Count > 0 ? _queuedRefreshes.Dequeue().Task : Task.FromResult(RefreshResult);
         public void CancelRefresh() { }
         public Task SetCityAsync(string city) => Task.CompletedTask;
         public Task<QWeatherValidationResult> ValidateApiKeyAsync(string apiKey, string? apiHost = null, CancellationToken cancellationToken = default) =>
