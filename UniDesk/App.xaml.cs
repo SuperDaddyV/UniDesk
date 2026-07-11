@@ -272,6 +272,7 @@ public partial class App : Application
         services.AddSingleton<IUpdateService, GitHubUpdateService>();
         services.AddSingleton<IWindowService, WindowService>();
         services.AddSingleton<ITrayService, TrayService>();
+        services.AddSingleton<IHotkeyPlatform, Win32HotkeyPlatform>();
         services.AddSingleton<IHotkeyService, HotkeyService>();
         services.AddSingleton<ISystemThemeService, SystemThemeService>();
         services.AddSingleton<ISearchService, SearchService>();
