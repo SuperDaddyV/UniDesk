@@ -268,41 +268,6 @@ public partial class MainWindow : Window
 
     private void MinimizeButton_OnClick(object sender, RoutedEventArgs e) => Hide();
 
-    private void ClockHotspot_OnMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
-    {
-        if (e.ChangedButton != MouseButton.Left)
-        {
-            return;
-        }
-
-        _viewModel.ToggleCalendarPopupCommand.Execute(null);
-        e.Handled = true;
-    }
-
-    private void PreviousCalendarMonthButton_OnClick(object sender, RoutedEventArgs e)
-    {
-        _viewModel.PreviousCalendarMonthCommand.Execute(null);
-        e.Handled = true;
-    }
-
-    private void NextCalendarMonthButton_OnClick(object sender, RoutedEventArgs e)
-    {
-        _viewModel.NextCalendarMonthCommand.Execute(null);
-        e.Handled = true;
-    }
-
-    private void CloseCalendarButton_OnClick(object sender, RoutedEventArgs e)
-    {
-        _viewModel.IsCalendarPopupOpen = false;
-        e.Handled = true;
-    }
-
-    private void CalendarDayButton_OnClick(object sender, RoutedEventArgs e)
-    {
-        _viewModel.SelectCalendarDateCommand.Execute((sender as FrameworkElement)?.DataContext as CalendarDayItem);
-        e.Handled = true;
-    }
-
     private void OnScrollViewerPreviewMouseWheel(object sender, MouseWheelEventArgs e)
     {
         if (sender is ScrollViewer scrollViewer)
