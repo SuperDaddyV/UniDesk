@@ -59,7 +59,7 @@ Name: "{localappdata}\UniDesk\cache"
 
 [Files]
 ; Package the release output, including dlls, runtimeconfig, deps and native runtimes.
-Source: "{#MyAppSourceDir}\*"; DestDir: "{app}"; Excludes: "icon\*"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "{#MyAppSourceDir}\*"; DestDir: "{app}"; Excludes: "icon\*;*.pdb"; Flags: ignoreversion recursesubdirs createallsubdirs
 ; Package the complete icon assets from the project source directory.
 Source: "{#MyAppIconSourceDir}\*"; DestDir: "{app}\icon"; Flags: ignoreversion recursesubdirs createallsubdirs
 
