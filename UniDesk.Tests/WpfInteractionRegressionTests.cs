@@ -1,3 +1,5 @@
+using System.Text.RegularExpressions;
+
 namespace UniDesk.Tests;
 
 public class WpfInteractionRegressionTests
@@ -29,6 +31,65 @@ public class WpfInteractionRegressionTests
         Assert.Contains("MouseLeftButtonUp=\"TodoCheck_OnMouseLeftButtonUp\"", viewXaml, StringComparison.Ordinal);
         Assert.DoesNotContain("<Ellipse.InputBindings>", viewXaml, StringComparison.Ordinal);
         Assert.Contains("ToggleTodoCommand.Execute", viewCode, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void SettingsWindow_ShouldUseIndependentSevenPageGlassLayout()
+    {
+        var settingsXaml = ReadProjectFile("UniDesk", "SettingsWindow.xaml");
+
+        Assert.Contains("Width=\"720\"", settingsXaml, StringComparison.Ordinal);
+        Assert.Contains("Height=\"620\"", settingsXaml, StringComparison.Ordinal);
+        Assert.Contains("MinWidth=\"680\"", settingsXaml, StringComparison.Ordinal);
+        Assert.Contains("MinHeight=\"560\"", settingsXaml, StringComparison.Ordinal);
+        Assert.Contains("x:Name=\"SettingsNavigation\"", settingsXaml, StringComparison.Ordinal);
+        Assert.Contains("x:Name=\"SettingsPages\"", settingsXaml, StringComparison.Ordinal);
+        Assert.Equal(7, Regex.Matches(settingsXaml, "<TabItem").Count);
+        Assert.DoesNotContain("x:Key=\"DlgBackground\"", settingsXaml, StringComparison.Ordinal);
+        Assert.Contains("Style=\"{StaticResource GlassWindowBorderStyle}\"", settingsXaml, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void MainWindow_ShouldApplyOpacityOnlyToGlassBackground()
+    {
+        var mainXaml = ReadProjectFile("UniDesk", "MainWindow.xaml");
+        var normalized = mainXaml.Replace("\r\n", "\n", StringComparison.Ordinal);
+
+        Assert.Contains("x:Name=\"MainGlassBackground\"", mainXaml, StringComparison.Ordinal);
+        Assert.Contains("Opacity=\"{Binding WindowOpacity}\"", mainXaml, StringComparison.Ordinal);
+        Assert.DoesNotMatch(
+            "x:Name=\"WindowContainer\"[^>]*Opacity=",
+            normalized);
+    }
+
+    [Fact]
+    public void SettingsNavigation_ShouldBeLocalizedInEveryLanguage()
+    {
+        var keys = new[]
+        {
+            "Settings.NavGeneral",
+            "Settings.NavAppearance",
+            "Settings.NavModules",
+            "Settings.NavDesktop",
+            "Settings.NavData",
+            "Settings.NavShortcuts",
+            "Settings.NavAbout"
+        };
+
+        foreach (var languageFile in new[]
+                 {
+                     "Strings.zh-CN.xaml",
+                     "Strings.en-US.xaml",
+                     "Strings.ja-JP.xaml",
+                     "Strings.es-ES.xaml"
+                 })
+        {
+            var resources = ReadProjectFile("UniDesk", "Resources", languageFile);
+            foreach (var key in keys)
+            {
+                Assert.Contains($"x:Key=\"{key}\"", resources, StringComparison.Ordinal);
+            }
+        }
     }
 
     private static string ReadProjectFile(params string[] segments) =>
