@@ -32,8 +32,6 @@ public partial class SettingsWindow : Window
 
         AppIconHelper.ApplyWindowIcon(this);
         DesktopWidgetWindowHelper.Configure(this);
-        SourceInitialized += (_, _) =>
-            BackdropMaterialService.Apply(this, BackdropKind.TransientWindow);
 
         ApplySizeFromOwner(ownerWidth, ownerHeight);
         SetDefaultPosition();

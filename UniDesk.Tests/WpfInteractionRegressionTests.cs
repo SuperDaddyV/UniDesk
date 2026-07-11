@@ -63,6 +63,20 @@ public class WpfInteractionRegressionTests
     }
 
     [Fact]
+    public void LayeredGlassWindows_ShouldNotRequestRectangularDwmBackdrop()
+    {
+        var mainXaml = ReadProjectFile("UniDesk", "MainWindow.xaml");
+        var settingsXaml = ReadProjectFile("UniDesk", "SettingsWindow.xaml");
+        var mainCode = ReadProjectFile("UniDesk", "MainWindow.xaml.cs");
+        var settingsCode = ReadProjectFile("UniDesk", "SettingsWindow.xaml.cs");
+
+        Assert.Contains("AllowsTransparency=\"True\"", mainXaml, StringComparison.Ordinal);
+        Assert.Contains("AllowsTransparency=\"True\"", settingsXaml, StringComparison.Ordinal);
+        Assert.DoesNotContain("BackdropMaterialService.Apply", mainCode, StringComparison.Ordinal);
+        Assert.DoesNotContain("BackdropMaterialService.Apply", settingsCode, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void SettingsNavigation_ShouldBeLocalizedInEveryLanguage()
     {
         var keys = new[]

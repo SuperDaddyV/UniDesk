@@ -1,7 +1,7 @@
 # UniDesk Glass 2.0 Interface Design
 
 **Date:** 2026-07-11  
-**Status:** Approved for implementation  
+**Status:** Implemented; compatibility amendment recorded on 2026-07-12
 **Scope:** Shared visual redesign integrated with the separately specified global search and system-theme features. No database schema changes.
 
 ## Goal
@@ -27,13 +27,11 @@ The application uses one shared glass system across the main window and Settings
 - Theme tint, primary text, secondary text, divider, highlight, accent, card, input, hover, and selection brushes come from the application theme dictionaries. Settings must not define a second hard-coded light palette.
 - Hover, pressed, selected, disabled, and keyboard-focus states must remain distinguishable on bright and dark wallpapers.
 
-## System Backdrop and Fallback
+## Transparent Backdrop
 
-On Windows 11 build 22621 or later, UniDesk attempts to apply the public DWM system backdrop attribute. The main window requests the long-lived main-window material; Settings requests the transient-window material. The call is best-effort and never blocks window creation.
+The main window and Settings are WPF layered windows (`AllowsTransparency=True`). Their glass surface is rendered exclusively with the existing translucent WPF theme brushes so the saved opacity value reveals the real desktop consistently on supported Windows versions. No Windows App SDK or other NuGet dependency is added.
 
-Windows 10, older Windows 11 builds, disabled composition, remote sessions, and failed DWM calls use the existing WPF translucent theme brushes as the fallback. No Windows App SDK or other NuGet dependency is added.
-
-The fallback glass layer is always present at a low tint so content remains readable if the system material is unavailable. The system backdrop helper owns only capability detection and DWM calls; it does not own theme selection or settings persistence.
+The Windows 11 `DWMWA_SYSTEMBACKDROP_TYPE` material must not be applied to these layered windows. Validation on 2026-07-12 showed that combining the DWM system material with WPF layered transparency creates an opaque rectangular host surface: lowering opacity reveals a white or black system layer instead of the desktop, and the rectangle protrudes beyond the rounded WPF content. Keeping one WPF composition path preserves both true transparency and transparent outer corners.
 
 ## Main Window
 
@@ -81,7 +79,7 @@ No user-facing label may be hard-coded in `SettingsWindow.xaml` except product n
 
 ## Error Handling and Accessibility
 
-- DWM backdrop failures are swallowed only after returning the fallback result; window creation continues.
+- Window creation does not depend on DWM backdrop availability or calls.
 - Existing save, cancel, API editing, backup, restore, and update error behavior is unchanged.
 - Navigation items expose readable text and keyboard focus.
 - Text contrast is provided by opaque text brushes and a tinted content layer, not by reducing text opacity.
@@ -93,7 +91,7 @@ Implementation is accepted only when:
 
 - Structural regression tests prove that Settings uses the shared glass resources, seven navigation pages, fixed dimensions, and a fixed footer.
 - Structural regression tests prove that the main content container no longer binds `Opacity` and that only the background layer binds `WindowOpacity`.
-- Backdrop capability tests cover Windows 10, Windows 11 before build 22621, and Windows 11 build 22621 or later.
+- A regression test proves that both layered glass windows do not request a rectangular DWM backdrop.
 - All localized dictionaries contain the new navigation keys.
 - `dotnet build UniDesk.sln -c Release --no-restore` succeeds with zero errors and warnings.
 - `dotnet test UniDesk.sln -c Release --no-build` passes in full.

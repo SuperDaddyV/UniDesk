@@ -6,6 +6,10 @@ This major release hardens runtime stability and local-data privacy, introduces 
 
 ### Changes
 
+- Upgraded the main panel and seven-page Settings center to the shared Glass 2.0 visual system.
+- Added five-kind global search for Quick Notes, Todos, clipboard history, snippets, and shortcuts.
+- Added follow-system light/dark themes with separate light and dark color-scheme choices.
+- Kept the layered WPF glass windows on a single translucent-brush composition path, so opacity reveals the real desktop and rounded outer corners remain transparent.
 - Added fatal UI exception shutdown coordination, background system-metric sampling, reliable single-instance activation, seven-day log retention, and Todo deletion confirmation.
 - Protected the weather API key and clipboard history with Windows DPAPI, including an atomic migration path for existing plaintext values.
 - Added privacy-safe v5 backups, semantic import validation, import preview, and transactional restore behavior.
@@ -18,6 +22,10 @@ This major release hardens runtime stability and local-data privacy, introduces 
 
 ### 中文说明
 
+- 将主面板和七页设置中心升级为统一的 Glass 2.0 视觉系统。
+- 新增全局搜索，可检索快速便签、待办、剪贴板历史、常用短语和快捷方式五类内容。
+- 新增跟随系统明暗主题，并可分别指定浅色和深色配色。
+- 分层 WPF 玻璃窗口统一使用半透明画刷合成，调节透明度会真实透出桌面，窗口圆角外侧保持透明。
 - 新增致命 UI 异常退出协调、后台系统指标采样、可靠的单实例激活、7 天日志保留和待办删除确认。
 - 使用 Windows DPAPI 保护天气 API Key 与剪贴板历史，并以原子方式迁移已有明文数据。
 - 新增隐私安全的 v5 备份、导入语义校验、导入预览和事务化恢复。

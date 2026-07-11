@@ -37,8 +37,6 @@ public partial class MainWindow : Window
 
         AppIconHelper.ApplyWindowIcon(this);
         DesktopWidgetWindowHelper.Configure(this);
-        SourceInitialized += (_, _) =>
-            BackdropMaterialService.Apply(this, BackdropKind.MainWindow);
 
         ApplyInitialWindowBounds();
         _viewModel.PropertyChanged += ViewModel_OnPropertyChanged;
