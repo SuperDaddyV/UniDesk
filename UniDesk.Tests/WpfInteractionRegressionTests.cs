@@ -92,6 +92,20 @@ public class WpfInteractionRegressionTests
         }
     }
 
+    [Fact]
+    public void MainWindow_ShouldExposeGlassGlobalSearchWorkspace()
+    {
+        var mainXaml = ReadProjectFile("UniDesk", "MainWindow.xaml");
+        var mainCode = ReadProjectFile("UniDesk", "MainWindow.xaml.cs");
+
+        Assert.Contains("x:Name=\"SearchButton\"", mainXaml, StringComparison.Ordinal);
+        Assert.Contains("x:Name=\"SearchSurface\"", mainXaml, StringComparison.Ordinal);
+        Assert.Contains("x:Name=\"GlobalSearchBox\"", mainXaml, StringComparison.Ordinal);
+        Assert.Contains("Search.ActivateResultCommand", mainXaml, StringComparison.Ordinal);
+        Assert.Contains("Key.F", mainCode, StringComparison.Ordinal);
+        Assert.Contains("TodoSearchResultActivated", mainCode, StringComparison.Ordinal);
+    }
+
     private static string ReadProjectFile(params string[] segments) =>
         File.ReadAllText(Path.Combine([ProjectRoot, .. segments]));
 }

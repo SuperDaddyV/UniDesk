@@ -42,6 +42,8 @@ public partial class MainWindow : Window
 
         ApplyInitialWindowBounds();
         _viewModel.PropertyChanged += ViewModel_OnPropertyChanged;
+        _viewModel.Search.FocusRequested += Search_OnFocusRequested;
+        _viewModel.TodoSearchResultActivated += ViewModel_OnTodoSearchResultActivated;
     }
 
     private void ViewModel_OnPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
@@ -138,6 +140,43 @@ public partial class MainWindow : Window
         _clipboardMonitorService.Start(this);
         ApplyModuleLayout();
     }
+
+    private void SearchButton_OnClick(object sender, RoutedEventArgs e) => OpenSearch();
+
+    private void MainWindow_OnPreviewKeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.F && Keyboard.Modifiers.HasFlag(ModifierKeys.Control))
+        {
+            OpenSearch();
+            e.Handled = true;
+        }
+        else if (e.Key == Key.Escape && _viewModel.Search.IsOpen)
+        {
+            _viewModel.Search.CloseCommand.Execute(null);
+            e.Handled = true;
+        }
+    }
+
+    private void OpenSearch()
+    {
+        if (_viewModel.IsPanelCollapsed)
+        {
+            _viewModel.TogglePanelCollapseCommand.Execute(null);
+        }
+
+        _viewModel.Search.OpenCommand.Execute(null);
+    }
+
+    private void Search_OnFocusRequested(object? sender, EventArgs e) =>
+        Dispatcher.BeginInvoke(() =>
+        {
+            GlobalSearchBox.Focus();
+            Keyboard.Focus(GlobalSearchBox);
+            GlobalSearchBox.SelectAll();
+        });
+
+    private void ViewModel_OnTodoSearchResultActivated(object? sender, EventArgs e) =>
+        Dispatcher.BeginInvoke(() => TodosModule.BringIntoView());
 
     private void ApplyModuleLayout()
     {
@@ -300,6 +339,8 @@ public partial class MainWindow : Window
 
         if (AllowShutdown)
         {
+            _viewModel.Search.FocusRequested -= Search_OnFocusRequested;
+            _viewModel.TodoSearchResultActivated -= ViewModel_OnTodoSearchResultActivated;
             _clipboardMonitorService.Stop();
             return;
         }

@@ -159,6 +159,16 @@
     <sys:String x:Key="Settings.NavData">Datos y copias</sys:String>
     <sys:String x:Key="Settings.NavShortcuts">Accesos directos</sys:String>
     <sys:String x:Key="Settings.NavAbout">Acerca de</sys:String>
+    <sys:String x:Key="Search.Title">Búsqueda global</sys:String>
+    <sys:String x:Key="Search.Prompt">Buscar notas, tareas, portapapeles, textos y accesos directos</sys:String>
+    <sys:String x:Key="Search.Searching">Buscando…</sys:String>
+    <sys:String x:Key="Search.Empty">No hay resultados coincidentes</sys:String>
+    <sys:String x:Key="Search.Failed">La búsqueda ha fallado</sys:String>
+    <sys:String x:Key="Search.GroupQuickNotes">Notas rápidas</sys:String>
+    <sys:String x:Key="Search.GroupTodos">Tareas</sys:String>
+    <sys:String x:Key="Search.GroupClipboard">Historial del portapapeles</sys:String>
+    <sys:String x:Key="Search.GroupSnippets">Textos frecuentes</sys:String>
+    <sys:String x:Key="Search.GroupShortcuts">Accesos directos</sys:String>
     <sys:String x:Key="Settings.Theme">Tema</sys:String>
     <sys:String x:Key="Settings.FollowSystemTheme">Seguir el modo claro y oscuro del sistema</sys:String>
     <sys:String x:Key="Settings.LightThemeScheme">Tema para modo claro</sys:String>

@@ -57,6 +57,9 @@ public partial class ShortcutsViewModel : ObservableObject
         if (shortcut == null || IsEditingShortcuts) return;
         await _shortcutService.LaunchShortcutAsync(shortcut.Id);
     }
+
+    public Task LaunchSearchResultAsync(int shortcutId) =>
+        _shortcutService.LaunchShortcutAsync(shortcutId);
     
     [RelayCommand]
     private void ToggleShortcutEdit()

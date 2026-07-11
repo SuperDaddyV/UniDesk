@@ -274,6 +274,7 @@ public partial class App : Application
         services.AddSingleton<ITrayService, TrayService>();
         services.AddSingleton<IHotkeyService, HotkeyService>();
         services.AddSingleton<ISystemThemeService, SystemThemeService>();
+        services.AddSingleton<ISearchService, SearchService>();
         services.AddSingleton<IStartupService, StartupService>();
         services.AddSingleton<ILayoutService, LayoutService>();
         services.AddSingleton<QWeatherApiClient>();

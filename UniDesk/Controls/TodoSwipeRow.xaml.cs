@@ -41,6 +41,13 @@ public partial class TodoSwipeRow : UserControl
             typeof(TodoSwipeRow),
             new PropertyMetadata(null));
 
+    public static readonly DependencyProperty IsSearchHighlightedProperty =
+        DependencyProperty.Register(
+            nameof(IsSearchHighlighted),
+            typeof(bool),
+            typeof(TodoSwipeRow),
+            new PropertyMetadata(false));
+
     public object? RowContent
     {
         get => GetValue(RowContentProperty);
@@ -57,6 +64,12 @@ public partial class TodoSwipeRow : UserControl
     {
         get => (ICommand?)GetValue(EditCommandProperty);
         set => SetValue(EditCommandProperty, value);
+    }
+
+    public bool IsSearchHighlighted
+    {
+        get => (bool)GetValue(IsSearchHighlightedProperty);
+        set => SetValue(IsSearchHighlightedProperty, value);
     }
 
     public TodoSwipeRow()

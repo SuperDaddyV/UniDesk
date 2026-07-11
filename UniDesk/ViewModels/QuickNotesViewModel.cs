@@ -191,6 +191,20 @@ public partial class QuickNotesViewModel : ObservableObject
         }
     }
 
+    public async Task OpenSearchResultAsync(int noteId)
+    {
+        var note = await _quickNoteService.GetQuickNoteAsync(noteId);
+        if (note == null)
+        {
+            return;
+        }
+
+        if (_showEditor(note))
+        {
+            await ReloadAsync();
+        }
+    }
+
     private bool ShowEditor(QuickNote? note)
     {
         var viewModel = note == null

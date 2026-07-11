@@ -23,6 +23,7 @@
             <helpers:ScaledFontSizeConverter x:Key="ScaledFontSizeConverter"/>
             <helpers:InverseBooleanConverter x:Key="InverseBooleanConverter"/>
             <helpers:StringEqualsConverter x:Key="StringEqualsConverter"/>
+            <helpers:IntEqualsConverter x:Key="IntEqualsConverter"/>
             <Style x:Key="ModuleTitleIconBorderStyle" TargetType="Border">
                 <Setter Property="BorderBrush" Value="{DynamicResource PrimaryTextBrush}"/>
                 <Setter Property="Opacity" Value="0.9"/>

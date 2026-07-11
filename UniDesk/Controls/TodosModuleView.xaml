@@ -56,6 +56,12 @@
                         <controls:TodoSwipeRow Margin="0,0,0,2"
                                                DeleteCommand="{Binding DataContext.DeleteTodoCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                EditCommand="{Binding DataContext.EditTodoCommand, RelativeSource={RelativeSource AncestorType=UserControl}}">
+                            <controls:TodoSwipeRow.IsSearchHighlighted>
+                                <MultiBinding Converter="{StaticResource IntEqualsConverter}">
+                                    <Binding Path="Id"/>
+                                    <Binding Path="DataContext.HighlightedTodoId" RelativeSource="{RelativeSource AncestorType=UserControl}"/>
+                                </MultiBinding>
+                            </controls:TodoSwipeRow.IsSearchHighlighted>
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="Auto"/>

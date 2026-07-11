@@ -17,6 +17,7 @@
         Topmost="{Binding IsTopMost}"
         ResizeMode="NoResize"
         Loaded="MainWindow_OnLoaded"
+        PreviewKeyDown="MainWindow_OnPreviewKeyDown"
         >
     <Grid Background="Transparent"
           MouseLeftButtonDown="WindowDragSurface_OnMouseLeftButtonDown">
@@ -27,11 +28,12 @@
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
 
                 <Border x:Name="MainGlassBackground"
-                        Grid.RowSpan="2"
+                        Grid.RowSpan="3"
                         Style="{StaticResource GlassBackgroundLayerStyle}"
                         Opacity="{Binding WindowOpacity}"/>
 
@@ -45,6 +47,13 @@
                                    Foreground="{DynamicResource PrimaryTextBrush}"
                                    VerticalAlignment="Center"/>
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                            <Button x:Name="SearchButton"
+                                    Style="{StaticResource HeaderIconButtonStyle}"
+                                    Width="28" Height="28"
+                                    Click="SearchButton_OnClick"
+                                    ToolTip="{DynamicResource Search.Title}">
+                                <TextBlock Text="&#xE721;" FontFamily="Segoe MDL2 Assets" FontSize="14"/>
+                            </Button>
                             <Button Style="{StaticResource HeaderIconButtonStyle}"
                                     Width="28"
                                     Height="28"
@@ -117,8 +126,70 @@
                     </Grid>
                 </Border>
 
+                <Border x:Name="SearchSurface"
+                        Grid.Row="1"
+                        Style="{StaticResource GlassSectionStyle}"
+                        Margin="12,0,12,10"
+                        Padding="12"
+                        Visibility="{Binding Search.IsOpen, Converter={StaticResource BooleanToVisibilityConverter}}">
+                    <StackPanel>
+                        <Grid Margin="0,0,0,8">
+                            <TextBox x:Name="GlobalSearchBox"
+                                     Style="{StaticResource GlassTextBoxStyle}"
+                                     Text="{Binding Search.SearchText, UpdateSourceTrigger=PropertyChanged}"
+                                     ToolTip="{DynamicResource Search.Prompt}"
+                                     Padding="30,7,34,7"/>
+                            <TextBlock Text="&#xE721;" FontFamily="Segoe MDL2 Assets"
+                                       Foreground="{DynamicResource SecondaryTextBrush}"
+                                       Margin="9,0,0,0" VerticalAlignment="Center"
+                                       IsHitTestVisible="False"/>
+                            <Button HorizontalAlignment="Right"
+                                    Style="{StaticResource GhostButtonStyle}"
+                                    Command="{Binding Search.CloseCommand}"
+                                    Content="×" FontSize="16" Margin="0,0,5,0"/>
+                        </Grid>
+                        <TextBlock Text="{Binding Search.StatusText}"
+                                   Foreground="{DynamicResource SecondaryTextBrush}"
+                                   FontSize="11" TextWrapping="Wrap"
+                                   Visibility="{Binding Search.StatusText, Converter={StaticResource StringNotEmptyToVisibilityConverter}}"
+                                   Margin="4,0,4,8"/>
+                        <ScrollViewer MaxHeight="360" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                        <ItemsControl ItemsSource="{Binding Search.Groups}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Margin="0,0,0,8">
+                                        <TextBlock Text="{Binding Title}" FontSize="11" FontWeight="SemiBold"
+                                                   Foreground="{DynamicResource SecondaryTextBrush}" Margin="4,2,0,4"/>
+                                        <ItemsControl ItemsSource="{Binding Items}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Button Style="{StaticResource GlassSearchResultButtonStyle}"
+                                                            HorizontalContentAlignment="Stretch"
+                                                            Command="{Binding DataContext.Search.ActivateResultCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                            CommandParameter="{Binding}">
+                                                        <Grid Margin="4,4">
+                                                            <Grid.RowDefinitions>
+                                                                <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
+                                                            </Grid.RowDefinitions>
+                                                            <TextBlock Text="{Binding Title}" TextTrimming="CharacterEllipsis"
+                                                                       Foreground="{DynamicResource PrimaryTextBrush}"/>
+                                                            <TextBlock Grid.Row="1" Text="{Binding Snippet}" TextTrimming="CharacterEllipsis"
+                                                                       FontSize="10" Foreground="{DynamicResource SecondaryTextBrush}"/>
+                                                        </Grid>
+                                                    </Button>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        </ScrollViewer>
+                    </StackPanel>
+                </Border>
+
                 <ScrollViewer x:Name="MainModulesScrollViewer"
-                              Grid.Row="1"
+                              Grid.Row="2"
                               Margin="12,0,12,10"
                               ClipToBounds="True"
                               VerticalScrollBarVisibility="Hidden"

@@ -11,6 +11,8 @@ namespace UniDesk.ViewModels;
 
 public partial class TodosViewModel : ObservableObject
 {
+    [ObservableProperty]
+    private int? _highlightedTodoId;
     private readonly ITodoService _todoService;
     private readonly ITodoDeletionHandler _todoDeletionHandler;
     private readonly INotificationService _notificationService;
@@ -130,6 +132,26 @@ public partial class TodosViewModel : ObservableObject
             {
                 _notificationService.ShowWarningMessage(L("Todo.LoadFailed"));
             }
+        }
+    }
+
+    public async Task HighlightSearchResultAsync(int todoId)
+    {
+        if (Todos.All(todo => todo.Id != todoId))
+        {
+            await ReloadAsync();
+        }
+
+        HighlightedTodoId = todoId;
+        _ = ClearSearchHighlightAsync(todoId);
+    }
+
+    private async Task ClearSearchHighlightAsync(int todoId)
+    {
+        await Task.Delay(TimeSpan.FromSeconds(2));
+        if (HighlightedTodoId == todoId)
+        {
+            HighlightedTodoId = null;
         }
     }
 

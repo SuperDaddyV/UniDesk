@@ -212,6 +212,22 @@ public partial class QuickTextViewModel : ObservableObject, IDisposable
         }
     }
 
+    public async Task CopySearchResultAsync(SearchResultItem result)
+    {
+        if (!await _clipboardMonitorService.TrySetTextAsync(result.ActionValue))
+        {
+            _notificationService.ShowWarningMessage(L("Common.CopyFailed"));
+            return;
+        }
+
+        if (result.Kind == SearchResultKind.Snippet)
+        {
+            await _quickTextService.MarkSnippetUsedAsync(result.Id);
+        }
+
+        _notificationService.ShowSuccessMessage(L("Common.Copied"));
+    }
+
     private bool ShowSnippetEditor(TextSnippet? snippet)
     {
         var viewModel = snippet == null

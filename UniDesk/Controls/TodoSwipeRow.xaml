@@ -20,12 +20,24 @@
         </Border>
 
         <Border x:Name="SwipeSurface"
-                Background="{DynamicResource PrimaryBackgroundBrush}"
                 CornerRadius="6"
                 PreviewMouseLeftButtonDown="SwipeSurface_OnPreviewMouseLeftButtonDown"
                 PreviewMouseMove="SwipeSurface_OnPreviewMouseMove"
                 PreviewMouseLeftButtonUp="SwipeSurface_OnPreviewMouseLeftButtonUp"
                 MouseLeave="SwipeSurface_OnMouseLeave">
+            <Border.Style>
+                <Style TargetType="Border">
+                    <Setter Property="Background" Value="{DynamicResource PrimaryBackgroundBrush}"/>
+                    <Setter Property="BorderBrush" Value="Transparent"/>
+                    <Setter Property="BorderThickness" Value="1"/>
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding IsSearchHighlighted, RelativeSource={RelativeSource AncestorType=controls:TodoSwipeRow}}" Value="True">
+                            <Setter Property="Background" Value="{DynamicResource GlassHighlightBrush}"/>
+                            <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Border.Style>
             <Border.RenderTransform>
                 <TranslateTransform x:Name="SwipeTransform"/>
             </Border.RenderTransform>

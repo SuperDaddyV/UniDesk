@@ -159,6 +159,16 @@
     <sys:String x:Key="Settings.NavData">データとバックアップ</sys:String>
     <sys:String x:Key="Settings.NavShortcuts">ショートカット</sys:String>
     <sys:String x:Key="Settings.NavAbout">バージョン情報</sys:String>
+    <sys:String x:Key="Search.Title">グローバル検索</sys:String>
+    <sys:String x:Key="Search.Prompt">メモ、ToDo、クリップボード、定型文、ショートカットを検索</sys:String>
+    <sys:String x:Key="Search.Searching">検索中…</sys:String>
+    <sys:String x:Key="Search.Empty">一致する結果がありません</sys:String>
+    <sys:String x:Key="Search.Failed">検索に失敗しました</sys:String>
+    <sys:String x:Key="Search.GroupQuickNotes">クイックメモ</sys:String>
+    <sys:String x:Key="Search.GroupTodos">ToDo</sys:String>
+    <sys:String x:Key="Search.GroupClipboard">クリップボード履歴</sys:String>
+    <sys:String x:Key="Search.GroupSnippets">定型文</sys:String>
+    <sys:String x:Key="Search.GroupShortcuts">ショートカット</sys:String>
     <sys:String x:Key="Settings.Theme">テーマ</sys:String>
     <sys:String x:Key="Settings.FollowSystemTheme">システムのライト／ダークモードに従う</sys:String>
     <sys:String x:Key="Settings.LightThemeScheme">ライトモードの配色</sys:String>

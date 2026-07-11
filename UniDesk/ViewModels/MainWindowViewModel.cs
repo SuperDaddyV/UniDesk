@@ -85,6 +85,10 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
 
     public TimeWeatherViewModel TimeWeather { get; }
 
+    public SearchViewModel Search { get; }
+
+    public event EventHandler? TodoSearchResultActivated;
+
     public MainWindowViewModel(
         INotificationService notificationService,
         ISettingsService settingsService,
@@ -104,7 +108,8 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         IStartupService startupService,
         ITodoBackupService todoBackupService,
         ISystemMetricsMonitor systemMetricsMonitor,
-        IClipboardMonitorService clipboardMonitorService)
+        IClipboardMonitorService clipboardMonitorService,
+        ISearchService searchService)
     {
         _notificationService = notificationService;
         _settingsService = settingsService;
@@ -148,6 +153,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
             weatherService,
             notificationService,
             localizationService);
+        Search = new SearchViewModel(searchService, localizationService, ActivateSearchResultAsync);
         LoadSettings();
         _layoutService.LoadOrGetDefault();
 
@@ -504,12 +510,34 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
 
     private string L(string key) => _localizationService.GetString(key);
 
+    private async Task ActivateSearchResultAsync(SearchResultItem result)
+    {
+        switch (result.Kind)
+        {
+            case SearchResultKind.QuickNote:
+                await QuickNotes.OpenSearchResultAsync(result.Id);
+                break;
+            case SearchResultKind.Todo:
+                TodoSearchResultActivated?.Invoke(this, EventArgs.Empty);
+                await Todos.HighlightSearchResultAsync(result.Id);
+                break;
+            case SearchResultKind.Clipboard:
+            case SearchResultKind.Snippet:
+                await QuickText.CopySearchResultAsync(result);
+                break;
+            case SearchResultKind.Shortcut:
+                await Shortcuts.LaunchSearchResultAsync(result.Id);
+                break;
+        }
+    }
+
     public void Dispose()
     {
         if (_disposed) return;
         _disposed = true;
 
         _localizationService.LanguageChanged -= LocalizationService_OnLanguageChanged;
+        Search.Dispose();
         QuickText.Dispose();
         HardwareMonitor.Dispose();
         TimeWeather.Dispose();

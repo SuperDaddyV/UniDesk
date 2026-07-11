@@ -159,6 +159,16 @@
     <sys:String x:Key="Settings.NavData">数据与备份</sys:String>
     <sys:String x:Key="Settings.NavShortcuts">快捷方式</sys:String>
     <sys:String x:Key="Settings.NavAbout">关于</sys:String>
+    <sys:String x:Key="Search.Title">全局搜索</sys:String>
+    <sys:String x:Key="Search.Prompt">搜索便签、待办、剪贴板、短语和快捷方式</sys:String>
+    <sys:String x:Key="Search.Searching">正在搜索…</sys:String>
+    <sys:String x:Key="Search.Empty">没有找到匹配结果</sys:String>
+    <sys:String x:Key="Search.Failed">搜索失败，请稍后重试</sys:String>
+    <sys:String x:Key="Search.GroupQuickNotes">快速便签</sys:String>
+    <sys:String x:Key="Search.GroupTodos">待办事项</sys:String>
+    <sys:String x:Key="Search.GroupClipboard">剪贴板历史</sys:String>
+    <sys:String x:Key="Search.GroupSnippets">常用短语</sys:String>
+    <sys:String x:Key="Search.GroupShortcuts">快捷方式</sys:String>
     <sys:String x:Key="Settings.Theme">主题设置</sys:String>
     <sys:String x:Key="Settings.FollowSystemTheme">跟随系统深浅色</sys:String>
     <sys:String x:Key="Settings.LightThemeScheme">浅色模式使用</sys:String>

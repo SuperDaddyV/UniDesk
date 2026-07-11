@@ -159,6 +159,16 @@
     <sys:String x:Key="Settings.NavData">Data &amp; Backup</sys:String>
     <sys:String x:Key="Settings.NavShortcuts">Shortcuts</sys:String>
     <sys:String x:Key="Settings.NavAbout">About</sys:String>
+    <sys:String x:Key="Search.Title">Global search</sys:String>
+    <sys:String x:Key="Search.Prompt">Search notes, todos, clipboard, snippets, and shortcuts</sys:String>
+    <sys:String x:Key="Search.Searching">Searching…</sys:String>
+    <sys:String x:Key="Search.Empty">No matching results</sys:String>
+    <sys:String x:Key="Search.Failed">Search failed. Try again.</sys:String>
+    <sys:String x:Key="Search.GroupQuickNotes">Quick Notes</sys:String>
+    <sys:String x:Key="Search.GroupTodos">Todos</sys:String>
+    <sys:String x:Key="Search.GroupClipboard">Clipboard history</sys:String>
+    <sys:String x:Key="Search.GroupSnippets">Text snippets</sys:String>
+    <sys:String x:Key="Search.GroupShortcuts">Shortcuts</sys:String>
     <sys:String x:Key="Settings.Theme">Theme</sys:String>
     <sys:String x:Key="Settings.FollowSystemTheme">Follow system light and dark mode</sys:String>
     <sys:String x:Key="Settings.LightThemeScheme">Light mode scheme</sys:String>
