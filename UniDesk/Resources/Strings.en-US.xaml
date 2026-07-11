@@ -160,6 +160,9 @@
     <sys:String x:Key="Settings.NavShortcuts">Shortcuts</sys:String>
     <sys:String x:Key="Settings.NavAbout">About</sys:String>
     <sys:String x:Key="Settings.Theme">Theme</sys:String>
+    <sys:String x:Key="Settings.FollowSystemTheme">Follow system light and dark mode</sys:String>
+    <sys:String x:Key="Settings.LightThemeScheme">Light mode scheme</sys:String>
+    <sys:String x:Key="Settings.DarkThemeScheme">Dark mode scheme</sys:String>
     <sys:String x:Key="Settings.DisplayTitle">Title</sys:String>
     <sys:String x:Key="Settings.WindowOpacity">Window opacity</sys:String>
     <sys:String x:Key="Settings.PanelWidth">Panel width</sys:String>

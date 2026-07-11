@@ -160,6 +160,9 @@
     <sys:String x:Key="Settings.NavShortcuts">快捷方式</sys:String>
     <sys:String x:Key="Settings.NavAbout">关于</sys:String>
     <sys:String x:Key="Settings.Theme">主题设置</sys:String>
+    <sys:String x:Key="Settings.FollowSystemTheme">跟随系统深浅色</sys:String>
+    <sys:String x:Key="Settings.LightThemeScheme">浅色模式使用</sys:String>
+    <sys:String x:Key="Settings.DarkThemeScheme">深色模式使用</sys:String>
     <sys:String x:Key="Settings.DisplayTitle">标题名称</sys:String>
     <sys:String x:Key="Settings.WindowOpacity">窗口透明度</sys:String>
     <sys:String x:Key="Settings.PanelWidth">面板宽度</sys:String>

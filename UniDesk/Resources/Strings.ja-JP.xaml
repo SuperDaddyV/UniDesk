@@ -160,6 +160,9 @@
     <sys:String x:Key="Settings.NavShortcuts">ショートカット</sys:String>
     <sys:String x:Key="Settings.NavAbout">バージョン情報</sys:String>
     <sys:String x:Key="Settings.Theme">テーマ</sys:String>
+    <sys:String x:Key="Settings.FollowSystemTheme">システムのライト／ダークモードに従う</sys:String>
+    <sys:String x:Key="Settings.LightThemeScheme">ライトモードの配色</sys:String>
+    <sys:String x:Key="Settings.DarkThemeScheme">ダークモードの配色</sys:String>
     <sys:String x:Key="Settings.DisplayTitle">タイトル</sys:String>
     <sys:String x:Key="Settings.WindowOpacity">ウィンドウ透明度</sys:String>
     <sys:String x:Key="Settings.PanelWidth">パネル幅</sys:String>

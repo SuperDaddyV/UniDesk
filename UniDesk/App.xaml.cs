@@ -17,6 +17,7 @@ public partial class App : Application
     private MainWindow? _mainWindow;
     private ITrayService? _trayService;
     private IHotkeyService? _hotkeyService;
+    private ISystemThemeService? _systemThemeService;
     private int _activationPending;
 
     public App()
@@ -78,6 +79,10 @@ public partial class App : Application
             await settingsService.InitializeAsync();
             await Services.GetRequiredService<IPrivacyMigrationService>().MigrateAsync();
             Services.GetRequiredService<ILocalizationService>().Initialize(settingsService);
+            _systemThemeService = Services.GetRequiredService<ISystemThemeService>();
+            _systemThemeService.Initialize();
+            _systemThemeService.ThemeChanged += OnSystemThemeChanged;
+            ApplyThemeFromSettings();
 
             SyncStartupWithSettings();
 
@@ -177,12 +182,32 @@ public partial class App : Application
     {
         if (_mainWindow == null) return;
 
-        var settingsService = Services.GetRequiredService<ISettingsService>();
-        var scheme = AppColorSchemeCatalog.NormalizeId(
-            settingsService.GetValue("ColorScheme", settingsService.GetValue("Theme", AppColorSchemeCatalog.DefaultSchemeId)));
-        AppColorSchemeCatalog.Apply(scheme);
+        ApplyThemeFromSettings();
 
         Services.GetRequiredService<MainWindowViewModel>().ApplyWindowSettings();
+    }
+
+    private void OnSystemThemeChanged(object? sender, bool isLightTheme) =>
+        ApplyThemeFromSettings();
+
+    private void ApplyThemeFromSettings()
+    {
+        if (Services == null)
+        {
+            return;
+        }
+
+        var settings = Services.GetRequiredService<ISettingsService>();
+        var manual = settings.GetValue(
+            "ColorScheme",
+            settings.GetValue("Theme", AppColorSchemeCatalog.DefaultSchemeId));
+        var effective = SystemThemeSelection.GetEffectiveScheme(
+            settings.GetSetting("FollowSystemTheme", false),
+            _systemThemeService?.IsLightTheme ?? true,
+            manual,
+            settings.GetValue("ColorSchemeLight", AppColorSchemeCatalog.DefaultSchemeId),
+            settings.GetValue("ColorSchemeDark", "DarkGrey"));
+        AppColorSchemeCatalog.Apply(effective);
     }
 
     private void OnTrayToggleWindow()
@@ -248,6 +273,7 @@ public partial class App : Application
         services.AddSingleton<IWindowService, WindowService>();
         services.AddSingleton<ITrayService, TrayService>();
         services.AddSingleton<IHotkeyService, HotkeyService>();
+        services.AddSingleton<ISystemThemeService, SystemThemeService>();
         services.AddSingleton<IStartupService, StartupService>();
         services.AddSingleton<ILayoutService, LayoutService>();
         services.AddSingleton<QWeatherApiClient>();
@@ -284,6 +310,10 @@ public partial class App : Application
         }
 
         _hotkeyService?.Dispose();
+        if (_systemThemeService != null)
+        {
+            _systemThemeService.ThemeChanged -= OnSystemThemeChanged;
+        }
         _trayService?.Dispose();
         if (_singleInstanceHelper != null)
         {

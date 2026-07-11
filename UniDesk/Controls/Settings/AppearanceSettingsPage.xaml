@@ -7,7 +7,33 @@
         <Border Style="{StaticResource GlassSectionStyle}">
             <StackPanel>
                 <TextBlock Text="{DynamicResource Settings.Theme}" Style="{StaticResource GlassSectionTitleStyle}"/>
-                <ItemsControl ItemsSource="{Binding ColorSchemes}">
+                <Grid Margin="0,0,0,12">
+                    <TextBlock Text="{DynamicResource Settings.FollowSystemTheme}"
+                               Foreground="{DynamicResource PrimaryTextBrush}" VerticalAlignment="Center"/>
+                    <CheckBox HorizontalAlignment="Right" IsChecked="{Binding FollowSystemTheme}"/>
+                </Grid>
+                <Grid Margin="0,0,0,12"
+                      Visibility="{Binding FollowSystemTheme, Converter={StaticResource BooleanToVisibilityConverter}}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/><ColumnDefinition Width="16"/><ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel>
+                        <TextBlock Text="{DynamicResource Settings.LightThemeScheme}" Style="{StaticResource GlassSettingLabelStyle}" Margin="0,0,0,6"/>
+                        <ComboBox Style="{StaticResource GlassComboBoxStyle}"
+                                  ItemsSource="{Binding ColorSchemes}"
+                                  DisplayMemberPath="DisplayName" SelectedValuePath="Id"
+                                  SelectedValue="{Binding ColorSchemeLight, Mode=TwoWay}"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="2">
+                        <TextBlock Text="{DynamicResource Settings.DarkThemeScheme}" Style="{StaticResource GlassSettingLabelStyle}" Margin="0,0,0,6"/>
+                        <ComboBox Style="{StaticResource GlassComboBoxStyle}"
+                                  ItemsSource="{Binding ColorSchemes}"
+                                  DisplayMemberPath="DisplayName" SelectedValuePath="Id"
+                                  SelectedValue="{Binding ColorSchemeDark, Mode=TwoWay}"/>
+                    </StackPanel>
+                </Grid>
+                <ItemsControl ItemsSource="{Binding ColorSchemes}"
+                              IsEnabled="{Binding FollowSystemTheme, Converter={StaticResource InverseBooleanConverter}}">
                     <ItemsControl.ItemsPanel>
                         <ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate>
                     </ItemsControl.ItemsPanel>

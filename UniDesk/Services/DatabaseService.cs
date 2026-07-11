@@ -216,6 +216,9 @@ public class DatabaseService : IDatabaseService
         {
             { "Theme", "System" },
             { "ColorScheme", "Taro" },
+            { "FollowSystemTheme", "False" },
+            { "ColorSchemeLight", "Taro" },
+            { "ColorSchemeDark", "DarkGrey" },
             { "WindowOpacity", "0.70" },
             { "TopMost", "true" },
             { "Startup", "false" },

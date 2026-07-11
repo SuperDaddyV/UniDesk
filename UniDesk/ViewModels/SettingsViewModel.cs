@@ -29,12 +29,22 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     private readonly ITodoBackupService _todoBackupService;
     private readonly IQuickTextService _quickTextService;
     private readonly MainWindowViewModel _mainWindowViewModel;
+    private readonly ISystemThemeService? _systemThemeService;
 
     private readonly Dictionary<string, string> _originalSettings = new();
     private bool _isLoading;
 
     [ObservableProperty]
     private string _selectedColorScheme = AppColorSchemeCatalog.DefaultSchemeId;
+
+    [ObservableProperty]
+    private bool _followSystemTheme;
+
+    [ObservableProperty]
+    private string _colorSchemeLight = AppColorSchemeCatalog.DefaultSchemeId;
+
+    [ObservableProperty]
+    private string _colorSchemeDark = "DarkGrey";
 
     [ObservableProperty]
     private bool _startupEnabled;
@@ -128,7 +138,8 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         IStartupService startupService,
         ITodoBackupService todoBackupService,
         IQuickTextService quickTextService,
-        MainWindowViewModel mainWindowViewModel)
+        MainWindowViewModel mainWindowViewModel,
+        ISystemThemeService? systemThemeService = null)
     {
         _settingsService = settingsService;
         _localizationService = localizationService;
@@ -141,6 +152,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         _todoBackupService = todoBackupService;
         _quickTextService = quickTextService;
         _mainWindowViewModel = mainWindowViewModel;
+        _systemThemeService = systemThemeService;
 
         foreach (var scheme in AppColorSchemeCatalog.All)
         {
@@ -148,6 +160,10 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         }
 
         _localizationService.LanguageChanged += LocalizationService_OnLanguageChanged;
+        if (_systemThemeService != null)
+        {
+            _systemThemeService.ThemeChanged += SystemThemeService_OnThemeChanged;
+        }
         LoadSettings();
     }
 
@@ -158,6 +174,11 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         {
             SelectedColorScheme = AppColorSchemeCatalog.NormalizeId(
                 _settingsService.GetValue("ColorScheme", _settingsService.GetValue("Theme", AppColorSchemeCatalog.DefaultSchemeId)));
+            FollowSystemTheme = _settingsService.GetSetting("FollowSystemTheme", false);
+            ColorSchemeLight = AppColorSchemeCatalog.NormalizeId(
+                _settingsService.GetValue("ColorSchemeLight", AppColorSchemeCatalog.DefaultSchemeId));
+            ColorSchemeDark = AppColorSchemeCatalog.NormalizeId(
+                _settingsService.GetValue("ColorSchemeDark", "DarkGrey"));
 
             StartupEnabled = ReadStartupSetting();
             WindowOpacity = _settingsService.GetSetting("WindowOpacity", 0.70);
@@ -188,13 +209,16 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         }
 
         UpdateColorSchemeSelection();
-        AppColorSchemeCatalog.Apply(SelectedColorScheme);
+        ApplyEffectiveThemePreview();
         SaveOriginalSettings();
     }
 
     private void SaveOriginalSettings()
     {
         _originalSettings["ColorScheme"] = SelectedColorScheme;
+        _originalSettings["FollowSystemTheme"] = FollowSystemTheme.ToString();
+        _originalSettings["ColorSchemeLight"] = ColorSchemeLight;
+        _originalSettings["ColorSchemeDark"] = ColorSchemeDark;
         _originalSettings["Startup"] = StartupEnabled.ToString();
         _originalSettings["WindowOpacity"] = WindowOpacity.ToString(CultureInfo.InvariantCulture);
         _originalSettings["PanelWidth"] = PanelWidth.ToString(CultureInfo.InvariantCulture);
@@ -315,7 +339,31 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         UpdateColorSchemeSelection();
         if (!_isLoading)
         {
-            AppColorSchemeCatalog.Apply(value);
+            ApplyEffectiveThemePreview();
+        }
+    }
+
+    partial void OnFollowSystemThemeChanged(bool value)
+    {
+        if (!_isLoading)
+        {
+            ApplyEffectiveThemePreview();
+        }
+    }
+
+    partial void OnColorSchemeLightChanged(string value)
+    {
+        if (!_isLoading)
+        {
+            ApplyEffectiveThemePreview();
+        }
+    }
+
+    partial void OnColorSchemeDarkChanged(string value)
+    {
+        if (!_isLoading)
+        {
+            ApplyEffectiveThemePreview();
         }
     }
 
@@ -417,6 +465,20 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         }
     }
 
+    private void SystemThemeService_OnThemeChanged(object? sender, bool isLightTheme) =>
+        ApplyEffectiveThemePreview();
+
+    private void ApplyEffectiveThemePreview()
+    {
+        var effective = SystemThemeSelection.GetEffectiveScheme(
+            FollowSystemTheme,
+            _systemThemeService?.IsLightTheme ?? true,
+            SelectedColorScheme,
+            ColorSchemeLight,
+            ColorSchemeDark);
+        AppColorSchemeCatalog.Apply(effective);
+    }
+
     private void ApplyWindowPreview()
     {
         if (_isLoading)
@@ -457,6 +519,9 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
 
             _settingsService.SetValue("ColorScheme", SelectedColorScheme);
             _settingsService.SetValue("Theme", SelectedColorScheme);
+            _settingsService.SetValue("FollowSystemTheme", FollowSystemTheme.ToString());
+            _settingsService.SetValue("ColorSchemeLight", AppColorSchemeCatalog.NormalizeId(ColorSchemeLight));
+            _settingsService.SetValue("ColorSchemeDark", AppColorSchemeCatalog.NormalizeId(ColorSchemeDark));
             _settingsService.SetValue("Startup", StartupEnabled.ToString());
             _settingsService.SetValue("WindowOpacity", WindowOpacity.ToString(CultureInfo.InvariantCulture));
             _settingsService.SetValue("PanelWidth", PanelWidth.ToString(CultureInfo.InvariantCulture));
@@ -475,7 +540,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
             await _settingsService.FlushPendingSavesAsync();
             await _quickTextService.TrimClipboardHistoryAsync(ClipboardHistoryMaxCount);
 
-            AppColorSchemeCatalog.Apply(SelectedColorScheme);
+            ApplyEffectiveThemePreview();
             ApplyWindowPreview();
             _mainWindowViewModel.SetShortcutLimitPreview(null);
             await _mainWindowViewModel.ReloadShortcutsAsync();
@@ -547,6 +612,9 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         if (!result) return;
 
         SelectedColorScheme = AppColorSchemeCatalog.DefaultSchemeId;
+        FollowSystemTheme = false;
+        ColorSchemeLight = AppColorSchemeCatalog.DefaultSchemeId;
+        ColorSchemeDark = "DarkGrey";
         StartupEnabled = false;
         WindowOpacity = 0.70;
         PanelWidth = 320;
@@ -746,6 +814,21 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
                 SelectedColorScheme = AppColorSchemeCatalog.NormalizeId(scheme);
             }
 
+            if (_originalSettings.TryGetValue("FollowSystemTheme", out var followSystemTheme))
+            {
+                FollowSystemTheme = bool.Parse(followSystemTheme);
+            }
+
+            if (_originalSettings.TryGetValue("ColorSchemeLight", out var lightScheme))
+            {
+                ColorSchemeLight = AppColorSchemeCatalog.NormalizeId(lightScheme);
+            }
+
+            if (_originalSettings.TryGetValue("ColorSchemeDark", out var darkScheme))
+            {
+                ColorSchemeDark = AppColorSchemeCatalog.NormalizeId(darkScheme);
+            }
+
             if (_originalSettings.TryGetValue("Startup", out var startup))
             {
                 StartupEnabled = bool.Parse(startup);
@@ -820,7 +903,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
             _isLoading = false;
         }
 
-        AppColorSchemeCatalog.Apply(SelectedColorScheme);
+        ApplyEffectiveThemePreview();
         ApplyWindowPreview();
         _mainWindowViewModel.SetShortcutLimitPreview(null);
         _ = _mainWindowViewModel.ReloadShortcutsAsync();
@@ -926,6 +1009,10 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     public void Dispose()
     {
         _localizationService.LanguageChanged -= LocalizationService_OnLanguageChanged;
+        if (_systemThemeService != null)
+        {
+            _systemThemeService.ThemeChanged -= SystemThemeService_OnThemeChanged;
+        }
     }
 
     public event EventHandler<bool>? RequestClose;
