@@ -9,6 +9,10 @@ This major release hardens runtime stability and local-data privacy, introduces 
 - Upgraded the main panel and seven-page Settings center to the shared Glass 2.0 visual system.
 - Added five-kind global search for Quick Notes, Todos, clipboard history, snippets, and shortcuts.
 - Added follow-system light/dark themes with separate light and dark color-scheme choices.
+- Fixed the follow-system color-scheme dropdowns so every option remains readable and selectable on the glass Settings surface.
+- Added a Settings control for recording, restoring, or fully disabling the global hotkey, with conflict rollback that preserves the previous working shortcut.
+- Stabilized the Hardware Monitor network row to prevent old throughput values from leaving visible text trails on transparent surfaces.
+- Integrated the Settings navigation directly into the window glass by removing the rectangular sidebar fill and divider while retaining rounded selection pills.
 - Kept the layered WPF glass windows on a single translucent-brush composition path, so opacity reveals the real desktop and rounded outer corners remain transparent.
 - Added fatal UI exception shutdown coordination, background system-metric sampling, reliable single-instance activation, seven-day log retention, and Todo deletion confirmation.
 - Protected the weather API key and clipboard history with Windows DPAPI, including an atomic migration path for existing plaintext values.
@@ -25,6 +29,10 @@ This major release hardens runtime stability and local-data privacy, introduces 
 - 将主面板和七页设置中心升级为统一的 Glass 2.0 视觉系统。
 - 新增全局搜索，可检索快速便签、待办、剪贴板历史、常用短语和快捷方式五类内容。
 - 新增跟随系统明暗主题，并可分别指定浅色和深色配色。
+- 修复跟随系统模式下的配色下拉框，确保所有选项在玻璃设置界面中清晰可见并可正常选择。
+- 新增全局热键设置，可录入、恢复默认或完全禁用热键；发生占用冲突时会恢复原有可用热键且不保存冲突组合。
+- 稳定硬件监视网络数据区域的文本布局与渲染，避免透明界面上残留旧速率数值形成重影。
+- 移除设置页左侧导航的矩形底色和分隔线，使导航直接融入窗口毛玻璃，并保留圆角选中项。
 - 分层 WPF 玻璃窗口统一使用半透明画刷合成，调节透明度会真实透出桌面，窗口圆角外侧保持透明。
 - 新增致命 UI 异常退出协调、后台系统指标采样、可靠的单实例激活、7 天日志保留和待办删除确认。
 - 使用 Windows DPAPI 保护天气 API Key 与剪贴板历史，并以原子方式迁移已有明文数据。

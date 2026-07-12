@@ -77,6 +77,47 @@ public class WpfInteractionRegressionTests
     }
 
     [Fact]
+    public void GlassComboBox_ShouldUseReadableSelectablePopupTemplate()
+    {
+        var sharedTheme = ReadProjectFile("UniDesk", "Resources", "Themes", "Shared.xaml");
+
+        Assert.Contains("x:Key=\"GlassComboBoxItemStyle\"", sharedTheme, StringComparison.Ordinal);
+        Assert.Contains("<Popup x:Name=\"PART_Popup\"", sharedTheme, StringComparison.Ordinal);
+        Assert.Contains("IsOpen=\"{TemplateBinding IsDropDownOpen}\"", sharedTheme, StringComparison.Ordinal);
+        Assert.Contains("<ItemsPresenter", sharedTheme, StringComparison.Ordinal);
+        Assert.Contains("Property=\"ItemContainerStyle\" Value=\"{StaticResource GlassComboBoxItemStyle}\"", sharedTheme, StringComparison.Ordinal);
+        Assert.Contains("Background=\"{DynamicResource PrimaryBackgroundBrush}\"", sharedTheme, StringComparison.Ordinal);
+        Assert.Contains("Foreground=\"{DynamicResource PrimaryTextBrush}\"", sharedTheme, StringComparison.Ordinal);
+        Assert.DoesNotContain("StaysOpen=\"False\"", sharedTheme, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void HardwareNetworkRow_ShouldUseStableTransparentTextRendering()
+    {
+        var hardwareXaml = ReadProjectFile("UniDesk", "Controls", "HardwareMonitorModuleView.xaml");
+
+        Assert.Contains("TextOptions.TextRenderingMode=\"Grayscale\"", hardwareXaml, StringComparison.Ordinal);
+        Assert.Contains("x:Name=\"NetworkReceivedValueText\"", hardwareXaml, StringComparison.Ordinal);
+        Assert.Contains("x:Name=\"NetworkSentValueText\"", hardwareXaml, StringComparison.Ordinal);
+        Assert.Equal(2, Regex.Matches(hardwareXaml, "Width=\"78\"").Count);
+        Assert.Equal(2, Regex.Matches(hardwareXaml, "TextAlignment=\"Left\"").Count);
+    }
+
+    [Fact]
+    public void SettingsSidebar_ShouldBlendIntoWindowGlass()
+    {
+        var sharedTheme = ReadProjectFile("UniDesk", "Resources", "Themes", "Shared.xaml");
+        var styleStart = sharedTheme.IndexOf("x:Key=\"GlassSidebarStyle\"", StringComparison.Ordinal);
+        var styleEnd = sharedTheme.IndexOf("</Style>", styleStart, StringComparison.Ordinal);
+        var sidebarStyle = sharedTheme[styleStart..styleEnd];
+
+        Assert.Contains("Property=\"Background\" Value=\"Transparent\"", sidebarStyle, StringComparison.Ordinal);
+        Assert.Contains("Property=\"BorderThickness\" Value=\"0\"", sidebarStyle, StringComparison.Ordinal);
+        Assert.Contains("Property=\"Padding\" Value=\"12\"", sidebarStyle, StringComparison.Ordinal);
+        Assert.DoesNotContain("SecondaryBackgroundBrush", sidebarStyle, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void SettingsNavigation_ShouldBeLocalizedInEveryLanguage()
     {
         var keys = new[]

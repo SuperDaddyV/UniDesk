@@ -107,6 +107,7 @@
                     Margin="0,4,0,0"
                     Padding="0,3,0,0"
                     VerticalAlignment="Top"
+                    TextOptions.TextRenderingMode="Grayscale"
                     BorderThickness="0,1,0,0"
                     BorderBrush="{DynamicResource GlassHighlightBrush}">
                 <Grid>
@@ -124,7 +125,10 @@
                                    FontWeight="SemiBold"
                                    LineHeight="12"
                                    Foreground="{DynamicResource SecondaryTextBrush}"/>
-                        <TextBlock Text="{Binding SystemNetworkReceivedText}"
+                        <TextBlock x:Name="NetworkReceivedValueText"
+                                   Text="{Binding SystemNetworkReceivedText}"
+                                   Width="78"
+                                   TextAlignment="Left"
                                    FontSize="{Binding DataContext.FontScale, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource ScaledFontSizeConverter}, ConverterParameter=10.5}"
                                    FontWeight="SemiBold"
                                    LineHeight="12"
@@ -141,7 +145,10 @@
                                    FontWeight="SemiBold"
                                    LineHeight="12"
                                    Foreground="{DynamicResource SecondaryTextBrush}"/>
-                        <TextBlock Text="{Binding SystemNetworkSentText}"
+                        <TextBlock x:Name="NetworkSentValueText"
+                                   Text="{Binding SystemNetworkSentText}"
+                                   Width="78"
+                                   TextAlignment="Left"
                                    FontSize="{Binding DataContext.FontScale, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource ScaledFontSizeConverter}, ConverterParameter=10.5}"
                                    FontWeight="SemiBold"
                                    LineHeight="12"
