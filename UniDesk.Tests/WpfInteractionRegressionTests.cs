@@ -118,11 +118,14 @@ public class WpfInteractionRegressionTests
     }
 
     [Fact]
-    public void SettingsScrollDrag_ShouldNotInterceptComboBoxItems()
+    public void SettingsContent_ShouldUseNativeScrollingWithoutCapturingMouse()
     {
+        var settingsXaml = ReadProjectFile("UniDesk", "SettingsWindow.xaml");
         var settingsCode = ReadProjectFile("UniDesk", "SettingsWindow.xaml.cs");
 
-        Assert.Contains("or ComboBoxItem", settingsCode, StringComparison.Ordinal);
+        Assert.DoesNotContain("ContentScrollViewer_OnPreviewMouse", settingsXaml, StringComparison.Ordinal);
+        Assert.DoesNotContain("_isScrollDragging", settingsCode, StringComparison.Ordinal);
+        Assert.DoesNotContain("ContentScrollViewer.CaptureMouse", settingsCode, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -138,19 +141,16 @@ public class WpfInteractionRegressionTests
     }
 
     [Fact]
-    public void SettingsEditableTextBoxes_ShouldRestoreKeyboardFocusAfterPageRefactor()
+    public void SettingsEditableTextBoxes_ShouldUseNativeMouseFocus()
     {
         var appearanceXaml = ReadProjectFile("UniDesk", "Controls", "Settings", "AppearanceSettingsPage.xaml");
-        var appearanceCode = ReadProjectFile("UniDesk", "Controls", "Settings", "AppearanceSettingsPage.xaml.cs");
         var generalXaml = ReadProjectFile("UniDesk", "Controls", "Settings", "GeneralSettingsPage.xaml");
-        var generalCode = ReadProjectFile("UniDesk", "Controls", "Settings", "GeneralSettingsPage.xaml.cs");
 
         Assert.Contains("x:Name=\"DisplayTitleTextBox\"", appearanceXaml, StringComparison.Ordinal);
-        Assert.Contains("PreviewMouseLeftButtonDown=\"EditableTextBox_OnPreviewMouseLeftButtonDown\"", appearanceXaml, StringComparison.Ordinal);
-        Assert.Contains("Keyboard.Focus(textBox)", appearanceCode, StringComparison.Ordinal);
-        Assert.Equal(2, Regex.Matches(generalXaml, "PreviewMouseLeftButtonDown=\"WeatherApiTextBox_OnPreviewMouseLeftButtonDown\"").Count);
-        Assert.Contains("nameof(SettingsViewModel.IsEditingWeatherApi)", generalCode, StringComparison.Ordinal);
-        Assert.Contains("Keyboard.Focus(WeatherApiHostTextBox)", generalCode, StringComparison.Ordinal);
+        Assert.DoesNotContain("PreviewMouseLeftButtonDown", appearanceXaml, StringComparison.Ordinal);
+        Assert.DoesNotContain("PreviewMouseLeftButtonDown", generalXaml, StringComparison.Ordinal);
+        Assert.Contains("UpdateSourceTrigger=PropertyChanged", appearanceXaml, StringComparison.Ordinal);
+        Assert.Equal(2, Regex.Matches(generalXaml, "UpdateSourceTrigger=PropertyChanged").Count);
     }
 
     [Fact]

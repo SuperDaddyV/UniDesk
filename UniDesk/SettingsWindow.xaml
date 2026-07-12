@@ -139,11 +139,7 @@
                               Grid.Column="1"
                               VerticalScrollBarVisibility="Auto"
                               HorizontalScrollBarVisibility="Disabled"
-                              Padding="22,12,22,16"
-                              PreviewMouseLeftButtonDown="ContentScrollViewer_OnPreviewMouseLeftButtonDown"
-                              PreviewMouseMove="ContentScrollViewer_OnPreviewMouseMove"
-                              PreviewMouseLeftButtonUp="ContentScrollViewer_OnPreviewMouseLeftButtonUp"
-                              MouseLeave="ContentScrollViewer_OnMouseLeave">
+                              Padding="22,12,22,16">
                     <TabControl x:Name="SettingsPages"
                                 SelectedIndex="{Binding ElementName=SettingsNavigation, Path=SelectedIndex}"
                                 Background="Transparent"

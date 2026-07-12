@@ -62,7 +62,6 @@
                     <TextBox x:Name="WeatherApiHostTextBox"
                              Grid.Column="1" Style="{StaticResource GlassTextBoxStyle}"
                              Text="{Binding WeatherApiHost, UpdateSourceTrigger=PropertyChanged}"
-                             PreviewMouseLeftButtonDown="WeatherApiTextBox_OnPreviewMouseLeftButtonDown"
                              IsReadOnly="{Binding IsEditingWeatherApi, Converter={StaticResource InverseBooleanConverter}}"/>
                 </Grid>
                 <Grid>
@@ -73,7 +72,6 @@
                     <TextBox x:Name="WeatherApiKeyTextBox"
                              Grid.Column="1" Style="{StaticResource GlassTextBoxStyle}"
                              Text="{Binding WeatherApiKey, UpdateSourceTrigger=PropertyChanged}"
-                             PreviewMouseLeftButtonDown="WeatherApiTextBox_OnPreviewMouseLeftButtonDown"
                              IsReadOnly="{Binding IsEditingWeatherApi, Converter={StaticResource InverseBooleanConverter}}"/>
                 </Grid>
             </StackPanel>

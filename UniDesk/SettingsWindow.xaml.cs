@@ -14,10 +14,6 @@ public partial class SettingsWindow : Window
     private readonly EventHandler<bool> _requestCloseHandler;
     private bool _isClosing;
 
-    private bool _isScrollDragging;
-    private Point _scrollDragStart;
-    private double _scrollDragStartOffset;
-
     private bool _isWindowDragging;
     private Point _windowDragScreenStart;
 
@@ -223,7 +219,6 @@ public partial class SettingsWindow : Window
     {
         _viewModel.RequestClose -= _requestCloseHandler;
         _viewModel.Dispose();
-        ContentScrollViewer.ReleaseMouseCapture();
         EndWindowDrag();
     }
 
@@ -235,69 +230,4 @@ public partial class SettingsWindow : Window
         }
     }
 
-    private void ContentScrollViewer_OnPreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
-    {
-        if (!CanStartScrollDrag(e.OriginalSource as DependencyObject))
-        {
-            return;
-        }
-
-        _isScrollDragging = true;
-        _scrollDragStart = e.GetPosition(ContentScrollViewer);
-        _scrollDragStartOffset = ContentScrollViewer.VerticalOffset;
-        ContentScrollViewer.CaptureMouse();
-        e.Handled = true;
-    }
-
-    private void ContentScrollViewer_OnPreviewMouseMove(object sender, MouseEventArgs e)
-    {
-        if (!_isScrollDragging || e.LeftButton != MouseButtonState.Pressed)
-        {
-            return;
-        }
-
-        var current = e.GetPosition(ContentScrollViewer);
-        var delta = _scrollDragStart.Y - current.Y;
-        ContentScrollViewer.ScrollToVerticalOffset(_scrollDragStartOffset + delta);
-    }
-
-    private void ContentScrollViewer_OnPreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e) =>
-        EndScrollDrag();
-
-    private void ContentScrollViewer_OnMouseLeave(object sender, MouseEventArgs e) =>
-        EndScrollDrag();
-
-    private void EndScrollDrag()
-    {
-        if (!_isScrollDragging)
-        {
-            return;
-        }
-
-        _isScrollDragging = false;
-        if (ContentScrollViewer.IsMouseCaptured)
-        {
-            ContentScrollViewer.ReleaseMouseCapture();
-        }
-    }
-
-    private static bool CanStartScrollDrag(DependencyObject? source)
-    {
-        while (source != null)
-        {
-            if (source is Button or TextBoxBase or Slider or CheckBox or ComboBox or ComboBoxItem or ScrollBar)
-            {
-                return false;
-            }
-
-            if (source is ScrollViewer)
-            {
-                return true;
-            }
-
-            source = VisualTreeHelper.GetParent(source);
-        }
-
-        return false;
-    }
 }

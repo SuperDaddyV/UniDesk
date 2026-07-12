@@ -10,7 +10,7 @@ This major release hardens runtime stability and local-data privacy, introduces 
 - Added five-kind global search for Quick Notes, Todos, clipboard history, snippets, and shortcuts.
 - Added follow-system light/dark themes with separate light and dark color-scheme choices.
 - Fixed the follow-system color-scheme dropdowns so every option remains readable and selectable on the glass Settings surface.
-- Fixed Settings input handling so dropdown choices are not intercepted by drag scrolling, editable text boxes regain keyboard focus after the seven-page refactor, and an unchanged conflicting hotkey no longer blocks saving titles, weather credentials, themes, or other unrelated settings.
+- Fixed Settings input handling by removing content drag-scroll mouse capture, restoring native mouse focus and caret placement for the title and weather API fields, keeping dropdown choices clickable, and ensuring an unchanged conflicting hotkey no longer blocks unrelated settings saves.
 - Hid the manual color palette while follow-system mode is active, leaving the light and dark dropdowns as the unambiguous theme controls.
 - Added a Settings control for recording, restoring, or fully disabling the global hotkey, with conflict rollback that preserves the previous working shortcut.
 - Stabilized the Hardware Monitor network row to prevent old throughput values from leaving visible text trails on transparent surfaces.
@@ -32,7 +32,7 @@ This major release hardens runtime stability and local-data privacy, introduces 
 - 新增全局搜索，可检索快速便签、待办、剪贴板历史、常用短语和快捷方式五类内容。
 - 新增跟随系统明暗主题，并可分别指定浅色和深色配色。
 - 修复跟随系统模式下的配色下拉框，确保所有选项在玻璃设置界面中清晰可见并可正常选择。
-- 修复设置页输入链：下拉选项不再被拖拽滚动拦截；七页重构后标题和天气 API 文本框重新获得键盘焦点；未修改的冲突热键也不再阻止其他设置保存。
+- 修复设置页输入链：移除内容区拖拽滚动的鼠标捕获，恢复标题和天气 API 文本框的原生鼠标焦点与光标定位；下拉选项可正常点击；未修改的冲突热键不再阻止其他设置保存。
 - 跟随系统模式开启时隐藏手动配色圆圈，仅保留明确对应浅色和深色的两个下拉框。
 - 新增全局热键设置，可录入、恢复默认或完全禁用热键；发生占用冲突时会恢复原有可用热键且不保存冲突组合。
 - 稳定硬件监视网络数据区域的文本布局与渲染，避免透明界面上残留旧速率数值形成重影。
