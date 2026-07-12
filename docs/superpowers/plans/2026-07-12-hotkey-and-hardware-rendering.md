@@ -316,10 +316,11 @@ git add UniDesk/ViewModels/SettingsViewModel.cs UniDesk/Controls/Settings/Shortc
 git commit -m "feat: add configurable global hotkey settings"
 ```
 
-### Task 5: Hardware rendering and Glass ComboBox regression fixes
+### Task 5: Hardware rendering and Glass settings UI regression fixes
 
 **Files:**
 - Modify: `UniDesk/Controls/HardwareMonitorModuleView.xaml`
+- Modify: `UniDesk/SettingsWindow.xaml`
 - Modify: `UniDesk/Resources/Themes/Shared.xaml`
 - Modify: `UniDesk.Tests/WpfInteractionRegressionTests.cs`
 - Modify: `docs/release-unidesk.md`
@@ -339,6 +340,8 @@ Assert.Contains("TextOptions.TextRenderingMode=\"Grayscale\"", hardwareXaml);
 
 Retain the existing `GlassComboBox_ShouldUseReadableSelectablePopupTemplate` regression test.
 
+Add sidebar assertions that `GlassSidebarStyle` uses `Background="Transparent"`, has no right divider, and that `GlassNavigationItemStyle` retains `CornerRadius="8"` on `NavigationBackground`.
+
 - [ ] **Step 2: Run the focused WPF test and verify RED for hardware rendering**
 
 ```powershell
@@ -355,18 +358,22 @@ Set `TextOptions.TextRenderingMode="Grayscale"` on the network-row border. Give 
 
 Verify the popup uses `PrimaryBackgroundBrush`, each item uses `PrimaryTextBrush`, `PART_Popup` binds `IsDropDownOpen`, and no `StaysOpen="False"` remains. Do not change theme selection logic.
 
-- [ ] **Step 5: Update release notes**
+- [ ] **Step 5: Integrate the Settings sidebar into the window glass**
 
-Document the readable/selectable follow-system dropdowns, configurable/disableable hotkey with conflict rollback, and hardware ghosting fix in both English and Chinese v2.0.0 sections.
+Change `GlassSidebarStyle` to a transparent background with no vertical divider and preserve `12px` navigation padding. Keep the `160px` column and the existing rounded selected-item template. Do not alter page selection, localization, or footer layout.
 
-- [ ] **Step 6: Run focused tests and verify GREEN**
+- [ ] **Step 6: Update release notes**
+
+Document the readable/selectable follow-system dropdowns, integrated transparent Settings sidebar, configurable/disableable hotkey with conflict rollback, and hardware ghosting fix in both English and Chinese v2.0.0 sections.
+
+- [ ] **Step 7: Run focused tests and verify GREEN**
 
 Run the command from Step 2. Expected: all WPF regression tests pass.
 
-- [ ] **Step 7: Commit the UI regressions**
+- [ ] **Step 8: Commit the UI regressions**
 
 ```powershell
-git add UniDesk/Controls/HardwareMonitorModuleView.xaml UniDesk/Resources/Themes/Shared.xaml UniDesk.Tests/WpfInteractionRegressionTests.cs docs/release-unidesk.md
+git add UniDesk/Controls/HardwareMonitorModuleView.xaml UniDesk/SettingsWindow.xaml UniDesk/Resources/Themes/Shared.xaml UniDesk.Tests/WpfInteractionRegressionTests.cs docs/release-unidesk.md
 git commit -m "fix: stabilize glass control rendering"
 ```
 

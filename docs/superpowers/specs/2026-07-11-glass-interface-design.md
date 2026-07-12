@@ -54,6 +54,8 @@ Settings uses a two-column layout:
 - Footer: fixed reset/cancel/save actions that remain visible while content scrolls.
 - Header: unified title treatment and close action, with the existing drag behavior.
 
+The left navigation is visually integrated into the window glass rather than rendered as one large opaque rectangular panel. Its background and right divider remain transparent; spacing separates it from the page content. Only the active navigation item uses a rounded highlight pill, while hover and keyboard-focus states use the same lightweight rounded treatment. This preserves the two-column structure without introducing sharp internal corners.
+
 The navigation pages are:
 
 1. General: language, startup, and weather API settings.
@@ -90,6 +92,7 @@ No user-facing label may be hard-coded in `SettingsWindow.xaml` except product n
 Implementation is accepted only when:
 
 - Structural regression tests prove that Settings uses the shared glass resources, seven navigation pages, fixed dimensions, and a fixed footer.
+- Structural regression tests prove that the Settings sidebar has no opaque panel background or vertical divider and retains rounded navigation pills.
 - Structural regression tests prove that the main content container no longer binds `Opacity` and that only the background layer binds `WindowOpacity`.
 - A regression test proves that both layered glass windows do not request a rectangular DWM backdrop.
 - All localized dictionaries contain the new navigation keys.
