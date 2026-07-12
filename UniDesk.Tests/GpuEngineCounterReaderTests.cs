@@ -97,6 +97,19 @@ public class GpuEngineCounterReaderTests
         Assert.Equal("pci:1002:01:00:0", deviceId);
     }
 
+    [Fact]
+    public void Read_ShouldIsolateOneCounterCreationFailure()
+    {
+        using var source = new PartiallyFailingCounterSource();
+        using var reader = new GpuEngineCounterReader(source, TimeSpan.FromMinutes(5));
+
+        _ = reader.Read();
+        var sampled = reader.Read();
+
+        Assert.Equal(50, sampled.GpuUsage);
+        Assert.Equal(2, source.SuccessfulCounterReads);
+    }
+
     private sealed class FakeCounterSource : IGpuEngineCounterSource
     {
         private readonly string _instanceName;
@@ -131,5 +144,40 @@ public class GpuEngineCounterReaderTests
 
         public IGpuEngineCounter CreateCounter(string instanceName) => throw new NotSupportedException();
         public void Dispose() { }
+    }
+
+    private sealed class PartiallyFailingCounterSource : IGpuEngineCounterSource
+    {
+        private const string Failing =
+            "pid_1_luid_0x00000000_0x00000001_phys_0_eng_0_engtype_3d";
+        private const string Working =
+            "pid_2_luid_0x00000000_0x00000002_phys_0_eng_0_engtype_3d";
+        private readonly Queue<double> _values = new([0, 50]);
+
+        public int SuccessfulCounterReads { get; private set; }
+        public IReadOnlyList<string> GetInstanceNames() => [Failing, Working];
+
+        public IGpuEngineCounter CreateCounter(string instanceName)
+        {
+            if (instanceName == Failing)
+            {
+                throw new InvalidOperationException("one counter failed");
+            }
+
+            return new CountingCounter(_values, () => SuccessfulCounterReads++);
+        }
+
+        public void Dispose() { }
+
+        private sealed class CountingCounter(Queue<double> values, Action onRead) : IGpuEngineCounter
+        {
+            public double NextValue()
+            {
+                onRead();
+                return values.Dequeue();
+            }
+
+            public void Dispose() { }
+        }
     }
 }

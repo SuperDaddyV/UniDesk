@@ -15,7 +15,7 @@ public sealed class SystemMetricsService :
     private readonly bool _ownsLibreHost;
     private readonly TemperatureSpikeFilter _cpuTemperatureFilter = new();
     private readonly TemperatureSpikeFilter _gpuTemperatureFilter = new();
-    private readonly object _historySync = new();
+    private readonly object _readSync = new();
     private readonly Queue<SystemMetricsSnapshot> _recentSnapshots = new();
     private bool _disposed;
 
@@ -48,7 +48,15 @@ public sealed class SystemMetricsService :
 
     public SystemMetricsSnapshot Read()
     {
-        ObjectDisposedException.ThrowIf(_disposed, this);
+        lock (_readSync)
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+            return ReadCore();
+        }
+    }
+
+    private SystemMetricsSnapshot ReadCore()
+    {
         _libreHost?.Refresh();
         var cpu = _cpuReader.Read();
         var gpu = _gpuReader.Read();
@@ -83,13 +91,10 @@ public sealed class SystemMetricsService :
             GpuUsageReason = gpu.UsageReason,
             GpuTemperatureReason = gpu.TemperatureReason
         };
-        lock (_historySync)
+        _recentSnapshots.Enqueue(snapshot);
+        while (_recentSnapshots.Count > 3)
         {
-            _recentSnapshots.Enqueue(snapshot);
-            while (_recentSnapshots.Count > 3)
-            {
-                _recentSnapshots.Dequeue();
-            }
+            _recentSnapshots.Dequeue();
         }
 
         return snapshot;
@@ -97,35 +102,40 @@ public sealed class SystemMetricsService :
 
     public HardwareMetricsDiagnosticsSnapshot CaptureDiagnostics()
     {
-        ObjectDisposedException.ThrowIf(_disposed, this);
-        SystemMetricsSnapshot[] history;
-        lock (_historySync)
+        lock (_readSync)
         {
-            history = _recentSnapshots.ToArray();
-        }
+            ObjectDisposedException.ThrowIf(_disposed, this);
+            if (_recentSnapshots.Count == 0)
+            {
+                _ = ReadCore();
+            }
 
-        var libreStatus = _libreHost?.DiagnosticStatus ??
-            new LibreHardwareHostDiagnosticStatus(false, false, "not configured", null, []);
-        var sensors = _libreHost?.CurrentSensors.ToArray() ?? [];
-        var gpuEngineStatus = (_gpuReader as GpuMetricsReader)?.GpuEngineDiagnosticStatus;
-        return new HardwareMetricsDiagnosticsSnapshot(
-            DateTimeOffset.UtcNow,
-            libreStatus,
-            gpuEngineStatus,
-            sensors,
-            history);
+            var libreStatus = _libreHost?.DiagnosticStatus ??
+                new LibreHardwareHostDiagnosticStatus(false, false, "not configured", null, []);
+            var sensors = _libreHost?.CurrentSensors.ToArray() ?? [];
+            var gpuEngineStatus = (_gpuReader as GpuMetricsReader)?.GpuEngineDiagnosticStatus;
+            return new HardwareMetricsDiagnosticsSnapshot(
+                DateTimeOffset.UtcNow,
+                libreStatus,
+                gpuEngineStatus,
+                sensors,
+                _recentSnapshots.ToArray());
+        }
     }
 
     public void Dispose()
     {
-        if (_disposed) return;
-        _disposed = true;
-        _cpuReader.Dispose();
-        _gpuReader.Dispose();
-        _networkReader.Dispose();
-        if (_ownsLibreHost)
+        lock (_readSync)
         {
-            _libreHost?.Dispose();
+            if (_disposed) return;
+            _disposed = true;
+            _cpuReader.Dispose();
+            _gpuReader.Dispose();
+            _networkReader.Dispose();
+            if (_ownsLibreHost)
+            {
+                _libreHost?.Dispose();
+            }
         }
     }
 }

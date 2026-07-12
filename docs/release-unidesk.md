@@ -14,6 +14,9 @@ This major release hardens runtime stability and local-data privacy, introduces 
 - Hid the manual color palette while follow-system mode is active, leaving the light and dark dropdowns as the unambiguous theme controls.
 - Added a Settings control for recording, restoring, or fully disabling the global hotkey, with conflict rollback that preserves the previous working shortcut.
 - Stabilized the Hardware Monitor network row to prevent old throughput values from leaving visible text trails on transparent surfaces.
+- Added Windows GPU Engine as a vendor-neutral usage fallback, with counter warm-up, per-counter isolation, and retry backoff.
+- Prevented CPU/GPU readings from different physical adapters from being combined unless their device identities explicitly match.
+- Added a shared LibreHardwareMonitor snapshot, temperature quality filtering, availability/source tooltips, and sanitized hardware-diagnostic export with compatibility fixtures.
 - Integrated the Settings navigation directly into the window glass by removing the rectangular sidebar fill and divider while retaining rounded selection pills.
 - Kept the layered WPF glass windows on a single translucent-brush composition path, so opacity reveals the real desktop and rounded outer corners remain transparent.
 - Added fatal UI exception shutdown coordination, background system-metric sampling, reliable single-instance activation, seven-day log retention, and Todo deletion confirmation.
@@ -36,6 +39,9 @@ This major release hardens runtime stability and local-data privacy, introduces 
 - 跟随系统模式开启时隐藏手动配色圆圈，仅保留明确对应浅色和深色的两个下拉框。
 - 新增全局热键设置，可录入、恢复默认或完全禁用热键；发生占用冲突时会恢复原有可用热键且不保存冲突组合。
 - 稳定硬件监视网络数据区域的文本布局与渲染，避免透明界面上残留旧速率数值形成重影。
+- 新增 Windows GPU Engine 通用使用率兜底，并加入计数器预热、单计数器隔离和失败退避。
+- CPU／GPU 指标仅在设备身份明确一致时跨来源补齐，避免多显卡环境下混合不同物理设备的数据。
+- 新增共享 LibreHardwareMonitor 快照、温度质量过滤、指标来源／可用性提示，以及脱敏硬件诊断导出和兼容性样本测试。
 - 移除设置页左侧导航的矩形底色和分隔线，使导航直接融入窗口毛玻璃，并保留圆角选中项。
 - 分层 WPF 玻璃窗口统一使用半透明画刷合成，调节透明度会真实透出桌面，窗口圆角外侧保持透明。
 - 新增致命 UI 异常退出协调、后台系统指标采样、可靠的单实例激活、7 天日志保留和待办删除确认。

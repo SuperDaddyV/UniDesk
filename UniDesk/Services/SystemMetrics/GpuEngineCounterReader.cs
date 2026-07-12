@@ -104,9 +104,17 @@ public sealed class GpuEngineCounterReader : IDisposable
                 {
                     if (!_counters.TryGetValue(instanceName, out var counter))
                     {
-                        counter = _source.CreateCounter(instanceName);
-                        _counters.Add(instanceName, counter);
-                        _ = counter.NextValue();
+                        try
+                        {
+                            counter = _source.CreateCounter(instanceName);
+                            _counters.Add(instanceName, counter);
+                            _ = counter.NextValue();
+                        }
+                        catch
+                        {
+                            counter?.Dispose();
+                            _counters.Remove(instanceName);
+                        }
                         continue;
                     }
 

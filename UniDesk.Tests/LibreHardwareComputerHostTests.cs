@@ -79,6 +79,23 @@ public class LibreHardwareComputerHostTests
         Assert.Equal(3, service.CaptureDiagnostics().RecentSnapshots.Count);
     }
 
+    [Fact]
+    public void SystemMetricsService_DiagnosticsShouldCollectSampleWhenHistoryIsEmpty()
+    {
+        using var host = new FakeLibreHardwareHost([]);
+        using var service = new SystemMetricsService(
+            new StubCpuReader(),
+            new StubGpuReader(),
+            new StubMemoryReader(),
+            new StubNetworkReader(),
+            host);
+
+        var diagnostics = service.CaptureDiagnostics();
+
+        Assert.Single(diagnostics.RecentSnapshots);
+        Assert.Equal(1, host.RefreshCount);
+    }
+
     private sealed class FakeLibreHardwareHost : ILibreHardwareComputerHost
     {
         public FakeLibreHardwareHost(IReadOnlyList<HardwareSensorSnapshot> sensors)
