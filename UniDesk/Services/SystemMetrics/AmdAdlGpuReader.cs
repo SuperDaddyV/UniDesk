@@ -64,7 +64,21 @@ public sealed class AmdAdlGpuReader
 
                     if (temp.HasValue || usage.HasValue)
                     {
-                        return new GpuMetrics(usage, temp, info.strAdapterName, 20, true);
+                        var deviceId = FormatDeviceId(
+                            info.iVendorID,
+                            info.iBusNumber,
+                            info.iDeviceNumber,
+                            info.iFunctionNumber);
+                        return new GpuMetrics(
+                            usage,
+                            temp,
+                            info.strAdapterName,
+                            20,
+                            true,
+                            usageSource: usage.HasValue ? "AMD ADL" : null,
+                            usageDeviceId: usage.HasValue ? deviceId : null,
+                            temperatureSource: temp.HasValue ? "AMD ADL" : null,
+                            temperatureDeviceId: temp.HasValue ? deviceId : null);
                     }
                 }
             }
@@ -79,6 +93,9 @@ public sealed class AmdAdlGpuReader
 
         return GpuMetrics.Empty;
     }
+
+    public static string FormatDeviceId(int vendorId, int bus, int device, int function) =>
+        $"pci:{vendorId:X4}:{bus:X2}:{device:X2}:{function:X1}".ToLowerInvariant();
 
     private bool EnsureInitialized()
     {

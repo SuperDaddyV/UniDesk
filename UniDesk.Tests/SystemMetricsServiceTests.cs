@@ -22,11 +22,15 @@ public class SystemMetricsServiceTests
     }
 
     [Fact]
-    public void GpuMetricsReader_ShouldMergePartialCandidates()
+    public void GpuMetricsReader_ShouldMergePartialCandidatesForTheSameDevice()
     {
         using var reader = new GpuMetricsReader(
-            () => new GpuMetrics(45, null, "Usage source", 10, true),
-            () => new GpuMetrics(null, 63, "Temperature source", 20, true),
+            () => new GpuMetrics(
+                45, null, "Usage source", 10, true,
+                usageDeviceId: "gpu:0"),
+            () => new GpuMetrics(
+                null, 63, "Temperature source", 20, true,
+                temperatureDeviceId: "gpu:0"),
             () => GpuMetrics.Empty);
 
         var metrics = reader.Read();
@@ -34,6 +38,25 @@ public class SystemMetricsServiceTests
         Assert.Equal("Usage source", metrics.SourceName);
         Assert.Equal(45, metrics.GpuUsage);
         Assert.Equal(63, metrics.GpuTemperature);
+    }
+
+    [Fact]
+    public void GpuMetricsReader_ShouldNotMergePartialCandidatesFromDifferentDevices()
+    {
+        using var reader = new GpuMetricsReader(
+            () => new GpuMetrics(
+                45, null, "Discrete usage", 10, true,
+                usageDeviceId: "gpu:discrete"),
+            () => new GpuMetrics(
+                null, 63, "Integrated temperature", 20, false,
+                temperatureDeviceId: "gpu:integrated"),
+            () => GpuMetrics.Empty);
+
+        var metrics = reader.Read();
+
+        Assert.Equal(45, metrics.GpuUsage);
+        Assert.Null(metrics.GpuTemperature);
+        Assert.Equal("gpu:discrete", metrics.UsageDeviceId);
     }
 
     [Fact]
