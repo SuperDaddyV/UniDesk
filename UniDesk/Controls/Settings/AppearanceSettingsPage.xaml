@@ -71,8 +71,10 @@
         <Border Style="{StaticResource GlassSectionStyle}">
             <StackPanel>
                 <TextBlock Text="{DynamicResource Settings.DisplayTitle}" Style="{StaticResource GlassSettingLabelStyle}" Margin="0,0,0,6"/>
-                <TextBox Style="{StaticResource GlassTextBoxStyle}"
+                <TextBox x:Name="DisplayTitleTextBox"
+                         Style="{StaticResource GlassTextBoxStyle}"
                          Text="{Binding DisplayTitle, UpdateSourceTrigger=PropertyChanged}"
+                         PreviewMouseLeftButtonDown="EditableTextBox_OnPreviewMouseLeftButtonDown"
                          MaxLength="20" Margin="0,0,0,16"/>
 
                 <Grid Margin="0,0,0,4">

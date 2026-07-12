@@ -281,33 +281,6 @@ public partial class SettingsWindow : Window
         }
     }
 
-    private void WeatherApiTextBox_OnPreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
-    {
-        if (!_viewModel.IsEditingWeatherApi || sender is not TextBox textBox)
-        {
-            return;
-        }
-
-        if (!textBox.IsKeyboardFocusWithin)
-        {
-            textBox.Focus();
-            Keyboard.Focus(textBox);
-            e.Handled = true;
-        }
-    }
-
-    private void EditableTextBox_OnPreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
-    {
-        if (sender is not TextBox textBox || textBox.IsKeyboardFocusWithin)
-        {
-            return;
-        }
-
-        textBox.Focus();
-        Keyboard.Focus(textBox);
-        e.Handled = true;
-    }
-
     private static bool CanStartScrollDrag(DependencyObject? source)
     {
         while (source != null)

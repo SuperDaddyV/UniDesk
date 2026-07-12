@@ -138,6 +138,22 @@ public class WpfInteractionRegressionTests
     }
 
     [Fact]
+    public void SettingsEditableTextBoxes_ShouldRestoreKeyboardFocusAfterPageRefactor()
+    {
+        var appearanceXaml = ReadProjectFile("UniDesk", "Controls", "Settings", "AppearanceSettingsPage.xaml");
+        var appearanceCode = ReadProjectFile("UniDesk", "Controls", "Settings", "AppearanceSettingsPage.xaml.cs");
+        var generalXaml = ReadProjectFile("UniDesk", "Controls", "Settings", "GeneralSettingsPage.xaml");
+        var generalCode = ReadProjectFile("UniDesk", "Controls", "Settings", "GeneralSettingsPage.xaml.cs");
+
+        Assert.Contains("x:Name=\"DisplayTitleTextBox\"", appearanceXaml, StringComparison.Ordinal);
+        Assert.Contains("PreviewMouseLeftButtonDown=\"EditableTextBox_OnPreviewMouseLeftButtonDown\"", appearanceXaml, StringComparison.Ordinal);
+        Assert.Contains("Keyboard.Focus(textBox)", appearanceCode, StringComparison.Ordinal);
+        Assert.Equal(2, Regex.Matches(generalXaml, "PreviewMouseLeftButtonDown=\"WeatherApiTextBox_OnPreviewMouseLeftButtonDown\"").Count);
+        Assert.Contains("nameof(SettingsViewModel.IsEditingWeatherApi)", generalCode, StringComparison.Ordinal);
+        Assert.Contains("Keyboard.Focus(WeatherApiHostTextBox)", generalCode, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void SettingsNavigation_ShouldBeLocalizedInEveryLanguage()
     {
         var keys = new[]
