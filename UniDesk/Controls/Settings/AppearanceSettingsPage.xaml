@@ -32,8 +32,9 @@
                                   SelectedValue="{Binding ColorSchemeDark, Mode=TwoWay}"/>
                     </StackPanel>
                 </Grid>
-                <ItemsControl ItemsSource="{Binding ColorSchemes}"
-                              IsEnabled="{Binding FollowSystemTheme, Converter={StaticResource InverseBooleanConverter}}">
+                <ItemsControl x:Name="ManualColorSchemePalette"
+                              ItemsSource="{Binding ColorSchemes}"
+                              Visibility="{Binding FollowSystemTheme, Converter={StaticResource InverseBooleanToVisibilityConverter}}">
                     <ItemsControl.ItemsPanel>
                         <ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate>
                     </ItemsControl.ItemsPanel>

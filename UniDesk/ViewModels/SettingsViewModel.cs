@@ -539,16 +539,28 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         var apiKeyToValidate = string.Empty;
         var apiHostToValidate = string.Empty;
         var originalHotkey = _originalSettings.GetValueOrDefault("Hotkey", DefaultHotkey);
+        var requestedHotkey = GlobalHotkeyEnabled ? Hotkey : string.Empty;
+        var hotkeySettingChanged = !string.Equals(
+            originalHotkey,
+            requestedHotkey,
+            StringComparison.OrdinalIgnoreCase);
+        var hotkeyToPersist = originalHotkey;
+        var hotkeyWasApplied = false;
 
         try
         {
-            var requestedHotkey = GlobalHotkeyEnabled ? Hotkey : string.Empty;
-            var hotkeyResult = _mainWindowViewModel.ApplyGlobalHotkey(requestedHotkey);
-            if (!hotkeyResult.Success)
+            if (hotkeySettingChanged)
             {
-                HotkeyStatusText = BuildHotkeyFailureMessage(hotkeyResult, requestedHotkey);
-                _notificationService.ShowWarningMessage(HotkeyStatusText);
-                return;
+                var hotkeyResult = _mainWindowViewModel.ApplyGlobalHotkey(requestedHotkey);
+                if (!hotkeyResult.Success)
+                {
+                    HotkeyStatusText = BuildHotkeyFailureMessage(hotkeyResult, requestedHotkey);
+                    _notificationService.ShowWarningMessage(HotkeyStatusText);
+                    return;
+                }
+
+                hotkeyToPersist = hotkeyResult.NormalizedHotkey;
+                hotkeyWasApplied = true;
             }
 
             apiKeyToValidate = WeatherApiKey.Trim();
@@ -572,7 +584,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
             _settingsService.SetValue("WeatherApiKey", apiKeyToValidate);
             _settingsService.SetValue("WeatherApiHost", apiHostToValidate);
             _settingsService.SetValue("ShortcutMaxCount", ShortcutMaxCount.ToString(CultureInfo.InvariantCulture));
-            _settingsService.SetValue("Hotkey", hotkeyResult.NormalizedHotkey);
+            _settingsService.SetValue("Hotkey", hotkeyToPersist);
             _settingsService.SetValue(QuickTextService.HistoryEnabledSettingKey, ClipboardHistoryEnabled.ToString());
             _settingsService.SetValue(QuickTextService.SensitiveFilterSettingKey, ClipboardSensitiveFilterEnabled.ToString());
             _settingsService.SetValue(QuickTextService.HistoryMaxCountSettingKey, ClipboardHistoryMaxCount.ToString(CultureInfo.InvariantCulture));
@@ -598,7 +610,10 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         }
         catch (Exception ex)
         {
-            _mainWindowViewModel.ApplyGlobalHotkey(originalHotkey);
+            if (hotkeyWasApplied)
+            {
+                _mainWindowViewModel.ApplyGlobalHotkey(originalHotkey);
+            }
             RevertToOriginalSettings();
             _notificationService.ShowErrorMessage(_localizationService.Format("Settings.SaveFailedFormat", ex.Message));
             return;

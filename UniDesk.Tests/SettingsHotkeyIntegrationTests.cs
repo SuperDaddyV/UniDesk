@@ -16,8 +16,19 @@ public class SettingsHotkeyIntegrationTests
         Assert.Contains("GetValue(\"Hotkey\", DefaultHotkey)", viewModel, StringComparison.Ordinal);
         Assert.Contains("ApplyGlobalHotkey(requestedHotkey)", viewModel, StringComparison.Ordinal);
         Assert.Contains("if (!hotkeyResult.Success)", viewModel, StringComparison.Ordinal);
-        Assert.Contains("_settingsService.SetValue(\"Hotkey\", hotkeyResult.NormalizedHotkey)", viewModel, StringComparison.Ordinal);
+        Assert.Contains("_settingsService.SetValue(\"Hotkey\", hotkeyToPersist)", viewModel, StringComparison.Ordinal);
         Assert.Contains("ApplyGlobalHotkey(originalHotkey)", viewModel, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void UnchangedHotkey_ShouldNotBlockSavingUnrelatedSettings()
+    {
+        var viewModel = ReadProjectFile("UniDesk", "ViewModels", "SettingsViewModel.cs");
+
+        Assert.Contains("var hotkeySettingChanged", viewModel, StringComparison.Ordinal);
+        Assert.Contains("if (hotkeySettingChanged)", viewModel, StringComparison.Ordinal);
+        Assert.Contains("var hotkeyToPersist", viewModel, StringComparison.Ordinal);
+        Assert.Contains("_settingsService.SetValue(\"Hotkey\", hotkeyToPersist)", viewModel, StringComparison.Ordinal);
     }
 
     [Fact]

@@ -118,6 +118,26 @@ public class WpfInteractionRegressionTests
     }
 
     [Fact]
+    public void SettingsScrollDrag_ShouldNotInterceptComboBoxItems()
+    {
+        var settingsCode = ReadProjectFile("UniDesk", "SettingsWindow.xaml.cs");
+
+        Assert.Contains("or ComboBoxItem", settingsCode, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void AppearanceSettings_ShouldHideManualPaletteWhileFollowingSystemTheme()
+    {
+        var appearanceXaml = ReadProjectFile("UniDesk", "Controls", "Settings", "AppearanceSettingsPage.xaml");
+
+        Assert.Contains("x:Name=\"ManualColorSchemePalette\"", appearanceXaml, StringComparison.Ordinal);
+        Assert.Contains(
+            "Visibility=\"{Binding FollowSystemTheme, Converter={StaticResource InverseBooleanToVisibilityConverter}}\"",
+            appearanceXaml,
+            StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void SettingsNavigation_ShouldBeLocalizedInEveryLanguage()
     {
         var keys = new[]

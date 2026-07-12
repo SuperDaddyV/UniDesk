@@ -163,7 +163,7 @@ public partial class SettingsWindow : Window
     {
         while (source != null)
         {
-            if (source is Button or TextBoxBase or Slider or CheckBox or ComboBox or ScrollBar)
+            if (source is Button or TextBoxBase or Slider or CheckBox or ComboBox or ComboBoxItem or ScrollBar)
             {
                 return true;
             }
@@ -312,7 +312,7 @@ public partial class SettingsWindow : Window
     {
         while (source != null)
         {
-            if (source is Button or TextBoxBase or Slider or CheckBox or ComboBox or ScrollBar)
+            if (source is Button or TextBoxBase or Slider or CheckBox or ComboBox or ComboBoxItem or ScrollBar)
             {
                 return false;
             }
