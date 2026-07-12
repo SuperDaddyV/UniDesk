@@ -182,6 +182,13 @@
     <sys:String x:Key="Settings.FontNormal">Normal</sys:String>
     <sys:String x:Key="Settings.FontLarge">Grande</sys:String>
     <sys:String x:Key="Settings.ShortcutCount">Número de accesos</sys:String>
+    <sys:String x:Key="Settings.GlobalHotkey">Atajo global</sys:String>
+    <sys:String x:Key="Settings.EnableGlobalHotkey">Activar atajo global</sys:String>
+    <sys:String x:Key="Settings.HotkeyValue">Combinación actual</sys:String>
+    <sys:String x:Key="Settings.RecordHotkey">Grabar</sys:String>
+    <sys:String x:Key="Settings.RestoreDefaultHotkey">Restaurar predeterminado</sys:String>
+    <sys:String x:Key="Settings.HotkeyRecording">Pulsa la nueva combinación (Esc para cancelar)</sys:String>
+    <sys:String x:Key="Settings.HotkeyRecordingHint">Usa Ctrl, Alt, Shift o Win con una letra, número, F1-F12 o Espacio.</sys:String>
     <sys:String x:Key="Settings.Language">Idioma</sys:String>
     <sys:String x:Key="Settings.ModuleManagement">Gestión de módulos</sys:String>
     <sys:String x:Key="Settings.ShowHide">Mostrar/Ocultar</sys:String>
@@ -239,6 +246,9 @@
 
     <sys:String x:Key="Hotkey.InvalidFormat">Formato de atajo no válido: {0}</sys:String>
     <sys:String x:Key="Hotkey.RegisterFailedFormat">No se pudo registrar el atajo {0}; quizá lo usa otra app. (Código: {1})</sys:String>
+    <sys:String x:Key="Hotkey.AlreadyInUse">Otra aplicación ya usa el atajo {0}. Elige otra combinación.</sys:String>
+    <sys:String x:Key="Hotkey.Disabled">El atajo global está desactivado</sys:String>
+    <sys:String x:Key="Hotkey.InvalidCapture">Usa al menos un modificador y una tecla compatible.</sys:String>
 
     <sys:String x:Key="Update.Checking">Buscando actualizaciones...</sys:String>
     <sys:String x:Key="Update.CurrentVersionFormat">Versión actual: {0}</sys:String>

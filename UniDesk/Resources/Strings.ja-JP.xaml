@@ -182,6 +182,13 @@
     <sys:String x:Key="Settings.FontNormal">標準</sys:String>
     <sys:String x:Key="Settings.FontLarge">大</sys:String>
     <sys:String x:Key="Settings.ShortcutCount">ショートカット数</sys:String>
+    <sys:String x:Key="Settings.GlobalHotkey">グローバルホットキー</sys:String>
+    <sys:String x:Key="Settings.EnableGlobalHotkey">グローバルホットキーを有効にする</sys:String>
+    <sys:String x:Key="Settings.HotkeyValue">現在のキー</sys:String>
+    <sys:String x:Key="Settings.RecordHotkey">入力</sys:String>
+    <sys:String x:Key="Settings.RestoreDefaultHotkey">既定に戻す</sys:String>
+    <sys:String x:Key="Settings.HotkeyRecording">新しいキーを押してください（Esc でキャンセル）</sys:String>
+    <sys:String x:Key="Settings.HotkeyRecordingHint">Ctrl、Alt、Shift、Win と文字、数字、F1-F12、Space のいずれかを組み合わせます。</sys:String>
     <sys:String x:Key="Settings.Language">言語</sys:String>
     <sys:String x:Key="Settings.ModuleManagement">モジュール管理</sys:String>
     <sys:String x:Key="Settings.ShowHide">表示/非表示</sys:String>
@@ -239,6 +246,9 @@
 
     <sys:String x:Key="Hotkey.InvalidFormat">無効なホットキー形式: {0}</sys:String>
     <sys:String x:Key="Hotkey.RegisterFailedFormat">ホットキー {0} を登録できません。他のアプリが使用している可能性があります。(エラーコード: {1})</sys:String>
+    <sys:String x:Key="Hotkey.AlreadyInUse">ホットキー {0} は別のアプリで使用されています。別の組み合わせを選択してください。</sys:String>
+    <sys:String x:Key="Hotkey.Disabled">グローバルホットキーは無効です</sys:String>
+    <sys:String x:Key="Hotkey.InvalidCapture">修飾キーを1つ以上と、対応するキーを入力してください。</sys:String>
 
     <sys:String x:Key="Update.Checking">更新を確認中...</sys:String>
     <sys:String x:Key="Update.CurrentVersionFormat">現在のバージョン：{0}</sys:String>

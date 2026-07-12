@@ -182,6 +182,13 @@
     <sys:String x:Key="Settings.FontNormal">Normal</sys:String>
     <sys:String x:Key="Settings.FontLarge">Large</sys:String>
     <sys:String x:Key="Settings.ShortcutCount">Shortcut count</sys:String>
+    <sys:String x:Key="Settings.GlobalHotkey">Global hotkey</sys:String>
+    <sys:String x:Key="Settings.EnableGlobalHotkey">Enable global hotkey</sys:String>
+    <sys:String x:Key="Settings.HotkeyValue">Current shortcut</sys:String>
+    <sys:String x:Key="Settings.RecordHotkey">Record</sys:String>
+    <sys:String x:Key="Settings.RestoreDefaultHotkey">Restore default</sys:String>
+    <sys:String x:Key="Settings.HotkeyRecording">Press the new shortcut (Esc to cancel)</sys:String>
+    <sys:String x:Key="Settings.HotkeyRecordingHint">Use Ctrl, Alt, Shift, or Win with a letter, number, F1-F12, or Space.</sys:String>
     <sys:String x:Key="Settings.Language">Language</sys:String>
     <sys:String x:Key="Settings.ModuleManagement">Module management</sys:String>
     <sys:String x:Key="Settings.ShowHide">Show/Hide</sys:String>
@@ -239,6 +246,9 @@
 
     <sys:String x:Key="Hotkey.InvalidFormat">Invalid hotkey format: {0}</sys:String>
     <sys:String x:Key="Hotkey.RegisterFailedFormat">Hotkey {0} failed to register. It may be used by another app. (Error code: {1})</sys:String>
+    <sys:String x:Key="Hotkey.AlreadyInUse">Hotkey {0} is already used by another app. Choose a different shortcut.</sys:String>
+    <sys:String x:Key="Hotkey.Disabled">Global hotkey is disabled</sys:String>
+    <sys:String x:Key="Hotkey.InvalidCapture">Use at least one modifier and one supported key.</sys:String>
 
     <sys:String x:Key="Update.Checking">Checking for updates...</sys:String>
     <sys:String x:Key="Update.CurrentVersionFormat">Current version: {0}</sys:String>

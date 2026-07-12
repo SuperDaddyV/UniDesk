@@ -18,6 +18,8 @@ namespace UniDesk.ViewModels;
 
 public partial class SettingsViewModel : ObservableObject, IDisposable
 {
+    public const string DefaultHotkey = "Ctrl+Alt+Space";
+
     private readonly ISettingsService _settingsService;
     private readonly ILocalizationService _localizationService;
     private readonly IUpdateService _updateService;
@@ -75,6 +77,15 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
 
     [ObservableProperty]
     private int _shortcutMaxCount = ShortcutLimitHelper.DefaultLimit;
+
+    [ObservableProperty]
+    private bool _globalHotkeyEnabled = true;
+
+    [ObservableProperty]
+    private string _hotkey = DefaultHotkey;
+
+    [ObservableProperty]
+    private string _hotkeyStatusText = string.Empty;
 
     [ObservableProperty]
     private bool _clipboardHistoryEnabled = true;
@@ -190,6 +201,12 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
             WeatherApiHost = _settingsService.GetValue("WeatherApiHost", "");
             ShortcutMaxCount = ShortcutLimitHelper.ParseLimit(
                 _settingsService.GetValue("ShortcutMaxCount", ShortcutLimitHelper.DefaultLimit.ToString()));
+            var storedHotkey = _settingsService.GetValue("Hotkey", DefaultHotkey);
+            GlobalHotkeyEnabled = !string.IsNullOrWhiteSpace(storedHotkey);
+            Hotkey = GlobalHotkeyEnabled && HotkeyGestureParser.TryParse(storedHotkey, out var parsedHotkey)
+                ? parsedHotkey.DisplayText
+                : DefaultHotkey;
+            HotkeyStatusText = GlobalHotkeyEnabled ? string.Empty : L("Hotkey.Disabled");
             ClipboardHistoryEnabled = _settingsService.GetSetting(QuickTextService.HistoryEnabledSettingKey, true);
             ClipboardSensitiveFilterEnabled = _settingsService.GetSetting(QuickTextService.SensitiveFilterSettingKey, true);
             ClipboardHistoryMaxCount = QuickTextService.NormalizeHistoryLimit(
@@ -228,6 +245,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         _originalSettings["WeatherApiKey"] = WeatherApiKey;
         _originalSettings["WeatherApiHost"] = WeatherApiHost;
         _originalSettings["ShortcutMaxCount"] = ShortcutMaxCount.ToString(CultureInfo.InvariantCulture);
+        _originalSettings["Hotkey"] = GlobalHotkeyEnabled ? Hotkey : string.Empty;
         _originalSettings["ClipboardHistoryEnabled"] = ClipboardHistoryEnabled.ToString();
         _originalSettings["ClipboardSensitiveFilterEnabled"] = ClipboardSensitiveFilterEnabled.ToString();
         _originalSettings["ClipboardHistoryMaxCount"] = ClipboardHistoryMaxCount.ToString(CultureInfo.InvariantCulture);
@@ -259,6 +277,14 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         }
 
         ShortcutMaxCount = limit;
+    }
+
+    [RelayCommand]
+    private void RestoreDefaultHotkey()
+    {
+        GlobalHotkeyEnabled = true;
+        Hotkey = DefaultHotkey;
+        HotkeyStatusText = string.Empty;
     }
 
     [RelayCommand]
@@ -402,6 +428,11 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     partial void OnShortcutMaxCountChanged(int value) =>
         _mainWindowViewModel.SetShortcutLimitPreview(value);
 
+    partial void OnGlobalHotkeyEnabledChanged(bool value)
+    {
+        HotkeyStatusText = value ? string.Empty : L("Hotkey.Disabled");
+    }
+
     private void LoadModuleSettings(IEnumerable<ModuleSetting> modules)
     {
         foreach (var module in ModuleSettings)
@@ -507,9 +538,19 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         var weatherSettingsChanged = false;
         var apiKeyToValidate = string.Empty;
         var apiHostToValidate = string.Empty;
+        var originalHotkey = _originalSettings.GetValueOrDefault("Hotkey", DefaultHotkey);
 
         try
         {
+            var requestedHotkey = GlobalHotkeyEnabled ? Hotkey : string.Empty;
+            var hotkeyResult = _mainWindowViewModel.ApplyGlobalHotkey(requestedHotkey);
+            if (!hotkeyResult.Success)
+            {
+                HotkeyStatusText = BuildHotkeyFailureMessage(hotkeyResult, requestedHotkey);
+                _notificationService.ShowWarningMessage(HotkeyStatusText);
+                return;
+            }
+
             apiKeyToValidate = WeatherApiKey.Trim();
             apiHostToValidate = QWeatherApiClient.NormalizeHost(WeatherApiHost.Trim());
             DisplayTitle = MainWindowViewModel.NormalizeDisplayTitle(DisplayTitle);
@@ -531,6 +572,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
             _settingsService.SetValue("WeatherApiKey", apiKeyToValidate);
             _settingsService.SetValue("WeatherApiHost", apiHostToValidate);
             _settingsService.SetValue("ShortcutMaxCount", ShortcutMaxCount.ToString(CultureInfo.InvariantCulture));
+            _settingsService.SetValue("Hotkey", hotkeyResult.NormalizedHotkey);
             _settingsService.SetValue(QuickTextService.HistoryEnabledSettingKey, ClipboardHistoryEnabled.ToString());
             _settingsService.SetValue(QuickTextService.SensitiveFilterSettingKey, ClipboardSensitiveFilterEnabled.ToString());
             _settingsService.SetValue(QuickTextService.HistoryMaxCountSettingKey, ClipboardHistoryMaxCount.ToString(CultureInfo.InvariantCulture));
@@ -556,6 +598,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         }
         catch (Exception ex)
         {
+            _mainWindowViewModel.ApplyGlobalHotkey(originalHotkey);
             RevertToOriginalSettings();
             _notificationService.ShowErrorMessage(_localizationService.Format("Settings.SaveFailedFormat", ex.Message));
             return;
@@ -625,6 +668,9 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         WeatherApiHost = "";
         IsEditingWeatherApi = false;
         ShortcutMaxCount = ShortcutLimitHelper.DefaultLimit;
+        GlobalHotkeyEnabled = true;
+        Hotkey = DefaultHotkey;
+        HotkeyStatusText = string.Empty;
         ClipboardHistoryEnabled = true;
         ClipboardSensitiveFilterEnabled = true;
         ClipboardHistoryMaxCount = QuickTextService.DefaultHistoryLimit;
@@ -874,6 +920,13 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
                 ShortcutMaxCount = ShortcutLimitHelper.ParseLimit(shortcutMaxCount);
             }
 
+            if (_originalSettings.TryGetValue("Hotkey", out var hotkey))
+            {
+                GlobalHotkeyEnabled = !string.IsNullOrWhiteSpace(hotkey);
+                Hotkey = GlobalHotkeyEnabled ? hotkey : DefaultHotkey;
+                HotkeyStatusText = GlobalHotkeyEnabled ? string.Empty : L("Hotkey.Disabled");
+            }
+
             if (_originalSettings.TryGetValue("ClipboardHistoryEnabled", out var clipboardHistoryEnabled))
             {
                 ClipboardHistoryEnabled = bool.Parse(clipboardHistoryEnabled);
@@ -946,6 +999,21 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         UpdateCheckStatus.CurrentNewerThanLatest => L("Update.CurrentNewer"),
         _ => L("Update.Failed")
     };
+
+    private string BuildHotkeyFailureMessage(HotkeyRegistrationResult result, string requestedHotkey)
+    {
+        if (result.Failure == HotkeyRegistrationFailure.InvalidGesture)
+        {
+            return _localizationService.Format("Hotkey.InvalidFormat", requestedHotkey);
+        }
+
+        return result.ErrorCode == 1409
+            ? _localizationService.Format("Hotkey.AlreadyInUse", result.NormalizedHotkey)
+            : _localizationService.Format(
+                "Hotkey.RegisterFailedFormat",
+                result.NormalizedHotkey,
+                result.ErrorCode);
+    }
 
     private void OpenReleasePage(string releaseUrl)
     {
