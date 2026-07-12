@@ -115,50 +115,65 @@
                     BorderThickness="0,1,0,0"
                     BorderBrush="{DynamicResource GlassHighlightBrush}">
                 <Grid>
+                    <Grid.IsSharedSizeScope>True</Grid.IsSharedSizeScope>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
     
-                    <StackPanel Grid.Column="0"
-                                Orientation="Horizontal"
-                                HorizontalAlignment="Center"
-                                VerticalAlignment="Center">
-                        <TextBlock Text="{DynamicResource Hardware.Receive}"
+                    <Grid x:Name="NetworkReceivedGroup"
+                          Grid.Column="0"
+                          HorizontalAlignment="Center"
+                          VerticalAlignment="Center">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" SharedSizeGroup="NetworkLabel"/>
+                            <ColumnDefinition Width="Auto" SharedSizeGroup="NetworkValue"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0"
+                                   Text="{DynamicResource Hardware.Receive}"
                                    FontSize="{Binding DataContext.FontScale, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource ScaledFontSizeConverter}, ConverterParameter=10}"
                                    FontWeight="SemiBold"
                                    LineHeight="12"
+                                   TextAlignment="Right"
                                    Foreground="{DynamicResource SecondaryTextBrush}"/>
                         <TextBlock x:Name="NetworkReceivedValueText"
+                                   Grid.Column="1"
                                    Text="{Binding SystemNetworkReceivedText}"
                                    Width="78"
-                                   TextAlignment="Left"
+                                   TextAlignment="Center"
                                    FontSize="{Binding DataContext.FontScale, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource ScaledFontSizeConverter}, ConverterParameter=10.5}"
                                    FontWeight="SemiBold"
                                    LineHeight="12"
                                    Margin="6,0,0,0"
                                    Foreground="{DynamicResource PrimaryTextBrush}"/>
-                    </StackPanel>
-    
-                    <StackPanel Grid.Column="1"
-                                Orientation="Horizontal"
-                                HorizontalAlignment="Center"
-                                VerticalAlignment="Center">
-                        <TextBlock Text="{DynamicResource Hardware.Send}"
+                    </Grid>
+
+                    <Grid x:Name="NetworkSentGroup"
+                          Grid.Column="1"
+                          HorizontalAlignment="Center"
+                          VerticalAlignment="Center">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" SharedSizeGroup="NetworkLabel"/>
+                            <ColumnDefinition Width="Auto" SharedSizeGroup="NetworkValue"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0"
+                                   Text="{DynamicResource Hardware.Send}"
                                    FontSize="{Binding DataContext.FontScale, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource ScaledFontSizeConverter}, ConverterParameter=10}"
                                    FontWeight="SemiBold"
                                    LineHeight="12"
+                                   TextAlignment="Right"
                                    Foreground="{DynamicResource SecondaryTextBrush}"/>
                         <TextBlock x:Name="NetworkSentValueText"
+                                   Grid.Column="1"
                                    Text="{Binding SystemNetworkSentText}"
                                    Width="78"
-                                   TextAlignment="Left"
+                                   TextAlignment="Center"
                                    FontSize="{Binding DataContext.FontScale, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource ScaledFontSizeConverter}, ConverterParameter=10.5}"
                                    FontWeight="SemiBold"
                                    LineHeight="12"
                                    Margin="6,0,0,0"
                                    Foreground="{DynamicResource PrimaryTextBrush}"/>
-                    </StackPanel>
+                    </Grid>
                 </Grid>
             </Border>
         </Grid>

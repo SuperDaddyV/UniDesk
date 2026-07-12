@@ -100,7 +100,7 @@ public class WpfInteractionRegressionTests
         Assert.Contains("x:Name=\"NetworkReceivedValueText\"", hardwareXaml, StringComparison.Ordinal);
         Assert.Contains("x:Name=\"NetworkSentValueText\"", hardwareXaml, StringComparison.Ordinal);
         Assert.Equal(2, Regex.Matches(hardwareXaml, "Width=\"78\"").Count);
-        Assert.Equal(2, Regex.Matches(hardwareXaml, "TextAlignment=\"Left\"").Count);
+        Assert.Equal(2, Regex.Matches(hardwareXaml, "Width=\"78\"[\\s\\S]{0,160}TextAlignment=\"Center\"").Count);
     }
 
     [Fact]
@@ -178,6 +178,18 @@ public class WpfInteractionRegressionTests
             Assert.Contains("Hardware.MetricAvailableFormat", resources, StringComparison.Ordinal);
             Assert.Contains("Hardware.NoSensor", resources, StringComparison.Ordinal);
         }
+    }
+
+    [Fact]
+    public void HardwareNetworkRow_ShouldCenterEachLabelValuePair()
+    {
+        var hardwareXaml = ReadProjectFile("UniDesk", "Controls", "HardwareMonitorModuleView.xaml");
+
+        Assert.Contains("x:Name=\"NetworkReceivedGroup\"", hardwareXaml, StringComparison.Ordinal);
+        Assert.Contains("x:Name=\"NetworkSentGroup\"", hardwareXaml, StringComparison.Ordinal);
+        Assert.Equal(2, Regex.Matches(hardwareXaml, "SharedSizeGroup=\"NetworkLabel\"").Count);
+        Assert.Equal(2, Regex.Matches(hardwareXaml, "SharedSizeGroup=\"NetworkValue\"").Count);
+        Assert.Equal(2, Regex.Matches(hardwareXaml, "Width=\"78\"").Count);
     }
 
     [Fact]
