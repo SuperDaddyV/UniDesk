@@ -1,0 +1,8 @@
+{
+  "sensors": [
+    { "deviceId": "gpu:nvidia:0", "deviceName": "NVIDIA GPU", "deviceType": "GpuNvidia", "sensorName": "GPU 3D", "sensorType": "Load", "value": 55 },
+    { "deviceId": "gpu:nvidia:0", "deviceName": "NVIDIA GPU", "deviceType": "GpuNvidia", "sensorName": "GPU Core", "sensorType": "Temperature", "value": 68 }
+  ],
+  "thermalZones": [],
+  "expected": { "cpuUsage": null, "cpuTemperature": null, "gpuUsage": 55, "gpuTemperature": 68 }
+}

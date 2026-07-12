@@ -1,0 +1,8 @@
+{
+  "sensors": [
+    { "deviceId": "cpu:0", "deviceName": "AMD Ryzen 7", "deviceType": "Cpu", "sensorName": "CPU Total", "sensorType": "Load", "value": 42 },
+    { "deviceId": "cpu:0", "deviceName": "AMD Ryzen 7", "deviceType": "Cpu", "sensorName": "Tctl", "sensorType": "Temperature", "value": 63 }
+  ],
+  "thermalZones": [],
+  "expected": { "cpuUsage": 42, "cpuTemperature": 63, "gpuUsage": null, "gpuTemperature": null }
+}

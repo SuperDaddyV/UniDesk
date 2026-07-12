@@ -1,0 +1,9 @@
+{
+  "sensors": [
+    { "deviceId": "cpu:0", "deviceName": "Unknown CPU", "deviceType": "Cpu", "sensorName": "CPU Total", "sensorType": "Load", "value": 20 }
+  ],
+  "thermalZones": [
+    { "name": "ACPI TZ00", "value": 48 }
+  ],
+  "expected": { "cpuUsage": 20, "cpuTemperature": 48, "gpuUsage": null, "gpuTemperature": null }
+}

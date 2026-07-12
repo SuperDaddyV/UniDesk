@@ -2,7 +2,10 @@ using UniDesk.Models;
 
 namespace UniDesk.Services;
 
-public sealed class SystemMetricsService : ISystemMetricsService, IDisposable
+public sealed class SystemMetricsService :
+    ISystemMetricsService,
+    IHardwareMetricsDiagnosticsSource,
+    IDisposable
 {
     private readonly ICpuMetricsReader _cpuReader;
     private readonly IGpuMetricsReader _gpuReader;
@@ -12,6 +15,8 @@ public sealed class SystemMetricsService : ISystemMetricsService, IDisposable
     private readonly bool _ownsLibreHost;
     private readonly TemperatureSpikeFilter _cpuTemperatureFilter = new();
     private readonly TemperatureSpikeFilter _gpuTemperatureFilter = new();
+    private readonly object _historySync = new();
+    private readonly Queue<SystemMetricsSnapshot> _recentSnapshots = new();
     private bool _disposed;
 
     public SystemMetricsService()
@@ -51,7 +56,7 @@ public sealed class SystemMetricsService : ISystemMetricsService, IDisposable
         var network = _networkReader.Read();
         var cpuTemperature = _cpuTemperatureFilter.Apply(cpu.CpuTemperature, cpu.TemperatureSource);
         var gpuTemperature = _gpuTemperatureFilter.Apply(gpu.GpuTemperature, gpu.TemperatureSource);
-        return new SystemMetricsSnapshot
+        var snapshot = new SystemMetricsSnapshot
         {
             CapturedAtUtc = DateTimeOffset.UtcNow,
             CpuUsage = cpu.CpuUsage,
@@ -78,6 +83,37 @@ public sealed class SystemMetricsService : ISystemMetricsService, IDisposable
             GpuUsageReason = gpu.UsageReason,
             GpuTemperatureReason = gpu.TemperatureReason
         };
+        lock (_historySync)
+        {
+            _recentSnapshots.Enqueue(snapshot);
+            while (_recentSnapshots.Count > 3)
+            {
+                _recentSnapshots.Dequeue();
+            }
+        }
+
+        return snapshot;
+    }
+
+    public HardwareMetricsDiagnosticsSnapshot CaptureDiagnostics()
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        SystemMetricsSnapshot[] history;
+        lock (_historySync)
+        {
+            history = _recentSnapshots.ToArray();
+        }
+
+        var libreStatus = _libreHost?.DiagnosticStatus ??
+            new LibreHardwareHostDiagnosticStatus(false, false, "not configured", null, []);
+        var sensors = _libreHost?.CurrentSensors.ToArray() ?? [];
+        var gpuEngineStatus = (_gpuReader as GpuMetricsReader)?.GpuEngineDiagnosticStatus;
+        return new HardwareMetricsDiagnosticsSnapshot(
+            DateTimeOffset.UtcNow,
+            libreStatus,
+            gpuEngineStatus,
+            sensors,
+            history);
     }
 
     public void Dispose()

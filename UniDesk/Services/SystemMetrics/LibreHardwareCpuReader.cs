@@ -13,6 +13,8 @@ public sealed class LibreHardwareCpuReader : IDisposable
     private readonly ILibreHardwareComputerHost _host;
     private readonly bool _ownsHost;
     private readonly bool _refreshBeforeRead;
+    private readonly Func<IReadOnlyList<CpuTemperatureSensorCandidate>> _readWindowsThermalZones;
+    private readonly ReaderFailureBackoff _windowsThermalZoneBackoff = new(TimeSpan.FromMinutes(5));
     private DateTime _lastSensorLogUtc = DateTime.MinValue;
     private DateTime _lastReaderErrorLogUtc = DateTime.MinValue;
     private DateTime _lastWindowsThermalZoneErrorLogUtc = DateTime.MinValue;
@@ -23,18 +25,27 @@ public sealed class LibreHardwareCpuReader : IDisposable
     }
 
     public LibreHardwareCpuReader(ILibreHardwareComputerHost host)
-        : this(host, ownsHost: false, refreshBeforeRead: false)
+        : this(host, ownsHost: false, refreshBeforeRead: false, readWindowsThermalZones: null)
+    {
+    }
+
+    public LibreHardwareCpuReader(
+        ILibreHardwareComputerHost host,
+        Func<IReadOnlyList<CpuTemperatureSensorCandidate>> readWindowsThermalZones)
+        : this(host, ownsHost: false, refreshBeforeRead: false, readWindowsThermalZones)
     {
     }
 
     private LibreHardwareCpuReader(
         ILibreHardwareComputerHost host,
         bool ownsHost,
-        bool refreshBeforeRead)
+        bool refreshBeforeRead,
+        Func<IReadOnlyList<CpuTemperatureSensorCandidate>>? readWindowsThermalZones = null)
     {
         _host = host;
         _ownsHost = ownsHost;
         _refreshBeforeRead = refreshBeforeRead;
+        _readWindowsThermalZones = readWindowsThermalZones ?? QueryWindowsThermalZoneTemperatureSensors;
     }
 
     public CpuMetrics Read()
@@ -163,32 +174,45 @@ public sealed class LibreHardwareCpuReader : IDisposable
 
     private List<CpuTemperatureSensorCandidate> ReadWindowsThermalZoneTemperatureSensors()
     {
-        var sensors = new List<CpuTemperatureSensorCandidate>();
+        if (!_windowsThermalZoneBackoff.CanAttempt)
+        {
+            return [];
+        }
 
         try
         {
-            using var searcher = new ManagementObjectSearcher(
-                "root\\WMI",
-                "SELECT InstanceName, CurrentTemperature FROM MSAcpi_ThermalZoneTemperature");
-
-            foreach (ManagementObject item in searcher.Get())
-            {
-                var name = item["InstanceName"]?.ToString();
-                var rawValue = item["CurrentTemperature"];
-                if (rawValue == null)
-                {
-                    continue;
-                }
-
-                var celsius = Convert.ToDouble(rawValue, CultureInfo.InvariantCulture) / 10d - 273.15d;
-                sensors.Add(new CpuTemperatureSensorCandidate(
-                    string.IsNullOrWhiteSpace(name) ? "ACPI Thermal Zone" : $"ACPI {name}",
-                    celsius));
-            }
+            var sensors = _readWindowsThermalZones().ToList();
+            _windowsThermalZoneBackoff.RecordSuccess();
+            return sensors;
         }
         catch (Exception ex)
         {
+            _windowsThermalZoneBackoff.RecordFailure($"{ex.GetType().Name}: {ex.Message}");
             LogWindowsThermalZoneReaderError(ex);
+            return [];
+        }
+    }
+
+    private static IReadOnlyList<CpuTemperatureSensorCandidate> QueryWindowsThermalZoneTemperatureSensors()
+    {
+        var sensors = new List<CpuTemperatureSensorCandidate>();
+        using var searcher = new ManagementObjectSearcher(
+            "root\\WMI",
+            "SELECT InstanceName, CurrentTemperature FROM MSAcpi_ThermalZoneTemperature");
+
+        foreach (ManagementObject item in searcher.Get())
+        {
+            var name = item["InstanceName"]?.ToString();
+            var rawValue = item["CurrentTemperature"];
+            if (rawValue == null)
+            {
+                continue;
+            }
+
+            var celsius = Convert.ToDouble(rawValue, CultureInfo.InvariantCulture) / 10d - 273.15d;
+            sensors.Add(new CpuTemperatureSensorCandidate(
+                string.IsNullOrWhiteSpace(name) ? "ACPI Thermal Zone" : $"ACPI {name}",
+                celsius));
         }
 
         return sensors;

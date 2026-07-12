@@ -1,0 +1,5 @@
+{
+  "sensors": [],
+  "thermalZones": [],
+  "expected": { "cpuUsage": null, "cpuTemperature": null, "gpuUsage": null, "gpuTemperature": null }
+}

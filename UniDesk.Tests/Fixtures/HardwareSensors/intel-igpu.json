@@ -1,0 +1,7 @@
+{
+  "sensors": [
+    { "deviceId": "gpu:intel:0", "deviceName": "Intel Graphics", "deviceType": "GpuIntel", "sensorName": "Render", "sensorType": "Load", "value": 18 }
+  ],
+  "thermalZones": [],
+  "expected": { "cpuUsage": null, "cpuTemperature": null, "gpuUsage": 18, "gpuTemperature": null }
+}

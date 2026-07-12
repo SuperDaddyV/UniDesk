@@ -1,0 +1,8 @@
+{
+  "sensors": [
+    { "deviceId": "cpu:0", "deviceName": "Intel Core i9", "deviceType": "Cpu", "sensorName": "CPU Total", "sensorType": "Load", "value": 34 },
+    { "deviceId": "cpu:0", "deviceName": "Intel Core i9", "deviceType": "Cpu", "sensorName": "CPU Package", "sensorType": "Temperature", "value": 61 }
+  ],
+  "thermalZones": [],
+  "expected": { "cpuUsage": 34, "cpuTemperature": 61, "gpuUsage": null, "gpuTemperature": null }
+}

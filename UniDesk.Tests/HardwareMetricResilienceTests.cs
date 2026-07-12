@@ -105,4 +105,34 @@ public class HardwareMetricResilienceTests
         Assert.Equal(HardwareMetricAvailability.NeedsElevation, metrics.TemperatureAvailability);
         Assert.Equal("sensor access denied", metrics.TemperatureReason);
     }
+
+    [Fact]
+    public void LibreCpuReader_ShouldBackOffRepeatedThermalZoneFailures()
+    {
+        var attempts = 0;
+        using var host = new EmptyLibreHost();
+        using var reader = new LibreHardwareCpuReader(
+            host,
+            () =>
+            {
+                attempts++;
+                throw new InvalidOperationException("WMI unavailable");
+            });
+
+        _ = reader.Read();
+        _ = reader.Read();
+        _ = reader.Read();
+        _ = reader.Read();
+
+        Assert.Equal(3, attempts);
+    }
+
+    private sealed class EmptyLibreHost : ILibreHardwareComputerHost
+    {
+        public IReadOnlyList<HardwareSensorSnapshot> CurrentSensors { get; } = [];
+        public LibreHardwareHostDiagnosticStatus DiagnosticStatus { get; } =
+            new(true, false, null, null, []);
+        public void Refresh() { }
+        public void Dispose() { }
+    }
 }

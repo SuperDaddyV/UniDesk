@@ -287,12 +287,16 @@ public partial class App : Application
         services.AddSingleton<ITodoDeletionHandler, TodoDeletionHandler>();
         services.AddSingleton<ITodoBackupService, TodoBackupService>();
         services.AddSingleton<IShortcutService, ShortcutService>();
-        services.AddSingleton<ISystemMetricsMonitor>(_ =>
+        services.AddSingleton<SystemMetricsService>();
+        services.AddSingleton<IHardwareMetricsDiagnosticsSource>(provider =>
+            provider.GetRequiredService<SystemMetricsService>());
+        services.AddSingleton<ISensorDiagnosticsService, SensorDiagnosticReporter>();
+        services.AddSingleton<ISystemMetricsMonitor>(provider =>
             new SystemMetricsMonitor(
-                new SystemMetricsService(),
+                provider.GetRequiredService<SystemMetricsService>(),
                 TimeSpan.FromSeconds(2),
                 TimeSpan.FromSeconds(2),
-                ownsReader: true));
+                ownsReader: false));
     }
 
     protected override void OnExit(ExitEventArgs e)

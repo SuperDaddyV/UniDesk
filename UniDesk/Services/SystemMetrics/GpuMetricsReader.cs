@@ -6,6 +6,7 @@ public sealed class GpuMetricsReader : IGpuMetricsReader
     private readonly Func<GpuMetrics> _readAmd;
     private readonly Func<GpuMetrics> _readGpuEngine;
     private readonly Func<GpuMetrics> _readLibre;
+    private readonly GpuEngineCounterReader? _gpuEngineReader;
     private readonly IReadOnlyList<IDisposable> _ownedReaders;
     private bool _disposed;
 
@@ -24,6 +25,7 @@ public sealed class GpuMetricsReader : IGpuMetricsReader
         var nvidiaReader = new NvidiaNvmlGpuReader();
         var amdReader = new AmdAdlGpuReader();
         var gpuEngineReader = new GpuEngineCounterReader();
+        _gpuEngineReader = gpuEngineReader;
         _readNvidia = nvidiaReader.Read;
         _readAmd = amdReader.Read;
         _readGpuEngine = gpuEngineReader.Read;
@@ -55,6 +57,9 @@ public sealed class GpuMetricsReader : IGpuMetricsReader
         _readLibre = readLibre;
         _ownedReaders = [];
     }
+
+    public GpuEngineReaderDiagnosticStatus? GpuEngineDiagnosticStatus =>
+        _gpuEngineReader?.DiagnosticStatus;
 
     public GpuMetrics Read()
     {
