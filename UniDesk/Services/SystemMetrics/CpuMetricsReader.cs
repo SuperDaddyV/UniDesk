@@ -9,10 +9,19 @@ public sealed class CpuMetricsReader : ICpuMetricsReader
     private bool _disposed;
 
     public CpuMetricsReader()
+        : this(new LibreHardwareCpuReader())
+    {
+    }
+
+    public CpuMetricsReader(ILibreHardwareComputerHost libreHost)
+        : this(new LibreHardwareCpuReader(libreHost))
+    {
+    }
+
+    private CpuMetricsReader(LibreHardwareCpuReader libreReader)
     {
         var performanceReader = new PerformanceCounterCpuReader();
         var asusReader = new AsusCpuTemperatureReader();
-        var libreReader = new LibreHardwareCpuReader();
         _readPerformanceUsage = performanceReader.ReadUsage;
         _readAsusTemperature = asusReader.ReadCpuPackageTemperature;
         _readLibreMetrics = libreReader.Read;
@@ -46,7 +55,15 @@ public sealed class CpuMetricsReader : ICpuMetricsReader
 #endif
         return new CpuMetrics(
             cpuUsage ?? fallback.CpuUsage,
-            cpuTemperature ?? fallback.CpuTemperature);
+            cpuTemperature ?? fallback.CpuTemperature,
+            usageSource: cpuUsage.HasValue ? "Windows Performance Counter" : fallback.UsageSource,
+            usageDeviceId: cpuUsage.HasValue ? null : fallback.UsageDeviceId,
+            temperatureSource: cpuTemperature.HasValue ? "ASUS Armoury Crate" : fallback.TemperatureSource,
+            temperatureDeviceId: cpuTemperature.HasValue ? null : fallback.TemperatureDeviceId,
+            usageAvailability: cpuUsage.HasValue ? null : fallback.UsageAvailability,
+            temperatureAvailability: cpuTemperature.HasValue ? null : fallback.TemperatureAvailability,
+            usageReason: cpuUsage.HasValue ? null : fallback.UsageReason,
+            temperatureReason: cpuTemperature.HasValue ? null : fallback.TemperatureReason);
     }
 
     public void Dispose()

@@ -9,10 +9,19 @@ public sealed class GpuMetricsReader : IGpuMetricsReader
     private bool _disposed;
 
     public GpuMetricsReader()
+        : this(new LibreHardwareGpuReader())
+    {
+    }
+
+    public GpuMetricsReader(ILibreHardwareComputerHost libreHost)
+        : this(new LibreHardwareGpuReader(libreHost))
+    {
+    }
+
+    private GpuMetricsReader(LibreHardwareGpuReader libreReader)
     {
         var nvidiaReader = new NvidiaNvmlGpuReader();
         var amdReader = new AmdAdlGpuReader();
-        var libreReader = new LibreHardwareGpuReader();
         _readNvidia = nvidiaReader.Read;
         _readAmd = amdReader.Read;
         _readLibre = libreReader.Read;
@@ -75,7 +84,19 @@ public sealed class GpuMetricsReader : IGpuMetricsReader
             selected.GpuTemperature ?? SelectBestTemperature(validCandidates),
             selected.SourceName,
             selected.SourcePriority,
-            selected.IsDiscrete);
+            selected.IsDiscrete,
+            usageSource: selected.GpuUsage.HasValue
+                ? selected.UsageSource
+                : SelectBestUsageCandidate(validCandidates)?.UsageSource,
+            usageDeviceId: selected.GpuUsage.HasValue
+                ? selected.UsageDeviceId
+                : SelectBestUsageCandidate(validCandidates)?.UsageDeviceId,
+            temperatureSource: selected.GpuTemperature.HasValue
+                ? selected.TemperatureSource
+                : SelectBestTemperatureCandidate(validCandidates)?.TemperatureSource,
+            temperatureDeviceId: selected.GpuTemperature.HasValue
+                ? selected.TemperatureDeviceId
+                : SelectBestTemperatureCandidate(validCandidates)?.TemperatureDeviceId);
     }
 
     private static double? SelectBestUsage(IEnumerable<GpuMetrics> candidates) =>
@@ -92,6 +113,22 @@ public sealed class GpuMetricsReader : IGpuMetricsReader
             .OrderBy(candidate => candidate.SelectionRank)
             .ThenBy(candidate => candidate.SourcePriority)
             .Select(candidate => candidate.GpuTemperature)
+            .FirstOrDefault();
+
+    private static GpuMetrics? SelectBestUsageCandidate(IEnumerable<GpuMetrics> candidates) =>
+        candidates
+            .Where(candidate => candidate.GpuUsage.HasValue)
+            .OrderBy(candidate => candidate.SelectionRank)
+            .ThenBy(candidate => candidate.SourcePriority)
+            .Cast<GpuMetrics?>()
+            .FirstOrDefault();
+
+    private static GpuMetrics? SelectBestTemperatureCandidate(IEnumerable<GpuMetrics> candidates) =>
+        candidates
+            .Where(candidate => candidate.GpuTemperature.HasValue)
+            .OrderBy(candidate => candidate.SelectionRank)
+            .ThenBy(candidate => candidate.SourcePriority)
+            .Cast<GpuMetrics?>()
             .FirstOrDefault();
 
     public void Dispose()

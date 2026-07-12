@@ -3,52 +3,68 @@ using System.Globalization;
 using System.Management;
 using System.Runtime.InteropServices;
 using System.Security.Principal;
-using LibreHardwareMonitor.Hardware;
 using UniDesk.Helpers;
+using UniDesk.Models;
 
 namespace UniDesk.Services;
 
 public sealed class LibreHardwareCpuReader : IDisposable
 {
-    private Computer? _computer;
-    private bool _initialized;
+    private readonly ILibreHardwareComputerHost _host;
+    private readonly bool _ownsHost;
+    private readonly bool _refreshBeforeRead;
     private DateTime _lastSensorLogUtc = DateTime.MinValue;
     private DateTime _lastReaderErrorLogUtc = DateTime.MinValue;
     private DateTime _lastWindowsThermalZoneErrorLogUtc = DateTime.MinValue;
+
+    public LibreHardwareCpuReader()
+        : this(new LibreHardwareComputerHost(), ownsHost: true, refreshBeforeRead: true)
+    {
+    }
+
+    public LibreHardwareCpuReader(ILibreHardwareComputerHost host)
+        : this(host, ownsHost: false, refreshBeforeRead: false)
+    {
+    }
+
+    private LibreHardwareCpuReader(
+        ILibreHardwareComputerHost host,
+        bool ownsHost,
+        bool refreshBeforeRead)
+    {
+        _host = host;
+        _ownsHost = ownsHost;
+        _refreshBeforeRead = refreshBeforeRead;
+    }
 
     public CpuMetrics Read()
     {
         try
         {
-            if (!EnsureInitialized() || _computer == null)
+            if (_refreshBeforeRead)
             {
-                return CpuMetrics.Empty;
+                _host.Refresh();
             }
 
-            var cpuHardwareNames = new List<string>();
-            var loadSensors = new List<CpuUsageSensorCandidate>();
-            var temperatureSensors = new List<CpuTemperatureSensorCandidate>();
+            var snapshot = _host.CurrentSensors;
+            var cpuSensors = snapshot
+                .Where(sensor => sensor.DeviceType == HardwareSensorDeviceType.Cpu)
+                .ToList();
+            var cpuHardwareNames = cpuSensors
+                .Select(sensor => sensor.DeviceName)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            var cpuDeviceId = cpuSensors.Select(sensor => sensor.DeviceId).FirstOrDefault();
+            var loadSensors = cpuSensors
+                .Where(sensor => sensor.SensorType == "Load")
+                .Select(sensor => new CpuUsageSensorCandidate(sensor.SensorName, sensor.Value))
+                .ToList();
+            var temperatureSensors = cpuSensors
+                .Where(sensor => sensor.SensorType == "Temperature")
+                .Select(sensor => new CpuTemperatureSensorCandidate(sensor.SensorName, sensor.Value))
+                .ToList();
             var motherboardTemperatureSensors = new List<CpuTemperatureSensorCandidate>();
             var windowsThermalZoneSensors = new List<CpuTemperatureSensorCandidate>();
-
-            foreach (var hardware in _computer.Hardware)
-            {
-                if (hardware.HardwareType != HardwareType.Cpu)
-                {
-                    continue;
-                }
-
-                cpuHardwareNames.Add(hardware.Name);
-                UpdateHardwareTree(hardware);
-
-                var allSensors = GetSensors(hardware).ToList();
-                loadSensors.AddRange(allSensors
-                    .Where(sensor => sensor.SensorType == SensorType.Load)
-                    .Select(sensor => new CpuUsageSensorCandidate(sensor.Name, sensor.Value)));
-                temperatureSensors.AddRange(allSensors
-                    .Where(sensor => sensor.SensorType == SensorType.Temperature)
-                    .Select(sensor => new CpuTemperatureSensorCandidate(sensor.Name, sensor.Value)));
-            }
 
             var cpuHardwareName = cpuHardwareNames.Count == 0
                 ? null
@@ -60,7 +76,7 @@ public sealed class LibreHardwareCpuReader : IDisposable
 
             if (!cpuTemperatureSelection.HasValue)
             {
-                motherboardTemperatureSensors = ReadMotherboardTemperatureSensors().ToList();
+                motherboardTemperatureSensors = ReadMotherboardTemperatureSensors(snapshot).ToList();
                 motherboardTemperatureSelection = SensorSelection.SelectCpuMotherboardTemperatureSensor(
                     motherboardTemperatureSensors,
                     cpuHardwareName);
@@ -91,8 +107,36 @@ public sealed class LibreHardwareCpuReader : IDisposable
 
             if (loadSelection.HasValue || temperatureSelection.HasValue)
             {
-                return new CpuMetrics(loadSelection?.Value, temperatureSelection?.Value);
+                var motherboardDeviceId = snapshot
+                    .Where(sensor => sensor.DeviceType == HardwareSensorDeviceType.Motherboard)
+                    .Select(sensor => sensor.DeviceId)
+                    .FirstOrDefault();
+                var temperatureDeviceId = cpuTemperatureSelection.HasValue
+                    ? cpuDeviceId
+                    : motherboardTemperatureSelection.HasValue
+                        ? motherboardDeviceId
+                        : windowsThermalZoneSelection.HasValue
+                            ? "windows-acpi"
+                            : null;
+                return new CpuMetrics(
+                    loadSelection?.Value,
+                    temperatureSelection?.Value,
+                    usageSource: loadSelection.HasValue ? "LibreHardwareMonitor" : null,
+                    usageDeviceId: loadSelection.HasValue ? cpuDeviceId : null,
+                    temperatureSource: temperatureSelection?.Source,
+                    temperatureDeviceId: temperatureDeviceId);
             }
+
+            var needsElevation = !_host.DiagnosticStatus.IsElevated;
+            return new CpuMetrics(
+                null,
+                null,
+                temperatureAvailability: needsElevation
+                    ? HardwareMetricAvailability.NeedsElevation
+                    : HardwareMetricAvailability.NoSensor,
+                usageReason: _host.DiagnosticStatus.LastError,
+                temperatureReason: _host.DiagnosticStatus.LastError ??
+                    (needsElevation ? "Sensor access may require elevation." : "No CPU temperature sensor was found."));
         }
         catch (Exception ex)
         {
@@ -102,52 +146,18 @@ public sealed class LibreHardwareCpuReader : IDisposable
         return CpuMetrics.Empty;
     }
 
-    private bool EnsureInitialized()
+    private static IEnumerable<CpuTemperatureSensorCandidate> ReadMotherboardTemperatureSensors(
+        IReadOnlyList<HardwareSensorSnapshot> snapshot)
     {
-        if (_initialized)
+        foreach (var sensor in snapshot)
         {
-            return _computer != null;
-        }
-
-        _initialized = true;
-
-        try
-        {
-            _computer = new Computer
-            {
-                IsCpuEnabled = true,
-                IsMotherboardEnabled = true
-            };
-            _computer.Open();
-            return true;
-        }
-        catch (Exception ex)
-        {
-            _computer = null;
-            LogCpuTemperatureReaderError(ex);
-            return false;
-        }
-    }
-
-    private IEnumerable<CpuTemperatureSensorCandidate> ReadMotherboardTemperatureSensors()
-    {
-        if (_computer == null)
-        {
-            yield break;
-        }
-
-        foreach (var hardware in _computer.Hardware)
-        {
-            if (hardware.HardwareType != HardwareType.Motherboard)
+            if (sensor.DeviceType != HardwareSensorDeviceType.Motherboard ||
+                sensor.SensorType != "Temperature")
             {
                 continue;
             }
 
-            UpdateHardwareTree(hardware);
-            foreach (var sensor in GetSensors(hardware).Where(sensor => sensor.SensorType == SensorType.Temperature))
-            {
-                yield return new CpuTemperatureSensorCandidate(sensor.Name, sensor.Value);
-            }
+            yield return new CpuTemperatureSensorCandidate(sensor.SensorName, sensor.Value);
         }
     }
 
@@ -184,39 +194,11 @@ public sealed class LibreHardwareCpuReader : IDisposable
         return sensors;
     }
 
-    private static void UpdateHardwareTree(IHardware hardware)
-    {
-        hardware.Update();
-        foreach (var subHardware in hardware.SubHardware)
-        {
-            UpdateHardwareTree(subHardware);
-        }
-    }
-
-    private static IEnumerable<ISensor> GetSensors(IHardware hardware)
-    {
-        foreach (var sensor in hardware.Sensors)
-        {
-            yield return sensor;
-        }
-
-        foreach (var subHardware in hardware.SubHardware)
-        {
-            foreach (var sensor in GetSensors(subHardware))
-            {
-                yield return sensor;
-            }
-        }
-    }
-
     public void Dispose()
     {
-        try
+        if (_ownsHost)
         {
-            _computer?.Close();
-        }
-        catch
-        {
+            _host.Dispose();
         }
     }
 
