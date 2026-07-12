@@ -32,6 +32,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     private readonly IQuickTextService _quickTextService;
     private readonly MainWindowViewModel _mainWindowViewModel;
     private readonly ISystemThemeService? _systemThemeService;
+    private readonly ISensorDiagnosticsService? _sensorDiagnosticsService;
 
     private readonly Dictionary<string, string> _originalSettings = new();
     private bool _isLoading;
@@ -150,7 +151,8 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         ITodoBackupService todoBackupService,
         IQuickTextService quickTextService,
         MainWindowViewModel mainWindowViewModel,
-        ISystemThemeService? systemThemeService = null)
+        ISystemThemeService? systemThemeService = null,
+        ISensorDiagnosticsService? sensorDiagnosticsService = null)
     {
         _settingsService = settingsService;
         _localizationService = localizationService;
@@ -164,6 +166,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         _quickTextService = quickTextService;
         _mainWindowViewModel = mainWindowViewModel;
         _systemThemeService = systemThemeService;
+        _sensorDiagnosticsService = sensorDiagnosticsService;
 
         foreach (var scheme in AppColorSchemeCatalog.All)
         {
@@ -1028,6 +1031,38 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
                 "Hotkey.RegisterFailedFormat",
                 result.NormalizedHotkey,
                 result.ErrorCode);
+    }
+
+    [RelayCommand]
+    private async Task ExportSensorDiagnosticsAsync()
+    {
+        if (_sensorDiagnosticsService == null)
+        {
+            _notificationService.ShowErrorMessage(L("Settings.HardwareDiagnosticsUnavailable"));
+            return;
+        }
+
+        try
+        {
+            var path = await _sensorDiagnosticsService.ExportDiagnosticsAsync();
+            _notificationService.ShowSuccessMessage(
+                _localizationService.Format("Settings.HardwareDiagnosticsSuccessFormat", path));
+            try
+            {
+                Process.Start(new ProcessStartInfo("explorer.exe", $"/select,\"{path}\"")
+                {
+                    UseShellExecute = true
+                });
+            }
+            catch
+            {
+            }
+        }
+        catch (Exception ex)
+        {
+            _notificationService.ShowErrorMessage(
+                _localizationService.Format("Settings.HardwareDiagnosticsFailedFormat", ex.Message));
+        }
     }
 
     private void OpenReleasePage(string releaseUrl)

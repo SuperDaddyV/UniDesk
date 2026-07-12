@@ -80,6 +80,12 @@
 
     <sys:String x:Key="Hardware.Receive">受信 RX</sys:String>
     <sys:String x:Key="Hardware.Send">送信 TX</sys:String>
+    <sys:String x:Key="Hardware.MetricAvailableFormat">取得元：{0}、更新：{1}</sys:String>
+    <sys:String x:Key="Hardware.SourceUnknown">不明な取得元</sys:String>
+    <sys:String x:Key="Hardware.NeedsElevation">センサーへのアクセスには管理者権限が必要な場合があります。</sys:String>
+    <sys:String x:Key="Hardware.NoSensor">利用可能なハードウェアセンサーがありません。</sys:String>
+    <sys:String x:Key="Hardware.ProviderUnavailable">メトリック取得元を利用できません。</sys:String>
+    <sys:String x:Key="Hardware.Stale">最新の値は期限切れです。再試行を待っています。</sys:String>
 
     <sys:String x:Key="Shortcut.EditHint">アイコンをドラッグして並べ替え</sys:String>
     <sys:String x:Key="Shortcut.MovePrevious">左へ移動</sys:String>
@@ -200,6 +206,12 @@
     <sys:String x:Key="Settings.MaxSavedCount">最大保存数</sys:String>
     <sys:String x:Key="Settings.CurrentCountFormat">現在：{0}</sys:String>
     <sys:String x:Key="Settings.System">システム</sys:String>
+    <sys:String x:Key="Settings.HardwareDiagnostics">ハードウェア診断</sys:String>
+    <sys:String x:Key="Settings.HardwareDiagnosticsDescription">互換性の診断用に、匿名化した取得元、センサー、失敗状態を出力します。</sys:String>
+    <sys:String x:Key="Settings.ExportHardwareDiagnostics">ハードウェア診断を出力</sys:String>
+    <sys:String x:Key="Settings.HardwareDiagnosticsSuccessFormat">ハードウェア診断を出力しました：{0}</sys:String>
+    <sys:String x:Key="Settings.HardwareDiagnosticsFailedFormat">ハードウェア診断の出力に失敗しました：{0}</sys:String>
+    <sys:String x:Key="Settings.HardwareDiagnosticsUnavailable">ハードウェア診断は現在利用できません。</sys:String>
     <sys:String x:Key="Settings.BackupDescription">設定、ショートカット、ローカルデータのバックアップと復元</sys:String>
     <sys:String x:Key="Settings.Backup">バックアップ</sys:String>
     <sys:String x:Key="Settings.Restore">復元</sys:String>

@@ -51,6 +51,29 @@ public class HardwareMonitorViewModelTests
     }
 
     [Fact]
+    public void Snapshot_ShouldExposeSourceAndAvailabilityTooltips()
+    {
+        var monitor = new FakeMonitor();
+        using var viewModel = new HardwareMonitorViewModel(monitor);
+
+        monitor.Raise(new SystemMetricsSnapshot
+        {
+            CapturedAtUtc = DateTimeOffset.Parse("2026-07-12T00:00:00Z"),
+            CpuUsage = 42,
+            CpuUsageSource = "Windows Performance Counter",
+            CpuUsageAvailability = HardwareMetricAvailability.Available,
+            CpuTemperatureAvailability = HardwareMetricAvailability.NoSensor,
+            GpuUsageAvailability = HardwareMetricAvailability.Stale,
+            GpuTemperatureAvailability = HardwareMetricAvailability.NeedsElevation
+        });
+
+        Assert.Contains("Windows Performance Counter", viewModel.SystemCpuUsageToolTip, StringComparison.Ordinal);
+        Assert.Contains("No sensor", viewModel.SystemCpuTemperatureToolTip, StringComparison.Ordinal);
+        Assert.Contains("stale", viewModel.SystemGpuUsageToolTip, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("elevation", viewModel.SystemGpuTemperatureToolTip, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public void Dispose_ShouldStopAndSuppressFurtherUpdates()
     {
         var monitor = new FakeMonitor();

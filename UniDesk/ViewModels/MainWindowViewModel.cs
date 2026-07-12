@@ -28,6 +28,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
     private readonly IHotkeyService _hotkeyService;
     private readonly IStartupService _startupService;
     private readonly ITodoBackupService _todoBackupService;
+    private readonly ISensorDiagnosticsService _sensorDiagnosticsService;
     private bool _disposed;
     private bool _isLoadingModuleSettings;
 
@@ -108,6 +109,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         IWeatherService weatherService,
         IStartupService startupService,
         ITodoBackupService todoBackupService,
+        ISensorDiagnosticsService sensorDiagnosticsService,
         ISystemMetricsMonitor systemMetricsMonitor,
         IClipboardMonitorService clipboardMonitorService,
         ISearchService searchService)
@@ -123,9 +125,10 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         _hotkeyService = hotkeyService;
         _startupService = startupService;
         _todoBackupService = todoBackupService;
+        _sensorDiagnosticsService = sensorDiagnosticsService;
         _localizationService.LanguageChanged += LocalizationService_OnLanguageChanged;
 
-        HardwareMonitor = new HardwareMonitorViewModel(systemMetricsMonitor);
+        HardwareMonitor = new HardwareMonitorViewModel(systemMetricsMonitor, localizationService);
         Todos = new TodosViewModel(
             todoService,
             todoDeletionHandler,
@@ -440,7 +443,8 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
                 _startupService,
                 _todoBackupService,
                 _quickTextService,
-                this);
+                this,
+                sensorDiagnosticsService: _sensorDiagnosticsService);
 
             var settingsWindow = new SettingsWindow(viewModel, ownerWidth, ownerHeight);
             if (owner != null)

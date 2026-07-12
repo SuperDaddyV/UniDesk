@@ -47,6 +47,7 @@
                             VerticalAlignment="Top"
                             HorizontalAlignment="Center">
                     <TextBlock Text="{Binding SystemCpuUsageText}"
+                               ToolTip="{Binding SystemCpuUsageToolTip}"
                                FontSize="{Binding DataContext.FontScale, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource ScaledFontSizeConverter}, ConverterParameter=13}"
                                FontWeight="SemiBold"
                                LineHeight="16"
@@ -54,6 +55,7 @@
                                HorizontalAlignment="Center"
                                Foreground="{DynamicResource PrimaryTextBrush}"/>
                     <TextBlock Text="{Binding SystemCpuTemperatureText}"
+                               ToolTip="{Binding SystemCpuTemperatureToolTip}"
                                FontSize="{Binding DataContext.FontScale, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource ScaledFontSizeConverter}, ConverterParameter=10}"
                                LineHeight="12"
                                Margin="0,2,0,0"
@@ -87,6 +89,7 @@
                             VerticalAlignment="Top"
                             HorizontalAlignment="Center">
                     <TextBlock Text="{Binding SystemGpuUsageText}"
+                               ToolTip="{Binding SystemGpuUsageToolTip}"
                                FontSize="{Binding DataContext.FontScale, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource ScaledFontSizeConverter}, ConverterParameter=13}"
                                FontWeight="SemiBold"
                                LineHeight="16"
@@ -94,6 +97,7 @@
                                HorizontalAlignment="Center"
                                Foreground="{DynamicResource PrimaryTextBrush}"/>
                     <TextBlock Text="{Binding SystemGpuTemperatureText}"
+                               ToolTip="{Binding SystemGpuTemperatureToolTip}"
                                FontSize="{Binding DataContext.FontScale, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource ScaledFontSizeConverter}, ConverterParameter=10}"
                                LineHeight="12"
                                Margin="0,2,0,0"

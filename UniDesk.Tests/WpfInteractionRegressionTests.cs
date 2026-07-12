@@ -154,6 +154,33 @@ public class WpfInteractionRegressionTests
     }
 
     [Fact]
+    public void HardwareDiagnostics_ShouldBeWiredToSettingsAndLocalizedTooltips()
+    {
+        var dataXaml = ReadProjectFile("UniDesk", "Controls", "Settings", "DataSettingsPage.xaml");
+        var hardwareXaml = ReadProjectFile("UniDesk", "Controls", "HardwareMonitorModuleView.xaml");
+
+        Assert.Contains("ExportSensorDiagnosticsCommand", dataXaml, StringComparison.Ordinal);
+        Assert.Contains("SystemCpuUsageToolTip", hardwareXaml, StringComparison.Ordinal);
+        Assert.Contains("SystemCpuTemperatureToolTip", hardwareXaml, StringComparison.Ordinal);
+        Assert.Contains("SystemGpuUsageToolTip", hardwareXaml, StringComparison.Ordinal);
+        Assert.Contains("SystemGpuTemperatureToolTip", hardwareXaml, StringComparison.Ordinal);
+
+        foreach (var languageFile in new[]
+                 {
+                     "Strings.zh-CN.xaml",
+                     "Strings.en-US.xaml",
+                     "Strings.ja-JP.xaml",
+                     "Strings.es-ES.xaml"
+                 })
+        {
+            var resources = ReadProjectFile("UniDesk", "Resources", languageFile);
+            Assert.Contains("Settings.ExportHardwareDiagnostics", resources, StringComparison.Ordinal);
+            Assert.Contains("Hardware.MetricAvailableFormat", resources, StringComparison.Ordinal);
+            Assert.Contains("Hardware.NoSensor", resources, StringComparison.Ordinal);
+        }
+    }
+
+    [Fact]
     public void SettingsNavigation_ShouldBeLocalizedInEveryLanguage()
     {
         var keys = new[]

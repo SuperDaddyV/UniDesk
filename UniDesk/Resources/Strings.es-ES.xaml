@@ -80,6 +80,12 @@
 
     <sys:String x:Key="Hardware.Receive">RX</sys:String>
     <sys:String x:Key="Hardware.Send">TX</sys:String>
+    <sys:String x:Key="Hardware.MetricAvailableFormat">Fuente: {0}; actualizado: {1}</sys:String>
+    <sys:String x:Key="Hardware.SourceUnknown">Fuente desconocida</sys:String>
+    <sys:String x:Key="Hardware.NeedsElevation">El acceso al sensor puede requerir privilegios de administrador.</sys:String>
+    <sys:String x:Key="Hardware.NoSensor">No hay ningún sensor de hardware disponible.</sys:String>
+    <sys:String x:Key="Hardware.ProviderUnavailable">El proveedor de métricas no está disponible.</sys:String>
+    <sys:String x:Key="Hardware.Stale">La última lectura está obsoleta; reintento pendiente.</sys:String>
 
     <sys:String x:Key="Shortcut.EditHint">Arrastra iconos para ordenar</sys:String>
     <sys:String x:Key="Shortcut.MovePrevious">Mover a la izquierda</sys:String>
@@ -200,6 +206,12 @@
     <sys:String x:Key="Settings.MaxSavedCount">Máximo guardado</sys:String>
     <sys:String x:Key="Settings.CurrentCountFormat">Actual: {0}</sys:String>
     <sys:String x:Key="Settings.System">Sistema</sys:String>
+    <sys:String x:Key="Settings.HardwareDiagnostics">Diagnóstico de hardware</sys:String>
+    <sys:String x:Key="Settings.HardwareDiagnosticsDescription">Exporta fuentes, sensores y errores anonimizados para diagnosticar compatibilidad.</sys:String>
+    <sys:String x:Key="Settings.ExportHardwareDiagnostics">Exportar diagnóstico de hardware</sys:String>
+    <sys:String x:Key="Settings.HardwareDiagnosticsSuccessFormat">Diagnóstico de hardware exportado: {0}</sys:String>
+    <sys:String x:Key="Settings.HardwareDiagnosticsFailedFormat">Error al exportar el diagnóstico de hardware: {0}</sys:String>
+    <sys:String x:Key="Settings.HardwareDiagnosticsUnavailable">El diagnóstico de hardware no está disponible.</sys:String>
     <sys:String x:Key="Settings.BackupDescription">Copia y restaura ajustes, accesos y datos locales</sys:String>
     <sys:String x:Key="Settings.Backup">Copia</sys:String>
     <sys:String x:Key="Settings.Restore">Restaurar</sys:String>

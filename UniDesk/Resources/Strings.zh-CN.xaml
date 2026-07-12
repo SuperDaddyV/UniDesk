@@ -80,6 +80,12 @@
 
     <sys:String x:Key="Hardware.Receive">接收 RX</sys:String>
     <sys:String x:Key="Hardware.Send">发送 TX</sys:String>
+    <sys:String x:Key="Hardware.MetricAvailableFormat">来源：{0}；更新时间：{1}</sys:String>
+    <sys:String x:Key="Hardware.SourceUnknown">未知来源</sys:String>
+    <sys:String x:Key="Hardware.NeedsElevation">传感器访问可能需要管理员权限。</sys:String>
+    <sys:String x:Key="Hardware.NoSensor">未发现可用的硬件传感器。</sys:String>
+    <sys:String x:Key="Hardware.ProviderUnavailable">指标读取来源当前不可用。</sys:String>
+    <sys:String x:Key="Hardware.Stale">最近读数已过期，正在等待重试。</sys:String>
 
     <sys:String x:Key="Shortcut.EditHint">拖动图标调整顺序</sys:String>
     <sys:String x:Key="Shortcut.MovePrevious">前移</sys:String>
@@ -200,6 +206,12 @@
     <sys:String x:Key="Settings.MaxSavedCount">最大保存数量</sys:String>
     <sys:String x:Key="Settings.CurrentCountFormat">当前：{0} 条</sys:String>
     <sys:String x:Key="Settings.System">系统设置</sys:String>
+    <sys:String x:Key="Settings.HardwareDiagnostics">硬件诊断</sys:String>
+    <sys:String x:Key="Settings.HardwareDiagnosticsDescription">导出脱敏的硬件来源、传感器与失败状态，便于定位兼容性问题。</sys:String>
+    <sys:String x:Key="Settings.ExportHardwareDiagnostics">导出硬件诊断</sys:String>
+    <sys:String x:Key="Settings.HardwareDiagnosticsSuccessFormat">硬件诊断已导出：{0}</sys:String>
+    <sys:String x:Key="Settings.HardwareDiagnosticsFailedFormat">硬件诊断导出失败：{0}</sys:String>
+    <sys:String x:Key="Settings.HardwareDiagnosticsUnavailable">硬件诊断服务当前不可用。</sys:String>
     <sys:String x:Key="Settings.BackupDescription">设置、快捷方式与本地数据备份还原</sys:String>
     <sys:String x:Key="Settings.Backup">备份</sys:String>
     <sys:String x:Key="Settings.Restore">还原</sys:String>

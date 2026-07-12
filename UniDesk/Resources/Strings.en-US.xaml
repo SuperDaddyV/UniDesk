@@ -80,6 +80,12 @@
 
     <sys:String x:Key="Hardware.Receive">RX</sys:String>
     <sys:String x:Key="Hardware.Send">TX</sys:String>
+    <sys:String x:Key="Hardware.MetricAvailableFormat">Source: {0}; updated: {1}</sys:String>
+    <sys:String x:Key="Hardware.SourceUnknown">Unknown source</sys:String>
+    <sys:String x:Key="Hardware.NeedsElevation">Sensor access may require elevation.</sys:String>
+    <sys:String x:Key="Hardware.NoSensor">No hardware sensor is available.</sys:String>
+    <sys:String x:Key="Hardware.ProviderUnavailable">The metric provider is unavailable.</sys:String>
+    <sys:String x:Key="Hardware.Stale">The last reading is stale; retry is pending.</sys:String>
 
     <sys:String x:Key="Shortcut.EditHint">Drag icons to reorder</sys:String>
     <sys:String x:Key="Shortcut.MovePrevious">Move left</sys:String>
@@ -200,6 +206,12 @@
     <sys:String x:Key="Settings.MaxSavedCount">Max saved items</sys:String>
     <sys:String x:Key="Settings.CurrentCountFormat">Current: {0}</sys:String>
     <sys:String x:Key="Settings.System">System</sys:String>
+    <sys:String x:Key="Settings.HardwareDiagnostics">Hardware diagnostics</sys:String>
+    <sys:String x:Key="Settings.HardwareDiagnosticsDescription">Export sanitized hardware sources, sensors, and failure states for compatibility diagnosis.</sys:String>
+    <sys:String x:Key="Settings.ExportHardwareDiagnostics">Export hardware diagnostics</sys:String>
+    <sys:String x:Key="Settings.HardwareDiagnosticsSuccessFormat">Hardware diagnostics exported: {0}</sys:String>
+    <sys:String x:Key="Settings.HardwareDiagnosticsFailedFormat">Hardware diagnostics export failed: {0}</sys:String>
+    <sys:String x:Key="Settings.HardwareDiagnosticsUnavailable">Hardware diagnostics are currently unavailable.</sys:String>
     <sys:String x:Key="Settings.BackupDescription">Back up and restore settings, shortcuts, and local data</sys:String>
     <sys:String x:Key="Settings.Backup">Back up</sys:String>
     <sys:String x:Key="Settings.Restore">Restore</sys:String>

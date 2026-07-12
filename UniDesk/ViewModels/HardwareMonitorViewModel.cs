@@ -8,6 +8,8 @@ namespace UniDesk.ViewModels;
 public partial class HardwareMonitorViewModel : ObservableObject, IDisposable
 {
     private readonly ISystemMetricsMonitor _monitor;
+    private readonly ILocalizationService? _localizationService;
+    private SystemMetricsSnapshot? _lastSnapshot;
     private bool _disposed;
 
     [ObservableProperty]
@@ -31,10 +33,29 @@ public partial class HardwareMonitorViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private string _systemNetworkSentText = "--";
 
-    public HardwareMonitorViewModel(ISystemMetricsMonitor monitor)
+    [ObservableProperty]
+    private string _systemCpuUsageToolTip = string.Empty;
+
+    [ObservableProperty]
+    private string _systemCpuTemperatureToolTip = string.Empty;
+
+    [ObservableProperty]
+    private string _systemGpuUsageToolTip = string.Empty;
+
+    [ObservableProperty]
+    private string _systemGpuTemperatureToolTip = string.Empty;
+
+    public HardwareMonitorViewModel(
+        ISystemMetricsMonitor monitor,
+        ILocalizationService? localizationService = null)
     {
         _monitor = monitor;
+        _localizationService = localizationService;
         _monitor.SnapshotAvailable += Monitor_OnSnapshotAvailable;
+        if (_localizationService != null)
+        {
+            _localizationService.LanguageChanged += LocalizationService_OnLanguageChanged;
+        }
         _monitor.Start();
     }
 
@@ -66,6 +87,7 @@ public partial class HardwareMonitorViewModel : ObservableObject, IDisposable
 
     private void Apply(SystemMetricsSnapshot metrics)
     {
+        _lastSnapshot = metrics;
         SystemCpuUsageText = FormatPercent(metrics.CpuUsage);
         SystemCpuTemperatureText = FormatTemperature("CPU", metrics.CpuTemperature);
         SystemMemoryUsageText = FormatPercent(metrics.MemoryUsage);
@@ -73,6 +95,65 @@ public partial class HardwareMonitorViewModel : ObservableObject, IDisposable
         SystemGpuTemperatureText = FormatTemperature("GPU", metrics.GpuTemperature);
         SystemNetworkReceivedText = FormatSpeed(metrics.NetworkReceivedBytesPerSecond);
         SystemNetworkSentText = FormatSpeed(metrics.NetworkSentBytesPerSecond);
+        SystemCpuUsageToolTip = BuildMetricToolTip(
+            metrics.CpuUsage,
+            metrics.CpuUsageSource,
+            metrics.CpuUsageAvailability,
+            metrics.CapturedAtUtc);
+        SystemCpuTemperatureToolTip = BuildMetricToolTip(
+            metrics.CpuTemperature,
+            metrics.CpuTemperatureSource,
+            metrics.CpuTemperatureAvailability,
+            metrics.CapturedAtUtc);
+        SystemGpuUsageToolTip = BuildMetricToolTip(
+            metrics.GpuUsage,
+            metrics.GpuUsageSource,
+            metrics.GpuUsageAvailability,
+            metrics.CapturedAtUtc);
+        SystemGpuTemperatureToolTip = BuildMetricToolTip(
+            metrics.GpuTemperature,
+            metrics.GpuTemperatureSource,
+            metrics.GpuTemperatureAvailability,
+            metrics.CapturedAtUtc);
+    }
+
+    private string BuildMetricToolTip(
+        double? value,
+        string? source,
+        HardwareMetricAvailability availability,
+        DateTimeOffset capturedAtUtc)
+    {
+        if (value.HasValue)
+        {
+            var sourceText = string.IsNullOrWhiteSpace(source)
+                ? L("Hardware.SourceUnknown", "Unknown source")
+                : source;
+            var localTime = capturedAtUtc.ToLocalTime().ToString("g");
+            return _localizationService?.Format("Hardware.MetricAvailableFormat", sourceText, localTime)
+                ?? $"Source: {sourceText}; updated: {localTime}";
+        }
+
+        return availability switch
+        {
+            HardwareMetricAvailability.NeedsElevation =>
+                L("Hardware.NeedsElevation", "Sensor access may require elevation."),
+            HardwareMetricAvailability.NoSensor =>
+                L("Hardware.NoSensor", "No sensor is available."),
+            HardwareMetricAvailability.Stale =>
+                L("Hardware.Stale", "The last reading is stale; retry is pending."),
+            _ => L("Hardware.ProviderUnavailable", "The metric provider is unavailable.")
+        };
+    }
+
+    private string L(string key, string fallback) =>
+        _localizationService?.GetString(key) ?? fallback;
+
+    private void LocalizationService_OnLanguageChanged(object? sender, EventArgs e)
+    {
+        if (_lastSnapshot != null)
+        {
+            Apply(_lastSnapshot);
+        }
     }
 
     private static string FormatPercent(double? value) => value.HasValue ? $"{value.Value:0}%" : "--";
@@ -103,6 +184,10 @@ public partial class HardwareMonitorViewModel : ObservableObject, IDisposable
         if (_disposed) return;
         _disposed = true;
         _monitor.SnapshotAvailable -= Monitor_OnSnapshotAvailable;
+        if (_localizationService != null)
+        {
+            _localizationService.LanguageChanged -= LocalizationService_OnLanguageChanged;
+        }
         _monitor.Dispose();
     }
 }
