@@ -11,6 +11,7 @@ using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Windows;
+using System.Windows.Threading;
 
 namespace UniDesk.ViewModels;
 
@@ -484,6 +485,25 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         {
             _windowService.SetHeight(PanelHeight);
         }
+    }
+
+    public HotkeyRegistrationResult ApplyGlobalHotkey(string? hotkey)
+    {
+        return _hotkeyService.ReplaceHotkey(
+            hotkey,
+            () =>
+            {
+                var dispatcher = Application.Current?.Dispatcher;
+                if (dispatcher == null || dispatcher.CheckAccess())
+                {
+                    _windowService.ToggleWindow();
+                    return;
+                }
+
+                _ = dispatcher.BeginInvoke(
+                    DispatcherPriority.Send,
+                    () => _windowService.ToggleWindow());
+            });
     }
 
     public Task ReloadShortcutsAsync() => Shortcuts.ReloadAsync();

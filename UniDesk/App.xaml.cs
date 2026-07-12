@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using UniDesk.Services;
 using UniDesk.ViewModels;
 using UniDesk.Helpers;
+using UniDesk.Models;
 
 namespace UniDesk;
 
@@ -97,7 +98,21 @@ public partial class App : Application
                 try
                 {
                     _hotkeyService?.Initialize(_mainWindow);
-                    RegisterGlobalHotkey();
+                    var hotkey = settingsService.GetValue("Hotkey", "Ctrl+Alt+Space");
+                    var hotkeyResult = Services
+                        .GetRequiredService<MainWindowViewModel>()
+                        .ApplyGlobalHotkey(hotkey);
+                    if (!hotkeyResult.Success)
+                    {
+                        var localization = Services.GetRequiredService<ILocalizationService>();
+                        var message = hotkeyResult.Failure == HotkeyRegistrationFailure.InvalidGesture
+                            ? localization.Format("Hotkey.InvalidFormat", hotkey)
+                            : localization.Format(
+                                "Hotkey.RegisterFailedFormat",
+                                hotkeyResult.NormalizedHotkey,
+                                hotkeyResult.ErrorCode);
+                        Services.GetRequiredService<INotificationService>().ShowWarningMessage(message);
+                    }
                     ApplyInitialSettings();
                 }
                 catch (Exception ex)
@@ -158,24 +173,6 @@ public partial class App : Application
         }
 
         startupService.SyncWithSetting(enabled);
-    }
-
-    private void RegisterGlobalHotkey()
-    {
-        var settingsService = Services.GetRequiredService<ISettingsService>();
-        var windowService = Services.GetRequiredService<IWindowService>();
-        var hotkey = settingsService.GetValue("Hotkey", "Ctrl+Alt+Space");
-
-        _hotkeyService?.UnregisterAll();
-        if (!string.IsNullOrWhiteSpace(hotkey))
-        {
-            _hotkeyService?.RegisterHotkey(hotkey, () =>
-            {
-                Current.Dispatcher.BeginInvoke(
-                    DispatcherPriority.Send,
-                    () => windowService.ToggleWindow());
-            });
-        }
     }
 
     private void ApplyInitialSettings()
