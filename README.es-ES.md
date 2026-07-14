@@ -3,8 +3,8 @@
 UniDesk es una barra lateral ligera, personalizable y limpia para el escritorio de Windows. Reúne hora y clima, monitorización de hardware, accesos directos, tareas, notas rápidas y textos frecuentes en un espacio de trabajo cómodo.
 
 <p align="center">
-  <a href="README.md">English</a> ·
-  <a href="README.zh-CN.md">简体中文</a> ·
+  <a href="README.md">简体中文</a> ·
+  <a href="README.en-US.md">English</a> ·
   <a href="README.ja-JP.md">日本語</a> ·
   Español
 </p>

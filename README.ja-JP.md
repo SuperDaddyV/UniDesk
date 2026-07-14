@@ -3,8 +3,8 @@
 UniDesk は、Windows デスクトップの端に常駐する軽量でカスタマイズしやすいサイドバーです。時刻と天気、ハードウェア監視、ショートカット、ToDo、クイックメモ、クイックテキストを、ひとつの使いやすいデスクトップ作業スペースにまとめます。
 
 <p align="center">
-  <a href="README.md">English</a> ·
-  <a href="README.zh-CN.md">简体中文</a> ·
+  <a href="README.md">简体中文</a> ·
+  <a href="README.en-US.md">English</a> ·
   日本語 ·
   <a href="README.es-ES.md">Español</a>
 </p>

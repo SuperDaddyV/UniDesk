@@ -2,57 +2,46 @@
 
 ## v2.0.0
 
-This major release hardens runtime stability and local-data privacy, introduces validated backup import, and restructures the dashboard into independently testable modules.
+This major release summarizes the net changes since v1.4.2: the Glass 2.0 interface, global search and theme controls, stronger hardware monitoring, safer local data, and a modularized architecture.
 
 ### Changes
 
-- Upgraded the main panel and seven-page Settings center to the shared Glass 2.0 visual system.
-- Added five-kind global search for Quick Notes, Todos, clipboard history, snippets, and shortcuts.
-- Added follow-system light/dark themes with separate light and dark color-scheme choices.
-- Fixed the follow-system color-scheme dropdowns so every option remains readable and selectable on the glass Settings surface.
-- Fixed Settings input handling by removing content drag-scroll mouse capture, restoring native mouse focus and caret placement for the title and weather API fields, keeping dropdown choices clickable, and ensuring an unchanged conflicting hotkey no longer blocks unrelated settings saves.
-- Hid the manual color palette while follow-system mode is active, leaving the light and dark dropdowns as the unambiguous theme controls.
-- Added a Settings control for recording, restoring, or fully disabling the global hotkey, with conflict rollback that preserves the previous working shortcut.
-- Stabilized the Hardware Monitor network row to prevent old throughput values from leaving visible text trails on transparent surfaces.
-- Added Windows GPU Engine as a vendor-neutral usage fallback, with counter warm-up, per-counter isolation, and retry backoff.
-- Prevented CPU/GPU readings from different physical adapters from being combined unless their device identities explicitly match.
-- Added a shared LibreHardwareMonitor snapshot, temperature quality filtering, availability/source tooltips, and sanitized hardware-diagnostic export with compatibility fixtures.
-- Integrated the Settings navigation directly into the window glass by removing the rectangular sidebar fill and divider while retaining rounded selection pills.
-- Kept the layered WPF glass windows on a single translucent-brush composition path, so opacity reveals the real desktop and rounded outer corners remain transparent.
-- Added fatal UI exception shutdown coordination, background system-metric sampling, reliable single-instance activation, seven-day log retention, and Todo deletion confirmation.
-- Protected the weather API key and clipboard history with Windows DPAPI, including an atomic migration path for existing plaintext values.
-- Added privacy-safe v5 backups, semantic import validation, import preview, and transactional restore behavior.
+- Redesigned the main panel and seven-page Settings center with the shared Glass 2.0 visual system.
+- Added global search across Quick Notes, Todos, clipboard history, snippets, and shortcuts.
+- Added follow-system light/dark mode with separate color-scheme choices for each system appearance.
+- Added configurable global hotkeys that can be recorded, restored to default, or fully disabled, with conflict rollback that preserves the previous working shortcut.
+- Strengthened Hardware Monitor compatibility with Windows GPU Engine fallback, device-scoped multi-GPU selection, shared LibreHardwareMonitor snapshots, invalid-value filtering, retry backoff, source and availability tooltips, and sanitized diagnostic export.
+- Centered the Hardware Monitor RX and TX label-value groups for a more balanced network layout.
+- Added privacy-safe v5 backups with semantic validation, import preview, and transactional restore behavior.
+- Protected the weather API key and clipboard history with Windows DPAPI, including automatic migration of existing plaintext values.
 - Removed the insecure IP-location fallback and retained only secure location providers.
-- Split hardware readers and the six dashboard modules into focused services, view models, and WPF controls, with Windows CI build and test checks.
-- Fixed Quick Note closing so auto-save completes before the editor closes; renamed the primary action from Close to Done.
-- Fixed the Todo completion circle so clicking it reliably toggles completion.
+- Improved runtime reliability with background system-metric sampling, single-instance activation, fatal-exception coordination, settings and database persistence safeguards, and seven-day log retention.
+- Added confirmation before deleting Todos.
+- Renamed the Quick Note editor's primary action from Close to Done.
+- Modularized the six dashboard modules and hardware readers into focused services, view models, and WPF controls, backed by expanded automated tests and Windows CI.
 - Excluded debug symbol files from the installer.
-- Updated application, installer, and README version references to `2.0.0`.
 
 ### 中文说明
 
-- 将主面板和七页设置中心升级为统一的 Glass 2.0 视觉系统。
-- 新增全局搜索，可检索快速便签、待办、剪贴板历史、常用短语和快捷方式五类内容。
-- 新增跟随系统明暗主题，并可分别指定浅色和深色配色。
-- 修复跟随系统模式下的配色下拉框，确保所有选项在玻璃设置界面中清晰可见并可正常选择。
-- 修复设置页输入链：移除内容区拖拽滚动的鼠标捕获，恢复标题和天气 API 文本框的原生鼠标焦点与光标定位；下拉选项可正常点击；未修改的冲突热键不再阻止其他设置保存。
-- 跟随系统模式开启时隐藏手动配色圆圈，仅保留明确对应浅色和深色的两个下拉框。
-- 新增全局热键设置，可录入、恢复默认或完全禁用热键；发生占用冲突时会恢复原有可用热键且不保存冲突组合。
-- 稳定硬件监视网络数据区域的文本布局与渲染，避免透明界面上残留旧速率数值形成重影。
-- 新增 Windows GPU Engine 通用使用率兜底，并加入计数器预热、单计数器隔离和失败退避。
-- CPU／GPU 指标仅在设备身份明确一致时跨来源补齐，避免多显卡环境下混合不同物理设备的数据。
-- 新增共享 LibreHardwareMonitor 快照、温度质量过滤、指标来源／可用性提示，以及脱敏硬件诊断导出和兼容性样本测试。
-- 移除设置页左侧导航的矩形底色和分隔线，使导航直接融入窗口毛玻璃，并保留圆角选中项。
-- 分层 WPF 玻璃窗口统一使用半透明画刷合成，调节透明度会真实透出桌面，窗口圆角外侧保持透明。
-- 新增致命 UI 异常退出协调、后台系统指标采样、可靠的单实例激活、7 天日志保留和待办删除确认。
-- 使用 Windows DPAPI 保护天气 API Key 与剪贴板历史，并以原子方式迁移已有明文数据。
-- 新增隐私安全的 v5 备份、导入语义校验、导入预览和事务化恢复。
-- 移除不安全的 IP 定位兜底，仅保留安全定位来源。
-- 将硬件读取器和六个仪表盘模块拆分为独立 Service、ViewModel 与 WPF 控件，并增加 Windows CI 构建和测试。
-- 修复快速便签关闭时的致命异常，确保自动保存完成后再关闭，并将主操作从「关闭」改为「完成」。
-- 修复待办完成圆圈无法点击的问题。
+- 将主面板和七页设置中心升级为统一的 Glass 2.0 毛玻璃视觉系统。
+- 新增全局搜索，可统一检索便签、待办、剪贴板历史、快捷文本和快捷方式。
+- 新增跟随 Windows 深浅色模式，并可分别设置浅色与深色主题配色。
+- 全局热键支持自定义、恢复默认和完全禁用；发生热键冲突时保留原有可用设置。
+- 强化硬件监视兼容性：新增 Windows GPU Engine 使用率兜底，改进 AMD、NVIDIA、Intel 及多显卡环境的数据选择，避免不同物理显卡的数据被错误组合，并增加异常值过滤、失败退避、数据来源提示和脱敏硬件诊断导出。
+- 调整硬件监视网络区域布局，使接收 RX 与发送 TX 的标签和数值组分别居中显示。
+- 新增隐私安全的 v5 备份、导入语义校验、导入预览和事务化恢复；导入失败时不会留下部分数据。
+- 使用 Windows DPAPI 加密天气 API Key 和剪贴板历史，并自动迁移已有明文数据。
+- 移除不安全的 IP 定位兜底，仅保留安全定位方式。
+- 改进后台硬件采样、单实例启动、致命异常处理、设置与数据库持久化保护和 7 天日志管理。
+- 待办删除操作新增确认提示。
+- 便签编辑器主操作由「关闭」调整为「完成」。
+- 将六个主界面模块和硬件读取器拆分为独立 Service、ViewModel 与 WPF 控件，并补充自动化测试与 Windows CI。
 - 安装包不再包含调试符号文件。
-- 将应用、安装包和 README 版本引用更新为 `2.0.0`。
+
+### Installer integrity / 安装包校验
+
+- `UniDesk_Setup_2.0.0.exe`
+- SHA-256: `8CAC14F98705012FB50DF590B9CE829038BAAEA9D820C5C9042AC3E2C018A202`
 
 ## v1.4.2
 

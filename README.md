@@ -1,126 +1,126 @@
 # UniDesk
 
-UniDesk is a lightweight, customizable, and clean Windows desktop sidebar that brings time and weather, hardware monitoring, shortcuts, todos, quick notes, and quick text into one convenient desktop workspace.
+UniDesk 是一个轻量、个性化、清爽好用的 Windows 桌面侧边栏工具，把时间天气、硬件监视、快捷方式、待办事项、快速便签和快捷文本整合进一个顺手的桌面工作台。
 
 <p align="center">
-  English ·
-  <a href="README.zh-CN.md">简体中文</a> ·
+  简体中文 ·
+  <a href="README.en-US.md">English</a> ·
   <a href="README.ja-JP.md">日本語</a> ·
   <a href="README.es-ES.md">Español</a>
 </p>
 
-![UniDesk product showcase](images/unidesk-hero.png)
+![UniDesk 产品展示图](images/unidesk-hero.png)
 
-## ✨ Key Features
+## ✨ 主要特性
 
-### Time & Weather
+### 时间天气
 
-- Shows the current time, date, and lunar calendar information.
-- Shows weather, temperature, air quality, humidity, and city information.
-- Includes a desktop calendar for quick solar and lunar date lookup.
+- 显示当前时间、日期和农历信息。
+- 显示天气、温度、空气质量、湿度和城市信息。
+- 内置桌面日历，方便快速查看公历和农历日期。
 
-### Hardware Monitor
+### 硬件监视
 
-- Monitors CPU, memory, and GPU usage in real time.
-- Shows CPU / GPU temperature.
-- Shows whole-machine upload / download network speed.
-- GPU temperature is read from available driver and hardware-monitoring sources when possible; unavailable values are shown safely as `--`.
+- 实时查看 CPU、内存、GPU 使用率。
+- 显示 CPU / GPU 温度。
+- 显示整机网络上传 / 下载速度。
+- GPU 温度会尽量从可用驱动和硬件监视来源读取；无法读取时会安全显示为 `--`。
 
-### Shortcuts
+### 快捷方式
 
-- Add frequently used apps, files, and folders.
-- Drag apps, files, or folders from the desktop or File Explorer to add them.
-- Reorder shortcuts freely.
-- Customize how many shortcuts are shown on the main panel.
+- 支持添加常用应用、文件和文件夹。
+- 支持从桌面或资源管理器拖拽添加。
+- 支持快捷方式自由排序。
+- 支持自定义主面板快捷方式显示数量。
 
-### Todos
+### 待办事项
 
-- Create, edit, complete, and delete todo items.
-- Show due time and priority.
-- Store data locally for daily task tracking.
+- 支持新增、编辑、完成和删除待办。
+- 支持任务时间和优先级显示。
+- 数据本地保存，适合日常事项记录。
 
-### Quick Notes
+### 快速便签
 
-- Manage multiple notes.
-- Supports auto save, pinning, copy, and delete.
-- Useful for temporary ideas, drafts, meeting notes, and reminders.
+- 支持多条便签。
+- 支持自动保存、置顶、复制和删除。
+- 适合临时记录灵感、草稿、会议记录和备忘内容。
 
-### Quick Text
+### 快捷文本
 
-- Supports clipboard history.
-- Supports reusable text snippets.
-- Supports one-click copy.
-- Includes sensitive-content filtering to reduce accidental storage of verification codes, passwords, tokens, cookies, and similar text.
+- 支持剪贴板历史。
+- 支持常用短语。
+- 支持一键复制。
+- 支持敏感内容过滤，尽量避免保存验证码、密码、Token、Cookie 等敏感文本。
 
-### Module Management
+### 模块管理
 
-- Show or hide modules.
-- Reorder modules freely.
-- Build a desktop panel that matches your own workflow.
+- 支持模块显示 / 隐藏。
+- 支持模块自由排序。
+- 可以按自己的使用习惯组合桌面面板。
 
-### Personalization
+### 个性化设置
 
-- Adjust theme colors, window transparency, panel width, panel height, and font size.
-- Customize the top display title.
-- Supports topmost mode, lock, collapse, startup launch, and shortcut count settings.
-- Restore the default layout or default settings when needed.
+- 支持主题配色、窗口透明度、面板宽度、面板高度和字体大小调节。
+- 支持自定义顶部显示名称。
+- 支持置顶、锁定、收起、开机自启和快捷方式数量设置。
+- 支持恢复默认布局和恢复默认设置。
 
-### Backup & Restore
+### 数据备份与还原
 
-- Supports local data backup.
-- Supports restoring todos, quick notes, clipboard history, and text snippets.
-- Helps recover commonly used data after reinstalling Windows or moving to another PC.
+- 支持本地数据备份。
+- 支持待办事项、快速便签、剪贴板历史和常用短语还原。
+- 方便重装系统或迁移电脑后恢复常用数据。
 
-## 🖼️ Preview
+## 🖼️ 界面预览
 
-### Core Features
+### 核心功能
 
-![UniDesk feature overview](images/unidesk-features.png)
+![UniDesk 核心功能概览](images/unidesk-features.png)
 
-### Personalization
+### 个性化设置
 
-![UniDesk personalization preview](images/unidesk-customization.png)
+![UniDesk 个性化设置展示](images/unidesk-customization.png)
 
-## 🚀 Who Is It For?
+## 🚀 适合谁使用
 
-UniDesk is for Windows users who want a clean desktop while keeping quick access to information, tools, todos, and notes.
+UniDesk 适合希望桌面保持清爽，但又想快速查看信息、打开常用工具、记录待办和便签的 Windows 用户。
 
-Common use cases:
+适合场景：
 
-- Daily office work
-- Personal productivity
-- Desktop quick launch
-- System status monitoring
-- Lightweight todos and notes
-- Quick copy of frequently used text
+- 日常办公
+- 个人效率管理
+- 桌面快捷启动
+- 系统状态查看
+- 轻量待办与便签记录
+- 常用文本快速复制
 
-## 📦 Installation
+## 📦 安装与使用
 
-Download the latest installer from [GitHub Releases](https://github.com/SuperDaddyV/UniDesk/releases/latest).
+从 [GitHub Releases](https://github.com/SuperDaddyV/UniDesk/releases/latest) 下载最新安装包并运行。
 
-Current installer example:
+当前正式安装包示例：
 
 ```powershell
 UniDesk_Setup_2.0.0.exe
 ```
 
-It is recommended to exit any running UniDesk instance before installing or upgrading.
+建议安装或升级前先退出正在运行的 UniDesk。
 
-System requirements:
+系统要求：
 
-- Windows 10 version 1903 or later
+- Windows 10 1903 或更新版本
 - Windows 11
 
-## 🛠️ Build From Source
+## 🛠️ 本地构建
 
-Requirements:
+环境要求：
 
 - .NET 9 SDK
-- Windows 10 version 1903 or later
-- Visual Studio 2022, JetBrains Rider, or another .NET / WPF-capable development environment
-- Inno Setup 6, only required for building the installer
+- Windows 10 1903 或更新版本
+- Visual Studio 2022、JetBrains Rider，或其他支持 .NET / WPF 的开发环境
+- Inno Setup 6，仅制作安装包时需要
 
-Build and run:
+构建并运行：
 
 ```powershell
 git clone https://github.com/SuperDaddyV/UniDesk.git
@@ -131,61 +131,61 @@ dotnet build UniDesk.sln -c Release
 dotnet run --project UniDesk\UniDesk.csproj
 ```
 
-Publish:
+发布应用：
 
 ```powershell
 dotnet publish .\UniDesk\UniDesk.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=false -o publish\win-x64
 ```
 
-Build the installer:
+制作安装包：
 
 ```powershell
 ISCC.exe .\UniDesk.iss
 ```
 
-The installer will be generated in the `installer` directory.
+安装包会输出到 `installer` 目录。
 
-## 🧰 Tech Stack
+## 🧰 技术栈
 
-| Technology | Purpose |
+| 技术 | 用途 |
 | --- | --- |
-| .NET 9 | Application runtime |
-| WPF | Windows desktop UI |
-| SQLite | Local data storage |
-| CommunityToolkit.Mvvm | UI and data binding helpers |
-| LibreHardwareMonitorLib | Hardware information reading |
-| Hardcodet.NotifyIcon.Wpf | System tray support |
-| Inno Setup | Windows installer |
+| .NET 9 | 应用运行框架 |
+| WPF | Windows 桌面界面 |
+| SQLite | 本地数据存储 |
+| CommunityToolkit.Mvvm | 界面与数据绑定辅助 |
+| LibreHardwareMonitorLib | 硬件信息读取 |
+| Hardcodet.NotifyIcon.Wpf | 系统托盘 |
+| Inno Setup | Windows 安装包 |
 
-## 🔐 Data & Privacy
+## 🔐 数据与隐私
 
-UniDesk is local-first. User data is stored on the local machine, including settings, shortcuts, todos, quick notes, quick text, and icon cache.
+UniDesk 优先使用本地存储，用户数据保存在本机。当前主要数据包括设置、快捷方式、待办事项、快速便签、快捷文本和图标缓存等。
 
-Clipboard history includes sensitive-content filtering to reduce accidental storage of verification codes, passwords, tokens, cookies, and similar text. This lowers risk, but it should not be treated as an absolute security guarantee. If you handle highly sensitive content, consider disabling clipboard history or clearing it regularly.
+剪贴板历史功能带有敏感内容过滤，用于尽量避免保存验证码、密码、Token、Cookie 等敏感文本。该过滤用于降低误存风险，但不应被视为绝对安全保证；如果处理高敏感内容，建议关闭剪贴板历史或及时清理记录。
 
-## 🆕 Highlights
+## 🆕 更新亮点
 
-Recent versions include:
+当前版本已补充以下能力：
 
-- Module management with show / hide and ordering.
-- Shortcut drag-to-add and free ordering.
-- Quick Notes with multiple notes, auto save, pinning, and copy.
-- Quick Text with clipboard history, text snippets, and sensitive-content filtering.
-- Improved hardware monitor layout for CPU, memory, GPU, temperature, and RX / TX network speed.
-- Improved GPU temperature reading for more hardware and driver environments.
-- Improved personalization settings and main panel scrolling.
+- 新增模块管理：支持模块显示 / 隐藏和排序。
+- 新增快捷方式拖拽添加与自由排序。
+- 新增快速便签：支持多条便签、自动保存、置顶和复制。
+- 新增快捷文本：支持剪贴板历史、常用短语和敏感内容过滤。
+- 优化硬件监视布局，完整显示 CPU、内存、GPU、温度和 RX / TX 网速。
+- 优化 GPU 温度读取，尽量兼容更多硬件与驱动环境。
+- 优化个性化设置和主面板滚动体验。
 
-## 📌 Roadmap
+## 📌 后续计划
 
-- More theme presets.
-- More detailed hardware information.
-- More flexible module extension options.
-- Better installation and update experience.
+- 更多主题预设。
+- 更完善的硬件详情展示。
+- 更灵活的模块扩展能力。
+- 更好的安装与更新体验。
 
-## 🙏 Credits
+## 🙏 致谢
 
-UniDesk is developed based on [Happyeveryweek/LumiDesk](https://github.com/Happyeveryweek/LumiDesk). Thanks to the original author for the idea, foundation, and desktop widget experience.
+UniDesk 基于 [Happyeveryweek/LumiDesk](https://github.com/Happyeveryweek/LumiDesk) 开发。感谢原作者提供的创意、基础代码和桌面小工具体验。
 
 ## 📄 License
 
-This project is licensed under the [MIT License](LICENSE). Please also respect the licenses and copyright notices of the original project and third-party dependencies.
+本项目遵循仓库中的 [MIT License](LICENSE)。请同时尊重原项目和第三方依赖的许可证与版权声明。
