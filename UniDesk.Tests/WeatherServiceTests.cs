@@ -147,6 +147,8 @@ public class WeatherServiceTests : IDisposable
 
     private sealed class StubLocationProvider : ILocationProvider
     {
+        public LocationFailureReason LastFailure => LocationFailureReason.WindowsLocationUnavailable;
+
         public Task<(double Latitude, double Longitude)?> GetLocationAsync(CancellationToken cancellationToken = default)
             => Task.FromResult<(double, double)?>(null);
 

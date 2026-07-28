@@ -101,22 +101,26 @@ Download the latest installer from [GitHub Releases](https://github.com/SuperDad
 Current installer example:
 
 ```powershell
-UniDesk_Setup_2.0.0.exe
+UniDesk_Setup_2.1.0.exe
 ```
 
 It is recommended to exit any running UniDesk instance before installing or upgrading.
 
+Double-click the installer normally and approve the Windows UAC prompt; a standard user must supply administrator credentials, with no need to use **Run as administrator**. The installer selects both the desktop shortcut and complete hardware monitoring by default and clearly discloses that it installs the shared PawnIO driver and a read-only Windows service running as `LocalSystem`. `UniDesk.exe` itself remains a normal-user process. The completion page selects launching UniDesk by default and starts it with the original normal-user identity. Clearing the component or a component installation failure leaves weather, notes, shortcuts, and other base features available, but low-level metrics such as CPU temperature may be unavailable; diagnostics and repair remain available from Settings.
+
 System requirements:
 
-- Windows 10 version 1903 or later
-- Windows 11
+- A supported Windows 11 x64 release
+- A Windows 10 Enterprise or IoT Enterprise LTSC x64 release supported by .NET 10
+
+The project keeps a Windows 10 version 1903 API compatibility baseline, but out-of-support consumer Windows 10 releases are not part of the official support promise.
 
 ## 🛠️ Build From Source
 
 Requirements:
 
-- .NET 9 SDK
-- Windows 10 version 1903 or later
+- .NET 10 SDK
+- A supported Windows 11 or Windows 10 LTSC development environment
 - Visual Studio 2022, JetBrains Rider, or another .NET / WPF-capable development environment
 - Inno Setup 6, only required for building the installer
 
@@ -131,25 +135,19 @@ dotnet build UniDesk.sln -c Release
 dotnet run --project UniDesk\UniDesk.csproj
 ```
 
-Publish:
+Build an unsigned local release candidate from a clean worktree:
 
 ```powershell
-dotnet publish .\UniDesk\UniDesk.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=false -o publish\win-x64
+.\scripts\Build-Release.ps1 -Version 2.1.0
 ```
 
-Build the installer:
-
-```powershell
-ISCC.exe .\UniDesk.iss
-```
-
-The installer will be generated in the `installer` directory.
+The script publishes the application, hardware service, and repair helper into a fresh versioned directory before compiling the installer from those exact inputs. Public artifacts must be signed by SignPath through the manually triggered `Build and sign release candidate` GitHub Actions workflow and pass `Test-ReleaseReadiness.ps1`; the workflow never creates a GitHub Release automatically.
 
 ## 🧰 Tech Stack
 
 | Technology | Purpose |
 | --- | --- |
-| .NET 9 | Application runtime |
+| .NET 10 LTS | Application runtime |
 | WPF | Windows desktop UI |
 | SQLite | Local data storage |
 | CommunityToolkit.Mvvm | UI and data binding helpers |
@@ -162,6 +160,12 @@ The installer will be generated in the `installer` directory.
 UniDesk is local-first. User data is stored on the local machine, including settings, shortcuts, todos, quick notes, quick text, and icon cache.
 
 Clipboard history includes sensitive-content filtering to reduce accidental storage of verification codes, passwords, tokens, cookies, and similar text. This lowers risk, but it should not be treated as an absolute security guarantee. If you handle highly sensitive content, consider disabling clipboard history or clearing it regularly.
+
+## Code signing policy
+
+Public packages follow the [code signing policy](CODE_SIGNING_POLICY.md) and [privacy policy](PRIVACY.md). A signed candidate must come from a public revision, receive manual approval, and pass source-version, Authenticode, and SHA-256 checks.
+
+Free code signing provided by SignPath.io, certificate by SignPath Foundation.
 
 ## 🆕 Highlights
 

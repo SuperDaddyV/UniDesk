@@ -80,6 +80,61 @@ public class SettingsHotkeyIntegrationTests
         }
     }
 
+    [Fact]
+    public void GeneralSettings_ShouldExposeCityAndExplicitAutoLocationConsent()
+    {
+        var xaml = ReadProjectFile("UniDesk", "Controls", "Settings", "GeneralSettingsPage.xaml");
+        var viewModel = ReadProjectFile("UniDesk", "ViewModels", "SettingsViewModel.cs");
+
+        Assert.Contains("Text=\"{Binding City, UpdateSourceTrigger=PropertyChanged}\"", xaml, StringComparison.Ordinal);
+        Assert.Contains("Text=\"{DynamicResource Settings.CityHint}\"", xaml, StringComparison.Ordinal);
+        Assert.Contains("IsChecked=\"{Binding AutoLocation}\"", xaml, StringComparison.Ordinal);
+        Assert.Contains("private string _city = string.Empty", viewModel, StringComparison.Ordinal);
+        Assert.Contains("private bool _autoLocation", viewModel, StringComparison.Ordinal);
+        Assert.Contains("_settingsService.SetValue(\"AutoLocation\"", viewModel, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void WeatherCredentialChanges_ShouldValidateBeforePersistence()
+    {
+        var viewModel = ReadProjectFile("UniDesk", "ViewModels", "SettingsViewModel.cs");
+        var validation = viewModel.IndexOf("ValidateApiKeyAsync(apiKeyToValidate, apiHostToValidate)", StringComparison.Ordinal);
+        var persistence = viewModel.IndexOf("_settingsService.SetValue(\"WeatherApiKey\", apiKeyToValidate)", StringComparison.Ordinal);
+
+        Assert.True(validation >= 0);
+        Assert.True(persistence > validation);
+    }
+
+    [Fact]
+    public void WeatherLocationSettings_ShouldBeLocalizedInEveryLanguage()
+    {
+        var keys = new[]
+        {
+            "Settings.WeatherLocation",
+            "Settings.City",
+            "Settings.CityHint",
+            "Settings.AutoLocation",
+            "Settings.AutoLocationPrivacyHint",
+            "Settings.WeatherCredentialsRequired",
+            "Settings.WeatherApiHostInvalid"
+        };
+
+        foreach (var languageFile in new[]
+                 {
+                     "Strings.zh-CN.xaml",
+                     "Strings.en-US.xaml",
+                     "Strings.ja-JP.xaml",
+                     "Strings.es-ES.xaml"
+                 })
+        {
+            var resources = ReadProjectFile("UniDesk", "Resources", languageFile);
+            foreach (var key in keys)
+            {
+                Assert.Contains($"x:Key=\"{key}\"", resources, StringComparison.Ordinal);
+            }
+        }
+    }
+
     private static string ReadProjectFile(params string[] segments) =>
         File.ReadAllText(Path.Combine([ProjectRoot, .. segments]));
 }

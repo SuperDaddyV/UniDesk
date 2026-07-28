@@ -150,7 +150,8 @@ public class WpfInteractionRegressionTests
         Assert.DoesNotContain("PreviewMouseLeftButtonDown", appearanceXaml, StringComparison.Ordinal);
         Assert.DoesNotContain("PreviewMouseLeftButtonDown", generalXaml, StringComparison.Ordinal);
         Assert.Contains("UpdateSourceTrigger=PropertyChanged", appearanceXaml, StringComparison.Ordinal);
-        Assert.Equal(2, Regex.Matches(generalXaml, "UpdateSourceTrigger=PropertyChanged").Count);
+        Assert.Contains("Text=\"{Binding City, UpdateSourceTrigger=PropertyChanged}\"", generalXaml, StringComparison.Ordinal);
+        Assert.Equal(3, Regex.Matches(generalXaml, "UpdateSourceTrigger=PropertyChanged").Count);
     }
 
     [Fact]
@@ -234,6 +235,94 @@ public class WpfInteractionRegressionTests
         Assert.Contains("Search.ActivateResultCommand", mainXaml, StringComparison.Ordinal);
         Assert.Contains("Key.F", mainCode, StringComparison.Ordinal);
         Assert.Contains("TodoSearchResultActivated", mainCode, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void DesktopSettings_ClipboardLimit_ShouldExposePersistentSingleSelection()
+    {
+        var desktopXaml = ReadProjectFile("UniDesk", "Controls", "Settings", "DesktopSettingsPage.xaml");
+        var sharedTheme = ReadProjectFile("UniDesk", "Resources", "Themes", "Shared.xaml");
+
+        Assert.Contains("x:Name=\"ClipboardHistoryLimitList\"", desktopXaml, StringComparison.Ordinal);
+        Assert.Contains("ItemsSource=\"{Binding ClipboardHistoryLimitOptions}\"", desktopXaml, StringComparison.Ordinal);
+        Assert.Contains(
+            "SelectedItem=\"{Binding ClipboardHistoryMaxCount, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}\"",
+            desktopXaml,
+            StringComparison.Ordinal);
+        Assert.Contains("GlassChipListBoxItemStyle", desktopXaml, StringComparison.Ordinal);
+        Assert.Contains("x:Key=\"GlassChipListBoxItemStyle\"", sharedTheme, StringComparison.Ordinal);
+        Assert.Contains("<Trigger Property=\"IsSelected\" Value=\"True\">", sharedTheme, StringComparison.Ordinal);
+        Assert.DoesNotContain("SelectClipboardHistoryLimitCommand", desktopXaml, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void CollapsedMainWindow_ShouldUsePurposeBuiltCompactDashboard()
+    {
+        var mainXaml = ReadProjectFile("UniDesk", "MainWindow.xaml");
+        var mainCode = ReadProjectFile("UniDesk", "MainWindow.xaml.cs");
+        var timeWeatherXaml = ReadProjectFile("UniDesk", "Controls", "TimeWeatherModuleView.xaml");
+        var sharedTheme = ReadProjectFile("UniDesk", "Resources", "Themes", "Shared.xaml");
+
+        Assert.Contains("private const double CollapsedPanelHeight = 178;", mainCode, StringComparison.Ordinal);
+        Assert.Contains("x:Name=\"ExpandedHeaderActions\"", mainXaml, StringComparison.Ordinal);
+        Assert.Contains("x:Name=\"CompactMoreButton\"", mainXaml, StringComparison.Ordinal);
+        Assert.Contains("Click=\"CompactMoreButton_OnClick\"", mainXaml, StringComparison.Ordinal);
+        Assert.Contains("CompactMoreButton_OnClick", mainCode, StringComparison.Ordinal);
+        Assert.Contains("ToolTip=\"{DynamicResource Common.More}\"", mainXaml, StringComparison.Ordinal);
+        Assert.Contains("Command=\"{Binding ToggleTopMostCommand}\"", mainXaml, StringComparison.Ordinal);
+        Assert.Contains("Command=\"{Binding ToggleWindowLockCommand}\"", mainXaml, StringComparison.Ordinal);
+
+        Assert.Contains("x:Name=\"CompactStatusStrip\"", timeWeatherXaml, StringComparison.Ordinal);
+        Assert.Contains("x:Name=\"CompactHardwareSummary\"", timeWeatherXaml, StringComparison.Ordinal);
+        var hardwareSummary = Regex.Match(
+            timeWeatherXaml,
+            "<Border x:Name=\"CompactHardwareSummary\"[\\s\\S]*?</Border>");
+        Assert.True(hardwareSummary.Success);
+        Assert.DoesNotContain("Background=", hardwareSummary.Value, StringComparison.Ordinal);
+        Assert.Contains("Orientation=\"Horizontal\"", hardwareSummary.Value, StringComparison.Ordinal);
+        Assert.DoesNotContain("HorizontalAlignment=\"Right\"", hardwareSummary.Value, StringComparison.Ordinal);
+        Assert.Contains("HardwareMonitor.SystemCpuUsageText", hardwareSummary.Value, StringComparison.Ordinal);
+        Assert.Contains("HardwareMonitor.SystemCpuTemperatureText", hardwareSummary.Value, StringComparison.Ordinal);
+        Assert.Contains("HardwareMonitor.SystemGpuTemperatureText", hardwareSummary.Value, StringComparison.Ordinal);
+        Assert.Contains("HardwareMonitor.SystemMemoryUsageText", hardwareSummary.Value, StringComparison.Ordinal);
+
+        var statusStrip = Regex.Match(
+            timeWeatherXaml,
+            "<Border x:Name=\"CompactStatusStrip\"[\\s\\S]*?</Border>");
+        Assert.True(statusStrip.Success);
+        Assert.Contains("Todos.CollapsedPanelTodo.Title", statusStrip.Value, StringComparison.Ordinal);
+        Assert.DoesNotContain("HardwareMonitor.", statusStrip.Value, StringComparison.Ordinal);
+        Assert.Contains("<Setter Property=\"Height\" Value=\"128\"/>", timeWeatherXaml, StringComparison.Ordinal);
+        Assert.Contains("<Setter Property=\"Background\" Value=\"Transparent\"/>", timeWeatherXaml, StringComparison.Ordinal);
+
+        Assert.Contains("<Setter Property=\"FocusVisualStyle\" Value=\"{x:Null}\"/>", sharedTheme, StringComparison.Ordinal);
+        Assert.Contains("<Trigger Property=\"IsKeyboardFocused\" Value=\"True\">", sharedTheme, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void WeatherPanel_ShouldExposeQWeatherAttributionInEveryDisplayModeAndLanguage()
+    {
+        var timeWeatherXaml = ReadProjectFile("UniDesk", "Controls", "TimeWeatherModuleView.xaml");
+
+        Assert.Contains("x:Name=\"QWeatherAttributionLink\"", timeWeatherXaml, StringComparison.Ordinal);
+        Assert.Contains("NavigateUri=\"https://www.qweather.com\"", timeWeatherXaml, StringComparison.Ordinal);
+        Assert.Contains(
+            "RequestNavigate=\"QWeatherAttributionLink_OnRequestNavigate\"",
+            timeWeatherXaml,
+            StringComparison.Ordinal);
+        Assert.Contains("{DynamicResource Weather.QWeatherAttribution}", timeWeatherXaml, StringComparison.Ordinal);
+
+        foreach (var languageFile in new[]
+                 {
+                     "Strings.zh-CN.xaml",
+                     "Strings.en-US.xaml",
+                     "Strings.ja-JP.xaml",
+                     "Strings.es-ES.xaml"
+                 })
+        {
+            var resources = ReadProjectFile("UniDesk", "Resources", languageFile);
+            Assert.Contains("x:Key=\"Weather.QWeatherAttribution\"", resources, StringComparison.Ordinal);
+        }
     }
 
     private static string ReadProjectFile(params string[] segments) =>

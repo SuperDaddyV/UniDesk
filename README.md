@@ -101,22 +101,26 @@ UniDesk 适合希望桌面保持清爽，但又想快速查看信息、打开常
 当前正式安装包示例：
 
 ```powershell
-UniDesk_Setup_2.0.0.exe
+UniDesk_Setup_2.1.0.exe
 ```
 
 建议安装或升级前先退出正在运行的 UniDesk。
 
+请直接双击安装包并在 Windows 提示时确认 UAC；标准用户需要输入管理员凭据，无需右键选择「以管理员身份运行」。安装器默认勾选桌面快捷方式和「完整硬件监控组件」，并明确说明它会安装共享的 PawnIO 驱动和以 `LocalSystem` 运行的只读 Windows 服务；`UniDesk.exe` 本身始终保持普通用户权限。安装完成页默认勾选启动 UniDesk，并以安装前的普通用户身份自动启动。取消该组件或组件安装失败不会影响天气、便签、快捷方式等基础功能，但 CPU 温度等底层指标可能不可用，可稍后在设置中导出诊断并重试修复。
+
 系统要求：
 
-- Windows 10 1903 或更新版本
-- Windows 11
+- 仍在 Microsoft 支持周期内的 Windows 11 x64
+- 受 .NET 10 支持的 Windows 10 Enterprise／IoT Enterprise LTSC x64
+
+项目保留 Windows 10 1903 API 兼容基线，但已停止支持的普通 Windows 10 版本不属于正式支持范围。
 
 ## 🛠️ 本地构建
 
 环境要求：
 
-- .NET 9 SDK
-- Windows 10 1903 或更新版本
+- .NET 10 SDK
+- 受支持的 Windows 11 或 Windows 10 LTSC 开发环境
 - Visual Studio 2022、JetBrains Rider，或其他支持 .NET / WPF 的开发环境
 - Inno Setup 6，仅制作安装包时需要
 
@@ -131,25 +135,19 @@ dotnet build UniDesk.sln -c Release
 dotnet run --project UniDesk\UniDesk.csproj
 ```
 
-发布应用：
+从干净工作区构建本地未签名候选包：
 
 ```powershell
-dotnet publish .\UniDesk\UniDesk.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=false -o publish\win-x64
+.\scripts\Build-Release.ps1 -Version 2.1.0
 ```
 
-制作安装包：
-
-```powershell
-ISCC.exe .\UniDesk.iss
-```
-
-安装包会输出到 `installer` 目录。
+脚本会将主程序、硬件服务和修复工具发布到全新的版本目录，再从这些确定输入编译安装包。公开发布制品必须通过 GitHub Actions 的 `Build and sign release candidate` 手动工作流交由 SignPath 签名，并通过 `Test-ReleaseReadiness.ps1`；该工作流不会自动创建 GitHub Release。
 
 ## 🧰 技术栈
 
 | 技术 | 用途 |
 | --- | --- |
-| .NET 9 | 应用运行框架 |
+| .NET 10 LTS | 应用运行框架 |
 | WPF | Windows 桌面界面 |
 | SQLite | 本地数据存储 |
 | CommunityToolkit.Mvvm | 界面与数据绑定辅助 |
@@ -162,6 +160,12 @@ ISCC.exe .\UniDesk.iss
 UniDesk 优先使用本地存储，用户数据保存在本机。当前主要数据包括设置、快捷方式、待办事项、快速便签、快捷文本和图标缓存等。
 
 剪贴板历史功能带有敏感内容过滤，用于尽量避免保存验证码、密码、Token、Cookie 等敏感文本。该过滤用于降低误存风险，但不应被视为绝对安全保证；如果处理高敏感内容，建议关闭剪贴板历史或及时清理记录。
+
+## Code signing policy
+
+公开发布包遵循[代码签名政策](CODE_SIGNING_POLICY.md)和[隐私政策](PRIVACY.md)。签名候选包必须来自公开提交、通过人工批准，并完成源码版本、Authenticode 和 SHA-256 校验。
+
+Free code signing provided by SignPath.io, certificate by SignPath Foundation.
 
 ## 🆕 更新亮点
 

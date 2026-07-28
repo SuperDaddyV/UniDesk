@@ -222,7 +222,7 @@ public class DatabaseService : IDatabaseService
             { "WindowOpacity", "0.70" },
             { "TopMost", "true" },
             { "Startup", "false" },
-            { "AutoLocation", "true" },
+            { "AutoLocation", "false" },
             { "City", "" },
             { "PanelWidth", "320" },
             { "WindowLocked", "false" },
@@ -474,9 +474,19 @@ public class DatabaseService : IDatabaseService
             transaction.Commit();
             return result;
         }
-        catch
+        catch (Exception originalException)
         {
-            transaction.Rollback();
+            try
+            {
+                transaction.Rollback();
+            }
+            catch (Exception rollbackException)
+            {
+                Logger.LogError(
+                    rollbackException,
+                    $"DatabaseService.Transaction.Rollback after {originalException.GetType().Name}");
+            }
+
             throw;
         }
     }

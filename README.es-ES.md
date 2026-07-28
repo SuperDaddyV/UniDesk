@@ -101,22 +101,26 @@ Descarga el instalador más reciente desde [GitHub Releases](https://github.com/
 Ejemplo del instalador actual:
 
 ```powershell
-UniDesk_Setup_2.0.0.exe
+UniDesk_Setup_2.1.0.exe
 ```
 
 Se recomienda cerrar UniDesk antes de instalar o actualizar.
 
+Haz doble clic en el instalador normalmente y aprueba la solicitud UAC de Windows; un usuario estándar debe proporcionar credenciales de administrador, sin necesidad de usar **Ejecutar como administrador**. El acceso directo del escritorio y la supervisión completa de hardware están seleccionados de forma predeterminada. El instalador muestra claramente que instalará el controlador compartido PawnIO y un servicio de Windows de solo lectura ejecutado como `LocalSystem`. `UniDesk.exe` se mantiene con permisos de usuario normal. La página final selecciona iniciar UniDesk de forma predeterminada y lo abre con la identidad del usuario normal original. Si desmarcas el componente o su instalación falla, el clima, las notas, los accesos directos y las demás funciones básicas seguirán disponibles, pero métricas como la temperatura de la CPU pueden no mostrarse; Configuración permite exportar diagnósticos y reintentar la reparación.
+
 Requisitos del sistema:
 
-- Windows 10 versión 1903 o posterior
-- Windows 11
+- Una versión compatible de Windows 11 x64
+- Windows 10 Enterprise o IoT Enterprise LTSC x64 compatible con .NET 10
+
+El proyecto conserva la base de compatibilidad de API de Windows 10 versión 1903, pero las versiones de consumo sin soporte ya no forman parte del soporte oficial.
 
 ## 🛠️ Compilar desde el código fuente
 
 Requisitos:
 
-- .NET 9 SDK
-- Windows 10 versión 1903 o posterior
+- .NET 10 SDK
+- Un entorno de desarrollo compatible con Windows 11 o Windows 10 LTSC
 - Visual Studio 2022, JetBrains Rider u otro entorno compatible con .NET / WPF
 - Inno Setup 6, solo necesario para crear el instalador
 
@@ -131,25 +135,19 @@ dotnet build UniDesk.sln -c Release
 dotnet run --project UniDesk\UniDesk.csproj
 ```
 
-Publicar:
+Crear un candidato local sin firmar desde un árbol de trabajo limpio:
 
 ```powershell
-dotnet publish .\UniDesk\UniDesk.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=false -o publish\win-x64
+.\scripts\Build-Release.ps1 -Version 2.1.0
 ```
 
-Crear instalador:
-
-```powershell
-ISCC.exe .\UniDesk.iss
-```
-
-El instalador se genera en el directorio `installer`.
+El script publica la aplicación, el servicio de hardware y la herramienta de reparación en un directorio nuevo con versión, y compila el instalador únicamente desde esas entradas. Los artefactos públicos deben firmarse con SignPath mediante el flujo manual `Build and sign release candidate` de GitHub Actions y superar `Test-ReleaseReadiness.ps1`; el flujo no crea una GitHub Release automáticamente.
 
 ## 🧰 Tecnología
 
 | Tecnología | Uso |
 | --- | --- |
-| .NET 9 | Entorno de ejecución de la aplicación |
+| .NET 10 LTS | Entorno de ejecución de la aplicación |
 | WPF | Interfaz de escritorio para Windows |
 | SQLite | Almacenamiento local |
 | CommunityToolkit.Mvvm | Ayudas para UI y enlace de datos |
@@ -162,6 +160,12 @@ El instalador se genera en el directorio `installer`.
 UniDesk prioriza el almacenamiento local. Los datos de usuario, como configuración, accesos directos, tareas, notas rápidas, textos rápidos y caché de iconos, se guardan en el equipo local.
 
 El historial del portapapeles incluye filtrado de contenido sensible para reducir el guardado accidental de códigos de verificación, contraseñas, tokens, cookies y textos similares. Esta función reduce riesgos, pero no debe considerarse una garantía absoluta de seguridad. Si trabajas con contenido muy sensible, considera desactivar el historial del portapapeles o limpiarlo con frecuencia.
+
+## Code signing policy
+
+Los paquetes públicos siguen la [política de firma de código](CODE_SIGNING_POLICY.md) y la [política de privacidad](PRIVACY.md). Cada candidato firmado debe proceder de una revisión pública, recibir aprobación manual y superar las comprobaciones de versión de origen, Authenticode y SHA-256.
+
+Free code signing provided by SignPath.io, certificate by SignPath Foundation.
 
 ## 🆕 Novedades
 

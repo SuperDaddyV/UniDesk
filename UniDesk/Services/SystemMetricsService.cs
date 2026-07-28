@@ -114,12 +114,15 @@ public sealed class SystemMetricsService :
                 new LibreHardwareHostDiagnosticStatus(false, false, "not configured", null, []);
             var sensors = _libreHost?.CurrentSensors.ToArray() ?? [];
             var gpuEngineStatus = (_gpuReader as GpuMetricsReader)?.GpuEngineDiagnosticStatus;
+            var hardwareServiceStatus =
+                (_libreHost as IHardwareServiceDiagnosticsProvider)?.ServiceStatus;
             return new HardwareMetricsDiagnosticsSnapshot(
                 DateTimeOffset.UtcNow,
                 libreStatus,
                 gpuEngineStatus,
                 sensors,
-                _recentSnapshots.ToArray());
+                _recentSnapshots.ToArray(),
+                hardwareServiceStatus);
         }
     }
 

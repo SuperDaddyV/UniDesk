@@ -38,7 +38,9 @@ public sealed class SensorDiagnosticReporter : ISensorDiagnosticsService
     public async Task<string> ExportDiagnosticsAsync(CancellationToken cancellationToken = default)
     {
         Directory.CreateDirectory(_outputDirectory);
-        var snapshot = _source.CaptureDiagnostics();
+        var snapshot = await Task.Run(
+            _source.CaptureDiagnostics,
+            cancellationToken).ConfigureAwait(false);
         var version = Assembly.GetEntryAssembly()?.GetName().Version?.ToString(3) ?? "unknown";
         var report = BuildReport(snapshot, version, Environment.OSVersion.VersionString);
         var path = Path.Combine(
@@ -55,7 +57,7 @@ public sealed class SensorDiagnosticReporter : ISensorDiagnosticsService
     {
         var builder = new StringBuilder();
         builder.AppendLine("UniDesk Hardware Diagnostics");
-        builder.AppendLine("Schema: 1");
+        builder.AppendLine("Schema: 2");
         builder.AppendLine($"Application version: {Sanitize(applicationVersion)}");
         builder.AppendLine($"Windows version: {Sanitize(windowsVersion)}");
         builder.AppendLine($"Captured UTC: {diagnostics.CapturedAtUtc:O}");
@@ -63,6 +65,20 @@ public sealed class SensorDiagnosticReporter : ISensorDiagnosticsService
         builder.AppendLine();
 
         builder.AppendLine("[Providers]");
+        if (diagnostics.HardwareServiceStatus != null)
+        {
+            var service = diagnostics.HardwareServiceStatus;
+            builder.AppendLine(
+                $"UniDesk Hardware Service | availability={service.Availability} | " +
+                $"serviceVersion={Sanitize(service.ServiceVersion)} | protocol={service.ProtocolVersion} | " +
+                $"pawnIoInstalled={service.PawnIo.IsInstalled} | pawnIoVersion={Sanitize(service.PawnIo.Version)} | " +
+                $"lastSuccessUtc={FormatTimestamp(service.LastSuccessUtc)} | error={Sanitize(service.LastError)}");
+        }
+        else
+        {
+            builder.AppendLine("UniDesk Hardware Service | unavailable");
+        }
+
         builder.AppendLine(
             $"LibreHardwareMonitor | initialized={diagnostics.LibreHardwareStatus.IsInitialized} | " +
             $"lastRefreshUtc={FormatTimestamp(diagnostics.LibreHardwareStatus.LastRefreshUtc)} | " +

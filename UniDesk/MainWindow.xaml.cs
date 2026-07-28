@@ -17,7 +17,7 @@ public partial class MainWindow : Window
     private readonly IClipboardMonitorService _clipboardMonitorService;
     private bool _suppressPositionSave;
     private const double DefaultExpandedPanelHeight = 702;
-    private const double CollapsedPanelHeight = 196;
+    private const double CollapsedPanelHeight = 178;
     private const double WindowCornerRadius = 16;
 
     public bool AllowShutdown { get; set; }
@@ -76,7 +76,7 @@ public partial class MainWindow : Window
 
         if (_viewModel.IsPanelCollapsed)
         {
-            MainModulesScrollViewer.Margin = new Thickness(12, 0, 12, 6);
+            MainModulesScrollViewer.Margin = new Thickness(16, 0, 16, 8);
             foreach (var row in MainModulesGrid.RowDefinitions)
             {
                 row.Height = new GridLength(0);
@@ -140,6 +140,20 @@ public partial class MainWindow : Window
     }
 
     private void SearchButton_OnClick(object sender, RoutedEventArgs e) => OpenSearch();
+
+    private void CompactMoreButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button { ContextMenu: { } menu } button)
+        {
+            return;
+        }
+
+        menu.PlacementTarget = button;
+        menu.Placement = PlacementMode.Bottom;
+        menu.HorizontalOffset = -96;
+        menu.IsOpen = true;
+        e.Handled = true;
+    }
 
     private void MainWindow_OnPreviewKeyDown(object sender, KeyEventArgs e)
     {

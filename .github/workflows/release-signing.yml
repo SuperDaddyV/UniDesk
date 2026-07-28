@@ -1,0 +1,132 @@
+name: Build and sign release candidate
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Release version without the v prefix
+        required: true
+        default: '2.1.0'
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  build-and-sign:
+    if: github.repository == 'SuperDaddyV/UniDesk' && github.ref == 'refs/heads/main'
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - name: Validate SignPath configuration
+        shell: pwsh
+        env:
+          SIGNPATH_API_TOKEN: ${{ secrets.SIGNPATH_API_TOKEN }}
+          SIGNPATH_ORGANIZATION_ID: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          SIGNPATH_PROJECT_SLUG: ${{ vars.SIGNPATH_PROJECT_SLUG }}
+          SIGNPATH_SIGNING_POLICY_SLUG: ${{ vars.SIGNPATH_SIGNING_POLICY_SLUG }}
+          SIGNPATH_PAYLOAD_CONFIGURATION: ${{ vars.SIGNPATH_PAYLOAD_ARTIFACT_CONFIGURATION_SLUG }}
+          SIGNPATH_INSTALLER_CONFIGURATION: ${{ vars.SIGNPATH_INSTALLER_ARTIFACT_CONFIGURATION_SLUG }}
+        run: |
+          $required = @(
+            'SIGNPATH_API_TOKEN',
+            'SIGNPATH_ORGANIZATION_ID',
+            'SIGNPATH_PROJECT_SLUG',
+            'SIGNPATH_SIGNING_POLICY_SLUG',
+            'SIGNPATH_PAYLOAD_CONFIGURATION',
+            'SIGNPATH_INSTALLER_CONFIGURATION'
+          )
+          foreach ($name in $required) {
+            if ([string]::IsNullOrWhiteSpace([Environment]::GetEnvironmentVariable($name))) {
+              throw "Required SignPath configuration '$name' is missing."
+            }
+          }
+      - name: Restore
+        run: dotnet restore UniDesk.sln -r win-x64
+      - name: Audit dependencies
+        shell: pwsh
+        run: ./scripts/Test-PackageVulnerabilities.ps1
+      - name: Check release metadata
+        shell: pwsh
+        run: ./scripts/Test-VersionConsistency.ps1 -ExpectedVersion '${{ inputs.version }}'
+      - name: Build
+        run: dotnet build UniDesk.sln -c Release --no-restore
+      - name: Test
+        run: dotnet test UniDesk.sln -c Release --no-build
+      - name: Publish unsigned payload
+        shell: pwsh
+        run: >-
+          ./scripts/Publish-ReleasePayload.ps1
+          -Version '${{ inputs.version }}'
+          -OutputRoot '${{ runner.temp }}\unsigned-payload'
+          -NoRestore
+      - name: Upload unsigned payload
+        id: upload-unsigned-payload
+        uses: actions/upload-artifact@v7
+        with:
+          name: unsigned-payload
+          path: ${{ runner.temp }}\unsigned-payload\*
+          if-no-files-found: error
+      - name: Sign application payload
+        uses: signpath/github-action-submit-signing-request@v2
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG }}
+          signing-policy-slug: ${{ vars.SIGNPATH_SIGNING_POLICY_SLUG }}
+          artifact-configuration-slug: ${{ vars.SIGNPATH_PAYLOAD_ARTIFACT_CONFIGURATION_SLUG }}
+          github-artifact-id: ${{ steps.upload-unsigned-payload.outputs.artifact-id }}
+          wait-for-completion: true
+          output-artifact-directory: ${{ runner.temp }}\signed-payload
+      - name: Build installer from signed payload
+        shell: pwsh
+        run: >-
+          ./scripts/Build-ReleaseInstaller.ps1
+          -Version '${{ inputs.version }}'
+          -PayloadRoot '${{ runner.temp }}\signed-payload'
+          -OutputDirectory '${{ runner.temp }}\unsigned-installer'
+          -RequireSignedPayload
+      - name: Upload unsigned installer
+        id: upload-unsigned-installer
+        uses: actions/upload-artifact@v7
+        with:
+          name: unsigned-installer
+          path: ${{ runner.temp }}\unsigned-installer\UniDesk_Setup_${{ inputs.version }}.exe
+          if-no-files-found: error
+      - name: Sign installer
+        uses: signpath/github-action-submit-signing-request@v2
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG }}
+          signing-policy-slug: ${{ vars.SIGNPATH_SIGNING_POLICY_SLUG }}
+          artifact-configuration-slug: ${{ vars.SIGNPATH_INSTALLER_ARTIFACT_CONFIGURATION_SLUG }}
+          github-artifact-id: ${{ steps.upload-unsigned-installer.outputs.artifact-id }}
+          wait-for-completion: true
+          output-artifact-directory: ${{ runner.temp }}\signed-installer
+      - name: Verify signed release candidate
+        shell: pwsh
+        run: >-
+          ./scripts/Test-ReleaseReadiness.ps1
+          -InstallerPath '${{ runner.temp }}\signed-installer\UniDesk_Setup_${{ inputs.version }}.exe'
+          -AppExePath '${{ runner.temp }}\signed-payload\App\UniDesk.exe'
+          -ServiceExePath '${{ runner.temp }}\signed-payload\HardwareService\UniDesk.HardwareService.exe'
+          -RepairHelperExePath '${{ runner.temp }}\signed-payload\HardwareRepair\UniDesk.HardwareRepair.exe'
+          -SourceManifestPath '${{ runner.temp }}\signed-payload\release-source.json'
+          -ExpectedSourceRevision '${{ github.sha }}'
+          -ExpectedVersion '${{ inputs.version }}'
+          -ManifestOutputPath '${{ runner.temp }}\release-manifest.json'
+      - name: Upload verified release candidate
+        uses: actions/upload-artifact@v7
+        with:
+          name: UniDesk-${{ inputs.version }}-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}\signed-installer\UniDesk_Setup_${{ inputs.version }}.exe
+            ${{ runner.temp }}\release-manifest.json
+            ${{ runner.temp }}\signed-payload\release-source.json
+          if-no-files-found: error

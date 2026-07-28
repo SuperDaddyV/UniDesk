@@ -22,6 +22,8 @@ public class WeatherService : IWeatherService, IDisposable
     private CancellationTokenSource? _refreshCts;
     private readonly TimeSpan _cacheDuration = TimeSpan.FromMinutes(30);
 
+    public WeatherFailureReason LastFailure { get; private set; }
+
     public WeatherService(
         ISettingsService settingsService,
         INotificationService notificationService,
@@ -43,9 +45,11 @@ public class WeatherService : IWeatherService, IDisposable
         CancellationToken cancellationToken = default,
         bool notifyUser = true)
     {
+        LastFailure = WeatherFailureReason.None;
         var apiKey = _apiClient.GetApiKey();
         if (string.IsNullOrEmpty(apiKey))
         {
+            LastFailure = WeatherFailureReason.ApiConfigurationMissing;
             if (notifyUser)
             {
                 _notificationService.ShowWarningMessage(L("Weather.ApiKeyMissing", "请先在设置中配置和风天气 API Key"));
@@ -59,6 +63,7 @@ public class WeatherService : IWeatherService, IDisposable
             var location = await GetCityLocationAsync(city, cancellationToken);
             if (location == null)
             {
+                LastFailure = WeatherFailureReason.InvalidCity;
                 if (notifyUser)
                 {
                     _notificationService.ShowWarningMessage(Format("Weather.CityNotFoundFormat", $"未找到城市: {city}", city));
@@ -81,6 +86,9 @@ public class WeatherService : IWeatherService, IDisposable
 
             if (weatherResult?.Code != "200")
             {
+                LastFailure = weatherResult?.Code == "404"
+                    ? WeatherFailureReason.InvalidCity
+                    : WeatherFailureReason.ApiRejected;
                 if (notifyUser)
                 {
                     HandleApiError(weatherResult?.Code ?? "unknown", city);
@@ -136,6 +144,7 @@ public class WeatherService : IWeatherService, IDisposable
         }
         catch (HttpRequestException ex)
         {
+            LastFailure = WeatherFailureReason.NetworkUnavailable;
             if (notifyUser)
             {
                 _notificationService.ShowWarningMessage(Format("Weather.NetworkRequestFailedFormat", $"网络请求失败: {ex.Message}", ex.Message));
@@ -145,6 +154,7 @@ public class WeatherService : IWeatherService, IDisposable
         }
         catch (Exception ex)
         {
+            LastFailure = WeatherFailureReason.Unknown;
             if (notifyUser)
             {
                 _notificationService.ShowErrorMessage(Format("Weather.GetWeatherFailedFormat", $"获取天气失败: {ex.Message}", ex.Message));
@@ -212,8 +222,12 @@ public class WeatherService : IWeatherService, IDisposable
 
                 if (notifyUser)
                 {
-                    _notificationService.ShowWarningMessage(L("Weather.LocationFailed", "定位失败，请检查网络或在设置中指定城市"));
+                    LastFailure = MapLocationFailure(_locationProvider.LastFailure);
+                    _notificationService.ShowWarningMessage(
+                        L(GetFailureResourceKey(LastFailure), "无法获取天气位置，请检查 Windows 定位权限或手动填写城市"));
                 }
+
+                LastFailure = MapLocationFailure(_locationProvider.LastFailure);
 
                 return cached;
             }
@@ -238,9 +252,9 @@ public class WeatherService : IWeatherService, IDisposable
         }
     }
 
-    public Task SetCityAsync(string city)
+    public async Task SetCityAsync(string city)
     {
-        _settingsService.SetValue("City", city);
+        await _settingsService.SetSettingAsync("City", city);
         _cachedWeather = null;
         _lastFetchTime = DateTime.MinValue;
 
@@ -249,7 +263,6 @@ public class WeatherService : IWeatherService, IDisposable
             File.Delete(_cacheFilePath);
         }
 
-        return Task.CompletedTask;
     }
 
     public Task<QWeatherValidationResult> ValidateApiKeyAsync(
@@ -284,35 +297,45 @@ public class WeatherService : IWeatherService, IDisposable
 
     private async Task<(string Id, string Lat, string Lon)?> GetCityLocationAsync(string city, CancellationToken cancellationToken)
     {
-        try
-        {
-            var response = await _apiClient.GetAsync(
-                "/geo/v2/city/lookup",
-                $"location={Uri.EscapeDataString(city)}",
-                cancellationToken,
-                legacyHost: "geoapi.qweather.com",
-                legacyPath: "/v2/city/lookup");
-            var result = DeserializeJson<QWeatherGeoResponse>(response);
+        var response = await _apiClient.GetAsync(
+            "/geo/v2/city/lookup",
+            $"location={Uri.EscapeDataString(city)}",
+            cancellationToken,
+            legacyHost: "geoapi.qweather.com",
+            legacyPath: "/v2/city/lookup");
+        var result = DeserializeJson<QWeatherGeoResponse>(response);
 
-            if (result?.Code == "200" && result.Locations?.Count > 0)
+        if (result?.Code == "200" && result.Locations?.Count > 0)
+        {
+            var loc = result.Locations[0];
+            if (!string.IsNullOrEmpty(loc.Id) && !string.IsNullOrEmpty(loc.Lat) && !string.IsNullOrEmpty(loc.Lon))
             {
-                var loc = result.Locations[0];
-                if (!string.IsNullOrEmpty(loc.Id) && !string.IsNullOrEmpty(loc.Lat) && !string.IsNullOrEmpty(loc.Lon))
-                {
-                    return (loc.Id, loc.Lat, loc.Lon);
-                }
+                return (loc.Id, loc.Lat, loc.Lon);
             }
-        }
-        catch (OperationCanceledException)
-        {
-            throw;
-        }
-        catch
-        {
         }
 
         return null;
     }
+
+    private static WeatherFailureReason MapLocationFailure(LocationFailureReason failure) => failure switch
+    {
+        LocationFailureReason.PermissionDenied => WeatherFailureReason.LocationPermissionDenied,
+        LocationFailureReason.ApiConfigurationMissing => WeatherFailureReason.ApiConfigurationMissing,
+        LocationFailureReason.NetworkUnavailable => WeatherFailureReason.NetworkUnavailable,
+        LocationFailureReason.ReverseLookupFailed => WeatherFailureReason.LocationUnavailable,
+        _ => WeatherFailureReason.LocationUnavailable
+    };
+
+    internal static string GetFailureResourceKey(WeatherFailureReason failure) => failure switch
+    {
+        WeatherFailureReason.LocationPermissionDenied => "Weather.LocationPermissionDenied",
+        WeatherFailureReason.ApiConfigurationMissing => "Weather.ApiConfigurationMissing",
+        WeatherFailureReason.NetworkUnavailable => "Weather.NetworkUnavailable",
+        WeatherFailureReason.InvalidCity => "Weather.InvalidCity",
+        WeatherFailureReason.ApiRejected => "Weather.ApiRejected",
+        WeatherFailureReason.Unknown => "Weather.UnknownFailure",
+        _ => "Weather.LocationUnavailable"
+    };
 
     private void HandleApiError(string code, string city)
     {

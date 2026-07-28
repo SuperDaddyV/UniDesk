@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using UniDesk.Hardware.Contracts;
 using UniDesk.Models;
 using UniDesk.Services;
 
@@ -9,6 +10,52 @@ public class SensorDiagnosticReporterTests
 {
     private static readonly string ProjectRoot =
         Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", ".."));
+
+    [Fact]
+    public async Task ExportDiagnosticsAsync_ShouldNotBlockCallerWhileCapturingSnapshot()
+    {
+        var outputDirectory = Path.Combine(Path.GetTempPath(), $"unidesk-diagnostics-{Guid.NewGuid():N}");
+        using var releaseCapture = new ManualResetEventSlim();
+        var source = new BlockingDiagnosticsSource(CreateEmptySnapshot(), releaseCapture);
+        var reporter = new SensorDiagnosticReporter(source, outputDirectory);
+        var invocationReturned = new TaskCompletionSource<Task<string>>(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        var callerThread = new Thread(() =>
+        {
+            try
+            {
+                invocationReturned.SetResult(reporter.ExportDiagnosticsAsync());
+            }
+            catch (Exception ex)
+            {
+                invocationReturned.SetException(ex);
+            }
+        })
+        {
+            IsBackground = true
+        };
+        callerThread.Start();
+
+        try
+        {
+            await source.CaptureStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            var exportTask = await invocationReturned.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            Assert.False(exportTask.IsCompleted);
+
+            releaseCapture.Set();
+            var outputPath = await exportTask.WaitAsync(TimeSpan.FromSeconds(5));
+            Assert.True(File.Exists(outputPath));
+        }
+        finally
+        {
+            releaseCapture.Set();
+            callerThread.Join(TimeSpan.FromSeconds(5));
+            if (Directory.Exists(outputDirectory))
+            {
+                Directory.Delete(outputDirectory, recursive: true);
+            }
+        }
+    }
 
     [Fact]
     public void BuildReport_ShouldIncludeDiagnosticSectionsAndRemoveSensitiveText()
@@ -30,7 +77,12 @@ public class SensorDiagnosticReporterTests
                 CpuTemperature = 61,
                 CpuUsageSource = "Windows Performance Counter",
                 CpuTemperatureSource = "LibreHardwareMonitor CPU"
-            }]));
+            }],
+            new HardwareServiceDiagnosticStatus(
+                HardwareServiceAvailability.DriverUnavailable,
+                new PawnIoStatus(false, null),
+                null,
+                $"PawnIO missing at C:\\Users\\{userName}\\driver")));
 
         var report = SensorDiagnosticReporter.BuildReport(
             source.CaptureDiagnostics(),
@@ -38,6 +90,9 @@ public class SensorDiagnosticReporterTests
             "Windows Test");
 
         Assert.Contains("[Providers]", report, StringComparison.Ordinal);
+        Assert.Contains("Schema: 2", report, StringComparison.Ordinal);
+        Assert.Contains("UniDesk Hardware Service | availability=DriverUnavailable", report, StringComparison.Ordinal);
+        Assert.Contains("pawnIoInstalled=False", report, StringComparison.Ordinal);
         Assert.Contains("[Sensors]", report, StringComparison.Ordinal);
         Assert.Contains("[Recent snapshots]", report, StringComparison.Ordinal);
         Assert.Contains("CPU Package", report, StringComparison.Ordinal);
@@ -101,6 +156,33 @@ public class SensorDiagnosticReporterTests
     {
         public HardwareMetricsDiagnosticsSnapshot CaptureDiagnostics() => snapshot;
     }
+
+    private sealed class BlockingDiagnosticsSource(
+        HardwareMetricsDiagnosticsSnapshot snapshot,
+        ManualResetEventSlim releaseCapture)
+        : IHardwareMetricsDiagnosticsSource
+    {
+        public TaskCompletionSource CaptureStarted { get; } = new(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public HardwareMetricsDiagnosticsSnapshot CaptureDiagnostics()
+        {
+            CaptureStarted.TrySetResult();
+            if (!releaseCapture.Wait(TimeSpan.FromSeconds(10)))
+            {
+                throw new TimeoutException("The diagnostics capture gate was not released.");
+            }
+
+            return snapshot;
+        }
+    }
+
+    private static HardwareMetricsDiagnosticsSnapshot CreateEmptySnapshot() => new(
+        DateTimeOffset.UtcNow,
+        new LibreHardwareHostDiagnosticStatus(false, false, null, null, []),
+        null,
+        [],
+        []);
 
     private sealed class FakeLibreHost(IReadOnlyList<HardwareSensorSnapshot> sensors)
         : ILibreHardwareComputerHost

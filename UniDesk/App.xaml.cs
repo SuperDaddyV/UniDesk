@@ -226,7 +226,6 @@ public partial class App : Application
     private void OnExitRequested()
     {
         _hotkeyService?.UnregisterAll();
-        _trayService?.Dispose();
         _singleInstanceHelper?.Release();
 
         if (_mainWindow != null)
@@ -291,6 +290,7 @@ public partial class App : Application
         services.AddSingleton<IHardwareMetricsDiagnosticsSource>(provider =>
             provider.GetRequiredService<SystemMetricsService>());
         services.AddSingleton<ISensorDiagnosticsService, SensorDiagnosticReporter>();
+        services.AddSingleton<IHardwareMonitoringMaintenanceService, HardwareMonitoringMaintenanceService>();
         services.AddSingleton<ISystemMetricsMonitor>(provider =>
             new SystemMetricsMonitor(
                 provider.GetRequiredService<SystemMetricsService>(),
@@ -302,22 +302,15 @@ public partial class App : Application
     protected override void OnExit(ExitEventArgs e)
     {
         var services = Services;
-        if (services?.GetService(typeof(MainWindowViewModel)) is IDisposable disposableVm)
-        {
-            disposableVm.Dispose();
-        }
-
         if (services?.GetService(typeof(ISettingsService)) is SettingsService settingsService)
         {
             settingsService.FlushPendingSaves();
         }
 
-        _hotkeyService?.Dispose();
         if (_systemThemeService != null)
         {
             _systemThemeService.ThemeChanged -= OnSystemThemeChanged;
         }
-        _trayService?.Dispose();
         if (_singleInstanceHelper != null)
         {
             _singleInstanceHelper.ActivationRequested -= OnActivationRequested;

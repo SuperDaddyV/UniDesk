@@ -37,15 +37,35 @@
                         Style="{StaticResource GlassBackgroundLayerStyle}"
                         Opacity="{Binding WindowOpacity}"/>
 
-                <Border Grid.Row="0"
-                        Padding="18,8,14,6"
+                <Border x:Name="TitleBar"
+                        Grid.Row="0"
                         MouseLeftButtonDown="TitleBar_OnMouseLeftButtonDown">
+                    <Border.Style>
+                        <Style TargetType="Border">
+                            <Setter Property="Padding" Value="18,8,14,6"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsPanelCollapsed}" Value="True">
+                                    <Setter Property="Padding" Value="16,6,10,4"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
                     <Grid>
                         <TextBlock Text="{Binding DisplayTitle}"
-                                   FontSize="{Binding FontScale, Converter={StaticResource ScaledFontSizeConverter}, ConverterParameter=18}"
                                    FontWeight="Bold"
                                    Foreground="{DynamicResource PrimaryTextBrush}"
-                                   VerticalAlignment="Center"/>
+                                   VerticalAlignment="Center">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="FontSize" Value="{Binding FontScale, Converter={StaticResource ScaledFontSizeConverter}, ConverterParameter=18}"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsPanelCollapsed}" Value="True">
+                                            <Setter Property="FontSize" Value="16"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                             <Button x:Name="SearchButton"
                                     Style="{StaticResource HeaderIconButtonStyle}"
@@ -54,61 +74,101 @@
                                     ToolTip="{DynamicResource Search.Title}">
                                 <TextBlock Text="&#xE721;" FontFamily="Segoe MDL2 Assets" FontSize="14"/>
                             </Button>
-                            <Button Style="{StaticResource HeaderIconButtonStyle}"
+                            <StackPanel x:Name="ExpandedHeaderActions"
+                                        Orientation="Horizontal"
+                                        Visibility="{Binding IsPanelCollapsed, Converter={StaticResource InverseBooleanToVisibilityConverter}}">
+                                <Button Style="{StaticResource HeaderIconButtonStyle}"
+                                        Width="28"
+                                        Height="28"
+                                        Command="{Binding ToggleTopMostCommand}"
+                                        ToolTip="{DynamicResource Header.TopMost}">
+                                    <TextBlock FontFamily="Segoe MDL2 Assets" FontSize="14">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="Text" Value="&#xE718;"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsTopMost}" Value="True">
+                                                        <Setter Property="Text" Value="&#xE840;"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                </Button>
+                                <Button Style="{StaticResource HeaderIconButtonStyle}"
+                                        Width="28"
+                                        Height="28"
+                                        Command="{Binding ToggleWindowLockCommand}"
+                                        ToolTip="{Binding WindowLockToolTip}">
+                                    <TextBlock FontFamily="Segoe MDL2 Assets" FontSize="14">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="Text" Value="&#xE1F6;"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsWindowLocked}" Value="False">
+                                                        <Setter Property="Text" Value="&#xE1F7;"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                </Button>
+                                <Button Style="{StaticResource HeaderIconButtonStyle}"
+                                        Width="28"
+                                        Height="28"
+                                        Click="SettingsButton_OnClick"
+                                        ToolTip="{DynamicResource Common.Settings}">
+                                    <TextBlock Text="&#xE713;" FontFamily="Segoe MDL2 Assets" FontSize="14"/>
+                                </Button>
+                                <Button Style="{StaticResource HeaderIconButtonStyle}"
+                                        Width="28"
+                                        Height="28"
+                                        Click="MinimizeButton_OnClick"
+                                        ToolTip="{DynamicResource Header.MinimizeToTray}">
+                                    <TextBlock Text="&#xE921;" FontFamily="Segoe MDL2 Assets" FontSize="14"/>
+                                </Button>
+                            </StackPanel>
+                            <Button x:Name="CompactMoreButton"
+                                    Style="{StaticResource HeaderIconButtonStyle}"
                                     Width="28"
                                     Height="28"
-                                    Command="{Binding ToggleTopMostCommand}"
-                                    ToolTip="{DynamicResource Header.TopMost}">
-                                <TextBlock FontFamily="Segoe MDL2 Assets" FontSize="14">
-                                    <TextBlock.Style>
-                                        <Style TargetType="TextBlock">
-                                            <Setter Property="Text" Value="&#xE718;"/>
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding IsTopMost}" Value="True">
-                                                    <Setter Property="Text" Value="&#xE840;"/>
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </TextBlock.Style>
-                                </TextBlock>
+                                    Click="CompactMoreButton_OnClick"
+                                    ToolTip="{DynamicResource Common.More}"
+                                    Visibility="{Binding IsPanelCollapsed, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                <Button.ContextMenu>
+                                    <ContextMenu DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
+                                        <MenuItem Header="{DynamicResource Header.TopMost}"
+                                                  IsCheckable="True"
+                                                  IsChecked="{Binding IsTopMost, Mode=OneWay}"
+                                                  Command="{Binding ToggleTopMostCommand}"/>
+                                        <MenuItem Header="{Binding WindowLockToolTip}"
+                                                  IsCheckable="True"
+                                                  IsChecked="{Binding IsWindowLocked, Mode=OneWay}"
+                                                  Command="{Binding ToggleWindowLockCommand}"/>
+                                        <Separator/>
+                                        <MenuItem Header="{DynamicResource Common.Settings}"
+                                                  Click="SettingsButton_OnClick"/>
+                                        <MenuItem Header="{DynamicResource Header.MinimizeToTray}"
+                                                  Click="MinimizeButton_OnClick"/>
+                                    </ContextMenu>
+                                </Button.ContextMenu>
+                                <TextBlock Text="&#xE712;" FontFamily="Segoe MDL2 Assets" FontSize="14"/>
                             </Button>
-                            <Button Style="{StaticResource HeaderIconButtonStyle}"
-                                    Width="28"
-                                    Height="28"
-                                    Command="{Binding ToggleWindowLockCommand}"
-                                    ToolTip="{Binding WindowLockToolTip}">
-                                <TextBlock FontFamily="Segoe MDL2 Assets" FontSize="14">
-                                    <TextBlock.Style>
-                                        <Style TargetType="TextBlock">
-                                            <Setter Property="Text" Value="&#xE1F6;"/>
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding IsWindowLocked}" Value="False">
-                                                    <Setter Property="Text" Value="&#xE1F7;"/>
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </TextBlock.Style>
-                                </TextBlock>
-                            </Button>
-                            <Button Style="{StaticResource HeaderIconButtonStyle}"
-                                    Width="28"
-                                    Height="28"
-                                    Click="SettingsButton_OnClick"
-                                    ToolTip="{DynamicResource Common.Settings}">
-                                <TextBlock Text="&#xE713;" FontFamily="Segoe MDL2 Assets" FontSize="14"/>
-                            </Button>
-                            <Button Style="{StaticResource HeaderIconButtonStyle}"
-                                    Width="28"
-                                    Height="28"
-                                    Click="MinimizeButton_OnClick"
-                                    ToolTip="{DynamicResource Header.MinimizeToTray}">
-                                <TextBlock Text="&#xE921;" FontFamily="Segoe MDL2 Assets" FontSize="14"/>
-                            </Button>
-                            <Button Style="{StaticResource HeaderIconButtonStyle}"
+                            <Button x:Name="PanelCollapseButton"
                                     Width="28"
                                     Height="28"
                                     Command="{Binding TogglePanelCollapseCommand}"
                                     ToolTip="{Binding PanelCollapseToolTip}">
+                                <Button.Style>
+                                    <Style TargetType="Button" BasedOn="{StaticResource HeaderIconButtonStyle}">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsPanelCollapsed}" Value="True">
+                                                <Setter Property="Background" Value="{DynamicResource GlassHighlightBrush}"/>
+                                                <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Button.Style>
                                 <TextBlock FontFamily="Segoe MDL2 Assets" FontSize="14">
                                     <TextBlock.Style>
                                         <Style TargetType="TextBlock">

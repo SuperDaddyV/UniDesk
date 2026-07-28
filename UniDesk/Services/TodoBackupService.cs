@@ -24,6 +24,7 @@ public class TodoBackupService : ITodoBackupService
     {
         "DatabaseVersion",
         "WeatherApiKey",
+        "WeatherApiHost",
         WeatherApiDefaults.DefaultApiKeySettingKey,
         WeatherApiDefaults.DefaultApiHostSettingKey
     };
@@ -31,6 +32,8 @@ public class TodoBackupService : ITodoBackupService
     private static readonly HashSet<string> RestoreExcludedSettingKeys = new(StringComparer.Ordinal)
     {
         "DatabaseVersion",
+        "WeatherApiKey",
+        "WeatherApiHost",
         WeatherApiDefaults.DefaultApiKeySettingKey,
         WeatherApiDefaults.DefaultApiHostSettingKey
     };
@@ -169,6 +172,7 @@ public class TodoBackupService : ITodoBackupService
             TextSnippetCount = payload.TextSnippets?.Count ?? 0,
             ContainsSensitivePlaintext = payload.ContainsSensitivePlaintext ||
                                          payload.Settings?.ContainsKey("WeatherApiKey") == true ||
+                                         payload.Settings?.ContainsKey("WeatherApiHost") == true ||
                                          payload.ClipboardHistory is { Count: > 0 },
             Shortcuts = shortcuts
         };
@@ -216,12 +220,6 @@ public class TodoBackupService : ITodoBackupService
                 var normalizedValue = key == DashboardModuleCatalog.SettingsKey
                     ? NormalizeModuleSettingsJson(value)
                     : value;
-                if (string.Equals(key, "WeatherApiKey", StringComparison.Ordinal) &&
-                    !string.IsNullOrEmpty(normalizedValue) &&
-                    !_userDataProtector.IsProtected(normalizedValue))
-                {
-                    normalizedValue = _userDataProtector.Protect(normalizedValue);
-                }
                 result.SettingCount += string.IsNullOrEmpty(normalizedValue)
                     ? await session.ExecuteNonQueryAsync("DELETE FROM Settings WHERE Key = @p0", key)
                     : await session.ExecuteNonQueryAsync(

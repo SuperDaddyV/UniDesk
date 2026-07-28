@@ -1,0 +1,12 @@
+Componente completo de supervisión de hardware
+
+La opción recomendada está seleccionada de forma predeterminada. Instala:
+
+1. El controlador de acceso al hardware PawnIO, un componente compartido del sistema.
+2. UniDesk Hardware Monitoring Service, un servicio de Windows de solo lectura que se ejecuta como LocalSystem.
+
+UniDesk.exe sigue ejecutándose como usuario normal. El servicio solo acepta solicitudes locales fijas y de solo lectura para estado e instantáneas de sensores. No puede ejecutar comandos ni cambiar la configuración del hardware.
+
+Haz doble clic en el instalador normalmente y aprueba la solicitud UAC de Windows; un usuario estándar debe proporcionar credenciales de administrador. No uses el comando contextual **Ejecutar como administrador**. La página final selecciona iniciar UniDesk de forma predeterminada y el instalador lo abre con la identidad del usuario normal original.
+
+Puedes desmarcar esta opción y usar el resto de UniDesk con normalidad. Si una política de seguridad o la compatibilidad del controlador impide instalar el componente, la aplicación base termina de instalarse y sigue disponible, aunque la temperatura de la CPU y algunos sensores de bajo nivel podrían no mostrarse. Puedes exportar diagnósticos y volver a intentar la reparación más tarde desde Configuración.

@@ -75,6 +75,24 @@ public class TimeWeatherViewModelTests
     }
 
     [Fact]
+    public async Task RefreshCommand_WhenNoLocationAndNoCache_ShouldShowLocationUnavailable()
+    {
+        var weather = new FakeWeatherService
+        {
+            ApiKey = "key",
+            Cached = null,
+            RefreshResult = null
+        };
+        using var viewModel = CreateViewModel(new FakeClockService(), weather);
+
+        await viewModel.RefreshWeatherCommand.ExecuteAsync(null);
+
+        Assert.False(viewModel.HasWeatherData);
+        Assert.Equal("Weather.LocationUnavailable", viewModel.WeatherCity);
+        Assert.Equal("Weather.LocationUnavailable", viewModel.WeatherStatusMessage);
+    }
+
+    [Fact]
     public async Task SupersededRefresh_WhenOldCompletesFirst_ShouldKeepLoadingForCurrentRequest()
     {
         var weather = new FakeWeatherService
@@ -160,6 +178,7 @@ public class TimeWeatherViewModelTests
         public WeatherInfo? Cached { get; set; }
         public WeatherInfo? RefreshResult { get; set; }
         public string ApiKey { get; set; } = string.Empty;
+        public WeatherFailureReason LastFailure { get; set; } = WeatherFailureReason.LocationUnavailable;
         public Task<WeatherInfo?> GetWeatherAsync(string city, CancellationToken cancellationToken = default, bool notifyUser = true) => Task.FromResult(RefreshResult);
         public Task<WeatherInfo?> GetCachedWeatherAsync() => Task.FromResult(Cached);
         public TaskCompletionSource<WeatherInfo?> EnqueueRefresh()

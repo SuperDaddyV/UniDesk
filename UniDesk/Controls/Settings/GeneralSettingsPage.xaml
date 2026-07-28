@@ -34,6 +34,41 @@
 
         <Border Style="{StaticResource GlassSectionStyle}">
             <StackPanel>
+                <TextBlock Text="{DynamicResource Settings.WeatherLocation}"
+                           Style="{StaticResource GlassSectionTitleStyle}"/>
+                <Grid Margin="0,0,0,10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="76"/><ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="{DynamicResource Settings.City}"
+                               Style="{StaticResource GlassSettingLabelStyle}"
+                               Margin="0,7,0,0"
+                               VerticalAlignment="Top"/>
+                    <StackPanel Grid.Column="1">
+                        <TextBox Style="{StaticResource GlassTextBoxStyle}"
+                                 Text="{Binding City, UpdateSourceTrigger=PropertyChanged}"
+                                 ToolTip="{DynamicResource Settings.CityHint}"/>
+                        <TextBlock Text="{DynamicResource Settings.CityHint}"
+                                   Margin="0,5,0,0"
+                                   FontSize="11"
+                                   Foreground="{DynamicResource SecondaryTextBrush}"
+                                   TextWrapping="Wrap"/>
+                    </StackPanel>
+                </Grid>
+                <Grid Margin="0,0,0,8">
+                    <TextBlock Text="{DynamicResource Settings.AutoLocation}"
+                               Foreground="{DynamicResource PrimaryTextBrush}"
+                               VerticalAlignment="Center"/>
+                    <CheckBox HorizontalAlignment="Right" IsChecked="{Binding AutoLocation}"/>
+                </Grid>
+                <TextBlock Text="{DynamicResource Settings.AutoLocationPrivacyHint}"
+                           Foreground="{DynamicResource SecondaryTextBrush}"
+                           TextWrapping="Wrap"/>
+            </StackPanel>
+        </Border>
+
+        <Border Style="{StaticResource GlassSectionStyle}">
+            <StackPanel>
                 <Grid Margin="0,0,0,8">
                     <TextBlock Text="{DynamicResource Settings.WeatherApi}" Style="{StaticResource GlassSectionTitleStyle}" Margin="0"/>
                     <Button HorizontalAlignment="Right"

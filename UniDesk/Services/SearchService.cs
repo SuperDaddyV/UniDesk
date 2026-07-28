@@ -6,13 +6,17 @@ namespace UniDesk.Services;
 public sealed class SearchService : ISearchService
 {
     private readonly IDatabaseService _databaseService;
+    private readonly IQuickTextService _quickTextService;
 
-    public SearchService(IDatabaseService databaseService)
+    public SearchService(
+        IDatabaseService databaseService,
+        IQuickTextService quickTextService)
     {
         _databaseService = databaseService;
+        _quickTextService = quickTextService;
     }
 
-    public async Task<IReadOnlyList<SearchResultItem>> SearchAsync(
+    public Task<IReadOnlyList<SearchResultItem>> SearchAsync(
         string keyword,
         int limitPerKind = 5,
         CancellationToken cancellationToken = default)
@@ -20,16 +24,26 @@ public sealed class SearchService : ISearchService
         var trimmed = keyword.Trim();
         if (trimmed.Length == 0)
         {
-            return [];
+            return Task.FromResult<IReadOnlyList<SearchResultItem>>([]);
         }
 
+        return Task.Run(
+            () => SearchCoreAsync(trimmed, limitPerKind, cancellationToken),
+            cancellationToken);
+    }
+
+    private async Task<IReadOnlyList<SearchResultItem>> SearchCoreAsync(
+        string trimmed,
+        int limitPerKind,
+        CancellationToken cancellationToken)
+    {
         var pattern = $"%{EscapeLikePattern(trimmed)}%";
         var limit = Math.Clamp(limitPerKind, 1, 20);
         var results = new List<SearchResultItem>(limit * 5);
 
         await AddResultsAsync(results, SearchQuickNotesAsync(pattern, trimmed, limit), cancellationToken, "QuickNotes");
         await AddResultsAsync(results, SearchTodosAsync(pattern, trimmed, limit), cancellationToken, "Todos");
-        await AddResultsAsync(results, SearchClipboardAsync(pattern, trimmed, limit), cancellationToken, "ClipboardHistory");
+        await AddResultsAsync(results, SearchClipboardAsync(trimmed, limit, cancellationToken), cancellationToken, "ClipboardHistory");
         await AddResultsAsync(results, SearchSnippetsAsync(pattern, trimmed, limit), cancellationToken, "TextSnippets");
         await AddResultsAsync(results, SearchShortcutsAsync(pattern, trimmed, limit), cancellationToken, "Shortcuts");
         return results;
@@ -95,25 +109,24 @@ public sealed class SearchService : ISearchService
             pattern,
             limit);
 
-    private Task<List<SearchResultItem>> SearchClipboardAsync(string pattern, string keyword, int limit) =>
-        _databaseService.QueryAsync(
-            @"SELECT Id, Content
-              FROM ClipboardHistory
-              WHERE Content LIKE @p0 ESCAPE '\'
-              ORDER BY LastUsedAt DESC
-              LIMIT @p1",
-            reader =>
-            {
-                var content = reader.GetString(1);
-                return new SearchResultItem(
-                    SearchResultKind.Clipboard,
-                    reader.GetInt32(0),
-                    ClipboardHistoryItem.BuildDisplayText(content),
-                    BuildSnippet(content, keyword),
-                    content);
-            },
-            pattern,
-            limit);
+    private async Task<List<SearchResultItem>> SearchClipboardAsync(
+        string keyword,
+        int limit,
+        CancellationToken cancellationToken)
+    {
+        var history = await _quickTextService.GetClipboardHistoryAsync(200).ConfigureAwait(false);
+        cancellationToken.ThrowIfCancellationRequested();
+        return history
+            .Where(item => item.Content.Contains(keyword, StringComparison.CurrentCultureIgnoreCase))
+            .Take(limit)
+            .Select(item => new SearchResultItem(
+                SearchResultKind.Clipboard,
+                item.Id,
+                ClipboardHistoryItem.BuildDisplayText(item.Content),
+                BuildSnippet(item.Content, keyword),
+                item.Content))
+            .ToList();
+    }
 
     private Task<List<SearchResultItem>> SearchSnippetsAsync(string pattern, string keyword, int limit) =>
         _databaseService.QueryAsync(

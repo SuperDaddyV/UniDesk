@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Management;
 using System.Runtime.InteropServices;
 using System.Security.Principal;
+using UniDesk.Hardware.Contracts;
 using UniDesk.Helpers;
 using UniDesk.Models;
 
@@ -136,6 +137,27 @@ public sealed class LibreHardwareCpuReader : IDisposable
                     usageDeviceId: loadSelection.HasValue ? cpuDeviceId : null,
                     temperatureSource: temperatureSelection?.Source,
                     temperatureDeviceId: temperatureDeviceId);
+            }
+
+            var serviceStatus = (_host as IHardwareServiceDiagnosticsProvider)?.ServiceStatus;
+            if (serviceStatus is { Availability: not HardwareServiceAvailability.Available })
+            {
+                var serviceReason = serviceStatus.LastError ?? serviceStatus.Availability switch
+                {
+                    HardwareServiceAvailability.DriverUnavailable => "PawnIO driver is unavailable.",
+                    HardwareServiceAvailability.ServiceNotInstalled => "Hardware service is not installed.",
+                    HardwareServiceAvailability.ServiceStopped => "Hardware service is stopped.",
+                    HardwareServiceAvailability.ProtocolMismatch => "Hardware service protocol mismatch.",
+                    HardwareServiceAvailability.TimedOut => "Hardware service timed out.",
+                    _ => "Hardware service is unavailable."
+                };
+                return new CpuMetrics(
+                    null,
+                    null,
+                    usageAvailability: HardwareMetricAvailability.ProviderUnavailable,
+                    temperatureAvailability: HardwareMetricAvailability.ProviderUnavailable,
+                    usageReason: serviceReason,
+                    temperatureReason: serviceReason);
             }
 
             var needsElevation = !_host.DiagnosticStatus.IsElevated;

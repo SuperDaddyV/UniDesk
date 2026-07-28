@@ -30,6 +30,8 @@ public class SearchServiceTests : IDisposable
     public async Task SearchAsync_ShouldReturnAllFiveKinds()
     {
         var database = await CreateDatabaseAsync();
+        var settings = new SettingsService(database);
+        var quickText = new QuickTextService(database, settings);
         var now = DateTime.Now.ToString("O");
         await database.ExecuteNonQueryAsync(
             "INSERT INTO QuickNotes (Title, Content, CreatedAt, UpdatedAt) VALUES (@p0, @p1, @p2, @p3)",
@@ -37,9 +39,7 @@ public class SearchServiceTests : IDisposable
         await database.ExecuteNonQueryAsync(
             "INSERT INTO Todos (Title, IsCompleted, CreatedAt, Priority) VALUES (@p0, 0, @p1, 1)",
             "完成 Alpha 检查", now);
-        await database.ExecuteNonQueryAsync(
-            "INSERT INTO ClipboardHistory (Content, ContentHash, CreatedAt, LastUsedAt) VALUES (@p0, @p1, @p2, @p3)",
-            "复制 Alpha 文本", Guid.NewGuid().ToString("N"), now, now);
+        await quickText.RecordClipboardTextAsync("复制 Alpha 文本");
         await database.ExecuteNonQueryAsync(
             "INSERT INTO TextSnippets (Title, Content, CreatedAt, UpdatedAt) VALUES (@p0, @p1, @p2, @p3)",
             "Alpha 短语", "短语内容", now, now);
@@ -47,7 +47,7 @@ public class SearchServiceTests : IDisposable
             "INSERT INTO Shortcuts (Name, Path, CreatedAt) VALUES (@p0, @p1, @p2)",
             "Alpha 工具", @"C:\Tools\alpha.exe", now);
 
-        var results = await new SearchService(database).SearchAsync("Alpha");
+        var results = await new SearchService(database, quickText).SearchAsync("Alpha");
 
         Assert.Equal(5, results.Select(result => result.Kind).Distinct().Count());
         Assert.Contains(results, result => result.Kind == SearchResultKind.QuickNote);
@@ -61,6 +61,8 @@ public class SearchServiceTests : IDisposable
     public async Task SearchAsync_ShouldTreatPercentAndUnderscoreLiterally()
     {
         var database = await CreateDatabaseAsync();
+        var settings = new SettingsService(database);
+        var quickText = new QuickTextService(database, settings);
         var now = DateTime.Now.ToString("O");
         await database.ExecuteNonQueryAsync(
             "INSERT INTO QuickNotes (Title, Content, CreatedAt, UpdatedAt) VALUES (@p0, '', @p1, @p2)",
@@ -69,10 +71,29 @@ public class SearchServiceTests : IDisposable
             "INSERT INTO QuickNotes (Title, Content, CreatedAt, UpdatedAt) VALUES (@p0, '', @p1, @p2)",
             "预算 50XXdone", now, now);
 
-        var results = await new SearchService(database).SearchAsync("50%_done");
+        var results = await new SearchService(database, quickText).SearchAsync("50%_done");
 
         var result = Assert.Single(results);
         Assert.Equal("预算 50%_done", result.Title);
+    }
+
+    [Fact]
+    public async Task SearchAsync_RecordedClipboardText_ShouldSearchDecryptedContent()
+    {
+        var database = await CreateDatabaseAsync();
+        var settings = new SettingsService(database);
+        var quickText = new QuickTextService(database, settings);
+        await quickText.RecordClipboardTextAsync("机密 Alpha 剪贴板");
+
+        var rawContent = await database.QuerySingleAsync(
+            "SELECT Content FROM ClipboardHistory LIMIT 1",
+            reader => reader.GetString(0));
+        var results = await new SearchService(database, quickText).SearchAsync("Alpha");
+
+        Assert.NotNull(rawContent);
+        Assert.DoesNotContain("Alpha", rawContent, StringComparison.Ordinal);
+        var result = Assert.Single(results, item => item.Kind == SearchResultKind.Clipboard);
+        Assert.Equal("机密 Alpha 剪贴板", result.ActionValue);
     }
 
     private async Task<DatabaseService> CreateDatabaseAsync()

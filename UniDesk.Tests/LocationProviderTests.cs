@@ -7,13 +7,13 @@ namespace UniDesk.Tests;
 public class LocationProviderTests
 {
     [Fact]
-    public async Task ResolveCityAsync_WhenAmapUnavailable_ShouldReturnSavedCity()
+    public async Task ResolveCityAsync_WhenWindowsLocationUnavailable_ShouldReturnSavedCity()
     {
         var settings = new InMemorySettingsService();
         settings.SetValue("AutoLocation", "true");
         settings.SetValue("City", " 上海 ");
         using var apiClient = new QWeatherApiClient(settings);
-        using var provider = new AmapUnavailableLocationProvider(settings, apiClient);
+        using var provider = new WindowsLocationUnavailableProvider(settings, apiClient);
 
         var city = await provider.ResolveCityAsync();
 
@@ -21,13 +21,62 @@ public class LocationProviderTests
         Assert.Null(await provider.GetLocationAsync());
     }
 
-    private sealed class AmapUnavailableLocationProvider(
+    [Fact]
+    public async Task ResolveCityAsync_WhenAutoLocationSettingIsMissing_ShouldNotRequestLocation()
+    {
+        var settings = new InMemorySettingsService();
+        settings.SetValue("City", "北京");
+        using var apiClient = new QWeatherApiClient(settings);
+        using var provider = new TrackingLocationProvider(settings, apiClient);
+
+        var city = await provider.ResolveCityAsync();
+
+        Assert.Equal("北京", city);
+        Assert.Equal(0, provider.LocationRequestCount);
+    }
+
+    [Theory]
+    [InlineData("??")]
+    [InlineData("？？")]
+    [InlineData("--")]
+    [InlineData("  ...  ")]
+    [InlineData("~~~")]
+    public async Task ResolveCityAsync_WhenSavedCityIsLegacyPlaceholder_ShouldReturnNull(string city)
+    {
+        var settings = new InMemorySettingsService();
+        settings.SetValue("AutoLocation", "false");
+        settings.SetValue("City", city);
+        using var apiClient = new QWeatherApiClient(settings);
+        using var provider = new WindowsLocationUnavailableProvider(settings, apiClient);
+
+        var resolved = await provider.ResolveCityAsync();
+
+        Assert.Null(resolved);
+    }
+
+    private sealed class WindowsLocationUnavailableProvider(
         ISettingsService settingsService,
         QWeatherApiClient apiClient)
         : LocationProvider(settingsService, apiClient)
     {
-        protected override Task<string?> GetCityByAmapIpAsync(CancellationToken cancellationToken)
-            => Task.FromResult<string?>(null);
+        public override Task<(double Latitude, double Longitude)?> GetLocationAsync(
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<(double Latitude, double Longitude)?>(null);
+    }
+
+    private sealed class TrackingLocationProvider(
+        ISettingsService settingsService,
+        QWeatherApiClient apiClient)
+        : LocationProvider(settingsService, apiClient)
+    {
+        public int LocationRequestCount { get; private set; }
+
+        public override Task<(double Latitude, double Longitude)?> GetLocationAsync(
+            CancellationToken cancellationToken = default)
+        {
+            LocationRequestCount++;
+            return Task.FromResult<(double Latitude, double Longitude)?>(null);
+        }
     }
 
     private sealed class InMemorySettingsService : ISettingsService

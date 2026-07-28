@@ -112,10 +112,11 @@ public class TodoBackupServiceTests
     }
 
     [Fact]
-    public async Task ExportToFileAsync_Default_ShouldExcludeWeatherKeyAndClipboardHistory()
+    public async Task ExportToFileAsync_Default_ShouldExcludeWeatherCredentialsAndClipboardHistory()
     {
         var (_, _, _, quickTextService, _, settingsService, backupService) = await InitAsync();
         await settingsService.SetSettingAsync("WeatherApiKey", "weather-secret");
+        await settingsService.SetSettingAsync("WeatherApiHost", "abc.def.qweatherapi.com");
         await quickTextService.RecordClipboardTextAsync("portable clipboard");
 
         await backupService.ExportToFileAsync(_backupFile);
@@ -124,6 +125,7 @@ public class TodoBackupServiceTests
         var root = document.RootElement;
         Assert.Equal(5, root.GetProperty("version").GetInt32());
         Assert.False(root.GetProperty("settings").TryGetProperty("WeatherApiKey", out _));
+        Assert.False(root.GetProperty("settings").TryGetProperty("WeatherApiHost", out _));
         Assert.False(root.TryGetProperty("clipboardHistory", out _));
         Assert.False(root.GetProperty("containsSensitivePlaintext").GetBoolean());
         Assert.DoesNotContain(
@@ -327,7 +329,7 @@ public class TodoBackupServiceTests
     }
 
     [Fact]
-    public async Task ApplyImportAsync_LegacySensitiveValues_ShouldProtectBeforeStorage()
+    public async Task ApplyImportAsync_LegacyWeatherCredentials_ShouldIgnoreThemAndProtectClipboard()
     {
         var (db, _, _, quickTextService, _, settingsService, backupService) = await InitAsync();
         await File.WriteAllTextAsync(
@@ -336,7 +338,10 @@ public class TodoBackupServiceTests
             {
               "version": 4,
               "exportedAt": "2026-07-10T00:00:00Z",
-              "settings": { "WeatherApiKey": "legacy-weather" },
+              "settings": {
+                "WeatherApiKey": "legacy-weather",
+                "WeatherApiHost": "attacker.example"
+              },
               "clipboardHistory": [
                 {
                   "content": "legacy clipboard",
@@ -350,19 +355,23 @@ public class TodoBackupServiceTests
 
         var result = await ImportAsync(backupService, _backupFile);
 
-        Assert.Equal(1, result.SettingCount);
+        Assert.Equal(0, result.SettingCount);
         Assert.Equal(1, result.ClipboardHistoryCount);
         var rawWeatherKey = await db.QuerySingleAsync(
             "SELECT Value FROM Settings WHERE Key = 'WeatherApiKey'",
             reader => reader.GetString(0));
+        var rawWeatherHost = await db.QuerySingleAsync(
+            "SELECT Value FROM Settings WHERE Key = 'WeatherApiHost'",
+            reader => reader.GetString(0));
         var rawClipboard = await db.QuerySingleAsync(
             "SELECT Content FROM ClipboardHistory LIMIT 1",
             reader => reader.GetString(0));
-        Assert.StartsWith(DpapiUserDataProtector.Prefix, rawWeatherKey);
+        Assert.Equal(string.Empty, rawWeatherKey);
+        Assert.Equal(string.Empty, rawWeatherHost);
         Assert.StartsWith(DpapiUserDataProtector.Prefix, rawClipboard);
-        Assert.DoesNotContain("legacy-weather", rawWeatherKey);
         Assert.DoesNotContain("legacy clipboard", rawClipboard);
-        Assert.Equal("legacy-weather", await settingsService.GetSettingAsync("WeatherApiKey"));
+        Assert.Equal(string.Empty, await settingsService.GetSettingAsync("WeatherApiKey"));
+        Assert.Equal(string.Empty, await settingsService.GetSettingAsync("WeatherApiHost"));
         Assert.Equal("legacy clipboard", Assert.Single(await quickTextService.GetClipboardHistoryAsync()).Content);
         Cleanup();
     }

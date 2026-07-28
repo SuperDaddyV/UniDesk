@@ -3,81 +3,130 @@ using System.Net.Http;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using UniDesk.Services;
+using Windows.Devices.Geolocation;
 
 namespace UniDesk.Helpers;
 
 public interface ILocationProvider
 {
+    LocationFailureReason LastFailure { get; }
     Task<(double Latitude, double Longitude)?> GetLocationAsync(CancellationToken cancellationToken = default);
     Task<string?> GetCityByCoordinatesAsync(double latitude, double longitude, CancellationToken cancellationToken = default);
     Task<string?> ResolveCityAsync(CancellationToken cancellationToken = default);
 }
 
+public enum LocationFailureReason
+{
+    None,
+    PermissionDenied,
+    WindowsLocationUnavailable,
+    ApiConfigurationMissing,
+    NetworkUnavailable,
+    ReverseLookupFailed
+}
+
+public static class WeatherCityNormalizer
+{
+    public static string? Normalize(string? city)
+    {
+        var normalized = city?.Trim();
+        return string.IsNullOrWhiteSpace(normalized) ||
+               normalized.All(character =>
+                   char.IsPunctuation(character) || char.IsSymbol(character))
+            ? null
+            : normalized;
+    }
+}
+
 public class LocationProvider : ILocationProvider, IDisposable
 {
     private readonly ISettingsService _settingsService;
-    private readonly HttpClient _httpClient;
     private readonly QWeatherApiClient _apiClient;
+
+    public LocationFailureReason LastFailure { get; private set; }
 
     public LocationProvider(ISettingsService settingsService, QWeatherApiClient apiClient)
     {
         _settingsService = settingsService;
         _apiClient = apiClient;
-        _httpClient = new HttpClient
-        {
-            Timeout = TimeSpan.FromSeconds(8)
-        };
     }
 
     public async Task<string?> ResolveCityAsync(CancellationToken cancellationToken = default)
     {
-        var autoLocation = _settingsService.GetSetting("AutoLocation", true);
+        LastFailure = LocationFailureReason.None;
+        var autoLocation = _settingsService.GetSetting("AutoLocation", false);
         if (autoLocation)
         {
-            var cityByAmap = await GetCityByAmapIpAsync(cancellationToken);
-            if (!string.IsNullOrWhiteSpace(cityByAmap))
+            var coordinates = await GetLocationAsync(cancellationToken);
+            if (coordinates.HasValue)
             {
-                return cityByAmap;
+                var city = await GetCityByCoordinatesAsync(
+                    coordinates.Value.Latitude,
+                    coordinates.Value.Longitude,
+                    cancellationToken);
+                if (!string.IsNullOrWhiteSpace(city))
+                {
+                    return city;
+                }
             }
-
         }
 
-        var savedCity = _settingsService.GetValue("City", "").Trim();
-        return string.IsNullOrWhiteSpace(savedCity) ? null : savedCity;
+        var savedCity = WeatherCityNormalizer.Normalize(
+            _settingsService.GetValue("City", ""));
+        if (savedCity != null)
+        {
+            LastFailure = LocationFailureReason.None;
+            return savedCity;
+        }
+
+        if (LastFailure == LocationFailureReason.None)
+        {
+            LastFailure = LocationFailureReason.WindowsLocationUnavailable;
+        }
+
+        return null;
     }
 
-    /// <summary>
-    /// 高德 IP 定位（需 Web 服务 Key）。不传 ip 时使用当前出口 IP。
-    /// </summary>
-    protected virtual async Task<string?> GetCityByAmapIpAsync(CancellationToken cancellationToken)
+    public virtual async Task<(double Latitude, double Longitude)?> GetLocationAsync(
+        CancellationToken cancellationToken = default)
     {
-        var amapKey = AppSecrets.AmapApiKey;
-        if (string.IsNullOrEmpty(amapKey))
-        {
-            return null;
-        }
-
         try
         {
-            var url = $"https://restapi.amap.com/v3/ip?key={Uri.EscapeDataString(amapKey)}&output=json";
-            var response = await _httpClient.GetStringAsync(url, cancellationToken);
-            var result = JsonSerializer.Deserialize<AmapIpResponse>(response);
-            if (result?.Status != "1")
+            var access = await Geolocator.RequestAccessAsync();
+            if (access != GeolocationAccessStatus.Allowed)
             {
+                LastFailure = access == GeolocationAccessStatus.Denied
+                    ? LocationFailureReason.PermissionDenied
+                    : LocationFailureReason.WindowsLocationUnavailable;
                 return null;
             }
 
-            return FormatRegionCity(result.City, result.Province);
+            var locator = new Geolocator
+            {
+                DesiredAccuracy = PositionAccuracy.Default
+            };
+            var position = await locator.GetGeopositionAsync(
+                TimeSpan.FromMinutes(10),
+                TimeSpan.FromSeconds(10)).AsTask(cancellationToken);
+            var coordinate = position.Coordinate.Point.Position;
+            LastFailure = LocationFailureReason.None;
+            return (coordinate.Latitude, coordinate.Longitude);
         }
-        catch (Exception)
+        catch (OperationCanceledException)
         {
+            throw;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            LastFailure = LocationFailureReason.PermissionDenied;
+            return null;
+        }
+        catch
+        {
+            LastFailure = LocationFailureReason.WindowsLocationUnavailable;
             return null;
         }
     }
-
-    public Task<(double Latitude, double Longitude)?> GetLocationAsync(
-        CancellationToken cancellationToken = default) =>
-        Task.FromResult<(double Latitude, double Longitude)?>(null);
 
     public async Task<string?> GetCityByCoordinatesAsync(
         double latitude,
@@ -88,6 +137,7 @@ public class LocationProvider : ILocationProvider, IDisposable
         {
             if (string.IsNullOrEmpty(_apiClient.GetApiKey()))
             {
+                LastFailure = LocationFailureReason.ApiConfigurationMissing;
                 return null;
             }
 
@@ -101,19 +151,35 @@ public class LocationProvider : ILocationProvider, IDisposable
                 legacyPath: "/v2/city/lookup");
             if (string.IsNullOrWhiteSpace(response))
             {
+                LastFailure = LocationFailureReason.ReverseLookupFailed;
                 return null;
             }
 
             var result = JsonSerializer.Deserialize<QWeatherGeoResponse>(response);
             if (result?.Code != "200" || result.Locations == null || result.Locations.Count == 0)
             {
+                LastFailure = LocationFailureReason.ReverseLookupFailed;
                 return null;
             }
 
-            return FormatQWeatherLocation(result.Locations[0]);
+            var city = FormatQWeatherLocation(result.Locations[0]);
+            LastFailure = city == null
+                ? LocationFailureReason.ReverseLookupFailed
+                : LocationFailureReason.None;
+            return city;
         }
-        catch (Exception)
+        catch (OperationCanceledException)
         {
+            throw;
+        }
+        catch (HttpRequestException)
+        {
+            LastFailure = LocationFailureReason.NetworkUnavailable;
+            return null;
+        }
+        catch
+        {
+            LastFailure = LocationFailureReason.ReverseLookupFailed;
             return null;
         }
     }
@@ -136,40 +202,6 @@ public class LocationProvider : ILocationProvider, IDisposable
         }
 
         return TrimAdministrativeSuffix(loc.Name);
-    }
-
-    private static string? FormatRegionCity(string? city, string? provinceOrAdm)
-    {
-        if (string.IsNullOrWhiteSpace(city) && string.IsNullOrWhiteSpace(provinceOrAdm))
-        {
-            return null;
-        }
-
-        var cityName = city?.Trim() ?? string.Empty;
-        var region = provinceOrAdm?.Trim() ?? string.Empty;
-
-        if (cityName is "局域网" or "[]" || region is "局域网")
-        {
-            return null;
-        }
-
-        if (string.IsNullOrEmpty(cityName) || cityName == "[]")
-        {
-            return TrimAdministrativeSuffix(region);
-        }
-
-        if (IsDistrictLevel(cityName) && !string.IsNullOrEmpty(region))
-        {
-            return TrimAdministrativeSuffix(region);
-        }
-
-        if (!string.IsNullOrEmpty(region) &&
-            (cityName == region || cityName == region + "市" || region == cityName + "市"))
-        {
-            return TrimAdministrativeSuffix(region);
-        }
-
-        return TrimAdministrativeSuffix(cityName);
     }
 
     private static bool IsDistrictLevel(string name)
@@ -200,18 +232,6 @@ public class LocationProvider : ILocationProvider, IDisposable
         return name;
     }
 
-    private class AmapIpResponse
-    {
-        [JsonPropertyName("status")]
-        public string? Status { get; set; }
-
-        [JsonPropertyName("province")]
-        public string? Province { get; set; }
-
-        [JsonPropertyName("city")]
-        public string? City { get; set; }
-    }
-
     private class QWeatherGeoResponse
     {
         [JsonPropertyName("code")]
@@ -235,6 +255,5 @@ public class LocationProvider : ILocationProvider, IDisposable
 
     public void Dispose()
     {
-        _httpClient.Dispose();
     }
 }

@@ -1,0 +1,12 @@
+Complete hardware monitoring component
+
+The recommended option is selected by default. It installs:
+
+1. The PawnIO hardware-access driver, a shared system component.
+2. UniDesk Hardware Monitoring Service, a read-only Windows service running as LocalSystem.
+
+UniDesk.exe itself continues to run as a normal user. The service only accepts fixed local read-only status and sensor snapshot requests. It cannot execute commands or change hardware settings.
+
+Double-click the installer normally and approve the Windows UAC prompt; a standard user must supply administrator credentials. Do not use the **Run as administrator** context-menu command. The completion page selects launching UniDesk by default, and setup starts it with the original normal-user identity.
+
+You can clear this option and use the rest of UniDesk normally. If security policy or driver compatibility prevents the component from installing, the base application still completes installation and remains usable; CPU temperature and some low-level sensor values may be unavailable. You can export diagnostics and retry repair later from Settings.

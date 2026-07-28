@@ -252,7 +252,7 @@ public class SettingsService : ISettingsService, IDisposable
         catch (Exception ex)
         {
             Logger.LogError(ex, $"SettingsService.Get({key})");
-            return null;
+            throw;
         }
     }
 

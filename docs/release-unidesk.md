@@ -1,5 +1,57 @@
 # UniDesk Release Notes
 
+## Code signing policy
+
+Signed public packages follow the [UniDesk code signing policy](../CODE_SIGNING_POLICY.md) and [privacy policy](../PRIVACY.md). Each signed release candidate is built from the documented public source revision and remains subject to manual release approval.
+
+Free code signing provided by SignPath.io, certificate by SignPath Foundation.
+
+## v2.1.0
+
+This release makes complete hardware monitoring installable without elevating the main app, closes weather and clipboard privacy gaps, and moves the supported runtime to .NET 10 LTS.
+
+### Changes
+
+- Added a default-selected, fully disclosed hardware component that installs the pinned PawnIO driver and a narrowly scoped read-only Windows service while keeping `UniDesk.exe` at normal-user privilege.
+- Added a dedicated administrator-only repair helper with argument-safe service registration, stable exit codes, local logs, and a versioned IPC health check. The main app waits for repair completion and then refreshes the component state.
+- Added bounded service initialization retry, four parallel named-pipe accept loops, detailed service／driver／protocol diagnostics, and localized repair states.
+- Fixed global clipboard search to search DPAPI-decrypted content instead of encrypted database values; repeated searches now cancel older work and database search runs off the UI thread.
+- Added visible city and opt-in Windows automatic-location settings. Coordinates are sent only to the configured QWeather HTTPS API for city lookup; manual city remains the fallback, and legacy placeholder values are ignored.
+- Treats a missing or invalid automatic-location setting as disabled, preventing an implicit Windows location request after incomplete or legacy settings.
+- Added a visible QWeather attribution link in both expanded and collapsed weather views, plus public code-signing and bilingual privacy policies for release transparency.
+- Restricted user weather hosts to dedicated HTTPS `*.qweatherapi.com` domains, requires Host and Key as a pair, validates changed credentials before saving, and excludes both values from backup and restore.
+- Migrated all projects and CI to .NET 10 LTS, upgraded Microsoft packages, pinned the patched SQLite native dependency, and added transitive vulnerability and version-consistency gates.
+- Added four-language installer disclosure, a signed-artifact release-readiness script, and zero-warning Release builds.
+- Restricted the installer to native Windows x64 so ARM64 emulation cannot accept an incompatible x64 kernel driver. Hardware-component failures now produce a non-fatal diagnostic warning while the base application remains installed, and setup auto-launches the app with the original normal-user token.
+- Added a persistent single-selection highlight for the clipboard-history retention limit and redesigned the collapsed panel as a compact single-layer dashboard with focused actions and a dedicated todo status strip.
+- Grouped CPU usage, memory usage, CPU temperature, and GPU temperature into a compact unframed central summary. Manual city and automatic location are now mutually exclusive, and the visible city-format hint directs users to enter a city or district rather than only a country name.
+- Quoted the executable path stored for the `LocalSystem` hardware service, closing the unquoted-service-path risk in installation, upgrade, and repair flows.
+- Added clean-worktree release payload generation and a manual two-stage SignPath workflow that signs first-party EXE and managed-code DLL files before building and signing the installer; the workflow verifies source revision, versions, signatures, and SHA-256 values without publishing automatically.
+
+### 中文说明
+
+- 新增默认勾选且明确披露的完整硬件监控组件：安装固定版本的 PawnIO 驱动和边界收紧的只读 Windows 服务，`UniDesk.exe` 仍以普通用户权限运行。
+- 新增独立的管理员权限修复助手，以参数数组安全注册服务，提供稳定退出码、本地日志和版本化 IPC 健康检查；主程序等待修复结束后刷新组件状态，且始终保持普通权限。
+- 硬件服务增加有上限的初始化重试、四路并发命名管道接收，以及服务／驱动／协议的细分诊断和本地化修复状态。
+- 修复全局剪贴板搜索：先解密 DPAPI 内容再匹配；新搜索会取消旧任务，数据库检索不再阻塞 UI 线程。
+- 常规设置新增可见城市输入和需用户主动开启的 Windows 自动定位；仅将经纬度发送到已配置的和风天气 HTTPS API 查询城市，手动城市仍作为兜底，并忽略旧版占位值。
+- 自动定位设置缺失或无效时统一按关闭处理，避免旧数据缺项时隐式请求 Windows 位置权限。
+- 展开态和收缩态天气区域均新增可见的和风天气来源链接，并补充公开代码签名政策和双语隐私政策。
+- 用户天气 Host 仅允许 HTTPS 的 `*.qweatherapi.com` 专属域名；Host 与 Key 必须成对配置并在保存前验证，备份导出和恢复均排除两者。
+- 全部项目和 CI 迁移到 .NET 10 LTS，升级 Microsoft 依赖、钉住已修复的 SQLite 原生包，并增加传递依赖漏洞和版本一致性门禁。
+- 增加四语安装披露、签名制品发布就绪检查脚本和零警告 Release 构建。
+- 安装器限制为原生 Windows x64，避免 ARM64 模拟环境接受不兼容的 x64 内核驱动；硬件组件失败改为带诊断信息的非致命警告，基础应用仍正常完成安装，并以安装前的原始普通用户令牌自动启动主程序。
+- 剪贴板历史最大保存量增加持久单选高亮；收缩面板重做为单层玻璃迷你仪表盘，精简顶部操作，底部状态条专用于下一项待办。
+- CPU 使用率、内存使用率、CPU 温度和 GPU 温度集中到紧凑且无独立背景框的中部摘要；手动城市与自动定位双向互斥，并直接显示城市／区县及国外具体城市名的填写提示。
+- 安装、覆盖安装和修复流程写入 `LocalSystem` 硬件服务的可执行文件路径时统一保留双引号，消除未加引号服务路径风险。
+- 新增干净工作区发布载荷构建和手动两阶段 SignPath 流程：先签全部一方 EXE 和实际承载托管代码的 DLL，再构建并签署安装包；流程核验源码提交、版本、签名和 SHA-256，但不会自动公开发布。
+
+### Installer integrity / 安装包校验
+
+- `UniDesk_Setup_2.1.0.exe`
+- SHA-256：生成正式签名制品后填写
+- Authenticode：公开发布前必须为 `Valid`
+
 ## v2.0.0
 
 This major release summarizes the net changes since v1.4.2: the Glass 2.0 interface, global search and theme controls, stronger hardware monitoring, safer local data, and a modularized architecture.

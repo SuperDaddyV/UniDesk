@@ -2,8 +2,22 @@ using UniDesk.Models;
 
 namespace UniDesk.Services;
 
+public enum WeatherFailureReason
+{
+    None,
+    LocationUnavailable,
+    LocationPermissionDenied,
+    ApiConfigurationMissing,
+    NetworkUnavailable,
+    InvalidCity,
+    ApiRejected,
+    Unknown
+}
+
 public interface IWeatherService
 {
+    WeatherFailureReason LastFailure { get; }
+
     Task<WeatherInfo?> GetWeatherAsync(
         string city,
         CancellationToken cancellationToken = default,

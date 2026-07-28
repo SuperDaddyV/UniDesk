@@ -1,7 +1,7 @@
 # UniDesk 设计文档
 
-**版本**: 2.0.0
-**最后更新**: 2026年7月11日
+**版本**: 2.1.0
+**最后更新**: 2026年7月28日
 **项目**: UniDesk - Windows 11 桌面侧边助手应用
 
 ---
@@ -34,8 +34,9 @@ UniDesk 是运行于 Windows 11 的桌面侧边助手应用，以悬浮右侧面
 - **易用友好**：托盘、热键、开机自启、主题跟随系统等桌面助手体验特性齐全
 
 ### 支持平台
-- **目标平台**：Windows 11（及 Windows 10 v1903+）
-- **目标框架**：.NET 9
+- **正式支持平台**：仍在 Microsoft 支持周期内的 Windows 11 x64，以及受 .NET 10 支持的 Windows 10 Enterprise／IoT Enterprise LTSC x64
+- **兼容基线**：Windows API 目标版本仍为 10.0.18362.0；已停止支持的普通 Windows 10 版本只提供尽力兼容，不作为正式发布承诺
+- **目标框架**：.NET 10 LTS
 - **UI 框架**：WPF + 自定义样式资源
 
 ---
@@ -117,11 +118,25 @@ UniDesk 是运行于 Windows 11 的桌面侧边助手应用，以悬浮右侧面
 - `SystemMetricsService` 只组合 CPU、GPU、内存和网络四类读取结果，不直接包含原生 API 或传感器选择实现。
 - `SensorSelection` 是无状态选择策略；CPU、GPU、内存和网络读取器位于 `Services/SystemMetrics/`，各自拥有原生资源与释放责任。
 - `SystemMetricsMonitor` 继续负责后台串行采样、禁用暂停、迟到结果抑制和向硬件监控 ViewModel 发布快照。
+- UniDesk 主程序始终以普通用户权限运行；需要低层寄存器访问的 LibreHardwareMonitor 读取由可选的 `UniDesk.HardwareService` Windows 服务承担。
+- 主程序与硬件服务只通过版本化的本机命名管道协议交换脱敏传感器快照。服务不得接收文件路径、进程路径、脚本、任意命令或硬件写入请求。
+- 硬件服务不可用、协议不兼容或响应超时时，主程序必须继续使用 Windows Performance Counter、NVML、ADL、Windows GPU Engine、WMI 等普通权限来源，不得阻塞界面或导致应用退出。
+- 安装器只允许在 Windows x64 上运行，不得因 x64 应用模拟而接受 Windows ARM64；在具备原生 ARM64 驱动和服务包前，不承诺 ARM64 支持。
+- 桌面快捷方式和完整硬件监控组件均由安装器默认勾选；覆盖安装不得继承上次取消状态而导致两项静默变为未选。完整硬件监控说明必须明确告知会安装 PawnIO 驱动和系统服务；用户主动取消或可选组件安装失败后，天气、便签、快捷方式等非硬件功能仍须完整可用。
+- 用户选择完整组件后，安装器调用随包发布的 `UniDesk.HardwareRepair` 管理员维护工具，统一完成 PawnIO 校验与安装、服务注册、服务启动和 IPC 健康检查；维护工具必须幂等并返回可诊断的分步退出码，安装器不得自行拼接 `sc.exe` 引号或把部分安装报告为成功。
+- 安装器自行请求管理员权限；标准用户正常双击后由 Windows 请求管理员凭据，不要求也不引导用户右键选择「以管理员身份运行」。安装完成页默认勾选启动 UniDesk，并必须使用 Inno Setup 的 `runasoriginaluser` 以安装前的原始普通用户令牌启动；主程序清单始终保持 `asInvoker`。如果用户显式以已提权进程启动安装器而导致原始令牌不可用，安装器不得通过修改主程序清单或永久提权来补偿。应用内修复只启动带 `requireAdministrator` 清单的本地维护工具，不得复制或依赖完整安装包。
+- 完整硬件组件属于可选增强项。维护工具返回非零退出码时，安装器必须记录退出码并显示可理解的非致命警告，不得抛出 Runtime error、回滚或把基础应用报告为安装失败；用户之后可在设置中导出诊断并再次修复。
+- 维护工具只能执行固定的 `install-or-repair`、`remove-service` 和 `health-check` 操作，不接收任意路径、命令或脚本；它使用参数数组调用系统工具，并将 UniDesk 专属服务配置为 `Automatic`、`LocalSystem` 和限定恢复策略。传给 `sc.exe create/config` 的 `binPath=` 值必须在服务注册值中保留包围可执行文件路径的双引号，即使安装目录包含空格也不得产生未加引号的 `LocalSystem` 服务路径。PawnIO 已存在时只确认并启动驱动，不得重复执行安装器；仅在驱动不存在时才校验安装包固定哈希和 Authenticode 签名并执行首次安装。
+- 硬件服务初始化失败必须按有上限的退避策略重试；命名管道以固定数量并行接收循环处理连接，单个超时客户端不得独占全部服务能力。
+- PawnIO 视为共享系统依赖。卸载 UniDesk 时必须停止并删除 UniDesk 硬件服务；维护工具失败时仅允许使用固定的 `sc.exe stop/delete UniDeskHardwareService` 兜底并向用户报告仍未删除的状态。默认保留 PawnIO，避免破坏其它硬件监控软件。
 
 ### 持续集成
 
-- `.github/workflows/ci.yml` 在 `main` 推送和 Pull Request 上使用 `windows-latest`、.NET `9.0.x` 执行 restore、Release build 和 Release test。
-- CI 不执行发布、制品上传、部署或密钥读取。
+- `.github/workflows/ci.yml` 在 `main` 推送和 Pull Request 上使用 `windows-latest`、.NET `10.0.x` 执行 restore、传递依赖漏洞审计、Release build 和 Release test。普通 CI 不执行发布、制品上传、部署或密钥读取。
+- Release 构建必须从无未提交改动的目标提交开始，通过统一脚本将主程序、硬件服务和修复工具发布到同一版本的全新制品根目录，再使用这些明确目录编译安装包；不得依赖历史 `publish` 目录、临时 Inno Setup 宏覆盖或人工复制来决定安装包内容。
+- 可信签名使用 SignPath Foundation 公共信任签名作为首选方案。签名流程只能由受控的手动 GitHub Actions 工作流触发，连接令牌只保存在 GitHub Secrets，组织、项目和策略标识保存在 GitHub Variables；仓库不得保存证书私钥、令牌或身份材料。
+- 仓库首页和发布说明必须公开链接 `CODE_SIGNING_POLICY.md` 与 `PRIVACY.md`，并保留 SignPath Foundation 要求的资助声明；代码签名政策必须列出作者／审查者／批准者、签名范围和人工批准边界，隐私政策必须如实列出天气、定位、更新检查和本地存储的数据流。
+- 签名顺序固定为：先签主程序、硬件服务、修复工具及其承载一方托管代码的 DLL，再用已签名文件编译安装包，最后签安装包。不得只签 `.exe` 应用宿主而遗漏实际承载业务代码的 `.dll`。公开发布前必须通过版本一致性、依赖漏洞、源提交一致性、发布清单哈希和全部一方 PE 文件的 Authenticode 签名门禁；未经用户最终确认不得创建 Git tag 或 GitHub Release。
 
 ---
 
@@ -167,6 +182,9 @@ UniDesk 是运行于 Windows 11 的桌面侧边助手应用，以悬浮右侧面
 - 图标缓存：`icons\`
 - 日志目录：`logs\`
 - `WeatherApiKey` 与 `ClipboardHistory.Content` 使用 Windows DPAPI `CurrentUser` 范围保护，存储前缀为 `dpapi:v1:`；服务层对调用方保持明文语义
+- `WeatherApiHost` 只接受 HTTPS、默认 443 端口且位于 `qweatherapi.com` 的开发者专属子域；禁止用户信息、路径、查询、片段、IP 地址和相似后缀域名，避免密钥被发送到非官方主机
+- 自定义 `WeatherApiHost` 与 `WeatherApiKey` 必须成对配置并在持久化前完成连通性验证；验证失败时保留上一组有效配置，内置配额凭据不得与用户自定义 Host 混用
+- 天气备份导出和导入均排除 `WeatherApiKey` 与 `WeatherApiHost`，旧备份携带的这两个字段也不得写回本机设置
 - 数据库初始化后、首次读取设置前，`PrivacyMigrationService` 在一个事务中迁移既有明文；已保护值跳过，任一步失败则整体回滚
 - 当前 Windows 用户无法解密的数据不回退为明文：天气密钥返回空，剪贴板记录从显示结果中省略，日志只记录键名或记录 ID
 
@@ -187,17 +205,23 @@ UniDesk 是运行于 Windows 11 的桌面侧边助手应用，以悬浮右侧面
   - 默认位置：屏幕右侧，垂直居中
   - 自动吸附：拖动到屏幕左右边缘时自动对齐边缘
   - 置顶显示：默认置顶，允许在设置中关闭
-  - 宽度调整：拖拽面板左侧边缘调整宽度（范围 320px - 520px），折叠状态宽度固定 40px，调整完成后持久化
-  - 折叠功能：收起为 40px 宽窄条，点击或悬停 500ms 展开到最近一次保存的宽度
+  - 宽度调整：拖拽面板左侧边缘调整宽度（范围 320px - 520px），调整完成后持久化；收缩态保留当前宽度，确保时间、天气和下一项待办可读
+  - 收缩功能：切换为约 178px 高的迷你仪表盘，点击展开按钮恢复最近一次保存的高度，不使用悬停自动展开
 
-- **折叠状态设计**
-  - 展开态：恢复最近一次保存的宽度（默认 360px），显示所有卡片
-  - 收缩态：40px 宽，仅显示图标
-  - 动画过渡：350ms easing
-  - 收缩态交互：右侧边缘显示 16px 宽的展开箭头区域（图标 8px）
-    - 点击箭头：立即展开至最近一次保存宽度
-    - 悬停 500ms：自动展开至最近一次保存宽度
-    - 视觉反馈：悬停时箭头高亮显示
+- **收缩状态设计**
+  - 展开态：恢复最近一次保存的高度，显示全部启用模块
+  - 收缩态：保持当前宽度并固定为约 178px 高；使用单层玻璃表面，不在外窗内重复绘制完整模块卡片边框
+  - 标题栏只显示搜索、更多和展开；置顶、锁定、设置和最小化收入「更多」菜单，展开按钮保持可见强调态
+  - 主信息区左右展示时间／日期和天气／城市，隐藏空气质量等次要详情
+  - 主信息区中部使用无独立背景框的轻量硬件摘要，集中展示 CPU 使用率、内存使用率、CPU 温度和 GPU 温度；使用率标签与数值采用紧凑同行布局，并与两侧日期、天气保持同一视觉层级
+  - 底部状态条只展示下一项未完成待办及到期信息；无待办时显示无待办状态，不得在待办区域混入硬件指标
+  - 仅点击展开按钮恢复，不使用鼠标经过自动展开，避免无意触发窗口尺寸变化
+  - 键盘焦点使用与玻璃主题一致的强调边框，不显示系统默认虚线焦点框
+
+- **桌面体验设置选择态**
+  - 剪贴板历史最大保存量使用单选列表，`ClipboardHistoryMaxCount` 与当前选项双向绑定
+  - 当前选项在设置页首次打开、恢复默认、取消修改和手动选择后都必须持续显示强调色边框、轻强调背景和半粗字体
+  - 悬停和键盘焦点只提供临时反馈，不得覆盖或伪装持久选中态
 
 - **顶部区域**
   - 应用名称："UniDesk"（可选 Logo）
@@ -301,17 +325,22 @@ public class WeatherInfo
 ```
 
 #### 定位策略
-1. 启用自动定位时，优先通过 HTTPS 高德 IP 定位接口获取城市
-2. 高德不可用、未配置 Key 或请求超时时，回退到 Settings 表中保存的城市
-3. 不再调用明文 HTTP IP 定位服务；没有获批的坐标提供方时，`GetLocationAsync()` 返回空
-4. 用户修改：立即清除缓存并重新获取
+1. 新安装默认关闭自动定位，并在常规设置中直接显示城市输入框与自动定位开关；`AutoLocation` 缺失或无法解析时同样按关闭处理，绝不能因设置损坏或旧数据缺项隐式请求位置权限
+2. 用户显式启用自动定位时，才调用 Windows 定位服务获取坐标；系统权限被拒绝、定位服务关闭、定位超时或无坐标均视为明确的 `LocationUnavailable`，不得伪装为网络或 API 配置错误
+3. 获得坐标后，使用当前有效的和风天气凭据通过 HTTPS 城市查询接口反查城市；不得在桌面客户端打包高德或其它第三方定位密钥
+4. 自动定位不可用时回退到经过规范化的手动城市；旧值 `??`、`--`、纯标点和空白视为空，但不得通过数据库迁移删除其它用户设置
+5. 手动城市与自动定位互斥：用户手动输入非空城市时立即关闭自动定位；用户开启自动定位时立即清空手动城市。加载或撤销已保存设置时不得触发互斥清理
+6. 城市输入区必须直接显示格式提示：支持城市或区县名称及具体的国外城市名，例如“北京”“浦东”“Tokyo”；国家名称本身不作为城市查询值，不对省份等可被模糊搜索命中的文本额外做客户端阻断
+7. 用户修改城市或定位模式后，保存时清除天气缓存并重新获取；缓存存在时保留最后有效天气并标记过期
+8. 设置页必须明确告知 Windows 可能请求定位权限，以及坐标会发送给已配置的和风天气 HTTPS 主机用于城市反查
 
 **LocationProvider 实现方案**：
 ```csharp
 public class LocationProvider
 {
-    // HTTPS 高德 IP 定位，失败时由主流程读取已保存城市
-    protected virtual async Task<string?> GetCityByAmapIpAsync()
+    // Windows 定位权限由用户显式启用；失败时回退到规范化后的手动城市
+    public async Task<(double Latitude, double Longitude)?> GetLocationAsync()
+    public async Task<string?> GetCityByCoordinatesAsync(double latitude, double longitude)
     public async Task<string?> ResolveCityAsync()
 }
 ```
@@ -327,6 +356,7 @@ public class LocationProvider
   - 3 日天气：当日最高温/最低温
   - 空气质量：AQI
 - **聚合方式**：WeatherService 在后台并发请求多个端点并合并为单个 `WeatherInfo`，仅在全部完成或部分可降级完成后更新 UI
+- **来源署名**：凡主面板展示和风天气数据，必须同时显示可见的 `QWeather` 来源链接并指向 `https://www.qweather.com`；展开态和收缩态均不得隐藏该署名
 
 #### 天气图标策略
 - 使用和风天气返回的天气代码（IconCode）映射本地 QWeather Icons 字体图标
@@ -346,6 +376,8 @@ public class LocationProvider
 | 无缓存且请求失败 | 显示"天气数据暂不可用" |
 | API Key 无效 | 显示"API 配置错误，请检查设置" |
 | 城市不存在 | 显示"城市不存在，请重新设置" |
+| Windows 定位被拒绝或关闭 | 回退手动城市；无有效手动城市时显示"定位不可用，请输入城市" |
+| 自动定位坐标反查失败 | 回退手动城市；不得显示为网络或 API 配置的统称错误 |
 
 ---
 
@@ -503,14 +535,15 @@ public class ShortcutItem
 | 配置项 | 类型 | 默认值 | 说明 |
 |-------|------|-------|------|
 | 主题 | ComboBox | 跟随系统 | 跟随系统/浅色/深色 |
-| 城市 | TextBox | 自动定位 | 手动输入或自动定位 |
-| 自动定位 | Toggle | true | 启用自动定位 |
+| 城市 | TextBox | 空 | 手动输入城市；未启用自动定位时作为首选位置 |
+| 自动定位 | Toggle | false | 用户明确同意后调用 Windows 定位，并将坐标发送给和风天气进行城市反查 |
 | 开机自启 | Toggle | false | 随 Windows 启动 |
 | 窗口置顶 | Toggle | true | MainWindow 始终置顶 |
 | 面板透明度 | Slider | 85% | 范围：30%-100% |
 | 面板宽度 | Slider | 360px | 范围：320px-520px |
 | 全局热键 | HotkeyBox | Ctrl+Alt+Space | 呼出/隐藏 MainWindow（可配置并持久化） |
 | 天气 API Key | TextBox | 空 | 和风天气 API Key |
+| 天气 API Host | TextBox | 空 | 与 API Key 配套的 `*.qweatherapi.com` 专属主机 |
 | 恢复默认布局 | Button | - | 重置 WidgetLayout 与 PanelWidth 并立即应用 |
 | 导出数据 | Button | - | 导出版本化 JSON 备份 |
 | 导入数据 | Button | - | 预检并导入 JSON 备份 |
@@ -528,6 +561,7 @@ Key: "PanelWidth" → Value: "360"
 Key: "WidgetLayout" → Value: "{...json...}"
 Key: "Hotkey" → Value: "Ctrl+Alt+Space"
 Key: "WeatherApiKey" → Value: "dpapi:v1:..."（Windows 当前用户范围）
+Key: "WeatherApiHost" → Value: "abc.example.qweatherapi.com"（仅允许官方 HTTPS 专属主机）
 ```
 
 #### 主题系统设计
@@ -574,7 +608,7 @@ Value: "C:\Path\To\UniDesk.exe"
 #### 数据导入导出
 - **导出**：
   1. 点击"导出数据"
-  2. 默认排除 `WeatherApiKey` 和剪贴板历史
+  2. 始终排除 `WeatherApiKey`、`WeatherApiHost` 和内置天气凭据；默认排除剪贴板历史
   3. 用户可显式包含剪贴板历史；确认后再次提示该部分将以可读明文写入便携 JSON
   4. 打开文件保存对话框并写入 UTF-8、版本 5 JSON；`includedSections` 与 `containsSensitivePlaintext` 明确声明内容
 
@@ -585,13 +619,14 @@ Value: "C:\Path\To\UniDesk.exe"
   4. `PrepareImportAsync` 在任何写入前读取、反序列化、校验版本与记录，并生成不可变导入计划
   5. 预览页显示各分区数量、敏感明文警告，以及所有快捷方式路径和启动参数；可执行文件、URI 或带参数项突出显示
   6. 仅在用户明确确认后调用 `ApplyImportAsync`，先 flush 既有设置写入，再在单连接、单事务内恢复全部分区
-  7. 旧备份中的天气密钥与剪贴板正文在直接插入前使用 DPAPI 保护；任一步失败回滚全部修改，成功后刷新缓存和界面
+  7. 旧备份中的 `WeatherApiKey` 与 `WeatherApiHost` 一律忽略；剪贴板正文写入前使用 DPAPI 保护；任一步失败回滚全部修改，成功后刷新缓存和界面
 
 #### SettingsWindow 交互流程
 - 打开时：从 SettingsService 加载当前配置并填充控件
 - 保存：持久化所有修改后的配置并关闭窗口
 - 取消：关闭窗口且不保存修改
 - 保存失败：提示错误并保持窗口打开
+- 天气凭据发生变化时：先使用候选 Host／Key 验证；仅验证成功后持久化并关闭窗口，失败时保留原有效值和编辑状态
 - 恢复默认布局：重置 WidgetLayout 与 PanelWidth 为默认值并立即应用到 MainWindow
 
 ---
@@ -841,7 +876,7 @@ CREATE TABLE Settings (
 ## 技术栈
 
 ### 核心框架
-- **.NET Framework**: .NET 9
+- **.NET Framework**: .NET 10 LTS
 - **UI Framework**: WPF
 - **设计语言**: Fluent Design 2.0
 
@@ -862,9 +897,9 @@ CREATE TABLE Settings (
 - **代码分析**: StyleCop, FxCop
 
 ### 构建目标
-- **目标框架**: net9.0-windows10.0.18362.0
+- **目标框架**: net10.0-windows10.0.18362.0
 - **输出类型**: Exe (可执行文件)
-- **平台**: x86 / x64 / AnyCPU
+- **发布平台**: Windows x64；ARM64 与 x86 不在当前安装包支持范围内
 
 ---
 
@@ -1149,7 +1184,7 @@ UniDesk/
 ### Phase 5：发布与后续（第 9+ 周）
 
 - [ ] 构建发布版本
-- [ ] 签名与认证
+- [ ] 使用受控证书签名主程序、硬件服务和安装器，并运行发布就绪门禁
 - [ ] 用户文档
 - [ ] 反馈收集
 - [ ] 迭代更新

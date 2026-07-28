@@ -1,6 +1,9 @@
+using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Navigation;
+using UniDesk.Helpers;
 using UniDesk.Models;
 using UniDesk.ViewModels;
 
@@ -42,6 +45,23 @@ public partial class TimeWeatherModuleView : UserControl
     private void CalendarDayButton_OnClick(object sender, RoutedEventArgs e)
     {
         ViewModel?.SelectCalendarDateCommand.Execute((sender as FrameworkElement)?.DataContext as CalendarDayItem);
+        e.Handled = true;
+    }
+
+    private void QWeatherAttributionLink_OnRequestNavigate(object sender, RequestNavigateEventArgs e)
+    {
+        try
+        {
+            Process.Start(new ProcessStartInfo(e.Uri.AbsoluteUri)
+            {
+                UseShellExecute = true
+            });
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "TimeWeatherModuleView.OpenQWeatherAttribution");
+        }
+
         e.Handled = true;
     }
 }

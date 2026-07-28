@@ -402,8 +402,9 @@ public partial class TimeWeatherViewModel : ObservableObject, IDisposable
     {
         if (info == null)
         {
+            var failureKey = WeatherService.GetFailureResourceKey(_weatherService.LastFailure);
             HasWeatherData = false;
-            WeatherCity = L("Weather.LoadFailed");
+            WeatherCity = L(failureKey);
             WeatherTemperature = "--";
             WeatherDescription = string.Empty;
             WeatherDetailLine = string.Empty;
@@ -412,10 +413,7 @@ public partial class TimeWeatherViewModel : ObservableObject, IDisposable
             UseWeatherIconImage = false;
             WeatherIconGlyph = string.Empty;
             WeatherIconForeground = Brushes.White;
-            if (string.IsNullOrEmpty(WeatherStatusMessage))
-            {
-                WeatherStatusMessage = string.Empty;
-            }
+            WeatherStatusMessage = L(failureKey);
     
             return;
         }
@@ -439,7 +437,9 @@ public partial class TimeWeatherViewModel : ObservableObject, IDisposable
         var range = BuildTempRange(info.MinTemp, info.MaxTemp);
         WeatherDetailLine = string.Join("  |  ", details);
         WeatherRangeLine = range;
-        WeatherStatusMessage = info.IsExpired ? L("Weather.Expired") : string.Empty;
+        WeatherStatusMessage = _weatherService.LastFailure != WeatherFailureReason.None
+            ? L(WeatherService.GetFailureResourceKey(_weatherService.LastFailure))
+            : info.IsExpired ? L("Weather.Expired") : string.Empty;
     }
     
     private static string BuildTempRange(string minTemp, string maxTemp)

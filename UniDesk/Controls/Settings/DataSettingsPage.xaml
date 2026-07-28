@@ -23,11 +23,20 @@
                            Style="{StaticResource GlassSectionTitleStyle}"/>
                 <TextBlock Text="{DynamicResource Settings.HardwareDiagnosticsDescription}"
                            Foreground="{DynamicResource SecondaryTextBrush}"
+                           TextWrapping="Wrap" Margin="0,0,0,8"/>
+                <TextBlock Text="{Binding HardwareMonitoringStatusText}"
+                           Foreground="{DynamicResource SecondaryTextBrush}"
                            TextWrapping="Wrap" Margin="0,0,0,14"/>
-                <Button HorizontalAlignment="Left"
-                        Style="{StaticResource GlassSecondaryButtonStyle}"
-                        Content="{DynamicResource Settings.ExportHardwareDiagnostics}"
-                        Command="{Binding ExportSensorDiagnosticsCommand}"/>
+                <StackPanel Orientation="Horizontal">
+                    <Button Style="{StaticResource GlassSecondaryButtonStyle}"
+                            Content="{DynamicResource Settings.ExportHardwareDiagnostics}"
+                            Command="{Binding ExportSensorDiagnosticsCommand}"
+                            Margin="0,0,10,0"/>
+                    <Button Style="{StaticResource GlassPrimaryButtonStyle}"
+                            Content="{DynamicResource Settings.RepairHardwareMonitoring}"
+                            Command="{Binding RepairHardwareMonitoringCommand}"
+                            Visibility="{Binding IsHardwareMonitoringRepairVisible, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                </StackPanel>
             </StackPanel>
         </Border>
 

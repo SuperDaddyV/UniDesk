@@ -11,6 +11,7 @@ public class TrayService : ITrayService, IDisposable
     private TaskbarIcon? _notifyIcon;
     private readonly INotificationService _notificationService;
     private readonly ILocalizationService _localizationService;
+    private bool _disposed;
 
     public event Action? TrayIconDoubleClick;
     public event Action? SettingsRequested;
@@ -96,11 +97,18 @@ public class TrayService : ITrayService, IDisposable
 
     public void Dispose()
     {
+        if (_disposed)
+        {
+            return;
+        }
+
+        _disposed = true;
         _localizationService.LanguageChanged -= LocalizationService_OnLanguageChanged;
         if (_notifyIcon != null)
         {
             _notifyIcon.Visibility = Visibility.Collapsed;
             _notifyIcon.Dispose();
+            _notifyIcon = null;
         }
     }
 }

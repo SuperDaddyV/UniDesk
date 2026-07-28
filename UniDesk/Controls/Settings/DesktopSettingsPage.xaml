@@ -17,16 +17,17 @@
                     <CheckBox HorizontalAlignment="Right" IsChecked="{Binding ClipboardSensitiveFilterEnabled}"/>
                 </Grid>
                 <TextBlock Text="{DynamicResource Settings.MaxSavedCount}" Style="{StaticResource GlassSettingLabelStyle}" Margin="0,4,0,8"/>
-                <WrapPanel>
-                    <Button Style="{StaticResource GlassChipButtonStyle}" Content="20"
-                            Command="{Binding SelectClipboardHistoryLimitCommand}" CommandParameter="20"/>
-                    <Button Style="{StaticResource GlassChipButtonStyle}" Content="50"
-                            Command="{Binding SelectClipboardHistoryLimitCommand}" CommandParameter="50"/>
-                    <Button Style="{StaticResource GlassChipButtonStyle}" Content="100"
-                            Command="{Binding SelectClipboardHistoryLimitCommand}" CommandParameter="100"/>
-                    <Button Style="{StaticResource GlassChipButtonStyle}" Content="200"
-                            Command="{Binding SelectClipboardHistoryLimitCommand}" CommandParameter="200"/>
-                </WrapPanel>
+                <ListBox x:Name="ClipboardHistoryLimitList"
+                         Style="{StaticResource GlassChipListBoxStyle}"
+                         ItemContainerStyle="{StaticResource GlassChipListBoxItemStyle}"
+                         ItemsSource="{Binding ClipboardHistoryLimitOptions}"
+                         SelectedItem="{Binding ClipboardHistoryMaxCount, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+                    <ListBox.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel/>
+                        </ItemsPanelTemplate>
+                    </ListBox.ItemsPanel>
+                </ListBox>
                 <TextBlock Text="{Binding ClipboardHistoryCurrentText}"
                            Foreground="{DynamicResource SecondaryTextBrush}" Margin="0,4,0,0"/>
             </StackPanel>

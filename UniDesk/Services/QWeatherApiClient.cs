@@ -8,7 +8,7 @@ using UniDesk.Helpers;
 namespace UniDesk.Services;
 
 /// <summary>
-/// 和风天气 HTTP 客户端：支持个人 API Host + X-QW-Api-Key，并兼容旧版公共域名。
+/// 和风天气 HTTP 客户端：用户凭据只发送到已校验的个人 API Host；内置凭据仍可兼容旧版公共域名。
 /// </summary>
 public class QWeatherApiClient : IDisposable
 {
@@ -29,25 +29,40 @@ public class QWeatherApiClient : IDisposable
 
     public string GetUserApiKey() => _settingsService.GetValue("WeatherApiKey", "").Trim();
 
-    public string GetUserApiHost() => NormalizeHost(_settingsService.GetValue("WeatherApiHost", ""));
-
-    public bool IsUsingBuiltInDefaults =>
-        string.IsNullOrEmpty(GetUserApiKey()) && string.IsNullOrEmpty(GetUserApiHost());
-
-    public string GetApiKey()
+    public string GetUserApiHost()
     {
-        var userKey = GetUserApiKey();
-        return !string.IsNullOrEmpty(userKey)
-            ? userKey
-            : WeatherApiDefaults.GetDefaultApiKey(_settingsService);
+        var rawHost = _settingsService.GetValue("WeatherApiHost", "");
+        return TryNormalizeHost(rawHost, out var normalized) ? normalized : string.Empty;
     }
 
-    public string GetApiHost()
+    public bool IsUsingBuiltInDefaults =>
+        string.IsNullOrEmpty(GetUserApiKey()) &&
+        string.IsNullOrWhiteSpace(_settingsService.GetValue("WeatherApiHost", ""));
+
+    public string GetApiKey() => ResolveCredentials().ApiKey;
+
+    public string GetApiHost() => ResolveCredentials().ApiHost;
+
+    private (string ApiKey, string ApiHost) ResolveCredentials()
     {
-        var userHost = GetUserApiHost();
-        return !string.IsNullOrEmpty(userHost)
-            ? userHost
-            : WeatherApiDefaults.GetDefaultApiHost(_settingsService);
+        var userKey = GetUserApiKey();
+        var rawUserHost = _settingsService.GetValue("WeatherApiHost", "").Trim();
+        if (string.IsNullOrEmpty(userKey) && string.IsNullOrEmpty(rawUserHost))
+        {
+            var builtInHost = WeatherApiDefaults.GetDefaultApiHost(_settingsService);
+            return TryNormalizeHost(builtInHost, out var normalizedBuiltInHost)
+                ? (WeatherApiDefaults.GetDefaultApiKey(_settingsService), normalizedBuiltInHost)
+                : (string.Empty, string.Empty);
+        }
+
+        if (string.IsNullOrEmpty(userKey) ||
+            string.IsNullOrEmpty(rawUserHost) ||
+            !TryNormalizeHost(rawUserHost, out var normalizedUserHost))
+        {
+            return (string.Empty, string.Empty);
+        }
+
+        return (userKey, normalizedUserHost);
     }
 
     public async Task<string?> GetAsync(
@@ -73,7 +88,9 @@ public class QWeatherApiClient : IDisposable
             }
         }
 
-        if (!string.IsNullOrEmpty(legacyHost) && !string.IsNullOrEmpty(legacyPath))
+        if (IsUsingBuiltInDefaults &&
+            !string.IsNullOrEmpty(legacyHost) &&
+            !string.IsNullOrEmpty(legacyPath))
         {
             return await SendAsync(legacyHost, legacyPath, query, apiKey, cancellationToken, allowQueryKeyFallback: true);
         }
@@ -87,11 +104,23 @@ public class QWeatherApiClient : IDisposable
         CancellationToken cancellationToken = default)
     {
         apiKey = (apiKey ?? GetApiKey()).Trim();
-        apiHost = NormalizeHost(apiHost ?? GetApiHost());
+        var rawHost = apiHost ?? GetApiHost();
 
         if (string.IsNullOrEmpty(apiKey))
         {
             return QWeatherValidationResult.Fail("API Key 为空");
+        }
+
+        if (string.IsNullOrWhiteSpace(rawHost))
+        {
+            return QWeatherValidationResult.Fail(
+                "请填写 API Host（登录和风控制台查看，形如 xxx.qweatherapi.com），并确保与 API Key 属于同一项目。");
+        }
+
+        if (!TryNormalizeHost(rawHost, out apiHost))
+        {
+            return QWeatherValidationResult.Fail(
+                "API Host 无效。仅允许和风控制台提供的 HTTPS 专属 qweatherapi.com 子域名。");
         }
 
         if (!string.IsNullOrEmpty(apiHost))
@@ -115,30 +144,8 @@ public class QWeatherApiClient : IDisposable
             }
         }
 
-        var legacyResponse = await SendAsync(
-            "devapi.qweather.com",
-            "/v7/weather/now",
-            "location=101010100",
-            apiKey,
-            cancellationToken,
-            allowQueryKeyFallback: true);
-
-        var legacyCode = ParseCode(legacyResponse);
-        if (legacyCode == "200")
-        {
-            return QWeatherValidationResult.Ok();
-        }
-
-        if (string.IsNullOrEmpty(apiHost))
-        {
-            return QWeatherValidationResult.Fail(
-                "校验失败：请在设置中填写 API Host（登录和风控制台 → 设置，形如 xxx.qweatherapi.com），与 API Key 配套使用。");
-        }
-
         return QWeatherValidationResult.Fail(
-            string.IsNullOrEmpty(legacyCode)
-                ? "无法连接和风天气服务，请检查网络或 API Host 是否正确。"
-                : $"校验失败（和风错误码 {legacyCode}）");
+            "无法连接和风天气服务，请检查网络或 API Host 是否正确。");
     }
 
     private async Task<string?> SendAsync(
@@ -155,6 +162,11 @@ public class QWeatherApiClient : IDisposable
 
         var headerResult = await SendRequestAsync(url, apiKey, useHeaderAuth: true, cancellationToken);
         if (ParseCode(headerResult) == "200")
+        {
+            return headerResult;
+        }
+
+        if (!allowQueryKeyFallback)
         {
             return headerResult;
         }
@@ -225,31 +237,50 @@ public class QWeatherApiClient : IDisposable
         }
     }
 
-    public static string NormalizeHost(string host)
+    public static bool TryNormalizeHost(string? host, out string normalizedHost)
     {
+        normalizedHost = string.Empty;
         if (string.IsNullOrWhiteSpace(host))
         {
-            return string.Empty;
+            return true;
         }
 
         host = host.Trim();
-        if (host.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+        if (host.Contains("://", StringComparison.Ordinal) &&
+            !host.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
         {
-            host = host[8..];
-        }
-        else if (host.StartsWith("http://", StringComparison.OrdinalIgnoreCase))
-        {
-            host = host[7..];
+            return false;
         }
 
-        var slash = host.IndexOf('/');
-        if (slash >= 0)
+        var candidate = host.StartsWith("https://", StringComparison.OrdinalIgnoreCase)
+            ? host
+            : "https://" + host;
+        if (!Uri.TryCreate(candidate, UriKind.Absolute, out var uri) ||
+            !string.Equals(uri.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase) ||
+            !string.IsNullOrEmpty(uri.UserInfo) ||
+            (!uri.IsDefaultPort && uri.Port != 443) ||
+            (!string.IsNullOrEmpty(uri.Query) || !string.IsNullOrEmpty(uri.Fragment)) ||
+            (uri.AbsolutePath != "/" && !string.IsNullOrEmpty(uri.AbsolutePath)))
         {
-            host = host[..slash];
+            return false;
         }
 
-        return host.TrimEnd('/');
+        var dnsHost = uri.IdnHost.ToLowerInvariant();
+        if (IPAddress.TryParse(dnsHost, out _) ||
+            !dnsHost.EndsWith(".qweatherapi.com", StringComparison.Ordinal) ||
+            dnsHost.Length <= ".qweatherapi.com".Length)
+        {
+            return false;
+        }
+
+        normalizedHost = dnsHost;
+        return true;
     }
+
+    public static string NormalizeHost(string host) =>
+        TryNormalizeHost(host, out var normalized)
+            ? normalized
+            : throw new FormatException("Invalid QWeather API Host.");
 
     public void Dispose()
     {

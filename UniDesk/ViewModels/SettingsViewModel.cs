@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using UniDesk.Hardware.Contracts;
 using UniDesk.Helpers;
 using UniDesk.Models;
 using UniDesk.Services;
@@ -33,6 +34,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     private readonly MainWindowViewModel _mainWindowViewModel;
     private readonly ISystemThemeService? _systemThemeService;
     private readonly ISensorDiagnosticsService? _sensorDiagnosticsService;
+    private readonly IHardwareMonitoringMaintenanceService? _hardwareMonitoringMaintenanceService;
 
     private readonly Dictionary<string, string> _originalSettings = new();
     private bool _isLoading;
@@ -66,6 +68,12 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
 
     [ObservableProperty]
     private string _displayTitle = "UniDesk";
+
+    [ObservableProperty]
+    private string _city = string.Empty;
+
+    [ObservableProperty]
+    private bool _autoLocation;
 
     [ObservableProperty]
     private string _weatherApiKey = string.Empty;
@@ -106,6 +114,12 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private string _updateStatusMessage = string.Empty;
 
+    [ObservableProperty]
+    private string _hardwareMonitoringStatusText = string.Empty;
+
+    [ObservableProperty]
+    private bool _isHardwareMonitoringRepairVisible;
+
     public IReadOnlyList<int> ClipboardHistoryLimitOptions => QuickTextService.AllowedHistoryLimits;
 
     public IReadOnlyList<LanguageOption> LanguageOptions => _localizationService.SupportedLanguages;
@@ -135,10 +149,6 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
 
     public bool PendingWeatherSettingsChanged { get; private set; }
 
-    public string PendingApiKey { get; private set; } = string.Empty;
-
-    public string PendingApiHost { get; private set; } = string.Empty;
-
     public SettingsViewModel(
         ISettingsService settingsService,
         ILocalizationService localizationService,
@@ -152,7 +162,8 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         IQuickTextService quickTextService,
         MainWindowViewModel mainWindowViewModel,
         ISystemThemeService? systemThemeService = null,
-        ISensorDiagnosticsService? sensorDiagnosticsService = null)
+        ISensorDiagnosticsService? sensorDiagnosticsService = null,
+        IHardwareMonitoringMaintenanceService? hardwareMonitoringMaintenanceService = null)
     {
         _settingsService = settingsService;
         _localizationService = localizationService;
@@ -167,6 +178,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         _mainWindowViewModel = mainWindowViewModel;
         _systemThemeService = systemThemeService;
         _sensorDiagnosticsService = sensorDiagnosticsService;
+        _hardwareMonitoringMaintenanceService = hardwareMonitoringMaintenanceService;
 
         foreach (var scheme in AppColorSchemeCatalog.All)
         {
@@ -179,6 +191,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
             _systemThemeService.ThemeChanged += SystemThemeService_OnThemeChanged;
         }
         LoadSettings();
+        _ = RefreshHardwareMonitoringStatusAsync();
     }
 
     private void LoadSettings()
@@ -200,6 +213,9 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
             PanelHeight = _settingsService.GetSetting("PanelHeight", 702.0);
             FontScale = _settingsService.GetSetting("FontScale", 1.0);
             DisplayTitle = MainWindowViewModel.NormalizeDisplayTitle(_settingsService.GetValue("DisplayTitle", "UniDesk"));
+            City = WeatherCityNormalizer.Normalize(
+                _settingsService.GetValue("City", "")) ?? string.Empty;
+            AutoLocation = _settingsService.GetSetting("AutoLocation", false);
             WeatherApiKey = _settingsService.GetValue("WeatherApiKey", "");
             WeatherApiHost = _settingsService.GetValue("WeatherApiHost", "");
             ShortcutMaxCount = ShortcutLimitHelper.ParseLimit(
@@ -245,6 +261,8 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         _originalSettings["PanelHeight"] = PanelHeight.ToString(CultureInfo.InvariantCulture);
         _originalSettings["FontScale"] = FontScale.ToString(CultureInfo.InvariantCulture);
         _originalSettings["DisplayTitle"] = DisplayTitle;
+        _originalSettings["City"] = City;
+        _originalSettings["AutoLocation"] = AutoLocation.ToString();
         _originalSettings["WeatherApiKey"] = WeatherApiKey;
         _originalSettings["WeatherApiHost"] = WeatherApiHost;
         _originalSettings["ShortcutMaxCount"] = ShortcutMaxCount.ToString(CultureInfo.InvariantCulture);
@@ -299,17 +317,6 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         }
 
         SelectedLanguage = _localizationService.NormalizeLanguage(language);
-    }
-
-    [RelayCommand]
-    private void SelectClipboardHistoryLimit(string? limitText)
-    {
-        if (!int.TryParse(limitText, NumberStyles.Integer, CultureInfo.InvariantCulture, out var limit))
-        {
-            return;
-        }
-
-        ClipboardHistoryMaxCount = QuickTextService.NormalizeHistoryLimit(limit);
     }
 
     [RelayCommand]
@@ -409,6 +416,22 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     }
 
     partial void OnDisplayTitleChanged(string value) => ApplyWindowPreview();
+
+    partial void OnCityChanged(string value)
+    {
+        if (!_isLoading && WeatherCityNormalizer.Normalize(value) != null)
+        {
+            AutoLocation = false;
+        }
+    }
+
+    partial void OnAutoLocationChanged(bool value)
+    {
+        if (!_isLoading && value)
+        {
+            City = string.Empty;
+        }
+    }
 
     partial void OnClipboardHistoryMaxCountChanged(int value) =>
         OnPropertyChanged(nameof(ClipboardHistoryCurrentText));
@@ -539,6 +562,8 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     {
         LastSaveSucceeded = false;
         var weatherSettingsChanged = false;
+        var weatherCredentialsChanged = false;
+        var locationSettingsChanged = false;
         var apiKeyToValidate = string.Empty;
         var apiHostToValidate = string.Empty;
         var originalHotkey = _originalSettings.GetValueOrDefault("Hotkey", DefaultHotkey);
@@ -552,6 +577,41 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
 
         try
         {
+            City = WeatherCityNormalizer.Normalize(City) ?? string.Empty;
+            apiKeyToValidate = WeatherApiKey.Trim();
+            var rawApiHost = WeatherApiHost.Trim();
+            if (string.IsNullOrEmpty(apiKeyToValidate) != string.IsNullOrEmpty(rawApiHost))
+            {
+                _notificationService.ShowWarningMessage(L("Settings.WeatherCredentialsRequired"));
+                return;
+            }
+
+            if (!QWeatherApiClient.TryNormalizeHost(rawApiHost, out apiHostToValidate))
+            {
+                _notificationService.ShowWarningMessage(L("Settings.WeatherApiHostInvalid"));
+                return;
+            }
+
+            locationSettingsChanged =
+                _originalSettings.GetValueOrDefault("City") != City ||
+                _originalSettings.GetValueOrDefault("AutoLocation") != AutoLocation.ToString();
+            weatherCredentialsChanged =
+                _originalSettings.GetValueOrDefault("WeatherApiKey") != apiKeyToValidate ||
+                _originalSettings.GetValueOrDefault("WeatherApiHost") != apiHostToValidate;
+            weatherSettingsChanged = locationSettingsChanged || weatherCredentialsChanged;
+            if (weatherCredentialsChanged && !string.IsNullOrEmpty(apiKeyToValidate))
+            {
+                var validation = await _weatherService.ValidateApiKeyAsync(apiKeyToValidate, apiHostToValidate);
+                if (!validation.IsValid)
+                {
+                    _notificationService.ShowWarningMessage(
+                        string.IsNullOrWhiteSpace(validation.Message)
+                            ? L("Settings.WeatherCredentialValidationFailed")
+                            : validation.Message);
+                    return;
+                }
+            }
+
             if (hotkeySettingChanged)
             {
                 var hotkeyResult = _mainWindowViewModel.ApplyGlobalHotkey(requestedHotkey);
@@ -566,12 +626,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
                 hotkeyWasApplied = true;
             }
 
-            apiKeyToValidate = WeatherApiKey.Trim();
-            apiHostToValidate = QWeatherApiClient.NormalizeHost(WeatherApiHost.Trim());
             DisplayTitle = MainWindowViewModel.NormalizeDisplayTitle(DisplayTitle);
-            weatherSettingsChanged =
-                _originalSettings.GetValueOrDefault("WeatherApiKey") != apiKeyToValidate ||
-                _originalSettings.GetValueOrDefault("WeatherApiHost") != apiHostToValidate;
 
             _settingsService.SetValue("ColorScheme", SelectedColorScheme);
             _settingsService.SetValue("Theme", SelectedColorScheme);
@@ -584,6 +639,8 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
             _settingsService.SetValue("PanelHeight", PanelHeight.ToString(CultureInfo.InvariantCulture));
             _settingsService.SetValue("FontScale", FontScale.ToString(CultureInfo.InvariantCulture));
             _settingsService.SetValue("DisplayTitle", MainWindowViewModel.NormalizeDisplayTitle(DisplayTitle));
+            _settingsService.SetValue("City", City);
+            _settingsService.SetValue("AutoLocation", AutoLocation.ToString());
             _settingsService.SetValue("WeatherApiKey", apiKeyToValidate);
             _settingsService.SetValue("WeatherApiHost", apiHostToValidate);
             _settingsService.SetValue("ShortcutMaxCount", ShortcutMaxCount.ToString(CultureInfo.InvariantCulture));
@@ -595,6 +652,10 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
             _mainWindowViewModel.ApplyModuleSettings(BuildModuleSettings(), persist: true);
 
             await _settingsService.FlushPendingSavesAsync();
+            if (locationSettingsChanged)
+            {
+                await _weatherService.SetCityAsync(City);
+            }
             await _quickTextService.TrimClipboardHistoryAsync(ClipboardHistoryMaxCount);
 
             ApplyEffectiveThemePreview();
@@ -605,8 +666,6 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
             ApplyStartupSetting();
             SaveOriginalSettings();
 
-            PendingApiKey = apiKeyToValidate;
-            PendingApiHost = apiHostToValidate;
             PendingWeatherSettingsChanged = weatherSettingsChanged;
             LastSaveSucceeded = true;
             IsEditingWeatherApi = false;
@@ -625,10 +684,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         RequestClose?.Invoke(this, true);
     }
 
-    public async Task CompleteSaveFollowUpAsync(
-        string apiKeyToValidate,
-        string apiHostToValidate,
-        bool weatherSettingsChanged)
+    public async Task CompleteSaveFollowUpAsync(bool weatherSettingsChanged)
     {
         if (!LastSaveSucceeded)
         {
@@ -637,18 +693,6 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
 
         try
         {
-            if (!string.IsNullOrWhiteSpace(apiKeyToValidate))
-            {
-                var validation = await _weatherService.ValidateApiKeyAsync(apiKeyToValidate, apiHostToValidate);
-                if (!validation.IsValid)
-                {
-                    _notificationService.ShowWarningMessage(
-                        string.IsNullOrWhiteSpace(validation.Message)
-                            ? L("Settings.WeatherCredentialValidationFailed")
-                            : validation.Message);
-                }
-            }
-
             if (weatherSettingsChanged)
             {
                 await _mainWindowViewModel.RefreshWeatherAfterSettingsAsync();
@@ -682,6 +726,8 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         PanelHeight = 702;
         FontScale = 1.0;
         DisplayTitle = "UniDesk";
+        City = "";
+        AutoLocation = false;
         WeatherApiKey = "";
         WeatherApiHost = "";
         IsEditingWeatherApi = false;
@@ -923,6 +969,16 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
                 DisplayTitle = MainWindowViewModel.NormalizeDisplayTitle(displayTitle);
             }
 
+            if (_originalSettings.TryGetValue("City", out var city))
+            {
+                City = city;
+            }
+
+            if (_originalSettings.TryGetValue("AutoLocation", out var autoLocation))
+            {
+                AutoLocation = bool.Parse(autoLocation);
+            }
+
             if (_originalSettings.TryGetValue("WeatherApiKey", out var apiKey))
             {
                 WeatherApiKey = apiKey;
@@ -1065,6 +1121,74 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         }
     }
 
+    [RelayCommand]
+    private async Task RepairHardwareMonitoringAsync()
+    {
+        if (_hardwareMonitoringMaintenanceService == null)
+        {
+            _notificationService.ShowErrorMessage(L("Settings.HardwareMonitoringRepairUnavailable"));
+            return;
+        }
+
+        var result = await _hardwareMonitoringMaintenanceService.RepairAsync();
+        switch (result.Status)
+        {
+            case HardwareRepairLaunchStatus.Succeeded:
+                _notificationService.ShowSuccessMessage(L("Settings.HardwareMonitoringRepairSucceeded"));
+                await RefreshHardwareMonitoringStatusAsync();
+                break;
+            case HardwareRepairLaunchStatus.Cancelled:
+                _notificationService.ShowInfoMessage(L("Settings.HardwareMonitoringRepairCancelled"));
+                break;
+            case HardwareRepairLaunchStatus.HelperMissing:
+                _notificationService.ShowErrorMessage(L("Settings.HardwareMonitoringRepairHelperMissing"));
+                break;
+            default:
+                _notificationService.ShowErrorMessage(
+                    _localizationService.Format(
+                        "Settings.HardwareMonitoringRepairFailedFormat",
+                        result.ExitCode?.ToString() ?? result.Error ?? "unknown"));
+                await RefreshHardwareMonitoringStatusAsync();
+                break;
+        }
+    }
+
+    private async Task RefreshHardwareMonitoringStatusAsync()
+    {
+        if (_hardwareMonitoringMaintenanceService == null)
+        {
+            HardwareMonitoringStatusText = L("Settings.HardwareMonitoringServiceUnavailable");
+            IsHardwareMonitoringRepairVisible = true;
+            return;
+        }
+
+        try
+        {
+            var status = await _hardwareMonitoringMaintenanceService.GetStatusAsync();
+            HardwareMonitoringStatusText = L(status.Availability switch
+            {
+                HardwareServiceAvailability.Available => "Settings.HardwareMonitoringReady",
+                HardwareServiceAvailability.ServiceNotInstalled => "Settings.HardwareMonitoringNotInstalled",
+                HardwareServiceAvailability.ServiceStopped => "Settings.HardwareMonitoringStopped",
+                HardwareServiceAvailability.DriverUnavailable => "Settings.HardwareMonitoringDriverUnavailable",
+                HardwareServiceAvailability.ProtocolMismatch => "Settings.HardwareMonitoringProtocolMismatch",
+                HardwareServiceAvailability.TimedOut => "Settings.HardwareMonitoringTimedOut",
+                HardwareServiceAvailability.ServiceUnavailable => "Settings.HardwareMonitoringServiceUnavailable",
+                _ => "Settings.HardwareMonitoringError"
+            });
+            IsHardwareMonitoringRepairVisible =
+                status.Availability != HardwareServiceAvailability.Available;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(
+                $"读取硬件监控组件状态失败：{ex.GetType().Name}: {ex.Message}",
+                "SettingsViewModel.HardwareMonitoring");
+            HardwareMonitoringStatusText = L("Settings.HardwareMonitoringError");
+            IsHardwareMonitoringRepairVisible = true;
+        }
+    }
+
     private void OpenReleasePage(string releaseUrl)
     {
         if (string.IsNullOrWhiteSpace(releaseUrl))
@@ -1091,6 +1215,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(CurrentVersionText));
         OnPropertyChanged(nameof(ClipboardHistoryCurrentText));
         RefreshModuleDisplayNames();
+        _ = RefreshHardwareMonitoringStatusAsync();
         UpdateStatusMessage = string.Empty;
     }
 

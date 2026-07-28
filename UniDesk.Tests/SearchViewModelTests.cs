@@ -47,12 +47,60 @@ public class SearchViewModelTests
         Assert.Same(result, activated);
     }
 
+    [Fact]
+    public async Task SearchNowAsync_WhenSuperseded_ShouldCancelPreviousRequest()
+    {
+        var service = new CancelAwareSearchService();
+        var viewModel = new SearchViewModel(service, new StubLocalizationService(), _ => Task.CompletedTask)
+        {
+            SearchText = "first"
+        };
+        var firstSearch = viewModel.SearchNowAsync();
+        await service.FirstRequestStarted.Task.WaitAsync(TimeSpan.FromSeconds(2));
+
+        viewModel.SearchText = "second";
+        await viewModel.SearchNowAsync();
+        await firstSearch;
+
+        Assert.True(service.FirstRequestWasCanceled);
+    }
+
     private sealed class StubSearchService(IReadOnlyList<SearchResultItem> results) : ISearchService
     {
         public Task<IReadOnlyList<SearchResultItem>> SearchAsync(
             string keyword,
             int limitPerKind = 5,
             CancellationToken cancellationToken = default) => Task.FromResult(results);
+    }
+
+    private sealed class CancelAwareSearchService : ISearchService
+    {
+        private int _requestCount;
+        public TaskCompletionSource FirstRequestStarted { get; } =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public bool FirstRequestWasCanceled { get; private set; }
+
+        public async Task<IReadOnlyList<SearchResultItem>> SearchAsync(
+            string keyword,
+            int limitPerKind = 5,
+            CancellationToken cancellationToken = default)
+        {
+            if (Interlocked.Increment(ref _requestCount) == 1)
+            {
+                FirstRequestStarted.TrySetResult();
+                try
+                {
+                    await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
+                }
+                catch (OperationCanceledException)
+                {
+                    FirstRequestWasCanceled = true;
+                    throw;
+                }
+            }
+
+            return [];
+        }
     }
 
     private sealed class StubLocalizationService : ILocalizationService

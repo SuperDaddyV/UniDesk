@@ -118,7 +118,7 @@ public class SettingsServiceTests
         
         var autoLocation = await settingsService.GetSettingAsync("AutoLocation");
         
-        Assert.Equal("true", autoLocation);
+        Assert.Equal("false", autoLocation);
         
         Cleanup();
     }
@@ -205,6 +205,23 @@ public class SettingsServiceTests
     }
 
     [Fact]
+    public async Task GetSettingAsync_TransientReadFailure_ShouldNotCacheNull()
+    {
+        var databaseService = new RecoverableDatabaseService
+        {
+            RemainingReadFailures = 1
+        };
+        databaseService.Values["Theme"] = "Dark";
+        var settingsService = new SettingsService(databaseService);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () => settingsService.GetSettingAsync("Theme"));
+
+        Assert.Equal("Dark", await settingsService.GetSettingAsync("Theme"));
+        settingsService.Dispose();
+    }
+
+    [Fact]
     public async Task FlushPendingSavesAsync_WriteFailure_ShouldThrowAndRetryPendingValues()
     {
         var databaseService = new RecoverableDatabaseService { FailWrites = true };
@@ -276,6 +293,7 @@ public class SettingsServiceTests
     {
         public ConcurrentDictionary<string, string?> Values { get; } = new();
         public bool FailWrites { get; set; }
+        public int RemainingReadFailures { get; set; }
 
         public Task InitializeAsync() => Task.CompletedTask;
 
@@ -303,7 +321,22 @@ public class SettingsServiceTests
         public Task<T?> QuerySingleAsync<T>(
             string sql,
             Func<SqliteDataReader, T> map,
-            params object?[] parameters) => Task.FromResult<T?>(default);
+            params object?[] parameters)
+        {
+            if (RemainingReadFailures-- > 0)
+            {
+                throw new InvalidOperationException("forced settings read failure");
+            }
+
+            if (parameters.Length > 0 &&
+                parameters[0] is string key &&
+                Values.TryGetValue(key, out var value))
+            {
+                return Task.FromResult((T?)(object?)value);
+            }
+
+            return Task.FromResult<T?>(default);
+        }
 
         public Task<T> ExecuteInTransactionAsync<T>(Func<IDatabaseSession, Task<T>> operation) =>
             throw new NotSupportedException();

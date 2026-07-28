@@ -29,6 +29,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
     private readonly IStartupService _startupService;
     private readonly ITodoBackupService _todoBackupService;
     private readonly ISensorDiagnosticsService _sensorDiagnosticsService;
+    private readonly IHardwareMonitoringMaintenanceService _hardwareMonitoringMaintenanceService;
     private bool _disposed;
     private bool _isLoadingModuleSettings;
 
@@ -110,6 +111,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         IStartupService startupService,
         ITodoBackupService todoBackupService,
         ISensorDiagnosticsService sensorDiagnosticsService,
+        IHardwareMonitoringMaintenanceService hardwareMonitoringMaintenanceService,
         ISystemMetricsMonitor systemMetricsMonitor,
         IClipboardMonitorService clipboardMonitorService,
         ISearchService searchService)
@@ -126,6 +128,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         _startupService = startupService;
         _todoBackupService = todoBackupService;
         _sensorDiagnosticsService = sensorDiagnosticsService;
+        _hardwareMonitoringMaintenanceService = hardwareMonitoringMaintenanceService;
         _localizationService.LanguageChanged += LocalizationService_OnLanguageChanged;
 
         HardwareMonitor = new HardwareMonitorViewModel(systemMetricsMonitor, localizationService);
@@ -444,7 +447,8 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
                 _todoBackupService,
                 _quickTextService,
                 this,
-                sensorDiagnosticsService: _sensorDiagnosticsService);
+                sensorDiagnosticsService: _sensorDiagnosticsService,
+                hardwareMonitoringMaintenanceService: _hardwareMonitoringMaintenanceService);
 
             var settingsWindow = new SettingsWindow(viewModel, ownerWidth, ownerHeight);
             if (owner != null)
@@ -474,8 +478,6 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
 
         var savedViewModel = viewModel;
         _ = savedViewModel.CompleteSaveFollowUpAsync(
-            savedViewModel.PendingApiKey,
-            savedViewModel.PendingApiHost,
             savedViewModel.PendingWeatherSettingsChanged);
     }
 

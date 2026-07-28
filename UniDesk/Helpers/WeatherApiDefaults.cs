@@ -1,13 +1,13 @@
 using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using UniDesk.Services;
-
-namespace UniDesk.Helpers;
+using UniDesk.Services;
+namespace UniDesk.Helpers;
 
 /// <summary>
-/// 和风天气内置默认凭据（加密存储）。用户未配置 WeatherApiKey / WeatherApiHost 时启用。
-/// 凭据优先从 secrets.json 读取，其次数据库，最后使用内置常量（保证安装包无 secrets.json 时仍可用）。
+/// 和风天气内置配额凭据。客户端内的混淆值可被逆向，不能作为秘密边界；只用于公开安装包的受限默认配额。
+/// 真正需要保密的生产凭据必须放在服务端。用户未配置 WeatherApiKey / WeatherApiHost 时才启用内置配额。
+/// 凭据优先从本地 secrets.json 读取，其次数据库，最后使用内置常量（保证安装包无 secrets.json 时仍可用）。
 /// </summary>
 internal static class WeatherApiDefaults
 {
@@ -96,5 +96,4 @@ internal static class WeatherApiDefaults
         [JsonPropertyName("WeatherApiHostEnc")]
         public string ApiHostEnc { get; set; } = "";
     }
-}
-
+}

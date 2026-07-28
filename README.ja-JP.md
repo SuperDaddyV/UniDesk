@@ -101,22 +101,26 @@ UniDesk は、デスクトップをすっきり保ちながら、情報確認、
 現在のインストーラー例：
 
 ```powershell
-UniDesk_Setup_2.0.0.exe
+UniDesk_Setup_2.1.0.exe
 ```
 
 インストールまたはアップグレード前に、起動中の UniDesk を終了することをおすすめします。
 
+インストーラーは通常どおりダブルクリックして Windows の UAC 画面で許可してください。標準ユーザーは管理者の資格情報を入力する必要があり、「管理者として実行」を選ぶ必要はありません。デスクトップショートカットと「完全なハードウェア監視」は既定で選択され、共有 PawnIO ドライバーと `LocalSystem` で動作する読み取り専用 Windows サービスをインストールすることを明示します。`UniDesk.exe` 自体は通常ユーザー権限のままです。完了ページでは UniDesk の起動が既定で選択され、インストール前の通常ユーザーとして自動起動します。このオプションを外した場合やコンポーネントのインストールに失敗した場合も、天気、メモ、ショートカットなどの基本機能は利用できますが、CPU 温度などの低レベル指標を取得できない場合があります。設定から診断のエクスポートと修復を実行できます。
+
 システム要件：
 
-- Windows 10 version 1903 以降
-- Windows 11
+- Microsoft のサポート期間内にある Windows 11 x64
+- .NET 10 がサポートする Windows 10 Enterprise／IoT Enterprise LTSC x64
+
+Windows 10 version 1903 の API 互換基準は維持しますが、サポート終了済みの一般向け Windows 10 は正式サポート対象外です。
 
 ## 🛠️ ローカルビルド
 
 必要な環境：
 
-- .NET 9 SDK
-- Windows 10 version 1903 以降
+- .NET 10 SDK
+- サポート対象の Windows 11 または Windows 10 LTSC 開発環境
 - Visual Studio 2022、JetBrains Rider、または .NET / WPF に対応した開発環境
 - Inno Setup 6（インストーラー作成時のみ必要）
 
@@ -131,25 +135,19 @@ dotnet build UniDesk.sln -c Release
 dotnet run --project UniDesk\UniDesk.csproj
 ```
 
-発行：
+クリーンなワークツリーからローカルの未署名リリース候補を作成：
 
 ```powershell
-dotnet publish .\UniDesk\UniDesk.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=false -o publish\win-x64
+.\scripts\Build-Release.ps1 -Version 2.1.0
 ```
 
-インストーラー作成：
-
-```powershell
-ISCC.exe .\UniDesk.iss
-```
-
-インストーラーは `installer` ディレクトリに出力されます。
+このスクリプトは、アプリ、ハードウェアサービス、修復ツールを新しいバージョン別ディレクトリに発行し、その入力だけからインストーラーを作成します。公開用成果物は、手動で起動する GitHub Actions の `Build and sign release candidate` ワークフローで SignPath 署名を行い、`Test-ReleaseReadiness.ps1` に合格する必要があります。このワークフローが GitHub Release を自動作成することはありません。
 
 ## 🧰 技術スタック
 
 | 技術 | 用途 |
 | --- | --- |
-| .NET 9 | アプリケーション実行基盤 |
+| .NET 10 LTS | アプリケーション実行基盤 |
 | WPF | Windows デスクトップ UI |
 | SQLite | ローカルデータ保存 |
 | CommunityToolkit.Mvvm | UI とデータバインディング補助 |
@@ -162,6 +160,12 @@ ISCC.exe .\UniDesk.iss
 UniDesk はローカル優先です。設定、ショートカット、ToDo、クイックメモ、クイックテキスト、アイコンキャッシュなどのユーザーデータは、基本的にユーザーの PC に保存されます。
 
 クリップボード履歴には、認証コード、パスワード、Token、Cookie などの機密テキストを誤って保存しにくくするフィルターがあります。この機能はリスクを下げるためのものであり、絶対的な安全を保証するものではありません。機密性の高い内容を扱う場合は、クリップボード履歴を無効にするか、定期的に履歴を削除してください。
+
+## Code signing policy
+
+公開パッケージには[コード署名ポリシー](CODE_SIGNING_POLICY.md)と[プライバシーポリシー](PRIVACY.md)が適用されます。署名候補は公開コミットから構築し、手動承認を受け、ソース版、Authenticode、SHA-256 の検証に合格する必要があります。
+
+Free code signing provided by SignPath.io, certificate by SignPath Foundation.
 
 ## 🆕 最近の更新
 

@@ -1,4 +1,5 @@
 using UniDesk.Models;
+using UniDesk.Hardware.Contracts;
 using UniDesk.Services;
 
 namespace UniDesk.Tests;
@@ -127,11 +128,39 @@ public class HardwareMetricResilienceTests
         Assert.Equal(3, attempts);
     }
 
+    [Fact]
+    public void LibreCpuReader_ServiceUnavailableShouldNotRequestMainProcessElevation()
+    {
+        using var host = new UnavailableHardwareServiceHost();
+        using var reader = new LibreHardwareCpuReader(host, () => []);
+
+        var metrics = reader.Read();
+
+        Assert.Equal(HardwareMetricAvailability.ProviderUnavailable, metrics.TemperatureAvailability);
+        Assert.Contains("service", metrics.TemperatureReason, StringComparison.OrdinalIgnoreCase);
+    }
+
     private sealed class EmptyLibreHost : ILibreHardwareComputerHost
     {
         public IReadOnlyList<HardwareSensorSnapshot> CurrentSensors { get; } = [];
         public LibreHardwareHostDiagnosticStatus DiagnosticStatus { get; } =
             new(true, false, null, null, []);
+        public void Refresh() { }
+        public void Dispose() { }
+    }
+
+    private sealed class UnavailableHardwareServiceHost :
+        ILibreHardwareComputerHost,
+        IHardwareServiceDiagnosticsProvider
+    {
+        public IReadOnlyList<HardwareSensorSnapshot> CurrentSensors { get; } = [];
+        public LibreHardwareHostDiagnosticStatus DiagnosticStatus { get; } =
+            new(false, false, "hardware service unavailable", null, []);
+        public HardwareServiceDiagnosticStatus ServiceStatus { get; } = new(
+            HardwareServiceAvailability.ServiceUnavailable,
+            new PawnIoStatus(false, null),
+            null,
+            "hardware service unavailable");
         public void Refresh() { }
         public void Dispose() { }
     }

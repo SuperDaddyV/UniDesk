@@ -22,6 +22,7 @@ public partial class SearchViewModel : ObservableObject, IDisposable
     private readonly ILocalizationService _localizationService;
     private readonly Func<SearchResultItem, Task> _activateResult;
     private readonly Debouncer _debouncer = new(TimeSpan.FromMilliseconds(250));
+    private CancellationTokenSource? _searchCts;
     private int _searchVersion;
     private bool _disposed;
 
@@ -64,6 +65,7 @@ public partial class SearchViewModel : ObservableObject, IDisposable
     {
         IsOpen = false;
         _debouncer.Cancel();
+        CancelCurrentSearch();
     }
 
     [RelayCommand]
@@ -92,6 +94,7 @@ public partial class SearchViewModel : ObservableObject, IDisposable
             StatusText = L("Search.Prompt");
             IsSearching = false;
             _debouncer.Cancel();
+            CancelCurrentSearch();
             return;
         }
 
@@ -109,11 +112,16 @@ public partial class SearchViewModel : ObservableObject, IDisposable
         }
 
         var version = ++_searchVersion;
+        var cancellationSource = new CancellationTokenSource();
+        var previousSource = Interlocked.Exchange(ref _searchCts, cancellationSource);
+        previousSource?.Cancel();
         IsSearching = true;
         StatusText = L("Search.Searching");
         try
         {
-            var results = await _searchService.SearchAsync(query);
+            var results = await _searchService.SearchAsync(
+                query,
+                cancellationToken: cancellationSource.Token);
             if (version != _searchVersion)
             {
                 return;
@@ -131,6 +139,9 @@ public partial class SearchViewModel : ObservableObject, IDisposable
 
             StatusText = Groups.Count == 0 ? L("Search.Empty") : string.Empty;
         }
+        catch (OperationCanceledException) when (cancellationSource.IsCancellationRequested)
+        {
+        }
         catch (Exception ex)
         {
             Logger.LogError(ex, "SearchViewModel.SearchNowAsync");
@@ -142,6 +153,8 @@ public partial class SearchViewModel : ObservableObject, IDisposable
         }
         finally
         {
+            Interlocked.CompareExchange(ref _searchCts, null, cancellationSource);
+            cancellationSource.Dispose();
             if (version == _searchVersion)
             {
                 IsSearching = false;
@@ -161,10 +174,16 @@ public partial class SearchViewModel : ObservableObject, IDisposable
 
     private string L(string key) => _localizationService.GetString(key);
 
+    private void CancelCurrentSearch()
+    {
+        Interlocked.Exchange(ref _searchCts, null)?.Cancel();
+    }
+
     public void Dispose()
     {
         _disposed = true;
         _searchVersion++;
+        CancelCurrentSearch();
         _debouncer.Dispose();
     }
 }

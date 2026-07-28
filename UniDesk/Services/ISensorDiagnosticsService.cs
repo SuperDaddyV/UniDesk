@@ -17,4 +17,5 @@ public sealed record HardwareMetricsDiagnosticsSnapshot(
     LibreHardwareHostDiagnosticStatus LibreHardwareStatus,
     GpuEngineReaderDiagnosticStatus? GpuEngineStatus,
     IReadOnlyList<HardwareSensorSnapshot> Sensors,
-    IReadOnlyList<SystemMetricsSnapshot> RecentSnapshots);
+    IReadOnlyList<SystemMetricsSnapshot> RecentSnapshots,
+    HardwareServiceDiagnosticStatus? HardwareServiceStatus = null);
