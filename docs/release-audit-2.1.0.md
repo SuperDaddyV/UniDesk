@@ -52,6 +52,7 @@
 - 项目规范目标框架已从过期的 `.NET 9` 更新为 `.NET 10`。
 - 五份 README 已统一为同一个 Release 构建入口。
 - 新增公开的 `CODE_SIGNING_POLICY.md` 和双语 `PRIVACY.md`，五份 README 与发布说明均包含 SignPath Foundation 资助声明和政策入口。
+- 普通 CI 与签名工作流升级为 Node.js 24 运行时的 `actions/checkout@v6` 和 `actions/setup-dotnet@v5`，并新增回归测试阻止退回已弃用的 v4 Action。
 - 发布说明、人工矩阵和 SignPath 配置指南已同步，并新增 QWeather 来源署名人工检查项。
 - 原 `UniDesk_Final_Release_Audit.md` 已明确标记为 `v1.3.3` 历史归档，不再代表当前版本。
 
@@ -59,7 +60,7 @@
 
 | 项目 | 结果 |
 | --- | --- |
-| `dotnet test UniDesk.sln -c Release --no-restore` | `358/358` 通过 |
+| `dotnet test UniDesk.sln -c Release --no-restore` | `359/359` 通过 |
 | `dotnet build UniDesk.sln -c Release --no-restore` | 0 警告，0 错误 |
 | 线程回归测试重复执行 | `10/10` 通过 |
 | 版本一致性 | 通过，`2.1.0` |

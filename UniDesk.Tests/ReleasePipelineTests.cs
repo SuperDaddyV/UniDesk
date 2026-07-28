@@ -69,6 +69,24 @@ public class ReleasePipelineTests
     }
 
     [Fact]
+    public void GitHubWorkflows_ShouldUseNode24BasedOfficialActions()
+    {
+        foreach (var workflowName in new[] { "ci.yml", "release-signing.yml" })
+        {
+            var workflow = File.ReadAllText(Path.Combine(
+                ProjectRoot,
+                ".github",
+                "workflows",
+                workflowName));
+
+            Assert.Contains("actions/checkout@v6", workflow, StringComparison.Ordinal);
+            Assert.Contains("actions/setup-dotnet@v5", workflow, StringComparison.Ordinal);
+            Assert.DoesNotContain("actions/checkout@v4", workflow, StringComparison.Ordinal);
+            Assert.DoesNotContain("actions/setup-dotnet@v4", workflow, StringComparison.Ordinal);
+        }
+    }
+
+    [Fact]
     public void PublicReleaseDocumentation_ShouldDiscloseCodeSigningAndPrivacyPolicies()
     {
         const string sponsorship =

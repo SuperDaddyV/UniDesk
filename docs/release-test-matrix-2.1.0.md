@@ -58,11 +58,12 @@
 
 ## 2026-07-28 自动审核记录
 
-- 全量测试：`358/358` 通过，`0` 失败，`0` 跳过。
+- 全量测试：`359/359` 通过，`0` 失败，`0` 跳过。
 - Release 构建：`0` 警告，`0` 错误。
 - 线程回归测试连续运行 `10/10` 通过。
 - 服务注册参数测试覆盖 `sc.exe create` 和 `config`，两者的 `binPath=` 均要求完整双引号路径。
 - PowerShell 脚本语法、GitHub Actions YAML、版本一致性、NuGet 传递依赖漏洞和 `git diff --check` 均通过。
+- 普通 CI 与签名工作流均使用 Node.js 24 运行时的 `actions/checkout@v6` 和 `actions/setup-dotnet@v5`，避免已弃用的 Node.js 20 Action 警告。
 - `scripts/Build-Release.ps1` 已从当前源码完成一次独立端到端发布和 Inno Setup 编译；验证制品位于忽略的 `artifacts` 目录，因工作区未提交且制品未签名，不得公开发布。
 - 用户已在当前 Windows 11 设备确认剪贴板搜索、CPU／GPU／内存／网络读取、覆盖安装数据保留和最终 UI 交互；只读系统检查进一步确认 `UniDesk.exe` 为 Medium Integrity，`UniDeskHardwareService` 以 `LocalSystem`／Automatic 运行且 `PathName` 已由完整双引号包围，因此当前未签名安装的 I-09 和 I-13 通过。
 - 待完成：SignPath Foundation 审批与仓库变量配置、干净提交上的签名工作流、签名制品重新安装后的 I-09／I-13 复核，以及尚未覆盖的标准账户／Windows 10／取消 UAC／安全软件拦截／卸载场景。
