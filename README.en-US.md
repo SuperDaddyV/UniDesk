@@ -73,6 +73,12 @@ UniDesk is a lightweight, customizable, and clean Windows desktop sidebar that b
 
 ## 🖼️ Preview
 
+### Compact Dashboard
+
+Collapsed mode keeps the time, weather, hardware status, and next todo visible while UniDesk stays quietly on the desktop.
+
+![UniDesk compact dashboard](images/unidesk-compact-dashboard.png)
+
 ### Core Features
 
 ![UniDesk feature overview](images/unidesk-features.png)

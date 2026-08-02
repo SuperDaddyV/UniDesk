@@ -73,6 +73,12 @@ UniDesk 是一个轻量、个性化、清爽好用的 Windows 桌面侧边栏工
 
 ## 🖼️ 界面预览
 
+### 收缩仪表盘
+
+收缩后仍保留时间、天气、硬件状态和下一项待办，适合长时间常驻桌面。
+
+![UniDesk 收缩仪表盘](images/unidesk-compact-dashboard.png)
+
 ### 核心功能
 
 ![UniDesk 核心功能概览](images/unidesk-features.png)
