@@ -217,6 +217,83 @@ public class TodoBackupServiceTests
     }
 
     [Fact]
+    public async Task PrepareImportAsync_OversizedFile_ShouldRejectBeforeReading()
+    {
+        var (_, todoService, _, _, _, _, backupService) = await InitAsync();
+        await todoService.CreateTodoAsync(new TodoItem { Title = "保留的待办" });
+        await using (var stream = new FileStream(_backupFile, FileMode.Create, FileAccess.Write, FileShare.None))
+        {
+            stream.SetLength(25L * 1024 * 1024 + 1);
+        }
+
+        var exception = await Assert.ThrowsAsync<InvalidDataException>(
+            () => backupService.PrepareImportAsync(_backupFile));
+
+        Assert.Contains("25 MiB", exception.Message, StringComparison.Ordinal);
+        Assert.Equal("保留的待办", Assert.Single(await todoService.GetAllTodosAsync()).Title);
+        Cleanup();
+    }
+
+    [Fact]
+    public async Task PrepareImportAsync_TooManyTodos_ShouldRejectBeforePreview()
+    {
+        var (_, todoService, _, _, _, _, backupService) = await InitAsync();
+        await todoService.CreateTodoAsync(new TodoItem { Title = "保留的待办" });
+        var payload = new
+        {
+            version = 5,
+            exportedAt = DateTime.UtcNow,
+            todos = Enumerable.Range(0, 10_001).Select(index => new
+            {
+                title = $"待办 {index}",
+                isCompleted = false,
+                priority = 1,
+                createdAt = DateTime.UtcNow
+            })
+        };
+        await File.WriteAllTextAsync(_backupFile, JsonSerializer.Serialize(payload));
+
+        var exception = await Assert.ThrowsAsync<InvalidDataException>(
+            () => backupService.PrepareImportAsync(_backupFile));
+
+        Assert.Contains("Todos", exception.Message, StringComparison.Ordinal);
+        Assert.Contains("10000", exception.Message, StringComparison.Ordinal);
+        Assert.Equal("保留的待办", Assert.Single(await todoService.GetAllTodosAsync()).Title);
+        Cleanup();
+    }
+
+    [Fact]
+    public async Task PrepareImportAsync_OverlongField_ShouldRejectBeforePreview()
+    {
+        var (_, todoService, _, _, _, _, backupService) = await InitAsync();
+        await todoService.CreateTodoAsync(new TodoItem { Title = "保留的待办" });
+        var payload = new
+        {
+            version = 5,
+            exportedAt = DateTime.UtcNow,
+            todos = new[]
+            {
+                new
+                {
+                    title = new string('x', 4097),
+                    isCompleted = false,
+                    priority = 1,
+                    createdAt = DateTime.UtcNow
+                }
+            }
+        };
+        await File.WriteAllTextAsync(_backupFile, JsonSerializer.Serialize(payload));
+
+        var exception = await Assert.ThrowsAsync<InvalidDataException>(
+            () => backupService.PrepareImportAsync(_backupFile));
+
+        Assert.Contains("Todos[0].Title", exception.Message, StringComparison.Ordinal);
+        Assert.Contains("4096", exception.Message, StringComparison.Ordinal);
+        Assert.Equal("保留的待办", Assert.Single(await todoService.GetAllTodosAsync()).Title);
+        Cleanup();
+    }
+
+    [Fact]
     public async Task ImportFromFileAsync_InsertFailure_ShouldRollbackSettingsAndTodos()
     {
         var (db, todoService, _, _, _, settingsService, backupService) = await InitAsync();

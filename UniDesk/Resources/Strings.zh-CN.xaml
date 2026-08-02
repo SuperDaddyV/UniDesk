@@ -210,6 +210,7 @@
     <sys:String x:Key="Settings.MoveDown">下移</sys:String>
     <sys:String x:Key="Settings.QuickTextClipboard">快捷文本 / 剪贴板</sys:String>
     <sys:String x:Key="Settings.EnableClipboardHistory">启用剪贴板历史</sys:String>
+    <sys:String x:Key="Settings.ClipboardHistoryPrivacyHint">全新安装默认开启。历史仅保存在本机；可在此关闭，或前往「数据与备份」清理。</sys:String>
     <sys:String x:Key="Settings.FilterSensitive">自动过滤敏感内容</sys:String>
     <sys:String x:Key="Settings.MaxSavedCount">最大保存数量</sys:String>
     <sys:String x:Key="Settings.CurrentCountFormat">当前：{0} 条</sys:String>
@@ -245,6 +246,8 @@
     <sys:String x:Key="Settings.CityHint">输入城市或区县，例如“北京”“浦东”；国外请输入具体城市名，例如“Tokyo”，不要只填国家名。</sys:String>
     <sys:String x:Key="Settings.AutoLocation">自动定位</sys:String>
     <sys:String x:Key="Settings.AutoLocationPrivacyHint">启用后向 Windows 请求设备位置，并将经纬度发送到已配置的和风天气 HTTPS API 以查询城市；开启自动定位会清空手动城市，手动输入城市会关闭自动定位。</sys:String>
+    <sys:String x:Key="Settings.OpenLocationSettings">打开 Windows 位置设置</sys:String>
+    <sys:String x:Key="Settings.OpenLocationSettingsFailed">无法打开 Windows 位置设置，请手动前往系统设置调整定位权限。</sys:String>
     <sys:String x:Key="Settings.WeatherApi">天气 API 设置</sys:String>
     <sys:String x:Key="Settings.WeatherApiHint">API Host 与 API Key 需与和风控制台同一项目</sys:String>
     <sys:String x:Key="Settings.WeatherCredentialsRequired">API Host 与 API Key 必须同时填写或同时留空。</sys:String>

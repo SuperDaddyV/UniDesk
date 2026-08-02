@@ -26,9 +26,11 @@ public class HardwareMonitorViewModelTests
 
         Assert.Equal("42%", viewModel.SystemCpuUsageText);
         Assert.Equal("CPU 61℃", viewModel.SystemCpuTemperatureText);
+        Assert.Equal("61℃", viewModel.SystemCpuTemperatureValueText);
         Assert.Equal("76%", viewModel.SystemMemoryUsageText);
         Assert.Equal("34%", viewModel.SystemGpuUsageText);
         Assert.Equal("GPU 71℃", viewModel.SystemGpuTemperatureText);
+        Assert.Equal("71℃", viewModel.SystemGpuTemperatureValueText);
         Assert.Equal("2.0 MB/s", viewModel.SystemNetworkReceivedText);
         Assert.Equal("512 KB/s", viewModel.SystemNetworkSentText);
     }
@@ -43,9 +45,11 @@ public class HardwareMonitorViewModelTests
 
         Assert.Equal("--", viewModel.SystemCpuUsageText);
         Assert.Equal("CPU --℃", viewModel.SystemCpuTemperatureText);
+        Assert.Equal("--℃", viewModel.SystemCpuTemperatureValueText);
         Assert.Equal("--", viewModel.SystemMemoryUsageText);
         Assert.Equal("--", viewModel.SystemGpuUsageText);
         Assert.Equal("GPU --℃", viewModel.SystemGpuTemperatureText);
+        Assert.Equal("--℃", viewModel.SystemGpuTemperatureValueText);
         Assert.Equal("--", viewModel.SystemNetworkReceivedText);
         Assert.Equal("--", viewModel.SystemNetworkSentText);
     }

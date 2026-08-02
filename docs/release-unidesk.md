@@ -16,7 +16,7 @@ This release makes complete hardware monitoring installable without elevating th
 - Added a dedicated administrator-only repair helper with argument-safe service registration, stable exit codes, local logs, and a versioned IPC health check. The main app waits for repair completion and then refreshes the component state.
 - Added bounded service initialization retry, four parallel named-pipe accept loops, detailed service／driver／protocol diagnostics, and localized repair states.
 - Fixed global clipboard search to search DPAPI-decrypted content instead of encrypted database values; repeated searches now cancel older work and database search runs off the UI thread.
-- Added visible city and opt-in Windows automatic-location settings. Coordinates are sent only to the configured QWeather HTTPS API for city lookup; manual city remains the fallback, and legacy placeholder values are ignored.
+- Fresh installs now enable start-with-Windows and automatic weather location by default, while upgrades preserve existing choices. Coordinates are sent only to the configured QWeather HTTPS API for city lookup; manual city remains the fallback, legacy placeholder values are ignored, and Settings provides a direct Windows location-settings shortcut.
 - Treats a missing or invalid automatic-location setting as disabled, preventing an implicit Windows location request after incomplete or legacy settings.
 - Added a visible QWeather attribution link in both expanded and collapsed weather views, plus public code-signing and bilingual privacy policies for release transparency.
 - Restricted user weather hosts to dedicated HTTPS `*.qweatherapi.com` domains, requires Host and Key as a pair, validates changed credentials before saving, and excludes both values from backup and restore.
@@ -26,7 +26,8 @@ This release makes complete hardware monitoring installable without elevating th
 - Added a persistent single-selection highlight for the clipboard-history retention limit and redesigned the collapsed panel as a compact single-layer dashboard with focused actions and a dedicated todo status strip.
 - Grouped CPU usage, memory usage, CPU temperature, and GPU temperature into a compact unframed central summary. Manual city and automatic location are now mutually exclusive, and the visible city-format hint directs users to enter a city or district rather than only a country name.
 - Quoted the executable path stored for the `LocalSystem` hardware service, closing the unquoted-service-path risk in installation, upgrade, and repair flows.
-- Added clean-worktree release payload generation and a manual two-stage SignPath workflow that signs first-party EXE and managed-code DLL files before building and signing the installer; the workflow verifies source revision, versions, signatures, and SHA-256 values without publishing automatically.
+- Added clean-worktree release payload generation and a manual two-stage SignPath workflow that signs first-party EXE and managed-code DLL files before building and signing the installer; every action in the secret-bearing signing workflow is pinned to an immutable commit SHA, and the workflow verifies source revision, versions, signatures, and SHA-256 values without publishing automatically.
+- Restricted setup to Windows `10.0.18362` or newer, documented the fresh-install clipboard-history default directly in settings and the privacy policy, bounded backup import size, section counts, and field lengths, and aligned all four compact hardware rows to one label/value typography grid.
 
 ### 中文说明
 
@@ -34,7 +35,7 @@ This release makes complete hardware monitoring installable without elevating th
 - 新增独立的管理员权限修复助手，以参数数组安全注册服务，提供稳定退出码、本地日志和版本化 IPC 健康检查；主程序等待修复结束后刷新组件状态，且始终保持普通权限。
 - 硬件服务增加有上限的初始化重试、四路并发命名管道接收，以及服务／驱动／协议的细分诊断和本地化修复状态。
 - 修复全局剪贴板搜索：先解密 DPAPI 内容再匹配；新搜索会取消旧任务，数据库检索不再阻塞 UI 线程。
-- 常规设置新增可见城市输入和需用户主动开启的 Windows 自动定位；仅将经纬度发送到已配置的和风天气 HTTPS API 查询城市，手动城市仍作为兜底，并忽略旧版占位值。
+- 全新安装默认开启开机自启和 Windows 自动定位，覆盖安装与升级保留既有选择；经纬度仅发送到已配置的和风天气 HTTPS API 查询城市，手动城市仍作为兜底，旧版占位值会被忽略，设置页可直接打开 Windows 位置设置。
 - 自动定位设置缺失或无效时统一按关闭处理，避免旧数据缺项时隐式请求 Windows 位置权限。
 - 展开态和收缩态天气区域均新增可见的和风天气来源链接，并补充公开代码签名政策和双语隐私政策。
 - 用户天气 Host 仅允许 HTTPS 的 `*.qweatherapi.com` 专属域名；Host 与 Key 必须成对配置并在保存前验证，备份导出和恢复均排除两者。
@@ -44,7 +45,8 @@ This release makes complete hardware monitoring installable without elevating th
 - 剪贴板历史最大保存量增加持久单选高亮；收缩面板重做为单层玻璃迷你仪表盘，精简顶部操作，底部状态条专用于下一项待办。
 - CPU 使用率、内存使用率、CPU 温度和 GPU 温度集中到紧凑且无独立背景框的中部摘要；手动城市与自动定位双向互斥，并直接显示城市／区县及国外具体城市名的填写提示。
 - 安装、覆盖安装和修复流程写入 `LocalSystem` 硬件服务的可执行文件路径时统一保留双引号，消除未加引号服务路径风险。
-- 新增干净工作区发布载荷构建和手动两阶段 SignPath 流程：先签全部一方 EXE 和实际承载托管代码的 DLL，再构建并签署安装包；流程核验源码提交、版本、签名和 SHA-256，但不会自动公开发布。
+- 新增干净工作区发布载荷构建和手动两阶段 SignPath 流程：先签全部一方 EXE 和实际承载托管代码的 DLL，再构建并签署安装包；含密钥的签名工作流全部 Action 固定到不可变 commit SHA，流程核验源码提交、版本、签名和 SHA-256，但不会自动公开发布。
+- 安装器明确限制为 Windows `10.0.18362` 或更高版本；设置页与隐私政策直接披露全新安装默认开启剪贴板历史；备份导入增加文件大小、分区条数和字段长度上限；收缩态四行硬件指标统一为同一套标签／数值排版。
 
 ### Installer integrity / 安装包校验
 

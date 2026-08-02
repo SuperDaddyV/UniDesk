@@ -17,10 +17,10 @@ jobs:
     if: github.repository == 'SuperDaddyV/UniDesk' && github.ref == 'refs/heads/main'
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           fetch-depth: 0
-      - uses: actions/setup-dotnet@v5
+      - uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5
         with:
           dotnet-version: 10.0.x
       - name: Validate SignPath configuration
@@ -67,13 +67,13 @@ jobs:
           -NoRestore
       - name: Upload unsigned payload
         id: upload-unsigned-payload
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: unsigned-payload
           path: ${{ runner.temp }}\unsigned-payload\*
           if-no-files-found: error
       - name: Sign application payload
-        uses: signpath/github-action-submit-signing-request@v2
+        uses: signpath/github-action-submit-signing-request@b9d91eadd323de506c0c81cf0c7fe7438f3360fd # v2
         with:
           api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
           organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
@@ -93,13 +93,13 @@ jobs:
           -RequireSignedPayload
       - name: Upload unsigned installer
         id: upload-unsigned-installer
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: unsigned-installer
           path: ${{ runner.temp }}\unsigned-installer\UniDesk_Setup_${{ inputs.version }}.exe
           if-no-files-found: error
       - name: Sign installer
-        uses: signpath/github-action-submit-signing-request@v2
+        uses: signpath/github-action-submit-signing-request@b9d91eadd323de506c0c81cf0c7fe7438f3360fd # v2
         with:
           api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
           organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
@@ -122,7 +122,7 @@ jobs:
           -ExpectedVersion '${{ inputs.version }}'
           -ManifestOutputPath '${{ runner.temp }}\release-manifest.json'
       - name: Upload verified release candidate
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: UniDesk-${{ inputs.version }}-${{ github.sha }}
           path: |

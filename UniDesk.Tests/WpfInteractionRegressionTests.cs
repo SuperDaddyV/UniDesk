@@ -250,6 +250,7 @@ public class WpfInteractionRegressionTests
             desktopXaml,
             StringComparison.Ordinal);
         Assert.Contains("GlassChipListBoxItemStyle", desktopXaml, StringComparison.Ordinal);
+        Assert.Contains("Settings.ClipboardHistoryPrivacyHint", desktopXaml, StringComparison.Ordinal);
         Assert.Contains("x:Key=\"GlassChipListBoxItemStyle\"", sharedTheme, StringComparison.Ordinal);
         Assert.Contains("<Trigger Property=\"IsSelected\" Value=\"True\">", sharedTheme, StringComparison.Ordinal);
         Assert.DoesNotContain("SelectClipboardHistoryLimitCommand", desktopXaml, StringComparison.Ordinal);
@@ -274,17 +275,44 @@ public class WpfInteractionRegressionTests
 
         Assert.Contains("x:Name=\"CompactStatusStrip\"", timeWeatherXaml, StringComparison.Ordinal);
         Assert.Contains("x:Name=\"CompactHardwareSummary\"", timeWeatherXaml, StringComparison.Ordinal);
+        Assert.Contains("<Setter Property=\"Width\" Value=\"56\"/>", timeWeatherXaml, StringComparison.Ordinal);
         var hardwareSummary = Regex.Match(
             timeWeatherXaml,
             "<Border x:Name=\"CompactHardwareSummary\"[\\s\\S]*?</Border>");
         Assert.True(hardwareSummary.Success);
         Assert.DoesNotContain("Background=", hardwareSummary.Value, StringComparison.Ordinal);
-        Assert.Contains("Orientation=\"Horizontal\"", hardwareSummary.Value, StringComparison.Ordinal);
-        Assert.DoesNotContain("HorizontalAlignment=\"Right\"", hardwareSummary.Value, StringComparison.Ordinal);
+        Assert.Contains("x:Key=\"CompactHardwareLabelStyle\"", hardwareSummary.Value, StringComparison.Ordinal);
+        Assert.Contains("x:Key=\"CompactHardwareValueStyle\"", hardwareSummary.Value, StringComparison.Ordinal);
+        Assert.Equal(
+            4,
+            hardwareSummary.Value.Split(
+                "Style=\"{StaticResource CompactHardwareLabelStyle}\"",
+                StringSplitOptions.None).Length - 1);
+        Assert.Equal(
+            4,
+            hardwareSummary.Value.Split(
+                "Style=\"{StaticResource CompactHardwareValueStyle}\"",
+                StringSplitOptions.None).Length - 1);
+        Assert.Contains("<Grid.ColumnDefinitions>", hardwareSummary.Value, StringComparison.Ordinal);
+        Assert.Contains("Width=\"52\"", hardwareSummary.Value, StringComparison.Ordinal);
+        Assert.Contains("<ColumnDefinition Width=\"22\"/>", hardwareSummary.Value, StringComparison.Ordinal);
+        Assert.Contains("<ColumnDefinition Width=\"Auto\"/>", hardwareSummary.Value, StringComparison.Ordinal);
+        Assert.Contains("<Setter Property=\"HorizontalAlignment\" Value=\"Left\"/>", hardwareSummary.Value, StringComparison.Ordinal);
+        Assert.Contains("<Setter Property=\"Margin\" Value=\"3,0,0,0\"/>", hardwareSummary.Value, StringComparison.Ordinal);
+        Assert.DoesNotContain("<Setter Property=\"HorizontalAlignment\" Value=\"Right\"/>", hardwareSummary.Value, StringComparison.Ordinal);
         Assert.Contains("HardwareMonitor.SystemCpuUsageText", hardwareSummary.Value, StringComparison.Ordinal);
-        Assert.Contains("HardwareMonitor.SystemCpuTemperatureText", hardwareSummary.Value, StringComparison.Ordinal);
-        Assert.Contains("HardwareMonitor.SystemGpuTemperatureText", hardwareSummary.Value, StringComparison.Ordinal);
+        Assert.Contains("HardwareMonitor.SystemCpuTemperatureValueText", hardwareSummary.Value, StringComparison.Ordinal);
+        Assert.Contains("HardwareMonitor.SystemGpuTemperatureValueText", hardwareSummary.Value, StringComparison.Ordinal);
         Assert.Contains("HardwareMonitor.SystemMemoryUsageText", hardwareSummary.Value, StringComparison.Ordinal);
+
+        var weatherSummary = Regex.Match(
+            timeWeatherXaml,
+            "<Grid x:Name=\"WeatherSummary\"[\\s\\S]*?x:Name=\"QWeatherAttributionLink\"[\\s\\S]*?</Grid>");
+        Assert.True(weatherSummary.Success);
+        Assert.Contains("ClipToBounds=\"True\"", weatherSummary.Value, StringComparison.Ordinal);
+        Assert.Contains("<Setter Property=\"Margin\" Value=\"6,0,0,0\"/>", weatherSummary.Value, StringComparison.Ordinal);
+        Assert.Contains("x:Name=\"WeatherLocationStrip\"", weatherSummary.Value, StringComparison.Ordinal);
+        Assert.Contains("TextTrimming=\"CharacterEllipsis\"", weatherSummary.Value, StringComparison.Ordinal);
 
         var statusStrip = Regex.Match(
             timeWeatherXaml,

@@ -289,6 +289,27 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     private void ToggleWeatherApiEdit() => IsEditingWeatherApi = !IsEditingWeatherApi;
 
     [RelayCommand]
+    private void OpenLocationSettings()
+    {
+        try
+        {
+            var process = Process.Start(new ProcessStartInfo("ms-settings:privacy-location")
+            {
+                UseShellExecute = true
+            });
+            if (process == null)
+            {
+                _notificationService.ShowWarningMessage(L("Settings.OpenLocationSettingsFailed"));
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "SettingsViewModel.OpenLocationSettings");
+            _notificationService.ShowWarningMessage(L("Settings.OpenLocationSettingsFailed"));
+        }
+    }
+
+    [RelayCommand]
     private void SelectShortcutLimit(string? limitText)
     {
         if (!int.TryParse(limitText, NumberStyles.Integer, CultureInfo.InvariantCulture, out var limit)
@@ -720,14 +741,14 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         FollowSystemTheme = false;
         ColorSchemeLight = AppColorSchemeCatalog.DefaultSchemeId;
         ColorSchemeDark = "DarkGrey";
-        StartupEnabled = false;
+        StartupEnabled = true;
         WindowOpacity = 0.70;
         PanelWidth = 320;
         PanelHeight = 702;
         FontScale = 1.0;
         DisplayTitle = "UniDesk";
         City = "";
-        AutoLocation = false;
+        AutoLocation = true;
         WeatherApiKey = "";
         WeatherApiHost = "";
         IsEditingWeatherApi = false;

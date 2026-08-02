@@ -1,6 +1,6 @@
 # UniDesk Privacy Policy
 
-Last updated: 2026-07-28
+Last updated: 2026-08-02
 
 This program will not transfer any information to other networked systems unless specifically requested by the user or the person installing or operating it.
 
@@ -8,7 +8,7 @@ UniDesk is a local-first Windows desktop application. It has no user account sys
 
 ## Information stored locally
 
-UniDesk stores settings, shortcuts, todos, quick notes, quick text, optional clipboard history, cached weather, icon cache, and application logs under `%LOCALAPPDATA%\UniDesk`. Hardware-component maintenance writes a local diagnostic log under `%ProgramData%\UniDesk\logs`.
+UniDesk stores settings, shortcuts, todos, quick notes, quick text, clipboard history, cached weather, icon cache, and application logs under `%LOCALAPPDATA%\UniDesk`. Clipboard history is enabled by default for fresh installations; upgrades preserve the existing choice. Its content stays on this device, and users can disable it under **Settings > Desktop Experience** or clear it under **Settings > Data & Backup**. Hardware-component maintenance writes a local diagnostic log under `%ProgramData%\UniDesk\logs`.
 
 Weather API credentials and clipboard-history content are protected at rest with Windows Data Protection API for the current Windows user. Clipboard sensitive-content filtering reduces accidental collection but cannot guarantee that every secret is detected. Users handling sensitive content should disable clipboard history or clear it after use.
 
@@ -18,13 +18,13 @@ Local backups exclude weather API credentials. Clipboard history is excluded by 
 
 ### Weather and manual city lookup
 
-The time-and-weather module is enabled by default. While that module is enabled and valid weather credentials are available, UniDesk refreshes weather when the module starts, approximately every 30 minutes, after relevant settings change, or when the user manually refreshes it. UniDesk sends the configured manual city name to the active QWeather HTTPS API. If the user explicitly enables automatic location, UniDesk instead asks Windows for device coordinates and sends those coordinates to the QWeather HTTPS API to resolve a city and retrieve weather data. UniDesk does not send clipboard history, notes, todos, shortcuts, or hardware readings with a weather request. Disabling the time-and-weather module stops its periodic refresh.
+The time-and-weather module and automatic location are enabled by default for fresh installations; upgrades preserve the existing choice. While that module is enabled and valid weather credentials are available, UniDesk refreshes weather when the module starts, approximately every 30 minutes, after relevant settings change, or when the user manually refreshes it. UniDesk sends the configured manual city name to the active QWeather HTTPS API. When automatic location is enabled, UniDesk instead asks Windows for device coordinates and sends those coordinates to the QWeather HTTPS API to resolve a city and retrieve weather data. UniDesk does not send clipboard history, notes, todos, shortcuts, or hardware readings with a weather request. Users can disable automatic location in settings; disabling the time-and-weather module stops its periodic refresh.
 
 QWeather processes these requests under the [QWeather Privacy Policy](https://www.qweather.com/terms/privacy).
 
 ### Windows location
 
-Automatic location is off unless the user enables it. Windows controls location permission and may process location according to the [Microsoft Privacy Statement](https://www.microsoft.com/en-us/privacy/privacystatement). Enabling automatic location clears the manually entered city; manually entering a city disables automatic location.
+Automatic location is enabled by default for fresh installations and can be disabled in settings; upgrades do not overwrite the existing choice. Windows controls location permission and may process location according to the [Microsoft Privacy Statement](https://www.microsoft.com/en-us/privacy/privacystatement). UniDesk cannot bypass or enable Windows location permission. Enabling automatic location clears the manually entered city; manually entering a city disables automatic location.
 
 ### Update checks
 
@@ -46,7 +46,7 @@ Privacy questions and defect reports can be submitted through [GitHub Issues](ht
 
 # UniDesk 隐私政策
 
-最后更新：2026-07-28
+最后更新：2026-08-02
 
 除非用户或安装、运行本程序的人明确请求，否则本程序不会向其他联网系统传输任何信息。
 
@@ -54,7 +54,7 @@ UniDesk 是一款本地优先的 Windows 桌面应用，不提供用户账户、
 
 ## 本地存储的信息
 
-UniDesk 将设置、快捷方式、待办事项、快速便签、快捷文本、可选剪贴板历史、天气缓存、图标缓存和应用日志存储在 `%LOCALAPPDATA%\UniDesk`。硬件组件维护日志存储在 `%ProgramData%\UniDesk\logs`。
+UniDesk 将设置、快捷方式、待办事项、快速便签、快捷文本、剪贴板历史、天气缓存、图标缓存和应用日志存储在 `%LOCALAPPDATA%\UniDesk`。全新安装默认启用剪贴板历史，覆盖安装和升级保留原有选择；历史正文只保存在本机，用户可在「设置 > 桌面体验」中关闭，并在「设置 > 数据与备份」中清理。硬件组件维护日志存储在 `%ProgramData%\UniDesk\logs`。
 
 天气 API 凭据和剪贴板历史正文使用 Windows 当前用户范围的 DPAPI 保护。剪贴板敏感内容过滤只能降低误存风险，无法保证识别全部秘密；处理敏感内容时应关闭剪贴板历史或及时清理。
 
@@ -64,13 +64,13 @@ UniDesk 将设置、快捷方式、待办事项、快速便签、快捷文本、
 
 ### 天气与手动城市查询
 
-时间天气模块默认启用。模块启用且存在有效天气凭据时，UniDesk 会在模块启动、约每 30 分钟、相关设置变更后或用户手动刷新时请求天气。应用会将已配置的手动城市名称发送到当前有效的和风天气 HTTPS API；用户明确启用自动定位后，应用会改为向 Windows 请求设备坐标，再将坐标发送到和风天气 HTTPS API，用于解析城市并获取天气。天气请求不会附带剪贴板历史、便签、待办事项、快捷方式或硬件读数。关闭时间天气模块会停止其定时刷新。
+时间天气模块默认启用。全新安装默认启用自动定位；覆盖安装和升级保留用户原有选择。模块启用且存在有效天气凭据时，UniDesk 会在模块启动、约每 30 分钟、相关设置变更后或用户手动刷新时请求天气。应用会将已配置的手动城市名称发送到当前有效的和风天气 HTTPS API；自动定位启用时，应用会改为向 Windows 请求设备坐标，再将坐标发送到和风天气 HTTPS API，用于解析城市并获取天气。天气请求不会附带剪贴板历史、便签、待办事项、快捷方式或硬件读数。用户可在设置中关闭自动定位，关闭时间天气模块会停止其定时刷新。
 
 和风天气按照其[隐私政策](https://www.qweather.com/terms/privacy)处理这些请求。
 
 ### Windows 定位
 
-自动定位只有在用户开启后才生效。定位权限由 Windows 管理，Windows 可能按照 [Microsoft 隐私声明](https://www.microsoft.com/en-us/privacy/privacystatement)处理位置。开启自动定位会清除手动城市；手动输入城市会关闭自动定位。
+全新安装默认开启自动定位，用户可随时在设置中关闭；覆盖安装和升级不会改写原有选择。定位权限由 Windows 管理，Windows 可能按照 [Microsoft 隐私声明](https://www.microsoft.com/en-us/privacy/privacystatement)处理位置，UniDesk 不能自行绕过或开启系统定位权限。开启自动定位会清除手动城市；手动输入城市会关闭自动定位。
 
 ### 更新检查
 

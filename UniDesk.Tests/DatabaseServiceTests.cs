@@ -341,6 +341,44 @@ public class DatabaseServiceTests
     }
 
     [Fact]
+    public async Task InitializeAsync_ShouldEnableStartupAndAutoLocationForNewDatabase()
+    {
+        var databaseService = GetService();
+        await databaseService.InitializeAsync();
+
+        var startup = await databaseService.QuerySingleAsync<string>(
+            "SELECT Value FROM Settings WHERE Key = 'Startup'",
+            reader => reader.GetString(0));
+        var autoLocation = await databaseService.QuerySingleAsync<string>(
+            "SELECT Value FROM Settings WHERE Key = 'AutoLocation'",
+            reader => reader.GetString(0));
+
+        Assert.Equal("true", startup);
+        Assert.Equal("true", autoLocation);
+
+        Cleanup();
+    }
+
+    [Fact]
+    public async Task InitializeAsync_ShouldPreserveExistingStartupAndAutoLocationChoices()
+    {
+        var databaseService = GetService();
+        await databaseService.InitializeAsync();
+        await databaseService.ExecuteNonQueryAsync(
+            "UPDATE Settings SET Value = @p0 WHERE Key IN ('Startup', 'AutoLocation')",
+            "false");
+
+        await databaseService.InitializeAsync();
+
+        var values = await databaseService.QueryAsync<string>(
+            "SELECT Value FROM Settings WHERE Key IN ('Startup', 'AutoLocation') ORDER BY Key",
+            reader => reader.GetString(0));
+        Assert.Equal(["false", "false"], values);
+
+        Cleanup();
+    }
+
+    [Fact]
     public async Task InitializeAsync_ShouldSetDatabaseVersion()
     {
         var databaseService = GetService();
