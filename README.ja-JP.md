@@ -73,6 +73,12 @@ UniDesk は、Windows デスクトップの端に常駐する軽量でカスタ�
 
 ## 🖼️ プレビュー
 
+### コンパクトダッシュボード
+
+折りたたみ後も時刻、天気、ハードウェア状態、次の ToDo を確認でき、デスクトップに常駐させても邪魔になりません。
+
+![UniDesk コンパクトダッシュボード](images/unidesk-compact-dashboard.png)
+
 ### 主要機能
 
 ![UniDesk 主要機能の概要](images/unidesk-features.png)

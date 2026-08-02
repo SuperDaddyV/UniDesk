@@ -73,6 +73,12 @@ UniDesk es una barra lateral ligera, personalizable y limpia para el escritorio 
 
 ## 🖼️ Vista previa
 
+### Panel compacto
+
+Al contraerse, UniDesk mantiene visibles la hora, el clima, el estado del hardware y la próxima tarea sin ocupar demasiado espacio en el escritorio.
+
+![Panel compacto de UniDesk](images/unidesk-compact-dashboard.png)
+
 ### Funciones principales
 
 ![Resumen de funciones de UniDesk](images/unidesk-features.png)
