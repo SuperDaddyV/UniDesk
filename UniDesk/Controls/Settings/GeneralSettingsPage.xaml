@@ -64,6 +64,11 @@
                 <TextBlock Text="{DynamicResource Settings.AutoLocationPrivacyHint}"
                            Foreground="{DynamicResource SecondaryTextBrush}"
                            TextWrapping="Wrap"/>
+                <Button Content="{DynamicResource Settings.OpenLocationSettings}"
+                        Style="{StaticResource GlassSecondaryButtonStyle}"
+                        HorizontalAlignment="Left"
+                        Margin="0,10,0,0"
+                        Command="{Binding OpenLocationSettingsCommand}"/>
             </StackPanel>
         </Border>
 

@@ -210,6 +210,7 @@
     <sys:String x:Key="Settings.MoveDown">Move down</sys:String>
     <sys:String x:Key="Settings.QuickTextClipboard">Quick Text / Clipboard</sys:String>
     <sys:String x:Key="Settings.EnableClipboardHistory">Enable clipboard history</sys:String>
+    <sys:String x:Key="Settings.ClipboardHistoryPrivacyHint">Enabled by default on fresh installs. History stays on this device; turn it off here or clear it under Data &amp; Backup.</sys:String>
     <sys:String x:Key="Settings.FilterSensitive">Filter sensitive content</sys:String>
     <sys:String x:Key="Settings.MaxSavedCount">Max saved items</sys:String>
     <sys:String x:Key="Settings.CurrentCountFormat">Current: {0}</sys:String>
@@ -245,6 +246,8 @@
     <sys:String x:Key="Settings.CityHint">Enter a city or district, such as London or Pudong. Enter a specific city rather than only a country name.</sys:String>
     <sys:String x:Key="Settings.AutoLocation">Automatic location</sys:String>
     <sys:String x:Key="Settings.AutoLocationPrivacyHint">When enabled, UniDesk requests device location from Windows and sends coordinates to the configured QWeather HTTPS API to resolve the city. Enabling it clears the manual city; entering a city manually turns it off.</sys:String>
+    <sys:String x:Key="Settings.OpenLocationSettings">Open Windows location settings</sys:String>
+    <sys:String x:Key="Settings.OpenLocationSettingsFailed">Windows location settings could not be opened. Open Windows Settings and adjust location access manually.</sys:String>
     <sys:String x:Key="Settings.WeatherApi">Weather API</sys:String>
     <sys:String x:Key="Settings.WeatherApiHint">API Host and API Key must belong to the same QWeather project</sys:String>
     <sys:String x:Key="Settings.WeatherCredentialsRequired">API Host and API Key must both be filled in or both be blank.</sys:String>

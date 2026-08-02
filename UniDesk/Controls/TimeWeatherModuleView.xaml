@@ -46,7 +46,7 @@
                             <Setter Property="Width" Value="0"/>
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding DataContext.IsPanelCollapsed, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
-                                    <Setter Property="Width" Value="72"/>
+                                    <Setter Property="Width" Value="56"/>
                                 </DataTrigger>
                             </Style.Triggers>
                         </Style>
@@ -123,7 +123,7 @@
             <Border x:Name="CompactHardwareSummary"
                     Grid.Row="0"
                     Grid.Column="1"
-                    Width="66"
+                    Width="52"
                     VerticalAlignment="Center"
                     HorizontalAlignment="Center">
                 <Border.Style>
@@ -136,55 +136,73 @@
                         </Style.Triggers>
                     </Style>
                 </Border.Style>
-                <StackPanel HorizontalAlignment="Center">
-                    <StackPanel Orientation="Horizontal"
-                                HorizontalAlignment="Center"
-                                Margin="0,0,0,3">
-                        <TextBlock Text="CPU"
-                                   FontSize="8"
-                                   Foreground="{DynamicResource SecondaryTextBrush}"
-                                   VerticalAlignment="Center"
-                                   Margin="0,0,4,0"/>
-                        <TextBlock Text="{Binding DataContext.HardwareMonitor.SystemCpuUsageText, RelativeSource={RelativeSource AncestorType=Window}}"
-                                   FontSize="9"
-                                   FontWeight="SemiBold"
-                                   Foreground="{DynamicResource PrimaryTextBrush}"
-                                   VerticalAlignment="Center"/>
-                    </StackPanel>
-                    <StackPanel Orientation="Horizontal"
-                                HorizontalAlignment="Center"
-                                Margin="0,0,0,3">
-                        <TextBlock Text="MEM"
-                                   FontSize="8"
-                                   Foreground="{DynamicResource SecondaryTextBrush}"
-                                   VerticalAlignment="Center"
-                                   Margin="0,0,4,0"/>
-                        <TextBlock Text="{Binding DataContext.HardwareMonitor.SystemMemoryUsageText, RelativeSource={RelativeSource AncestorType=Window}}"
-                                   FontSize="9"
-                                   FontWeight="SemiBold"
-                                   Foreground="{DynamicResource PrimaryTextBrush}"
-                                   VerticalAlignment="Center"/>
-                    </StackPanel>
-                    <TextBlock Text="{Binding DataContext.HardwareMonitor.SystemCpuTemperatureText, RelativeSource={RelativeSource AncestorType=Window}}"
-                               FontSize="9"
-                               FontWeight="SemiBold"
-                               Foreground="{DynamicResource SecondaryTextBrush}"
-                               HorizontalAlignment="Center"/>
-                    <TextBlock Text="{Binding DataContext.HardwareMonitor.SystemGpuTemperatureText, RelativeSource={RelativeSource AncestorType=Window}}"
-                               Margin="0,2,0,0"
-                               FontSize="9"
-                               FontWeight="SemiBold"
-                               Foreground="{DynamicResource SecondaryTextBrush}"
-                               HorizontalAlignment="Center"/>
-                </StackPanel>
+                <Border.Resources>
+                    <Style x:Key="CompactHardwareLabelStyle" TargetType="TextBlock">
+                        <Setter Property="FontSize" Value="8"/>
+                        <Setter Property="FontWeight" Value="Normal"/>
+                        <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}"/>
+                        <Setter Property="VerticalAlignment" Value="Center"/>
+                    </Style>
+                    <Style x:Key="CompactHardwareValueStyle" TargetType="TextBlock">
+                        <Setter Property="FontSize" Value="9"/>
+                        <Setter Property="FontWeight" Value="SemiBold"/>
+                        <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
+                        <Setter Property="HorizontalAlignment" Value="Left"/>
+                        <Setter Property="VerticalAlignment" Value="Center"/>
+                        <Setter Property="Margin" Value="3,0,0,0"/>
+                        <Setter Property="Typography.NumeralAlignment" Value="Tabular"/>
+                    </Style>
+                </Border.Resources>
+                <Grid Width="52" HorizontalAlignment="Center">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="22"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="14"/>
+                        <RowDefinition Height="14"/>
+                        <RowDefinition Height="14"/>
+                        <RowDefinition Height="14"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Grid.Row="0" Grid.Column="0" Text="CPU" Style="{StaticResource CompactHardwareLabelStyle}"/>
+                    <TextBlock Grid.Row="0" Grid.Column="1"
+                               Text="{Binding DataContext.HardwareMonitor.SystemCpuUsageText, RelativeSource={RelativeSource AncestorType=Window}}"
+                               ToolTip="{Binding DataContext.HardwareMonitor.SystemCpuUsageToolTip, RelativeSource={RelativeSource AncestorType=Window}}"
+                               Style="{StaticResource CompactHardwareValueStyle}"/>
+                    <TextBlock Grid.Row="1" Grid.Column="0" Text="MEM" Style="{StaticResource CompactHardwareLabelStyle}"/>
+                    <TextBlock Grid.Row="1" Grid.Column="1"
+                               Text="{Binding DataContext.HardwareMonitor.SystemMemoryUsageText, RelativeSource={RelativeSource AncestorType=Window}}"
+                               Style="{StaticResource CompactHardwareValueStyle}"/>
+                    <TextBlock Grid.Row="2" Grid.Column="0" Text="CPU" Style="{StaticResource CompactHardwareLabelStyle}"/>
+                    <TextBlock Grid.Row="2" Grid.Column="1"
+                               Text="{Binding DataContext.HardwareMonitor.SystemCpuTemperatureValueText, RelativeSource={RelativeSource AncestorType=Window}}"
+                               ToolTip="{Binding DataContext.HardwareMonitor.SystemCpuTemperatureToolTip, RelativeSource={RelativeSource AncestorType=Window}}"
+                               Style="{StaticResource CompactHardwareValueStyle}"/>
+                    <TextBlock Grid.Row="3" Grid.Column="0" Text="GPU" Style="{StaticResource CompactHardwareLabelStyle}"/>
+                    <TextBlock Grid.Row="3" Grid.Column="1"
+                               Text="{Binding DataContext.HardwareMonitor.SystemGpuTemperatureValueText, RelativeSource={RelativeSource AncestorType=Window}}"
+                               ToolTip="{Binding DataContext.HardwareMonitor.SystemGpuTemperatureToolTip, RelativeSource={RelativeSource AncestorType=Window}}"
+                               Style="{StaticResource CompactHardwareValueStyle}"/>
+                </Grid>
             </Border>
     
-            <Grid Grid.Column="2"
+            <Grid x:Name="WeatherSummary"
+                  Grid.Column="2"
                   Grid.Row="0"
                   VerticalAlignment="Center"
                   HorizontalAlignment="Stretch"
-                  Margin="0,0,0,0"
                   ClipToBounds="True">
+                <Grid.Style>
+                    <Style TargetType="Grid">
+                        <Setter Property="Margin" Value="0"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding DataContext.IsPanelCollapsed, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
+                                <Setter Property="Margin" Value="6,0,0,0"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Grid.Style>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
@@ -299,12 +317,12 @@
                     </TextBlock.Style>
                 </TextBlock>
     
-                <StackPanel Grid.Row="2"
-                            Orientation="Horizontal"
-                            HorizontalAlignment="Right"
-                            Margin="0,6,0,0">
-                    <StackPanel.Style>
-                        <Style TargetType="StackPanel">
+                <Grid x:Name="WeatherLocationStrip"
+                      Grid.Row="2"
+                      Margin="0,6,0,0"
+                      ClipToBounds="True">
+                    <Grid.Style>
+                        <Style TargetType="Grid">
                             <Setter Property="Visibility" Value="Visible"/>
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding DataContext.IsPanelCollapsed, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
@@ -312,36 +330,45 @@
                                 </DataTrigger>
                             </Style.Triggers>
                         </Style>
-                    </StackPanel.Style>
-                    <TextBlock Text="&#xE707;"
+                    </Grid.Style>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0"
+                               Text="&#xE707;"
                                FontFamily="Segoe MDL2 Assets"
                                FontSize="11"
                                Foreground="{DynamicResource SecondaryTextBrush}"
                                VerticalAlignment="Center"
-                               Margin="0,0,8,0"/>
-                    <TextBlock Text="{Binding WeatherCity}"
-                               TextWrapping="Wrap"
+                               Margin="0,0,5,0"/>
+                    <TextBlock Grid.Column="1"
+                               Text="{Binding WeatherCity}"
+                               TextWrapping="NoWrap"
+                               TextTrimming="CharacterEllipsis"
                                TextAlignment="Right">
                         <TextBlock.Style>
                             <Style TargetType="TextBlock" BasedOn="{StaticResource SecondaryTextStyle}">
                                 <Setter Property="FontSize" Value="{Binding DataContext.FontScale, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource ScaledFontSizeConverter}, ConverterParameter=11}"/>
-                                <Setter Property="MaxWidth" Value="70"/>
                                 <Style.Triggers>
                                     <DataTrigger Binding="{Binding DataContext.IsPanelCollapsed, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
                                         <Setter Property="FontSize" Value="9"/>
-                                        <Setter Property="MaxWidth" Value="52"/>
                                     </DataTrigger>
                                 </Style.Triggers>
                             </Style>
                         </TextBlock.Style>
                     </TextBlock>
-                    <TextBlock Text=" | "
+                    <TextBlock Grid.Column="2"
+                               Text=" | "
                                Style="{StaticResource SecondaryTextStyle}"
                                FontSize="11"
-                               Margin="7,0"
+                               Margin="4,0"
                                VerticalAlignment="Center"
                                Visibility="{Binding WeatherRangeLine, Converter={StaticResource StringNotEmptyToVisibilityConverter}}"/>
-                    <TextBlock Text="{Binding WeatherRangeLine}"
+                    <TextBlock Grid.Column="3"
+                               Text="{Binding WeatherRangeLine}"
                                VerticalAlignment="Center"
                                TextAlignment="Right"
                                Visibility="{Binding WeatherRangeLine, Converter={StaticResource StringNotEmptyToVisibilityConverter}}">
@@ -356,12 +383,15 @@
                             </Style>
                         </TextBlock.Style>
                     </TextBlock>
-                </StackPanel>
+                </Grid>
 
                 <TextBlock Grid.Row="3"
-                           HorizontalAlignment="Right"
+                           HorizontalAlignment="Stretch"
                            Margin="0,2,0,0"
                            FontSize="8"
+                           TextAlignment="Right"
+                           TextWrapping="NoWrap"
+                           TextTrimming="CharacterEllipsis"
                            Foreground="{DynamicResource SecondaryTextBrush}">
                     <Hyperlink x:Name="QWeatherAttributionLink"
                                NavigateUri="https://www.qweather.com"

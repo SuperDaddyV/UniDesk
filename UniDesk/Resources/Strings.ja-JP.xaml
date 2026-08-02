@@ -210,6 +210,7 @@
     <sys:String x:Key="Settings.MoveDown">下へ</sys:String>
     <sys:String x:Key="Settings.QuickTextClipboard">クイックテキスト / クリップボード</sys:String>
     <sys:String x:Key="Settings.EnableClipboardHistory">クリップボード履歴を有効化</sys:String>
+    <sys:String x:Key="Settings.ClipboardHistoryPrivacyHint">新規インストールでは既定で有効です。履歴はこのデバイスにのみ保存され、ここで無効化するか「データとバックアップ」で消去できます。</sys:String>
     <sys:String x:Key="Settings.FilterSensitive">機密内容を自動フィルター</sys:String>
     <sys:String x:Key="Settings.MaxSavedCount">最大保存数</sys:String>
     <sys:String x:Key="Settings.CurrentCountFormat">現在：{0}</sys:String>
@@ -245,6 +246,8 @@
     <sys:String x:Key="Settings.CityHint">都市または区・県名を入力してください（例：東京、浦東）。国名だけでなく、具体的な都市名を入力してください。</sys:String>
     <sys:String x:Key="Settings.AutoLocation">自動位置情報</sys:String>
     <sys:String x:Key="Settings.AutoLocationPrivacyHint">有効にすると Windows に端末の位置情報を要求し、都市の検索のため経緯度を設定済みの QWeather HTTPS API に送信します。有効化すると手動都市が消去され、都市を手動入力すると自動位置情報はオフになります。</sys:String>
+    <sys:String x:Key="Settings.OpenLocationSettings">Windows の位置情報設定を開く</sys:String>
+    <sys:String x:Key="Settings.OpenLocationSettingsFailed">Windows の位置情報設定を開けませんでした。Windows 設定から位置情報へのアクセスを手動で変更してください。</sys:String>
     <sys:String x:Key="Settings.WeatherApi">天気 API</sys:String>
     <sys:String x:Key="Settings.WeatherApiHint">API Host と API Key は同じ QWeather プロジェクトのものを使用してください</sys:String>
     <sys:String x:Key="Settings.WeatherCredentialsRequired">API Host と API Key は両方入力するか、両方空欄にしてください。</sys:String>

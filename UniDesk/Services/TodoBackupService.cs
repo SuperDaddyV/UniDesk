@@ -12,6 +12,14 @@ namespace UniDesk.Services;
 public class TodoBackupService : ITodoBackupService
 {
     private const int CurrentBackupVersion = 5;
+    private const long MaxBackupFileSizeBytes = 25L * 1024 * 1024;
+    private const int MaxSettingsCount = 1_000;
+    private const int MaxEntriesPerSection = 10_000;
+    private const int MaxIncludedSectionsCount = 32;
+    private const int MaxSettingKeyLength = 256;
+    private const int MaxShortFieldLength = 4_096;
+    private const int MaxPathFieldLength = 32_768;
+    private const int MaxContentFieldLength = 1_048_576;
     private readonly ITodoService _todoService;
     private readonly IQuickNoteService _quickNoteService;
     private readonly IQuickTextService _quickTextService;
@@ -124,6 +132,12 @@ public class TodoBackupService : ITodoBackupService
 
     public async Task<BackupImportPlan> PrepareImportAsync(string filePath)
     {
+        var fileInfo = new FileInfo(filePath);
+        if (fileInfo.Length > MaxBackupFileSizeBytes)
+        {
+            throw new InvalidDataException("备份文件超过 25 MiB 上限。");
+        }
+
         var json = await File.ReadAllTextAsync(filePath, Utf8NoBom);
         var payload = JsonSerializer.Deserialize<TodoBackupFile>(json, JsonOptions)
                       ?? throw new InvalidDataException("备份文件格式无效。");
@@ -366,9 +380,96 @@ public class TodoBackupService : ITodoBackupService
             throw new InvalidDataException("备份文件中没有可还原的数据。");
         }
 
-        if (payload.Settings != null && payload.Settings.Keys.Any(string.IsNullOrWhiteSpace))
+        ValidateEntryCount(payload.IncludedSections, "IncludedSections", MaxIncludedSectionsCount);
+        if (payload.IncludedSections != null)
         {
-            throw new InvalidDataException("Settings 包含空白 key。");
+            for (var index = 0; index < payload.IncludedSections.Count; index++)
+            {
+                ValidateFieldLength(
+                    payload.IncludedSections[index],
+                    $"IncludedSections[{index}]",
+                    MaxShortFieldLength);
+            }
+        }
+
+        if (payload.Settings != null)
+        {
+            if (payload.Settings.Count > MaxSettingsCount)
+            {
+                throw new InvalidDataException(
+                    $"Settings 包含 {payload.Settings.Count} 条，最多允许 {MaxSettingsCount} 条。");
+            }
+
+            foreach (var (key, value) in payload.Settings)
+            {
+                if (string.IsNullOrWhiteSpace(key))
+                {
+                    throw new InvalidDataException("Settings 包含空白 key。");
+                }
+
+                ValidateFieldLength(key, $"Settings[{key}].Key", MaxSettingKeyLength);
+                ValidateFieldLength(value, $"Settings[{key}].Value", MaxContentFieldLength);
+            }
+        }
+
+        ValidateEntryCount(payload.Shortcuts, "Shortcuts", MaxEntriesPerSection);
+        ValidateEntryCount(payload.Todos, "Todos", MaxEntriesPerSection);
+        ValidateEntryCount(payload.QuickNotes, "QuickNotes", MaxEntriesPerSection);
+        ValidateEntryCount(payload.ClipboardHistory, "ClipboardHistory", MaxEntriesPerSection);
+        ValidateEntryCount(payload.TextSnippets, "TextSnippets", MaxEntriesPerSection);
+
+        if (payload.Shortcuts != null)
+        {
+            for (var index = 0; index < payload.Shortcuts.Count; index++)
+            {
+                var entry = payload.Shortcuts[index];
+                ValidateFieldLength(entry.Name, $"Shortcuts[{index}].Name", MaxShortFieldLength);
+                ValidateFieldLength(entry.Path, $"Shortcuts[{index}].Path", MaxPathFieldLength);
+                ValidateFieldLength(
+                    entry.LaunchArguments,
+                    $"Shortcuts[{index}].LaunchArguments",
+                    MaxPathFieldLength);
+            }
+        }
+
+        if (payload.Todos != null)
+        {
+            for (var index = 0; index < payload.Todos.Count; index++)
+            {
+                ValidateFieldLength(payload.Todos[index].Title, $"Todos[{index}].Title", MaxShortFieldLength);
+            }
+        }
+
+        if (payload.QuickNotes != null)
+        {
+            for (var index = 0; index < payload.QuickNotes.Count; index++)
+            {
+                var entry = payload.QuickNotes[index];
+                ValidateFieldLength(entry.Title, $"QuickNotes[{index}].Title", MaxShortFieldLength);
+                ValidateFieldLength(entry.Content, $"QuickNotes[{index}].Content", MaxContentFieldLength);
+            }
+        }
+
+        if (payload.ClipboardHistory != null)
+        {
+            for (var index = 0; index < payload.ClipboardHistory.Count; index++)
+            {
+                ValidateFieldLength(
+                    payload.ClipboardHistory[index].Content,
+                    $"ClipboardHistory[{index}].Content",
+                    MaxContentFieldLength);
+            }
+        }
+
+        if (payload.TextSnippets != null)
+        {
+            for (var index = 0; index < payload.TextSnippets.Count; index++)
+            {
+                var entry = payload.TextSnippets[index];
+                ValidateFieldLength(entry.Title, $"TextSnippets[{index}].Title", MaxShortFieldLength);
+                ValidateFieldLength(entry.Content, $"TextSnippets[{index}].Content", MaxContentFieldLength);
+                ValidateFieldLength(entry.Category, $"TextSnippets[{index}].Category", MaxShortFieldLength);
+            }
         }
 
         ValidateEntries(
@@ -391,6 +492,23 @@ public class TodoBackupService : ITodoBackupService
             payload.TextSnippets,
             "TextSnippets",
             entry => !string.IsNullOrWhiteSpace(entry.Content));
+    }
+
+    private static void ValidateEntryCount<T>(IReadOnlyCollection<T>? entries, string section, int maximum)
+    {
+        if (entries != null && entries.Count > maximum)
+        {
+            throw new InvalidDataException(
+                $"{section} 包含 {entries.Count} 条，最多允许 {maximum} 条。");
+        }
+    }
+
+    private static void ValidateFieldLength(string? value, string field, int maximum)
+    {
+        if (value?.Length > maximum)
+        {
+            throw new InvalidDataException($"{field} 超过 {maximum} 个字符上限。");
+        }
     }
 
     private static void ValidateEntries<T>(

@@ -11,6 +11,11 @@
                                Foreground="{DynamicResource PrimaryTextBrush}" VerticalAlignment="Center"/>
                     <CheckBox HorizontalAlignment="Right" IsChecked="{Binding ClipboardHistoryEnabled}"/>
                 </Grid>
+                <TextBlock Text="{DynamicResource Settings.ClipboardHistoryPrivacyHint}"
+                           Foreground="{DynamicResource SecondaryTextBrush}"
+                           FontSize="11"
+                           TextWrapping="Wrap"
+                           Margin="0,0,0,4"/>
                 <Grid Style="{StaticResource GlassToggleRowStyle}">
                     <TextBlock Text="{DynamicResource Settings.FilterSensitive}"
                                Foreground="{DynamicResource PrimaryTextBrush}" VerticalAlignment="Center"/>

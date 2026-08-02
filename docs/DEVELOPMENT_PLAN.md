@@ -317,7 +317,7 @@
   - [ ] Theme = "System"
   - [ ] WindowOpacity = "0.85"
   - [ ] TopMost = "true"
-  - [ ] Startup = "false"
+  - [ ] Startup = "true"（仅全新安装；升级保留既有值）
   - [ ] AutoLocation = "true"
   - [ ] City = "" (empty, 使用自动定位)
   - [ ] PanelWidth = "360"

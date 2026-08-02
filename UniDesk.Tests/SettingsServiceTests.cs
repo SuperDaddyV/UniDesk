@@ -118,7 +118,22 @@ public class SettingsServiceTests
         
         var autoLocation = await settingsService.GetSettingAsync("AutoLocation");
         
-        Assert.Equal("false", autoLocation);
+        Assert.Equal("true", autoLocation);
+
+        Cleanup();
+    }
+
+    [Fact]
+    public async Task GetSetting_ShouldReturnDefaultStartup()
+    {
+        var databaseService = GetDb();
+        var settingsService = new SettingsService(databaseService);
+
+        await settingsService.InitializeAsync();
+
+        var startup = await settingsService.GetSettingAsync("Startup");
+
+        Assert.Equal("true", startup);
         
         Cleanup();
     }

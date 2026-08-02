@@ -2,6 +2,11 @@ namespace UniDesk.Tests;
 
 public class ReleasePipelineTests
 {
+    private const string CheckoutV6Commit = "d23441a48e516b6c34aea4fa41551a30e30af803";
+    private const string SetupDotnetV5Commit = "26b0ec14cb23fa6904739307f278c14f94c95bf1";
+    private const string UploadArtifactV7Commit = "043fb46d1a93c77aae656e7c1c64a875d1fc6a0a";
+    private const string SignPathV2Commit = "b9d91eadd323de506c0c81cf0c7fe7438f3360fd";
+
     private static readonly string ProjectRoot = Path.GetFullPath(Path.Combine(
         AppContext.BaseDirectory,
         "..",
@@ -64,26 +69,36 @@ public class ReleasePipelineTests
         Assert.Contains("HardwareRepair/UniDesk.HardwareRepair.dll", signPathSetup, StringComparison.Ordinal);
         Assert.Equal(
             2,
-            workflow.Split("signpath/github-action-submit-signing-request@v2", StringSplitOptions.None).Length - 1);
+            workflow.Split(
+                $"signpath/github-action-submit-signing-request@{SignPathV2Commit} # v2",
+                StringSplitOptions.None).Length - 1);
         Assert.DoesNotContain("gh release create", workflow, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
     public void GitHubWorkflows_ShouldUseNode24BasedOfficialActions()
     {
-        foreach (var workflowName in new[] { "ci.yml", "release-signing.yml" })
-        {
-            var workflow = File.ReadAllText(Path.Combine(
-                ProjectRoot,
-                ".github",
-                "workflows",
-                workflowName));
+        var ciWorkflow = File.ReadAllText(Path.Combine(
+            ProjectRoot,
+            ".github",
+            "workflows",
+            "ci.yml"));
+        var signingWorkflow = File.ReadAllText(Path.Combine(
+            ProjectRoot,
+            ".github",
+            "workflows",
+            "release-signing.yml"));
 
-            Assert.Contains("actions/checkout@v6", workflow, StringComparison.Ordinal);
-            Assert.Contains("actions/setup-dotnet@v5", workflow, StringComparison.Ordinal);
-            Assert.DoesNotContain("actions/checkout@v4", workflow, StringComparison.Ordinal);
-            Assert.DoesNotContain("actions/setup-dotnet@v4", workflow, StringComparison.Ordinal);
-        }
+        Assert.Contains("actions/checkout@v6", ciWorkflow, StringComparison.Ordinal);
+        Assert.Contains("actions/setup-dotnet@v5", ciWorkflow, StringComparison.Ordinal);
+        Assert.Contains($"actions/checkout@{CheckoutV6Commit} # v6", signingWorkflow, StringComparison.Ordinal);
+        Assert.Contains($"actions/setup-dotnet@{SetupDotnetV5Commit} # v5", signingWorkflow, StringComparison.Ordinal);
+        Assert.Contains($"actions/upload-artifact@{UploadArtifactV7Commit} # v7", signingWorkflow, StringComparison.Ordinal);
+        Assert.Contains($"signpath/github-action-submit-signing-request@{SignPathV2Commit} # v2", signingWorkflow, StringComparison.Ordinal);
+        Assert.DoesNotContain("uses: actions/checkout@v6", signingWorkflow, StringComparison.Ordinal);
+        Assert.DoesNotContain("uses: actions/setup-dotnet@v5", signingWorkflow, StringComparison.Ordinal);
+        Assert.DoesNotContain("uses: actions/upload-artifact@v7", signingWorkflow, StringComparison.Ordinal);
+        Assert.DoesNotContain("uses: signpath/github-action-submit-signing-request@v2", signingWorkflow, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -108,6 +123,8 @@ public class ReleasePipelineTests
         Assert.Contains("https://www.qweather.com/terms/privacy", privacyPolicy, StringComparison.Ordinal);
         Assert.Contains("https://www.microsoft.com/en-us/privacy/privacystatement", privacyPolicy, StringComparison.Ordinal);
         Assert.Contains("https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement", privacyPolicy, StringComparison.Ordinal);
+        Assert.Contains("Clipboard history is enabled by default for fresh installations", privacyPolicy, StringComparison.Ordinal);
+        Assert.Contains("全新安装默认启用剪贴板历史", privacyPolicy, StringComparison.Ordinal);
 
         foreach (var entryPoint in new[]
                  {

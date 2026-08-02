@@ -23,6 +23,7 @@ public class InstallerHardwareComponentTests
             line.StartsWith("Name: \"completehardware\"", StringComparison.Ordinal));
 
         Assert.Contains("PrivilegesRequired=admin", script, StringComparison.Ordinal);
+        Assert.Contains("MinVersion=10.0.18362", script, StringComparison.Ordinal);
         Assert.Contains("ArchitecturesAllowed=x64os", script, StringComparison.Ordinal);
         Assert.Contains("ArchitecturesInstallIn64BitMode=x64os", script, StringComparison.Ordinal);
         Assert.DoesNotContain("x64compatible", script, StringComparison.OrdinalIgnoreCase);

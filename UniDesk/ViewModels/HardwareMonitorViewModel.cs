@@ -16,7 +16,10 @@ public partial class HardwareMonitorViewModel : ObservableObject, IDisposable
     private string _systemCpuUsageText = "--";
 
     [ObservableProperty]
-    private string _systemCpuTemperatureText = "CPU --";
+    private string _systemCpuTemperatureText = "CPU --℃";
+
+    [ObservableProperty]
+    private string _systemCpuTemperatureValueText = "--℃";
 
     [ObservableProperty]
     private string _systemMemoryUsageText = "--";
@@ -25,7 +28,10 @@ public partial class HardwareMonitorViewModel : ObservableObject, IDisposable
     private string _systemGpuUsageText = "--";
 
     [ObservableProperty]
-    private string _systemGpuTemperatureText = "GPU --";
+    private string _systemGpuTemperatureText = "GPU --℃";
+
+    [ObservableProperty]
+    private string _systemGpuTemperatureValueText = "--℃";
 
     [ObservableProperty]
     private string _systemNetworkReceivedText = "--";
@@ -90,9 +96,11 @@ public partial class HardwareMonitorViewModel : ObservableObject, IDisposable
         _lastSnapshot = metrics;
         SystemCpuUsageText = FormatPercent(metrics.CpuUsage);
         SystemCpuTemperatureText = FormatTemperature("CPU", metrics.CpuTemperature);
+        SystemCpuTemperatureValueText = FormatTemperatureValue(metrics.CpuTemperature);
         SystemMemoryUsageText = FormatPercent(metrics.MemoryUsage);
         SystemGpuUsageText = FormatPercent(metrics.GpuUsage);
         SystemGpuTemperatureText = FormatTemperature("GPU", metrics.GpuTemperature);
+        SystemGpuTemperatureValueText = FormatTemperatureValue(metrics.GpuTemperature);
         SystemNetworkReceivedText = FormatSpeed(metrics.NetworkReceivedBytesPerSecond);
         SystemNetworkSentText = FormatSpeed(metrics.NetworkSentBytesPerSecond);
         SystemCpuUsageToolTip = BuildMetricToolTip(
@@ -159,7 +167,10 @@ public partial class HardwareMonitorViewModel : ObservableObject, IDisposable
     private static string FormatPercent(double? value) => value.HasValue ? $"{value.Value:0}%" : "--";
 
     private static string FormatTemperature(string label, double? value) =>
-        value.HasValue ? $"{label} {value.Value:0}℃" : $"{label} --℃";
+        $"{label} {FormatTemperatureValue(value)}";
+
+    private static string FormatTemperatureValue(double? value) =>
+        value.HasValue ? $"{value.Value:0}℃" : "--℃";
 
     private static string FormatSpeed(double? bytesPerSecond)
     {

@@ -89,9 +89,13 @@ public class SettingsHotkeyIntegrationTests
         Assert.Contains("Text=\"{Binding City, UpdateSourceTrigger=PropertyChanged}\"", xaml, StringComparison.Ordinal);
         Assert.Contains("Text=\"{DynamicResource Settings.CityHint}\"", xaml, StringComparison.Ordinal);
         Assert.Contains("IsChecked=\"{Binding AutoLocation}\"", xaml, StringComparison.Ordinal);
+        Assert.Contains("Command=\"{Binding OpenLocationSettingsCommand}\"", xaml, StringComparison.Ordinal);
         Assert.Contains("private string _city = string.Empty", viewModel, StringComparison.Ordinal);
         Assert.Contains("private bool _autoLocation", viewModel, StringComparison.Ordinal);
         Assert.Contains("_settingsService.SetValue(\"AutoLocation\"", viewModel, StringComparison.Ordinal);
+        Assert.Contains("ms-settings:privacy-location", viewModel, StringComparison.Ordinal);
+        Assert.Contains("StartupEnabled = true;", viewModel, StringComparison.Ordinal);
+        Assert.Contains("AutoLocation = true;", viewModel, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -115,6 +119,8 @@ public class SettingsHotkeyIntegrationTests
             "Settings.CityHint",
             "Settings.AutoLocation",
             "Settings.AutoLocationPrivacyHint",
+            "Settings.OpenLocationSettings",
+            "Settings.OpenLocationSettingsFailed",
             "Settings.WeatherCredentialsRequired",
             "Settings.WeatherApiHostInvalid"
         };
