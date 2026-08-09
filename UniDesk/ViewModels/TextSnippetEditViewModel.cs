@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using UniDesk.Helpers;
 using UniDesk.Models;
 using UniDesk.Services;
 
@@ -81,13 +82,21 @@ public partial class TextSnippetEditViewModel : ObservableObject
             LastUsedAt = _lastUsedAt
         };
 
-        if (_isNew)
+        try
         {
-            return await _quickTextService.CreateTextSnippetAsync(snippet) > 0;
-        }
+            if (_isNew)
+            {
+                return await _quickTextService.CreateTextSnippetAsync(snippet) > 0;
+            }
 
-        await _quickTextService.UpdateTextSnippetAsync(snippet);
-        return true;
+            await _quickTextService.UpdateTextSnippetAsync(snippet);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "TextSnippetEditViewModel.SaveAsync");
+            return false;
+        }
     }
 
     private string L(string key) => _localizationService.GetString(key);

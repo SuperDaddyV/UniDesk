@@ -5,6 +5,15 @@ namespace UniDesk.Tests;
 public class HardwareRepairTests
 {
     [Fact]
+    public void ServicePayloadVerifier_ShouldEnumerateEveryParentThroughTheVolumeRoot()
+    {
+        var ancestors = ServicePayloadSecurityVerifier.EnumerateAncestorDirectories(
+            @"C:\Program Files\UniDesk");
+
+        Assert.Equal([@"C:\Program Files", @"C:\"], ancestors);
+    }
+
+    [Fact]
     public void InstallOrRepair_ShouldRegisterQuotedServiceBinaryPath()
     {
         var processRunner = new RecordingProcessRunner();
@@ -54,7 +63,154 @@ public class HardwareRepairTests
             call.Arguments.SequenceEqual(["start", "PawnIO"]));
     }
 
-    private static HardwareMaintenanceRunner CreateRunner(IProcessRunner processRunner)
+    [Fact]
+    public void InstallOrRepair_WhenPayloadAclIsUnsafe_ShouldRefuseServiceRegistration()
+    {
+        var processRunner = new RecordingProcessRunner();
+        var runner = CreateRunner(
+            processRunner,
+            new StubPayloadSecurityVerifier(false, "ordinary user can replace service payload"));
+
+        var result = runner.InstallOrRepair();
+
+        Assert.Equal(HardwareRepairExitCode.ServicePayloadSecurityInvalid, result);
+        Assert.Empty(processRunner.Calls);
+    }
+
+    [Fact]
+    public void InstallOrRepair_WhenExistingServiceIsForeign_ShouldRefuseToStopOrReconfigureIt()
+    {
+        var processRunner = new RecordingProcessRunner();
+        var runner = CreateRunner(
+            processRunner,
+            serviceOwnershipVerifier: new StubServiceOwnershipVerifier(ServiceOwnershipStatus.Foreign));
+
+        var result = runner.InstallOrRepair();
+
+        Assert.Equal(HardwareRepairExitCode.ServiceOwnershipInvalid, result);
+        Assert.Empty(processRunner.Calls);
+    }
+
+    [Fact]
+    public void InstallOrRepair_WhenExistingServiceIsOwned_ShouldConfigureWithoutCreatingIt()
+    {
+        var processRunner = new RecordingProcessRunner();
+        var runner = CreateRunner(
+            processRunner,
+            serviceOwnershipVerifier: new StubServiceOwnershipVerifier(ServiceOwnershipStatus.Owned));
+
+        var result = runner.InstallOrRepair();
+
+        Assert.Equal(HardwareRepairExitCode.Success, result);
+        Assert.DoesNotContain(processRunner.Calls, call =>
+            call.Arguments.Count > 0 && call.Arguments[0] == "create");
+        Assert.Contains(processRunner.Calls, call =>
+            call.Arguments.Count > 0 && call.Arguments[0] == "config");
+    }
+
+    [Fact]
+    public void InstallOrRepair_WhenCreateRacesWithForeignService_ShouldNotReconfigureIt()
+    {
+        var processRunner = new RecordingProcessRunner(serviceCreateExitCode: 1073);
+        var runner = CreateRunner(
+            processRunner,
+            serviceOwnershipVerifier: new StubServiceOwnershipVerifier(
+                ServiceOwnershipStatus.Missing,
+                ServiceOwnershipStatus.Foreign));
+
+        var result = runner.InstallOrRepair();
+
+        Assert.Equal(HardwareRepairExitCode.ServiceOwnershipInvalid, result);
+        Assert.DoesNotContain(processRunner.Calls, call =>
+            call.Arguments.Count > 0 && call.Arguments[0] == "config");
+    }
+
+    [Fact]
+    public void RemoveService_WhenServiceIsForeign_ShouldNeverStopOrDelete()
+    {
+        var processRunner = new RecordingProcessRunner();
+        var runner = CreateRunner(
+            processRunner,
+            serviceOwnershipVerifier: new StubServiceOwnershipVerifier(ServiceOwnershipStatus.Foreign));
+
+        var result = runner.RemoveService();
+
+        Assert.Equal(HardwareRepairExitCode.ServiceOwnershipInvalid, result);
+        Assert.Empty(processRunner.Calls);
+    }
+
+    [Fact]
+    public void RemoveService_WhenServiceOwnershipCannotBeRead_ShouldNeverStopOrDelete()
+    {
+        var processRunner = new RecordingProcessRunner();
+        var runner = CreateRunner(
+            processRunner,
+            serviceOwnershipVerifier: new StubServiceOwnershipVerifier(ServiceOwnershipStatus.Unavailable));
+
+        var result = runner.RemoveService();
+
+        Assert.Equal(HardwareRepairExitCode.ServiceOwnershipInvalid, result);
+        Assert.Empty(processRunner.Calls);
+    }
+
+    [Fact]
+    public void RemoveService_WhenServiceIsMissing_ShouldSucceedWithoutScCalls()
+    {
+        var processRunner = new RecordingProcessRunner();
+        var runner = CreateRunner(
+            processRunner,
+            serviceOwnershipVerifier: new StubServiceOwnershipVerifier(ServiceOwnershipStatus.Missing));
+
+        var result = runner.RemoveService();
+
+        Assert.Equal(HardwareRepairExitCode.Success, result);
+        Assert.Empty(processRunner.Calls);
+    }
+
+    [Fact]
+    public void RemoveService_WhenOwned_ShouldDisableStopConfirmAndDelete()
+    {
+        var processRunner = new RecordingProcessRunner();
+        var runner = CreateRunner(
+            processRunner,
+            serviceOwnershipVerifier: new StubServiceOwnershipVerifier(ServiceOwnershipStatus.Owned));
+
+        var result = runner.RemoveService();
+
+        Assert.Equal(HardwareRepairExitCode.Success, result);
+        Assert.Contains(processRunner.Calls, call =>
+            call.Arguments.SequenceEqual(["config", "UniDeskHardwareService", "start=", "disabled"]));
+        Assert.Contains(processRunner.Calls, call =>
+            Path.GetFileName(call.FileName).Equals("taskkill.exe", StringComparison.OrdinalIgnoreCase) &&
+            call.Arguments.SequenceEqual(["/F", "/FI", "SERVICES eq UniDeskHardwareService"]));
+        Assert.Contains(processRunner.Calls, call =>
+            Path.GetFileName(call.FileName).Equals("powershell.exe", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(processRunner.Calls, call =>
+            call.Arguments.SequenceEqual(["delete", "UniDeskHardwareService"]));
+    }
+
+    [Fact]
+    public void RemoveService_WhenStopIsAcceptedButServiceNeverStops_ShouldFailWithoutDeleting()
+    {
+        var processRunner = new RecordingProcessRunner(
+            serviceStoppedQueryExitCodes: Enumerable.Repeat(1, 20).ToArray());
+        var runner = CreateRunner(
+            processRunner,
+            serviceOwnershipVerifier: new StubServiceOwnershipVerifier(ServiceOwnershipStatus.Owned),
+            delay: _ => { });
+
+        var result = runner.RemoveService();
+
+        Assert.Equal(HardwareRepairExitCode.ServiceRemoveFailed, result);
+        Assert.DoesNotContain(processRunner.Calls, call =>
+            call.Arguments.SequenceEqual(["delete", "UniDeskHardwareService"]));
+    }
+
+    private static HardwareMaintenanceRunner CreateRunner(
+        IProcessRunner processRunner,
+        IServicePayloadSecurityVerifier? payloadSecurityVerifier = null,
+        IServiceOwnershipVerifier? serviceOwnershipVerifier = null,
+        Action<TimeSpan>? delay = null)
     {
         var projectRoot = Path.GetFullPath(Path.Combine(
             AppContext.BaseDirectory,
@@ -70,13 +226,38 @@ public class HardwareRepairTests
             processRunner,
             new HardwareRepairLogger(Path.Combine(
                 Path.GetTempPath(),
-                $"UniDesk_hardware_repair_test_{Guid.NewGuid():N}.log")));
+                $"UniDesk_hardware_repair_test_{Guid.NewGuid():N}.log")),
+            payloadSecurityVerifier ?? new StubPayloadSecurityVerifier(true, "secure"),
+            serviceOwnershipVerifier ?? new StubServiceOwnershipVerifier(ServiceOwnershipStatus.Missing),
+            delay);
+    }
+
+    private sealed class StubServiceOwnershipVerifier(params ServiceOwnershipStatus[] statuses)
+        : IServiceOwnershipVerifier
+    {
+        private int _index;
+
+        public ServiceOwnershipVerificationResult Verify(string serviceName, string expectedBinaryPath)
+        {
+            var index = Math.Min(_index++, statuses.Length - 1);
+            return new(statuses[index], statuses[index].ToString());
+        }
+    }
+
+    private sealed class StubPayloadSecurityVerifier(bool isSecure, string reason)
+        : IServicePayloadSecurityVerifier
+    {
+        public ServicePayloadSecurityVerificationResult Verify(string serviceBinaryPath) =>
+            new(isSecure, reason);
     }
 
     private sealed class RecordingProcessRunner(
         int serviceCreateExitCode = 0,
-        int pawnIoQueryExitCode = 1060) : IProcessRunner
+        int pawnIoQueryExitCode = 1060,
+        IReadOnlyList<int>? serviceStoppedQueryExitCodes = null) : IProcessRunner
     {
+        private int _serviceStoppedQueryIndex;
+
         public List<ProcessCall> Calls { get; } = [];
 
         public ProcessExecutionResult Run(
@@ -86,13 +267,28 @@ public class HardwareRepairTests
         {
             var capturedArguments = arguments.ToArray();
             Calls.Add(new ProcessCall(fileName, capturedArguments));
-            var exitCode = capturedArguments switch
+            var exitCode = Path.GetFileName(fileName).Equals(
+                "powershell.exe",
+                StringComparison.OrdinalIgnoreCase)
+                ? GetServiceStoppedQueryExitCode()
+                : capturedArguments switch
             {
                 ["query", "PawnIO"] => pawnIoQueryExitCode,
                 ["create", ..] => serviceCreateExitCode,
                 _ => 0
             };
             return new ProcessExecutionResult(exitCode, string.Empty, string.Empty);
+        }
+
+        private int GetServiceStoppedQueryExitCode()
+        {
+            if (serviceStoppedQueryExitCodes == null || serviceStoppedQueryExitCodes.Count == 0)
+            {
+                return 0;
+            }
+
+            var index = Math.Min(_serviceStoppedQueryIndex++, serviceStoppedQueryExitCodes.Count - 1);
+            return serviceStoppedQueryExitCodes[index];
         }
     }
 

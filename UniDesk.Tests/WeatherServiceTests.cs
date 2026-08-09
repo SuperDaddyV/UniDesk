@@ -1,4 +1,5 @@
 using System.IO;
+using System.Net;
 using System.Text.Json;
 using UniDesk.Helpers;
 using UniDesk.Models;
@@ -87,6 +88,27 @@ public class WeatherServiceTests : IDisposable
         Assert.Null(cached);
     }
 
+    [Fact]
+    public async Task GetWeatherAsync_WhenHttpTransportFails_ShouldKeepNetworkUnavailableReason()
+    {
+        var settings = new InMemorySettingsService();
+        settings.SetValue("WeatherApiKey", "test-key");
+        settings.SetValue("WeatherApiHost", "test.qweatherapi.com");
+        using var client = new HttpClient(new ThrowingHttpHandler());
+        using var apiClient = new QWeatherApiClient(settings, client);
+        using var service = new WeatherService(
+            settings,
+            new NoOpNotificationService(),
+            new StubLocationProvider(),
+            apiClient,
+            _cachePath);
+
+        var result = await service.GetWeatherAsync("北京", notifyUser: false);
+
+        Assert.Null(result);
+        Assert.Equal(WeatherFailureReason.NetworkUnavailable, service.LastFailure);
+    }
+
     private WeatherService CreateWeatherService(InMemorySettingsService settings)
     {
         var notification = new NoOpNotificationService();
@@ -134,6 +156,12 @@ public class WeatherServiceTests : IDisposable
         public void InvalidateCache() => _values.Clear();
 
         public Task FlushPendingSavesAsync() => Task.CompletedTask;
+
+        public Task SaveBatchAsync(IReadOnlyDictionary<string, string?> values)
+        {
+            foreach (var (key, value) in values) _values[key] = value;
+            return Task.CompletedTask;
+        }
     }
 
     private sealed class NoOpNotificationService : INotificationService
@@ -157,5 +185,16 @@ public class WeatherServiceTests : IDisposable
 
         public Task<string?> ResolveCityAsync(CancellationToken cancellationToken = default)
             => Task.FromResult<string?>(null);
+    }
+
+    private sealed class ThrowingHttpHandler : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request,
+            CancellationToken cancellationToken) =>
+            Task.FromException<HttpResponseMessage>(new HttpRequestException(
+                "forced transport failure",
+                null,
+                HttpStatusCode.ServiceUnavailable));
     }
 }

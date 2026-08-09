@@ -4,8 +4,7 @@ namespace UniDesk.Tests;
 
 public class WpfInteractionRegressionTests
 {
-    private static readonly string ProjectRoot =
-        Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", ".."));
+    private static readonly string ProjectRoot = FindProjectRoot();
 
     [Fact]
     public void QuickNoteEditor_ShouldDeferCloseAndUseDoneLabel()
@@ -41,7 +40,7 @@ public class WpfInteractionRegressionTests
         Assert.Contains("Width=\"720\"", settingsXaml, StringComparison.Ordinal);
         Assert.Contains("Height=\"620\"", settingsXaml, StringComparison.Ordinal);
         Assert.Contains("MinWidth=\"680\"", settingsXaml, StringComparison.Ordinal);
-        Assert.Contains("MinHeight=\"560\"", settingsXaml, StringComparison.Ordinal);
+        Assert.Contains("MinHeight=\"420\"", settingsXaml, StringComparison.Ordinal);
         Assert.Contains("x:Name=\"SettingsNavigation\"", settingsXaml, StringComparison.Ordinal);
         Assert.Contains("x:Name=\"SettingsPages\"", settingsXaml, StringComparison.Ordinal);
         Assert.Equal(7, Regex.Matches(settingsXaml, "<TabItem").Count);
@@ -261,10 +260,21 @@ public class WpfInteractionRegressionTests
     {
         var mainXaml = ReadProjectFile("UniDesk", "MainWindow.xaml");
         var mainCode = ReadProjectFile("UniDesk", "MainWindow.xaml.cs");
+        var mainViewModelCode = ReadProjectFile("UniDesk", "ViewModels", "MainWindowViewModel.cs");
         var timeWeatherXaml = ReadProjectFile("UniDesk", "Controls", "TimeWeatherModuleView.xaml");
         var sharedTheme = ReadProjectFile("UniDesk", "Resources", "Themes", "Shared.xaml");
 
         Assert.Contains("private const double CollapsedPanelHeight = 178;", mainCode, StringComparison.Ordinal);
+        Assert.Contains("Element = (FrameworkElement?)TimeWeatherModule", mainCode, StringComparison.Ordinal);
+        Assert.DoesNotContain("modules.Take(1)", mainCode, StringComparison.Ordinal);
+        Assert.Contains(
+            "HardwareMonitor.IsEnabled = IsPanelCollapsed || IsModuleEnabled(DashboardModuleIds.HardwareMonitor)",
+            mainViewModelCode,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "TimeWeather.IsEnabled = IsPanelCollapsed || IsModuleEnabled(DashboardModuleIds.TimeWeather)",
+            mainViewModelCode,
+            StringComparison.Ordinal);
         Assert.Contains("x:Name=\"ExpandedHeaderActions\"", mainXaml, StringComparison.Ordinal);
         Assert.Contains("x:Name=\"CompactMoreButton\"", mainXaml, StringComparison.Ordinal);
         Assert.Contains("Click=\"CompactMoreButton_OnClick\"", mainXaml, StringComparison.Ordinal);
@@ -328,6 +338,168 @@ public class WpfInteractionRegressionTests
     }
 
     [Fact]
+    public void TransparentWindows_ShouldCapHeightToTheLogicalWorkArea()
+    {
+        var mainCode = ReadProjectFile("UniDesk", "MainWindow.xaml.cs");
+        var settingsCode = ReadProjectFile("UniDesk", "SettingsWindow.xaml.cs");
+        var mainViewModelCode = ReadProjectFile("UniDesk", "ViewModels", "MainWindowViewModel.cs");
+        var monitorCode = ReadProjectFile("UniDesk", "Helpers", "MonitorWorkAreaProvider.cs");
+
+        Assert.Contains("GetUsableWorkAreaHeight", mainCode, StringComparison.Ordinal);
+        Assert.Contains("workArea.Height - WorkAreaMargin", settingsCode, StringComparison.Ordinal);
+        Assert.Contains("Math.Max(MinimumCompactHeight", mainCode, StringComparison.Ordinal);
+        Assert.Contains("_monitorWorkAreas.GetForPixelPoint", mainCode, StringComparison.Ordinal);
+        Assert.Contains("_monitorWorkAreas.GetForWindow", mainCode, StringComparison.Ordinal);
+        Assert.Contains("_monitorWorkAreas.GetForWindow(targetHandle)", settingsCode, StringComparison.Ordinal);
+        Assert.Contains("MonitorWorkAreaGeometry.Clamp", settingsCode, StringComparison.Ordinal);
+        Assert.Contains("WindowStartupLocation.Manual", mainViewModelCode, StringComparison.Ordinal);
+        Assert.Contains("GetDpiForMonitor", monitorCode, StringComparison.Ordinal);
+        Assert.Contains("MonitorFromPoint", monitorCode, StringComparison.Ordinal);
+        Assert.Contains("MonitorFromRect", monitorCode, StringComparison.Ordinal);
+        Assert.DoesNotContain("SystemParameters.VirtualScreen", mainCode, StringComparison.Ordinal);
+        Assert.DoesNotContain("SystemParameters.WorkArea", settingsCode, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void MainApplicationManifest_ShouldDeclarePerMonitorV2DpiAwareness()
+    {
+        var manifest = ReadProjectFile("UniDesk", "app.manifest");
+
+        Assert.Contains(
+            "<dpiAware xmlns=\"http://schemas.microsoft.com/SMI/2005/WindowsSettings\">true/pm</dpiAware>",
+            manifest,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "<dpiAwareness xmlns=\"http://schemas.microsoft.com/SMI/2016/WindowsSettings\">PerMonitorV2,PerMonitor</dpiAwareness>",
+            manifest,
+            StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void WeatherCredentialFailures_ShouldUseLocalizedUiText()
+    {
+        var settingsCode = ReadProjectFile("UniDesk", "ViewModels", "SettingsViewModel.cs");
+        var failureBranch = Regex.Match(
+            settingsCode,
+            "if \\(!validation\\.IsValid\\)[\\s\\S]{0,600}?return;");
+
+        Assert.True(failureBranch.Success);
+        Assert.Contains("L(\"Settings.WeatherCredentialValidationFailed\")", failureBranch.Value, StringComparison.Ordinal);
+        Assert.Contains("Logger.LogWarning", failureBranch.Value, StringComparison.Ordinal);
+        Assert.DoesNotContain("ShowWarningMessage(validation.Message", failureBranch.Value, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void SettingsFailures_ShouldLogInternalDetailsAndShowLocalizedGenericText()
+    {
+        var settingsCode = ReadProjectFile("UniDesk", "ViewModels", "SettingsViewModel.cs");
+        var clearHistoryMethod = Regex.Match(
+            settingsCode,
+            "private async Task ClearClipboardHistoryFromSettingsAsync\\(\\)[\\s\\S]{0,1000}?\\n    }\\r?\\n\\r?\\n    \\[RelayCommand\\]");
+
+        Assert.True(clearHistoryMethod.Success);
+        Assert.Contains("Logger.LogError(ex, \"SettingsViewModel.ClearClipboardHistory\")", clearHistoryMethod.Value, StringComparison.Ordinal);
+        Assert.Contains("L(\"QuickText.ClearHistoryFailed\")", clearHistoryMethod.Value, StringComparison.Ordinal);
+        Assert.Contains("Logger.LogError(ex, \"SettingsViewModel.Save\")", settingsCode, StringComparison.Ordinal);
+        Assert.Contains("ShowErrorMessage(L(\"Settings.SaveFailed\"))", settingsCode, StringComparison.Ordinal);
+        Assert.DoesNotContain("Settings.SaveFailedFormat\", ex.Message", settingsCode, StringComparison.Ordinal);
+        Assert.DoesNotMatch(
+            "_localizationService\\.Format\\(\"Settings\\.[^\"]+\", ex\\.Message\\)",
+            settingsCode);
+
+        foreach (var languageFile in new[]
+                 {
+                     "Strings.zh-CN.xaml",
+                     "Strings.en-US.xaml",
+                     "Strings.ja-JP.xaml",
+                     "Strings.es-ES.xaml"
+                 })
+        {
+            var resources = ReadProjectFile("UniDesk", "Resources", languageFile);
+            foreach (var key in new[]
+                     {
+                         "Settings.SaveFailed",
+                         "Settings.BackupFailed",
+                         "Settings.RestoreFailed",
+                         "Settings.RestoreAppliedRefreshFailed",
+                         "Settings.ResetLayoutFailed",
+                         "Settings.HardwareDiagnosticsFailed",
+                         "Settings.OpenFailed",
+                         "Settings.ApplyAfterSaveFailed",
+                         "Settings.ClipboardTrimFailed",
+                         "QuickText.ClearHistoryFailed"
+                     })
+            {
+                Assert.Contains($"x:Key=\"{key}\"", resources, StringComparison.Ordinal);
+            }
+        }
+    }
+
+    [Fact]
+    public void SettingsSave_ShouldPersistOneAtomicBatchBeforeDerivedMaintenance()
+    {
+        var settingsCode = ReadProjectFile("UniDesk", "ViewModels", "SettingsViewModel.cs");
+        var saveMethod = Regex.Match(
+            settingsCode,
+            "private async Task Save\\(\\)[\\s\\S]*?RequestClose\\?\\.Invoke\\(this, true\\);[\\s\\S]*?\\n    }");
+
+        Assert.True(saveMethod.Success);
+        Assert.Contains("SaveBatchAsync(settingsBatch)", saveMethod.Value, StringComparison.Ordinal);
+        Assert.Contains("ApplyModuleSettings(savedModuleSettings!, persist: false)", saveMethod.Value, StringComparison.Ordinal);
+        Assert.True(
+            saveMethod.Value.IndexOf("SaveBatchAsync(settingsBatch)", StringComparison.Ordinal) <
+            saveMethod.Value.IndexOf("ApplyModuleSettings(savedModuleSettings!, persist: false)", StringComparison.Ordinal));
+        Assert.DoesNotContain("FlushPendingSavesAsync", saveMethod.Value, StringComparison.Ordinal);
+        Assert.DoesNotContain("ApplyModuleSettings(BuildModuleSettings(), persist: true)", saveMethod.Value, StringComparison.Ordinal);
+        Assert.DoesNotContain("SetCityAsync", saveMethod.Value, StringComparison.Ordinal);
+        Assert.DoesNotContain("TrimClipboardHistoryAsync", saveMethod.Value, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Restore_ShouldNotReportCommittedDataAsFailedWhenUiRefreshFails()
+    {
+        var settingsCode = ReadProjectFile("UniDesk", "ViewModels", "SettingsViewModel.cs");
+        var restoreMethod = Regex.Match(
+            settingsCode,
+            "private async Task RestoreTodosAsync\\(\\)[\\s\\S]*?\\n    }\\r?\\n\\r?\\n    \\[RelayCommand\\]");
+
+        Assert.True(restoreMethod.Success);
+        Assert.Contains("SettingsViewModel.Restore.ApplyImport", restoreMethod.Value, StringComparison.Ordinal);
+        Assert.Contains("SettingsViewModel.Restore.RefreshAfterCommit", restoreMethod.Value, StringComparison.Ordinal);
+        Assert.Contains("Settings.RestoreAppliedRefreshFailed", restoreMethod.Value, StringComparison.Ordinal);
+        Assert.True(
+            restoreMethod.Value.IndexOf("ApplyImportAsync", StringComparison.Ordinal) <
+            restoreMethod.Value.IndexOf("RefreshAfterCommit", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void WeatherRuntimeFailures_ShouldLogDetailsAndShowLocalizedGenericText()
+    {
+        var weatherCode = ReadProjectFile("UniDesk", "Services", "WeatherService.cs");
+
+        Assert.Contains("Logger.LogError(ex, \"WeatherService.GetWeather.Network\")", weatherCode, StringComparison.Ordinal);
+        Assert.Contains("L(\"Weather.NetworkRequestFailed\"", weatherCode, StringComparison.Ordinal);
+        Assert.Contains("Logger.LogError(ex, \"WeatherService.GetWeather.Unknown\")", weatherCode, StringComparison.Ordinal);
+        Assert.Contains("L(\"Weather.GetWeatherFailed\"", weatherCode, StringComparison.Ordinal);
+        Assert.DoesNotContain("Weather.NetworkRequestFailedFormat", weatherCode, StringComparison.Ordinal);
+        Assert.DoesNotContain("Weather.GetWeatherFailedFormat", weatherCode, StringComparison.Ordinal);
+
+        foreach (var languageFile in new[]
+                 {
+                     "Strings.zh-CN.xaml",
+                     "Strings.en-US.xaml",
+                     "Strings.ja-JP.xaml",
+                     "Strings.es-ES.xaml"
+                 })
+        {
+            var resources = ReadProjectFile("UniDesk", "Resources", languageFile);
+            Assert.Contains("x:Key=\"Weather.NetworkRequestFailed\"", resources, StringComparison.Ordinal);
+            Assert.Contains("x:Key=\"Weather.GetWeatherFailed\"", resources, StringComparison.Ordinal);
+            Assert.Contains("x:Key=\"Settings.WeatherApplyFailed\"", resources, StringComparison.Ordinal);
+        }
+    }
+
+    [Fact]
     public void WeatherPanel_ShouldExposeQWeatherAttributionInEveryDisplayModeAndLanguage()
     {
         var timeWeatherXaml = ReadProjectFile("UniDesk", "Controls", "TimeWeatherModuleView.xaml");
@@ -355,4 +527,20 @@ public class WpfInteractionRegressionTests
 
     private static string ReadProjectFile(params string[] segments) =>
         File.ReadAllText(Path.Combine([ProjectRoot, .. segments]));
+
+    private static string FindProjectRoot()
+    {
+        var directory = new DirectoryInfo(AppContext.BaseDirectory);
+        while (directory != null)
+        {
+            if (File.Exists(Path.Combine(directory.FullName, "UniDesk.sln")))
+            {
+                return directory.FullName;
+            }
+
+            directory = directory.Parent;
+        }
+
+        throw new DirectoryNotFoundException("Could not locate the UniDesk repository root.");
+    }
 }

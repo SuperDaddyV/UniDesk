@@ -104,7 +104,7 @@ UniDesk 适合希望桌面保持清爽，但又想快速查看信息、打开常
 
 从 [GitHub Releases](https://github.com/SuperDaddyV/UniDesk/releases/latest) 下载最新安装包并运行。
 
-当前正式安装包示例：
+仓库源码正在准备 `2.1.0`；可信签名和发布门禁完成前，请以 Releases 页的 `Latest` 标记为准。尚未公开发布的候选包文件名为：
 
 ```powershell
 UniDesk_Setup_2.1.0.exe
@@ -198,4 +198,4 @@ UniDesk 基于 [Happyeveryweek/LumiDesk](https://github.com/Happyeveryweek/LumiD
 
 ## 📄 License
 
-本项目遵循仓库中的 [MIT License](LICENSE)。请同时尊重原项目和第三方依赖的许可证与版权声明。
+本项目遵循仓库中的 [MIT License](LICENSE)。自包含安装包实际分发的第三方依赖、许可文本和来源见 [Third-party notices](THIRD-PARTY-NOTICES.md)。

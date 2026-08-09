@@ -212,10 +212,7 @@ public class SettingsService : ISettingsService, IDisposable
 
             try
             {
-                foreach (var (key, value) in batch)
-                {
-                    await SaveSettingToDatabaseAsync(key, value);
-                }
+                await SaveSettingsBatchToDatabaseAsync(batch);
             }
             catch
             {
@@ -238,6 +235,86 @@ public class SettingsService : ISettingsService, IDisposable
             _saveLock.Release();
         }
     }
+
+    public async Task SaveBatchAsync(IReadOnlyDictionary<string, string?> values)
+    {
+        ArgumentNullException.ThrowIfNull(values);
+        await _saveLock.WaitAsync();
+        try
+        {
+            Dictionary<string, string?> pendingBeforeSave;
+            Dictionary<string, string?> batch;
+            lock (_stateLock)
+            {
+                ObjectDisposedException.ThrowIf(_disposed, this);
+                pendingBeforeSave = new Dictionary<string, string?>(_pendingWrites);
+                batch = new Dictionary<string, string?>(pendingBeforeSave);
+                foreach (var (key, value) in values)
+                {
+                    batch[key] = value;
+                }
+
+                _pendingWrites.Clear();
+            }
+
+            try
+            {
+                await SaveSettingsBatchToDatabaseAsync(batch);
+                lock (_stateLock)
+                {
+                    foreach (var (key, value) in batch)
+                    {
+                        if (!_pendingWrites.ContainsKey(key))
+                        {
+                            _cache[key] = value;
+                        }
+                    }
+                }
+            }
+            catch
+            {
+                lock (_stateLock)
+                {
+                    foreach (var (key, value) in pendingBeforeSave)
+                    {
+                        if (!_pendingWrites.ContainsKey(key))
+                        {
+                            _pendingWrites[key] = value;
+                        }
+                    }
+                }
+
+                throw;
+            }
+        }
+        finally
+        {
+            _saveLock.Release();
+        }
+    }
+
+    private Task SaveSettingsBatchToDatabaseAsync(IReadOnlyDictionary<string, string?> values) =>
+        _databaseService.ExecuteInTransactionAsync(async session =>
+        {
+            foreach (var (key, value) in values)
+            {
+                if (string.IsNullOrEmpty(value))
+                {
+                    await session.ExecuteNonQueryAsync(
+                        "DELETE FROM Settings WHERE Key = @p0",
+                        key);
+                }
+                else
+                {
+                    await session.ExecuteNonQueryAsync(
+                        "INSERT OR REPLACE INTO Settings (Key, Value) VALUES (@p0, @p1)",
+                        key,
+                        EncodeForStorage(key, value));
+                }
+            }
+
+            return true;
+        });
 
     private async Task<string?> GetSettingFromDatabaseAsync(string key)
     {

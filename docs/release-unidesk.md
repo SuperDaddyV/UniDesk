@@ -28,6 +28,9 @@ This release makes complete hardware monitoring installable without elevating th
 - Quoted the executable path stored for the `LocalSystem` hardware service, closing the unquoted-service-path risk in installation, upgrade, and repair flows.
 - Added clean-worktree release payload generation and a manual two-stage SignPath workflow that signs first-party EXE and managed-code DLL files before building and signing the installer; every action in the secret-bearing signing workflow is pinned to an immutable commit SHA, and the workflow verifies source revision, versions, signatures, and SHA-256 values without publishing automatically.
 - Restricted setup to Windows `10.0.18362` or newer, documented the fresh-install clipboard-history default directly in settings and the privacy policy, bounded backup import size, section counts, and field lengths, and aligned all four compact hardware rows to one label/value typography grid.
+- Made the compact dashboard independent of expanded-module ordering and visibility, enabled `PerMonitorV2` DPI awareness, capped transparent windows to the logical Windows work area for `1366×768` at `150%` scaling, and localized QWeather failures without exposing internal Chinese messages in other interface languages.
+- The installer now passes its selected language to a fresh first launch; a launch without an installer hint maps the current Windows UI language, while upgrades preserve the saved choice.
+- Completed the self-contained distribution notices for .NET／WindowsDesktop Runtime, direct NuGet packages, LibreHardwareMonitor dependencies, QWeather Icons and the PawnIO GPL exception; the full texts are installed under `licenses`.
 
 ### 中文说明
 
@@ -47,6 +50,9 @@ This release makes complete hardware monitoring installable without elevating th
 - 安装、覆盖安装和修复流程写入 `LocalSystem` 硬件服务的可执行文件路径时统一保留双引号，消除未加引号服务路径风险。
 - 新增干净工作区发布载荷构建和手动两阶段 SignPath 流程：先签全部一方 EXE 和实际承载托管代码的 DLL，再构建并签署安装包；含密钥的签名工作流全部 Action 固定到不可变 commit SHA，流程核验源码提交、版本、签名和 SHA-256，但不会自动公开发布。
 - 安装器明确限制为 Windows `10.0.18362` 或更高版本；设置页与隐私政策直接披露全新安装默认开启剪贴板历史；备份导入增加文件大小、分区条数和字段长度上限；收缩态四行硬件指标统一为同一套标签／数值排版。
+- 收缩态固定使用专用迷你仪表盘，不受展开态模块排序和启用状态影响；启用 `PerMonitorV2` DPI 感知，透明主窗口和设置窗口会按 Windows 逻辑工作区限制高度，覆盖 `1366×768`、`150%` 缩放；非中文界面不再直接显示和风天气客户端的内部中文错误。
+- 安装器把用户选择的界面语言传给全新首次启动；没有安装器提示时按当前 Windows UI 语言映射，覆盖安装继续保留用户已保存语言。
+- 补齐自包含分发所需的 .NET／WindowsDesktop Runtime、直接 NuGet 依赖、LibreHardwareMonitor 传递依赖、QWeather Icons 和 PawnIO GPL 例外许可文本，并统一安装到 `licenses` 目录。
 
 ### Installer integrity / 安装包校验
 

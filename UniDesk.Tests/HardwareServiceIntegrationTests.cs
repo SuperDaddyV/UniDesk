@@ -78,6 +78,7 @@ public class HardwareServiceIntegrationTests
     [Fact]
     public void ServiceHost_ShouldMapSuccessfulDetachedSnapshot()
     {
+        var now = DateTimeOffset.Parse("2026-07-28T00:00:05Z");
         var client = new FakeHardwareServiceClient(new HardwareServiceSnapshotResponse(
             HardwareIpcProtocol.CurrentVersion,
             HardwareServiceAvailability.Available,
@@ -86,7 +87,7 @@ public class HardwareServiceIntegrationTests
             new PawnIoStatus(true, "2.2.0"),
             new HardwareProviderStatus(true, true, null, DateTimeOffset.Parse("2026-07-28T00:00:00Z"), ["Cpu:AMD Ryzen"]),
             [new HardwareSensorDto("/amdcpu/0", "AMD Ryzen", HardwareDeviceType.Cpu, "Core (Tctl/Tdie)", "Temperature", 52)]));
-        using var host = new HardwareServiceComputerHost(client);
+        using var host = new HardwareServiceComputerHost(client, new FixedTimeProvider(now));
 
         host.Refresh();
 
@@ -96,6 +97,24 @@ public class HardwareServiceIntegrationTests
         Assert.True(host.DiagnosticStatus.IsElevated);
         Assert.Equal(HardwareServiceAvailability.Available, host.ServiceStatus.Availability);
         Assert.Equal(HardwareIpcProtocol.CurrentVersion, host.ServiceStatus.ProtocolVersion);
+        Assert.Equal(DateTimeOffset.Parse("2026-07-28T00:00:00Z"), host.ServiceStatus.LastSuccessUtc);
+    }
+
+    [Fact]
+    public void ServiceHost_ShouldRejectStaleSnapshotWithoutRewritingSuccessTime()
+    {
+        var captured = DateTimeOffset.Parse("2026-07-28T00:00:00Z");
+        var client = new FakeHardwareServiceClient(CreateAvailableResponse());
+        using var host = new HardwareServiceComputerHost(
+            client,
+            new FixedTimeProvider(captured.Add(HardwareServiceComputerHost.MaximumSnapshotAge).AddSeconds(1)));
+
+        host.Refresh();
+
+        Assert.Empty(host.CurrentSensors);
+        Assert.Equal(HardwareServiceAvailability.TimedOut, host.ServiceStatus.Availability);
+        Assert.Null(host.ServiceStatus.LastSuccessUtc);
+        Assert.Contains("stale", host.ServiceStatus.LastError, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -254,5 +273,10 @@ public class HardwareServiceIntegrationTests
         : IHardwareMetricsDiagnosticsSource
     {
         public HardwareMetricsDiagnosticsSnapshot CaptureDiagnostics() => snapshot;
+    }
+
+    private sealed class FixedTimeProvider(DateTimeOffset now) : TimeProvider
+    {
+        public override DateTimeOffset GetUtcNow() => now;
     }
 }

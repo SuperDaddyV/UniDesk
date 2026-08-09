@@ -198,11 +198,11 @@ public class NoteServiceTests
     }
 
     [Fact]
-    public async Task DeleteNoteAsync_ShouldNotThrowForNonExistent()
+    public async Task DeleteNoteAsync_ShouldRejectNonExistentTarget()
     {
         var (db, svc) = await InitAsync();
 
-        await svc.DeleteNoteAsync(9999);
+        await Assert.ThrowsAsync<InvalidOperationException>(() => svc.DeleteNoteAsync(9999));
 
         Cleanup();
     }

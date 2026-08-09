@@ -76,8 +76,16 @@ public partial class QuickNotesViewModel : ObservableObject
             return;
         }
 
-        await _noteService.DeleteNoteAsync(note.Id);
-        await ReloadLegacyNotesAsync();
+        try
+        {
+            await _noteService.DeleteNoteAsync(note.Id);
+            await ReloadLegacyNotesAsync();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, $"QuickNotesViewModel.DeleteNoteAsync({note.Id})");
+            _notificationService.ShowWarningMessage(L("Common.OperationFailed"));
+        }
     }
 
     public async Task ReloadLegacyNotesAsync()
@@ -127,21 +135,37 @@ public partial class QuickNotesViewModel : ObservableObject
             return;
         }
 
-        if (!await _quickNoteService.DeleteQuickNoteAsync(note.Id))
+        try
         {
-            _notificationService.ShowWarningMessage(L("Common.OperationFailed"));
-            return;
-        }
+            if (!await _quickNoteService.DeleteQuickNoteAsync(note.Id))
+            {
+                _notificationService.ShowWarningMessage(L("Common.OperationFailed"));
+                return;
+            }
 
-        await ReloadAsync();
+            await ReloadAsync();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, $"QuickNotesViewModel.DeleteQuickNoteAsync({note.Id})");
+            _notificationService.ShowWarningMessage(L("Common.OperationFailed"));
+        }
     }
 
     [RelayCommand]
     private async Task ToggleQuickNotePinnedAsync(QuickNote? note)
     {
         if (note == null) return;
-        await _quickNoteService.SetPinnedAsync(note.Id, !note.IsPinned);
-        await ReloadAsync();
+        try
+        {
+            await _quickNoteService.SetPinnedAsync(note.Id, !note.IsPinned);
+            await ReloadAsync();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, $"QuickNotesViewModel.TogglePinnedAsync({note.Id})");
+            _notificationService.ShowWarningMessage(L("Common.OperationFailed"));
+        }
     }
 
     [RelayCommand]

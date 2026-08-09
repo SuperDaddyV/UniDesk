@@ -16,15 +16,22 @@ public class QWeatherApiClient : IDisposable
     private readonly HttpClient _httpClient;
 
     public QWeatherApiClient(ISettingsService settingsService)
+        : this(
+            settingsService,
+            new HttpClient(new HttpClientHandler
+            {
+                AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate
+            })
+            {
+                Timeout = TimeSpan.FromSeconds(15)
+            })
+    {
+    }
+
+    public QWeatherApiClient(ISettingsService settingsService, HttpClient httpClient)
     {
         _settingsService = settingsService;
-        _httpClient = new HttpClient(new HttpClientHandler
-        {
-            AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate
-        })
-        {
-            Timeout = TimeSpan.FromSeconds(15)
-        };
+        _httpClient = httpClient;
     }
 
     public string GetUserApiKey() => _settingsService.GetValue("WeatherApiKey", "").Trim();
@@ -189,34 +196,23 @@ public class QWeatherApiClient : IDisposable
         bool useHeaderAuth,
         CancellationToken cancellationToken)
     {
-        try
+        using var request = new HttpRequestMessage(HttpMethod.Get, url);
+        request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+
+        if (useHeaderAuth)
         {
-            using var request = new HttpRequestMessage(HttpMethod.Get, url);
-            request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-
-            if (useHeaderAuth)
-            {
-                request.Headers.TryAddWithoutValidation("X-QW-Api-Key", apiKey);
-            }
-
-            using var response = await _httpClient.SendAsync(request, cancellationToken);
-            var body = await response.Content.ReadAsStringAsync(cancellationToken);
-
-            if (!response.IsSuccessStatusCode && string.IsNullOrWhiteSpace(body))
-            {
-                return null;
-            }
-
-            return body;
+            request.Headers.TryAddWithoutValidation("X-QW-Api-Key", apiKey);
         }
-        catch (OperationCanceledException)
-        {
-            throw;
-        }
-        catch
+
+        using var response = await _httpClient.SendAsync(request, cancellationToken);
+        var body = await response.Content.ReadAsStringAsync(cancellationToken);
+
+        if (!response.IsSuccessStatusCode && string.IsNullOrWhiteSpace(body))
         {
             return null;
         }
+
+        return body;
     }
 
     private static string? ParseCode(string? json)

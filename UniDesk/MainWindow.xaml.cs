@@ -2,6 +2,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
+using System.Windows.Interop;
 using System.Windows.Media;
 using UniDesk.Helpers;
 using UniDesk.Models;
@@ -15,9 +16,13 @@ public partial class MainWindow : Window
     private readonly MainWindowViewModel _viewModel;
     private readonly ISettingsService _settingsService;
     private readonly IClipboardMonitorService _clipboardMonitorService;
+    private readonly IMonitorWorkAreaProvider _monitorWorkAreas;
     private bool _suppressPositionSave;
+    private bool _initialBoundsApplied;
     private const double DefaultExpandedPanelHeight = 702;
     private const double CollapsedPanelHeight = 178;
+    private const double MinimumCompactHeight = CollapsedPanelHeight;
+    private const double WorkAreaMargin = 16;
     private const double WindowCornerRadius = 16;
 
     public bool AllowShutdown { get; set; }
@@ -26,22 +31,35 @@ public partial class MainWindow : Window
         MainWindowViewModel viewModel,
         IWindowService windowService,
         ISettingsService settingsService,
-        IClipboardMonitorService clipboardMonitorService)
+        IClipboardMonitorService clipboardMonitorService,
+        IMonitorWorkAreaProvider? monitorWorkAreas = null)
     {
         InitializeComponent();
         DataContext = viewModel;
         _viewModel = viewModel;
         _settingsService = settingsService;
         _clipboardMonitorService = clipboardMonitorService;
+        _monitorWorkAreas = monitorWorkAreas ?? Win32MonitorWorkAreaProvider.Instance;
         _ = windowService;
 
         AppIconHelper.ApplyWindowIcon(this);
         DesktopWidgetWindowHelper.Configure(this);
 
-        ApplyInitialWindowBounds();
+        SourceInitialized += MainWindow_OnSourceInitialized;
         _viewModel.PropertyChanged += ViewModel_OnPropertyChanged;
         _viewModel.Search.FocusRequested += Search_OnFocusRequested;
         _viewModel.TodoSearchResultActivated += ViewModel_OnTodoSearchResultActivated;
+    }
+
+    private void MainWindow_OnSourceInitialized(object? sender, EventArgs e)
+    {
+        if (_initialBoundsApplied)
+        {
+            return;
+        }
+
+        _initialBoundsApplied = true;
+        ApplyInitialWindowBounds();
     }
 
     private void ViewModel_OnPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
@@ -62,11 +80,17 @@ public partial class MainWindow : Window
 
     private void ApplyPanelCollapseState()
     {
+        var usableWorkAreaHeight = GetUsableWorkAreaHeight();
+        var expandedMinimumHeight = Math.Min(IWindowService.MinPanelHeight, usableWorkAreaHeight);
+        var expandedMaximumHeight = Math.Max(
+            expandedMinimumHeight,
+            Math.Min(IWindowService.MaxPanelHeight, usableWorkAreaHeight));
         var targetHeight = _viewModel.IsPanelCollapsed
             ? CollapsedPanelHeight
-            : Math.Clamp(_viewModel.PanelHeight, IWindowService.MinPanelHeight, IWindowService.MaxPanelHeight);
-        MinHeight = _viewModel.IsPanelCollapsed ? CollapsedPanelHeight : IWindowService.MinPanelHeight;
-        MaxHeight = _viewModel.IsPanelCollapsed ? CollapsedPanelHeight : IWindowService.MaxPanelHeight;
+            : Math.Clamp(_viewModel.PanelHeight, expandedMinimumHeight, expandedMaximumHeight);
+        MaxHeight = double.PositiveInfinity;
+        MinHeight = _viewModel.IsPanelCollapsed ? CollapsedPanelHeight : expandedMinimumHeight;
+        MaxHeight = _viewModel.IsPanelCollapsed ? CollapsedPanelHeight : expandedMaximumHeight;
         Height = targetHeight;
         ClampToVisibleWorkArea();
         if (MainModulesGrid.RowDefinitions.Count == 0)
@@ -102,28 +126,45 @@ public partial class MainWindow : Window
         _suppressPositionSave = true;
         try
         {
-            Height = _viewModel.IsPanelCollapsed
-                ? CollapsedPanelHeight
-                : Math.Clamp(_viewModel.PanelHeight <= 0 ? DefaultExpandedPanelHeight : _viewModel.PanelHeight,
-                    IWindowService.MinPanelHeight,
-                    IWindowService.MaxPanelHeight);
             Width = _viewModel.PanelWidth;
-            ApplyPanelCollapseState();
-
             var savedPosition = _viewModel.GetSavedWindowPosition();
-            if (savedPosition is { } position)
+            var savedPixelPosition = _viewModel.GetSavedWindowPixelPosition();
+            var requestedHeight = _viewModel.IsPanelCollapsed
+                ? CollapsedPanelHeight
+                : _viewModel.PanelHeight <= 0
+                    ? DefaultExpandedPanelHeight
+                    : _viewModel.PanelHeight;
+            MonitorWorkArea targetMonitor;
+            if (savedPixelPosition is { } pixelPosition)
+            {
+                targetMonitor = _monitorWorkAreas.GetForPixelPoint(
+                    new PixelPoint(pixelPosition.Left, pixelPosition.Top));
+                Left = pixelPosition.Left * 96 / targetMonitor.DpiX;
+                Top = pixelPosition.Top * 96 / targetMonitor.DpiY;
+            }
+            else if (savedPosition is { } position)
             {
                 Left = position.Left;
                 Top = position.Top;
+                targetMonitor = _monitorWorkAreas.GetForPixelPoint(
+                    new PixelPoint(position.Left, position.Top));
             }
             else
             {
-                var workArea = SystemParameters.WorkArea;
-                Left = workArea.Right - Width - 20;
-                Top = workArea.Top + (workArea.Height - Height) / 2;
+                targetMonitor = _monitorWorkAreas.GetForWindow(new WindowInteropHelper(this).Handle);
+                Left = targetMonitor.WorkArea.Right - Width - 20;
             }
 
-            ClampToVisibleWorkArea();
+            Height = _viewModel.IsPanelCollapsed
+                ? CollapsedPanelHeight
+                : Math.Min(requestedHeight, GetUsableWorkAreaHeight(targetMonitor));
+            if (savedPosition == null && savedPixelPosition == null)
+            {
+                Top = targetMonitor.WorkArea.Top + (targetMonitor.WorkArea.Height - Height) / 2;
+            }
+
+            ClampToVisibleWorkArea(targetMonitor);
+            ApplyPanelCollapseState();
         }
         finally
         {
@@ -207,9 +248,19 @@ public partial class MainWindow : Window
             .Where(module => module.Element != null)
             .ToList();
 
-        var visibleModules = _viewModel.IsPanelCollapsed
-            ? modules.Take(1).ToList()
-            : modules;
+        if (_viewModel.IsPanelCollapsed)
+        {
+            modules =
+            [
+                new
+                {
+                    ModuleId = DashboardModuleIds.TimeWeather,
+                    Element = (FrameworkElement?)TimeWeatherModule
+                }
+            ];
+        }
+
+        var visibleModules = modules;
 
         foreach (var element in GetAllModuleElements())
         {
@@ -361,15 +412,20 @@ public partial class MainWindow : Window
         Hide();
     }
 
-    private void SaveWindowPosition() => _viewModel.SaveWindowPosition(Left, Top);
-
-    private void ClampToVisibleWorkArea()
+    private void SaveWindowPosition()
     {
-        var workLeft = SystemParameters.VirtualScreenLeft;
-        var workTop = SystemParameters.VirtualScreenTop;
-        var workRight = workLeft + SystemParameters.VirtualScreenWidth;
-        var workBottom = workTop + SystemParameters.VirtualScreenHeight;
+        _viewModel.SaveWindowPosition(Left, Top);
+        if (PresentationSource.FromVisual(this) == null)
+        {
+            return;
+        }
 
+        var pixelPosition = PointToScreen(new Point(0, 0));
+        _viewModel.SaveWindowPixelPosition(pixelPosition.X, pixelPosition.Y);
+    }
+
+    private void ClampToVisibleWorkArea(MonitorWorkArea? selectedMonitor = null)
+    {
         var width = double.IsNaN(Width) || Width <= 0 ? ActualWidth : Width;
         var height = double.IsNaN(Height) || Height <= 0 ? ActualHeight : Height;
         if (width <= 0 || height <= 0)
@@ -377,7 +433,21 @@ public partial class MainWindow : Window
             return;
         }
 
-        Left = Math.Clamp(Left, workLeft, Math.Max(workLeft, workRight - width));
-        Top = Math.Clamp(Top, workTop, Math.Max(workTop, workBottom - height));
+        var requested = new LogicalRect(Left, Top, width, height);
+        var monitor = selectedMonitor ?? _monitorWorkAreas.GetForWindow(
+            new WindowInteropHelper(this).Handle);
+        var clamped = MonitorWorkAreaGeometry.Clamp(requested, monitor.WorkArea);
+        Left = clamped.Left;
+        Top = clamped.Top;
+        Width = clamped.Width;
+        Height = clamped.Height;
     }
+
+    private double GetUsableWorkAreaHeight() =>
+        GetUsableWorkAreaHeight(_monitorWorkAreas.GetForWindow(
+            new WindowInteropHelper(this).Handle));
+
+    private static double GetUsableWorkAreaHeight(MonitorWorkArea monitor) =>
+        Math.Max(MinimumCompactHeight, monitor.WorkArea.Height - WorkAreaMargin);
+
 }

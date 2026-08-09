@@ -149,6 +149,8 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
 
     public bool PendingWeatherSettingsChanged { get; private set; }
 
+    public bool PendingLocationSettingsChanged { get; private set; }
+
     public SettingsViewModel(
         ISettingsService settingsService,
         ILocalizationService localizationService,
@@ -348,9 +350,17 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
             return;
         }
 
-        await _quickTextService.ClearClipboardHistoryAsync();
-        await _mainWindowViewModel.ReloadQuickTextAsync();
-        _notificationService.ShowSuccessMessage(L("QuickText.HistoryCleared"));
+        try
+        {
+            await _quickTextService.ClearClipboardHistoryAsync();
+            await _mainWindowViewModel.ReloadQuickTextAsync();
+            _notificationService.ShowSuccessMessage(L("QuickText.HistoryCleared"));
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "SettingsViewModel.ClearClipboardHistory");
+            _notificationService.ShowErrorMessage(L("QuickText.ClearHistoryFailed"));
+        }
     }
 
     [RelayCommand]
@@ -595,6 +605,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
             StringComparison.OrdinalIgnoreCase);
         var hotkeyToPersist = originalHotkey;
         var hotkeyWasApplied = false;
+        List<ModuleSetting>? savedModuleSettings = null;
 
         try
         {
@@ -625,10 +636,14 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
                 var validation = await _weatherService.ValidateApiKeyAsync(apiKeyToValidate, apiHostToValidate);
                 if (!validation.IsValid)
                 {
+                    if (!string.IsNullOrWhiteSpace(validation.Message))
+                    {
+                        Logger.LogWarning(
+                            validation.Message,
+                            "SettingsViewModel.Save.ValidateWeatherApi");
+                    }
                     _notificationService.ShowWarningMessage(
-                        string.IsNullOrWhiteSpace(validation.Message)
-                            ? L("Settings.WeatherCredentialValidationFailed")
-                            : validation.Message);
+                        L("Settings.WeatherCredentialValidationFailed"));
                     return;
                 }
             }
@@ -648,48 +663,41 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
             }
 
             DisplayTitle = MainWindowViewModel.NormalizeDisplayTitle(DisplayTitle);
-
-            _settingsService.SetValue("ColorScheme", SelectedColorScheme);
-            _settingsService.SetValue("Theme", SelectedColorScheme);
-            _settingsService.SetValue("FollowSystemTheme", FollowSystemTheme.ToString());
-            _settingsService.SetValue("ColorSchemeLight", AppColorSchemeCatalog.NormalizeId(ColorSchemeLight));
-            _settingsService.SetValue("ColorSchemeDark", AppColorSchemeCatalog.NormalizeId(ColorSchemeDark));
-            _settingsService.SetValue("Startup", StartupEnabled.ToString());
-            _settingsService.SetValue("WindowOpacity", WindowOpacity.ToString(CultureInfo.InvariantCulture));
-            _settingsService.SetValue("PanelWidth", PanelWidth.ToString(CultureInfo.InvariantCulture));
-            _settingsService.SetValue("PanelHeight", PanelHeight.ToString(CultureInfo.InvariantCulture));
-            _settingsService.SetValue("FontScale", FontScale.ToString(CultureInfo.InvariantCulture));
-            _settingsService.SetValue("DisplayTitle", MainWindowViewModel.NormalizeDisplayTitle(DisplayTitle));
-            _settingsService.SetValue("City", City);
-            _settingsService.SetValue("AutoLocation", AutoLocation.ToString());
-            _settingsService.SetValue("WeatherApiKey", apiKeyToValidate);
-            _settingsService.SetValue("WeatherApiHost", apiHostToValidate);
-            _settingsService.SetValue("ShortcutMaxCount", ShortcutMaxCount.ToString(CultureInfo.InvariantCulture));
-            _settingsService.SetValue("Hotkey", hotkeyToPersist);
-            _settingsService.SetValue(QuickTextService.HistoryEnabledSettingKey, ClipboardHistoryEnabled.ToString());
-            _settingsService.SetValue(QuickTextService.SensitiveFilterSettingKey, ClipboardSensitiveFilterEnabled.ToString());
-            _settingsService.SetValue(QuickTextService.HistoryMaxCountSettingKey, ClipboardHistoryMaxCount.ToString(CultureInfo.InvariantCulture));
-            _settingsService.SetValue(ILocalizationService.LanguageSettingKey, _localizationService.NormalizeLanguage(SelectedLanguage));
-            _mainWindowViewModel.ApplyModuleSettings(BuildModuleSettings(), persist: true);
-
-            await _settingsService.FlushPendingSavesAsync();
-            if (locationSettingsChanged)
+            savedModuleSettings = BuildModuleSettings();
+            var settingsBatch = new Dictionary<string, string?>
             {
-                await _weatherService.SetCityAsync(City);
-            }
-            await _quickTextService.TrimClipboardHistoryAsync(ClipboardHistoryMaxCount);
+                ["ColorScheme"] = SelectedColorScheme,
+                ["Theme"] = SelectedColorScheme,
+                ["FollowSystemTheme"] = FollowSystemTheme.ToString(),
+                ["ColorSchemeLight"] = AppColorSchemeCatalog.NormalizeId(ColorSchemeLight),
+                ["ColorSchemeDark"] = AppColorSchemeCatalog.NormalizeId(ColorSchemeDark),
+                ["Startup"] = StartupEnabled.ToString(),
+                ["WindowOpacity"] = WindowOpacity.ToString(CultureInfo.InvariantCulture),
+                ["PanelWidth"] = PanelWidth.ToString(CultureInfo.InvariantCulture),
+                ["PanelHeight"] = PanelHeight.ToString(CultureInfo.InvariantCulture),
+                ["FontScale"] = FontScale.ToString(CultureInfo.InvariantCulture),
+                ["DisplayTitle"] = DisplayTitle,
+                ["City"] = City,
+                ["AutoLocation"] = AutoLocation.ToString(),
+                ["WeatherApiKey"] = apiKeyToValidate,
+                ["WeatherApiHost"] = apiHostToValidate,
+                ["ShortcutMaxCount"] = ShortcutMaxCount.ToString(CultureInfo.InvariantCulture),
+                ["Hotkey"] = hotkeyToPersist,
+                [QuickTextService.HistoryEnabledSettingKey] = ClipboardHistoryEnabled.ToString(),
+                [QuickTextService.SensitiveFilterSettingKey] = ClipboardSensitiveFilterEnabled.ToString(),
+                [QuickTextService.HistoryMaxCountSettingKey] = ClipboardHistoryMaxCount.ToString(CultureInfo.InvariantCulture),
+                [ILocalizationService.LanguageSettingKey] = _localizationService.NormalizeLanguage(SelectedLanguage),
+                [DashboardModuleCatalog.SettingsKey] = MainWindowViewModel.SerializeModuleSettings(savedModuleSettings)
+            };
 
-            ApplyEffectiveThemePreview();
-            ApplyWindowPreview();
-            _mainWindowViewModel.SetShortcutLimitPreview(null);
-            await _mainWindowViewModel.ReloadShortcutsAsync();
-            await _mainWindowViewModel.ReloadQuickTextAsync();
-            ApplyStartupSetting();
+            await _settingsService.SaveBatchAsync(settingsBatch);
             SaveOriginalSettings();
 
             PendingWeatherSettingsChanged = weatherSettingsChanged;
+            PendingLocationSettingsChanged = locationSettingsChanged;
             LastSaveSucceeded = true;
             IsEditingWeatherApi = false;
+
         }
         catch (Exception ex)
         {
@@ -698,8 +706,25 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
                 _mainWindowViewModel.ApplyGlobalHotkey(originalHotkey);
             }
             RevertToOriginalSettings();
-            _notificationService.ShowErrorMessage(_localizationService.Format("Settings.SaveFailedFormat", ex.Message));
+            Logger.LogError(ex, "SettingsViewModel.Save");
+            _notificationService.ShowErrorMessage(L("Settings.SaveFailed"));
             return;
+        }
+
+        try
+        {
+            _mainWindowViewModel.ApplyModuleSettings(savedModuleSettings!, persist: false);
+            ApplyEffectiveThemePreview();
+            ApplyWindowPreview();
+            _mainWindowViewModel.SetShortcutLimitPreview(null);
+            await _mainWindowViewModel.ReloadShortcutsAsync();
+            await _mainWindowViewModel.ReloadQuickTextAsync();
+            ApplyStartupSetting();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "SettingsViewModel.Save.ApplyDerivedState");
+            _notificationService.ShowWarningMessage(L("Settings.ApplyAfterSaveFailed"));
         }
 
         RequestClose?.Invoke(this, true);
@@ -714,6 +739,11 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
 
         try
         {
+            if (PendingLocationSettingsChanged)
+            {
+                await _weatherService.SetCityAsync(City);
+            }
+
             if (weatherSettingsChanged)
             {
                 await _mainWindowViewModel.RefreshWeatherAfterSettingsAsync();
@@ -721,7 +751,18 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         }
         catch (Exception ex)
         {
-            _notificationService.ShowErrorMessage(_localizationService.Format("Settings.WeatherApplyFailedFormat", ex.Message));
+            Logger.LogError(ex, "SettingsViewModel.CompleteSaveFollowUp.Weather");
+            _notificationService.ShowErrorMessage(L("Settings.WeatherApplyFailed"));
+        }
+
+        try
+        {
+            await _quickTextService.TrimClipboardHistoryAsync(ClipboardHistoryMaxCount);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "SettingsViewModel.CompleteSaveFollowUp.ClipboardTrim");
+            _notificationService.ShowWarningMessage(L("Settings.ClipboardTrimFailed"));
         }
     }
 
@@ -802,7 +843,8 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         }
         catch (Exception ex)
         {
-            _notificationService.ShowErrorMessage(_localizationService.Format("Settings.BackupFailedFormat", ex.Message));
+            Logger.LogError(ex, "SettingsViewModel.Backup");
+            _notificationService.ShowErrorMessage(L("Settings.BackupFailed"));
         }
     }
 
@@ -820,6 +862,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
             return;
         }
 
+        TodoBackupImportResult result;
         try
         {
             var plan = await _todoBackupService.PrepareImportAsync(dialog.FileName);
@@ -835,7 +878,17 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
                 return;
             }
 
-            var result = await _todoBackupService.ApplyImportAsync(plan);
+            result = await _todoBackupService.ApplyImportAsync(plan);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "SettingsViewModel.Restore.ApplyImport");
+            _notificationService.ShowErrorMessage(L("Settings.RestoreFailed"));
+            return;
+        }
+
+        try
+        {
             if (result.SettingCount > 0)
             {
                 var startupText = _settingsService.GetValue("Startup", StartupEnabled.ToString());
@@ -850,19 +903,22 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
             await _mainWindowViewModel.ReloadTodosAsync();
             await _mainWindowViewModel.ReloadQuickNotesAsync();
             await _mainWindowViewModel.ReloadQuickTextAsync();
-            _notificationService.ShowSuccessMessage(_localizationService.Format(
-                "Settings.RestoreSuccessFormat",
-                result.SettingCount,
-                result.ShortcutCount,
-                result.TodoCount,
-                result.QuickNoteCount,
-                result.ClipboardHistoryCount,
-                result.TextSnippetCount));
         }
         catch (Exception ex)
         {
-            _notificationService.ShowErrorMessage(_localizationService.Format("Settings.RestoreFailedFormat", ex.Message));
+            Logger.LogError(ex, "SettingsViewModel.Restore.RefreshAfterCommit");
+            _notificationService.ShowWarningMessage(L("Settings.RestoreAppliedRefreshFailed"));
+            return;
         }
+
+        _notificationService.ShowSuccessMessage(_localizationService.Format(
+            "Settings.RestoreSuccessFormat",
+            result.SettingCount,
+            result.ShortcutCount,
+            result.TodoCount,
+            result.QuickNoteCount,
+            result.ClipboardHistoryCount,
+            result.TextSnippetCount));
     }
 
     [RelayCommand]
@@ -878,7 +934,8 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         }
         catch (Exception ex)
         {
-            _notificationService.ShowErrorMessage(_localizationService.Format("Settings.ResetLayoutFailedFormat", ex.Message));
+            Logger.LogError(ex, "SettingsViewModel.ResetLayout");
+            _notificationService.ShowErrorMessage(L("Settings.ResetLayoutFailed"));
         }
     }
 
@@ -1137,8 +1194,8 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         }
         catch (Exception ex)
         {
-            _notificationService.ShowErrorMessage(
-                _localizationService.Format("Settings.HardwareDiagnosticsFailedFormat", ex.Message));
+            Logger.LogError(ex, "SettingsViewModel.ExportHardwareDiagnostics");
+            _notificationService.ShowErrorMessage(L("Settings.HardwareDiagnosticsFailed"));
         }
     }
 

@@ -71,5 +71,10 @@ public class QWeatherApiClientTests
         public void SetValue(string key, string value) => SetSetting(key, value);
         public void InvalidateCache() => _values.Clear();
         public Task FlushPendingSavesAsync() => Task.CompletedTask;
+        public Task SaveBatchAsync(IReadOnlyDictionary<string, string?> values)
+        {
+            foreach (var (key, value) in values) _values[key] = value;
+            return Task.CompletedTask;
+        }
     }
 }

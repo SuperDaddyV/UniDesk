@@ -13,47 +13,38 @@ permissions:
   actions: read
 
 jobs:
-  build-and-sign:
+  build-unsigned-payload:
     if: github.repository == 'SuperDaddyV/UniDesk' && github.ref == 'refs/heads/main'
     runs-on: windows-latest
+    outputs:
+      release-version: ${{ steps.validate-version.outputs.version }}
+      unsigned-source-manifest-sha256: ${{ steps.bind-unsigned-manifest.outputs.sha256 }}
+      unsigned-payload-artifact-id: ${{ steps.upload-unsigned-payload.outputs.artifact-id }}
+    env:
+      RELEASE_VERSION: ${{ inputs.version }}
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           fetch-depth: 0
       - uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5
         with:
-          dotnet-version: 10.0.x
-      - name: Validate SignPath configuration
+          global-json-file: global.json
+      - name: Validate release version
+        id: validate-version
         shell: pwsh
-        env:
-          SIGNPATH_API_TOKEN: ${{ secrets.SIGNPATH_API_TOKEN }}
-          SIGNPATH_ORGANIZATION_ID: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
-          SIGNPATH_PROJECT_SLUG: ${{ vars.SIGNPATH_PROJECT_SLUG }}
-          SIGNPATH_SIGNING_POLICY_SLUG: ${{ vars.SIGNPATH_SIGNING_POLICY_SLUG }}
-          SIGNPATH_PAYLOAD_CONFIGURATION: ${{ vars.SIGNPATH_PAYLOAD_ARTIFACT_CONFIGURATION_SLUG }}
-          SIGNPATH_INSTALLER_CONFIGURATION: ${{ vars.SIGNPATH_INSTALLER_ARTIFACT_CONFIGURATION_SLUG }}
         run: |
-          $required = @(
-            'SIGNPATH_API_TOKEN',
-            'SIGNPATH_ORGANIZATION_ID',
-            'SIGNPATH_PROJECT_SLUG',
-            'SIGNPATH_SIGNING_POLICY_SLUG',
-            'SIGNPATH_PAYLOAD_CONFIGURATION',
-            'SIGNPATH_INSTALLER_CONFIGURATION'
-          )
-          foreach ($name in $required) {
-            if ([string]::IsNullOrWhiteSpace([Environment]::GetEnvironmentVariable($name))) {
-              throw "Required SignPath configuration '$name' is missing."
-            }
+          if ($env:RELEASE_VERSION -cnotmatch '^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$') {
+            throw "Release version must contain exactly three numeric SemVer segments."
           }
+          "version=$env:RELEASE_VERSION" >> $env:GITHUB_OUTPUT
       - name: Restore
-        run: dotnet restore UniDesk.sln -r win-x64
+        run: dotnet restore UniDesk.sln -r win-x64 --locked-mode
       - name: Audit dependencies
         shell: pwsh
         run: ./scripts/Test-PackageVulnerabilities.ps1
       - name: Check release metadata
         shell: pwsh
-        run: ./scripts/Test-VersionConsistency.ps1 -ExpectedVersion '${{ inputs.version }}'
+        run: ./scripts/Test-VersionConsistency.ps1 -ExpectedVersion $env:RELEASE_VERSION
       - name: Build
         run: dotnet build UniDesk.sln -c Release --no-restore
       - name: Test
@@ -62,9 +53,15 @@ jobs:
         shell: pwsh
         run: >-
           ./scripts/Publish-ReleasePayload.ps1
-          -Version '${{ inputs.version }}'
+          -Version $env:RELEASE_VERSION
           -OutputRoot '${{ runner.temp }}\unsigned-payload'
           -NoRestore
+      - name: Bind unsigned source manifest
+        id: bind-unsigned-manifest
+        shell: pwsh
+        run: |
+          $hash = (Get-FileHash -LiteralPath '${{ runner.temp }}\unsigned-payload\release-source.json' -Algorithm SHA256).Hash.ToLowerInvariant()
+          "sha256=$hash" >> $env:GITHUB_OUTPUT
       - name: Upload unsigned payload
         id: upload-unsigned-payload
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
@@ -72,6 +69,38 @@ jobs:
           name: unsigned-payload
           path: ${{ runner.temp }}\unsigned-payload\*
           if-no-files-found: error
+
+  sign-payload:
+    needs: build-unsigned-payload
+    runs-on: windows-latest
+    environment: release-signing
+    outputs:
+      release-version: ${{ needs.build-unsigned-payload.outputs.release-version }}
+      unsigned-source-manifest-sha256: ${{ needs.build-unsigned-payload.outputs.unsigned-source-manifest-sha256 }}
+      unsigned-payload-artifact-id: ${{ needs.build-unsigned-payload.outputs.unsigned-payload-artifact-id }}
+      signed-payload-artifact-id: ${{ steps.upload-signed-payload.outputs.artifact-id }}
+    steps:
+      - name: Validate SignPath payload configuration
+        shell: pwsh
+        env:
+          SIGNPATH_API_TOKEN: ${{ secrets.SIGNPATH_API_TOKEN }}
+          SIGNPATH_ORGANIZATION_ID: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          SIGNPATH_PROJECT_SLUG: ${{ vars.SIGNPATH_PROJECT_SLUG }}
+          SIGNPATH_SIGNING_POLICY_SLUG: ${{ vars.SIGNPATH_SIGNING_POLICY_SLUG }}
+          SIGNPATH_PAYLOAD_CONFIGURATION: ${{ vars.SIGNPATH_PAYLOAD_ARTIFACT_CONFIGURATION_SLUG }}
+        run: |
+          $required = @(
+            'SIGNPATH_API_TOKEN',
+            'SIGNPATH_ORGANIZATION_ID',
+            'SIGNPATH_PROJECT_SLUG',
+            'SIGNPATH_SIGNING_POLICY_SLUG',
+            'SIGNPATH_PAYLOAD_CONFIGURATION'
+          )
+          foreach ($name in $required) {
+            if ([string]::IsNullOrWhiteSpace([Environment]::GetEnvironmentVariable($name))) {
+              throw "Required SignPath configuration '$name' is missing."
+            }
+          }
       - name: Sign application payload
         uses: signpath/github-action-submit-signing-request@b9d91eadd323de506c0c81cf0c7fe7438f3360fd # v2
         with:
@@ -80,24 +109,106 @@ jobs:
           project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG }}
           signing-policy-slug: ${{ vars.SIGNPATH_SIGNING_POLICY_SLUG }}
           artifact-configuration-slug: ${{ vars.SIGNPATH_PAYLOAD_ARTIFACT_CONFIGURATION_SLUG }}
-          github-artifact-id: ${{ steps.upload-unsigned-payload.outputs.artifact-id }}
+          github-artifact-id: ${{ needs.build-unsigned-payload.outputs.unsigned-payload-artifact-id }}
           wait-for-completion: true
           output-artifact-directory: ${{ runner.temp }}\signed-payload
+      - name: Upload signed payload
+        id: upload-signed-payload
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: signed-payload
+          path: ${{ runner.temp }}\signed-payload\*
+          if-no-files-found: error
+
+  build-installer:
+    needs: sign-payload
+    runs-on: windows-latest
+    outputs:
+      release-version: ${{ needs.sign-payload.outputs.release-version }}
+      unsigned-source-manifest-sha256: ${{ needs.sign-payload.outputs.unsigned-source-manifest-sha256 }}
+      unsigned-payload-artifact-id: ${{ needs.sign-payload.outputs.unsigned-payload-artifact-id }}
+      signed-payload-artifact-id: ${{ needs.sign-payload.outputs.signed-payload-artifact-id }}
+      unsigned-installer-artifact-id: ${{ steps.upload-unsigned-installer.outputs.artifact-id }}
+      installer-authenticode-content-sha256: ${{ steps.bind-unsigned-installer.outputs.sha256 }}
+    env:
+      RELEASE_VERSION: ${{ needs.sign-payload.outputs.release-version }}
+    steps:
+      - name: Restore trusted installer source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          clean: true
+      - name: Download independently preserved unsigned payload
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          artifact-ids: ${{ needs.sign-payload.outputs.unsigned-payload-artifact-id }}
+          path: ${{ runner.temp }}\unsigned-payload
+      - name: Download signed payload
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          artifact-ids: ${{ needs.sign-payload.outputs.signed-payload-artifact-id }}
+          path: ${{ runner.temp }}\signed-payload
       - name: Build installer from signed payload
         shell: pwsh
         run: >-
           ./scripts/Build-ReleaseInstaller.ps1
-          -Version '${{ inputs.version }}'
+          -Version $env:RELEASE_VERSION
+          -ExpectedSourceRevision '${{ github.sha }}'
           -PayloadRoot '${{ runner.temp }}\signed-payload'
+          -UnsignedSourceManifestPath '${{ runner.temp }}\unsigned-payload\release-source.json'
+          -ExpectedUnsignedSourceManifestSha256 '${{ needs.sign-payload.outputs.unsigned-source-manifest-sha256 }}'
           -OutputDirectory '${{ runner.temp }}\unsigned-installer'
           -RequireSignedPayload
+      - name: Bind unsigned installer Authenticode content
+        id: bind-unsigned-installer
+        shell: pwsh
+        run: |
+          . ./scripts/ReleasePayloadTools.ps1
+          $installerPath = '${{ runner.temp }}\unsigned-installer\UniDesk_Setup_' + $env:RELEASE_VERSION + '.exe'
+          $hash = Get-AuthenticodeContentSha256 -Path $installerPath
+          "sha256=$hash" >> $env:GITHUB_OUTPUT
       - name: Upload unsigned installer
         id: upload-unsigned-installer
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: unsigned-installer
-          path: ${{ runner.temp }}\unsigned-installer\UniDesk_Setup_${{ inputs.version }}.exe
+          path: ${{ runner.temp }}\unsigned-installer\UniDesk_Setup_${{ env.RELEASE_VERSION }}.exe
           if-no-files-found: error
+
+  sign-installer:
+    needs: build-installer
+    runs-on: windows-latest
+    environment: release-signing
+    outputs:
+      signed-installer-artifact-id: ${{ steps.upload-signed-installer.outputs.artifact-id }}
+      expected-signer-subject: ${{ steps.validate-signing-configuration.outputs.expected-signer-subject }}
+    steps:
+      - name: Validate SignPath installer configuration
+        id: validate-signing-configuration
+        shell: pwsh
+        env:
+          SIGNPATH_API_TOKEN: ${{ secrets.SIGNPATH_API_TOKEN }}
+          SIGNPATH_ORGANIZATION_ID: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          SIGNPATH_PROJECT_SLUG: ${{ vars.SIGNPATH_PROJECT_SLUG }}
+          SIGNPATH_SIGNING_POLICY_SLUG: ${{ vars.SIGNPATH_SIGNING_POLICY_SLUG }}
+          SIGNPATH_INSTALLER_CONFIGURATION: ${{ vars.SIGNPATH_INSTALLER_ARTIFACT_CONFIGURATION_SLUG }}
+          SIGNPATH_EXPECTED_SIGNER_SUBJECT: ${{ vars.SIGNPATH_EXPECTED_SIGNER_SUBJECT }}
+        run: |
+          $required = @(
+            'SIGNPATH_API_TOKEN',
+            'SIGNPATH_ORGANIZATION_ID',
+            'SIGNPATH_PROJECT_SLUG',
+            'SIGNPATH_SIGNING_POLICY_SLUG',
+            'SIGNPATH_INSTALLER_CONFIGURATION',
+            'SIGNPATH_EXPECTED_SIGNER_SUBJECT'
+          )
+          foreach ($name in $required) {
+            if ([string]::IsNullOrWhiteSpace([Environment]::GetEnvironmentVariable($name))) {
+              throw "Required SignPath configuration '$name' is missing."
+            }
+          }
+          "expected-signer-subject=$env:SIGNPATH_EXPECTED_SIGNER_SUBJECT" >> $env:GITHUB_OUTPUT
       - name: Sign installer
         uses: signpath/github-action-submit-signing-request@b9d91eadd323de506c0c81cf0c7fe7438f3360fd # v2
         with:
@@ -106,27 +217,75 @@ jobs:
           project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG }}
           signing-policy-slug: ${{ vars.SIGNPATH_SIGNING_POLICY_SLUG }}
           artifact-configuration-slug: ${{ vars.SIGNPATH_INSTALLER_ARTIFACT_CONFIGURATION_SLUG }}
-          github-artifact-id: ${{ steps.upload-unsigned-installer.outputs.artifact-id }}
+          github-artifact-id: ${{ needs.build-installer.outputs.unsigned-installer-artifact-id }}
           wait-for-completion: true
           output-artifact-directory: ${{ runner.temp }}\signed-installer
+      - name: Upload signed installer
+        id: upload-signed-installer
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: signed-installer
+          path: ${{ runner.temp }}\signed-installer\UniDesk_Setup_*.exe
+          if-no-files-found: error
+
+  verify-release-candidate:
+    needs: [build-installer, sign-installer]
+    runs-on: windows-latest
+    env:
+      RELEASE_VERSION: ${{ needs.build-installer.outputs.release-version }}
+      SIGNPATH_EXPECTED_SIGNER_SUBJECT: ${{ needs.sign-installer.outputs.expected-signer-subject }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          clean: true
+      - uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5
+        with:
+          global-json-file: global.json
+      - name: Validate expected signer configuration
+        shell: pwsh
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:SIGNPATH_EXPECTED_SIGNER_SUBJECT)) {
+            throw "Required SignPath configuration 'SIGNPATH_EXPECTED_SIGNER_SUBJECT' is missing."
+          }
+      - name: Download independently preserved unsigned payload
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          artifact-ids: ${{ needs.build-installer.outputs.unsigned-payload-artifact-id }}
+          path: ${{ runner.temp }}\unsigned-payload
+      - name: Download signed payload
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          artifact-ids: ${{ needs.build-installer.outputs.signed-payload-artifact-id }}
+          path: ${{ runner.temp }}\signed-payload
+      - name: Download signed installer
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          artifact-ids: ${{ needs.sign-installer.outputs.signed-installer-artifact-id }}
+          path: ${{ runner.temp }}\signed-installer
       - name: Verify signed release candidate
         shell: pwsh
         run: >-
           ./scripts/Test-ReleaseReadiness.ps1
-          -InstallerPath '${{ runner.temp }}\signed-installer\UniDesk_Setup_${{ inputs.version }}.exe'
+          -InstallerPath '${{ runner.temp }}\signed-installer\UniDesk_Setup_${{ env.RELEASE_VERSION }}.exe'
           -AppExePath '${{ runner.temp }}\signed-payload\App\UniDesk.exe'
           -ServiceExePath '${{ runner.temp }}\signed-payload\HardwareService\UniDesk.HardwareService.exe'
           -RepairHelperExePath '${{ runner.temp }}\signed-payload\HardwareRepair\UniDesk.HardwareRepair.exe'
           -SourceManifestPath '${{ runner.temp }}\signed-payload\release-source.json'
+          -UnsignedSourceManifestPath '${{ runner.temp }}\unsigned-payload\release-source.json'
+          -ExpectedUnsignedSourceManifestSha256 '${{ needs.build-installer.outputs.unsigned-source-manifest-sha256 }}'
+          -ExpectedUnsignedInstallerAuthenticodeContentSha256 '${{ needs.build-installer.outputs.installer-authenticode-content-sha256 }}'
           -ExpectedSourceRevision '${{ github.sha }}'
-          -ExpectedVersion '${{ inputs.version }}'
+          -ExpectedVersion $env:RELEASE_VERSION
+          -ExpectedSignerSubject $env:SIGNPATH_EXPECTED_SIGNER_SUBJECT
           -ManifestOutputPath '${{ runner.temp }}\release-manifest.json'
       - name: Upload verified release candidate
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
-          name: UniDesk-${{ inputs.version }}-${{ github.sha }}
+          name: UniDesk-${{ env.RELEASE_VERSION }}-${{ github.sha }}
           path: |
-            ${{ runner.temp }}\signed-installer\UniDesk_Setup_${{ inputs.version }}.exe
+            ${{ runner.temp }}\signed-installer\UniDesk_Setup_${{ env.RELEASE_VERSION }}.exe
             ${{ runner.temp }}\release-manifest.json
             ${{ runner.temp }}\signed-payload\release-source.json
           if-no-files-found: error

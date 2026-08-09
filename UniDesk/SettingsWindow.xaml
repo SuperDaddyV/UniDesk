@@ -6,7 +6,7 @@
         Width="720"
         Height="620"
         MinWidth="680"
-        MinHeight="560"
+        MinHeight="420"
         SizeToContent="Manual"
         WindowStyle="None"
         AllowsTransparency="True"

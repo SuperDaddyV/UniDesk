@@ -63,10 +63,21 @@ public class WeatherService : IWeatherService, IDisposable
             var location = await GetCityLocationAsync(city, cancellationToken);
             if (location == null)
             {
-                LastFailure = WeatherFailureReason.InvalidCity;
+                if (LastFailure == WeatherFailureReason.None)
+                {
+                    LastFailure = WeatherFailureReason.InvalidCity;
+                }
+
                 if (notifyUser)
                 {
-                    _notificationService.ShowWarningMessage(Format("Weather.CityNotFoundFormat", $"未找到城市: {city}", city));
+                    if (LastFailure == WeatherFailureReason.InvalidCity)
+                    {
+                        _notificationService.ShowWarningMessage(Format("Weather.CityNotFoundFormat", $"未找到城市: {city}", city));
+                    }
+                    else
+                    {
+                        _notificationService.ShowWarningMessage(L(GetFailureResourceKey(LastFailure), "天气服务暂时不可用"));
+                    }
                 }
 
                 return await GetCachedWeatherAsync();
@@ -145,9 +156,11 @@ public class WeatherService : IWeatherService, IDisposable
         catch (HttpRequestException ex)
         {
             LastFailure = WeatherFailureReason.NetworkUnavailable;
+            Logger.LogError(ex, "WeatherService.GetWeather.Network");
             if (notifyUser)
             {
-                _notificationService.ShowWarningMessage(Format("Weather.NetworkRequestFailedFormat", $"网络请求失败: {ex.Message}", ex.Message));
+                _notificationService.ShowWarningMessage(
+                    L("Weather.NetworkRequestFailed", "天气服务暂时不可用，请稍后重试。"));
             }
 
             return await GetCachedWeatherAsync(markExpired: true);
@@ -155,9 +168,11 @@ public class WeatherService : IWeatherService, IDisposable
         catch (Exception ex)
         {
             LastFailure = WeatherFailureReason.Unknown;
+            Logger.LogError(ex, "WeatherService.GetWeather.Unknown");
             if (notifyUser)
             {
-                _notificationService.ShowErrorMessage(Format("Weather.GetWeatherFailedFormat", $"获取天气失败: {ex.Message}", ex.Message));
+                _notificationService.ShowErrorMessage(
+                    L("Weather.GetWeatherFailed", "无法获取天气，请稍后重试。"));
             }
 
             return await GetCachedWeatherAsync(markExpired: true);
@@ -313,6 +328,10 @@ public class WeatherService : IWeatherService, IDisposable
                 return (loc.Id, loc.Lat, loc.Lon);
             }
         }
+
+        LastFailure = result?.Code == "404"
+            ? WeatherFailureReason.InvalidCity
+            : WeatherFailureReason.ApiRejected;
 
         return null;
     }

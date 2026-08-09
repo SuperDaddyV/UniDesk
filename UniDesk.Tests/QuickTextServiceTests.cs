@@ -149,6 +149,36 @@ public class QuickTextServiceTests
     }
 
     [Fact]
+    public async Task RecordClipboardTextAsync_WhenTrimFails_ShouldRollBackTheNewHistoryItem()
+    {
+        var (db, settings, service) = await InitAsync();
+        settings.SetValue(QuickTextService.SensitiveFilterSettingKey, "false");
+        settings.SetValue(QuickTextService.HistoryMaxCountSettingKey, "20");
+        await settings.FlushPendingSavesAsync();
+        for (var index = 0; index < 20; index++)
+        {
+            var timestamp = DateTime.UtcNow.AddMinutes(-index - 1).ToString("o");
+            await db.ExecuteNonQueryAsync(
+                "INSERT INTO ClipboardHistory (Content, ContentHash, CreatedAt, LastUsedAt, UseCount) VALUES (@p0, @p1, @p2, @p3, 1)",
+                $"stored-{index}",
+                $"hash-{index}",
+                timestamp,
+                timestamp);
+        }
+        await db.ExecuteNonQueryAsync(
+            "CREATE TRIGGER fail_clipboard_trim BEFORE DELETE ON ClipboardHistory BEGIN SELECT RAISE(ABORT, 'forced trim failure'); END");
+
+        await Assert.ThrowsAnyAsync<Exception>(
+            () => service.RecordClipboardTextAsync("new history item"));
+
+        var count = await db.QuerySingleAsync(
+            "SELECT COUNT(*) FROM ClipboardHistory",
+            reader => reader.GetInt32(0));
+        Assert.Equal(20, count);
+        Cleanup();
+    }
+
+    [Fact]
     public async Task CreateTextSnippetAsync_ShouldSaveSnippet()
     {
         var (_, _, service) = await InitAsync();

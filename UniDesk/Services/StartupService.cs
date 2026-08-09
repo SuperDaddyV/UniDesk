@@ -114,18 +114,18 @@ public class StartupService : IStartupService
     private static bool HasCurrentStartupEntry()
     {
         return IsRegisteredInRunKey(RegistryValueName)
-               || IsRegisteredInTaskScheduler(@"\UniDesk")
-               || IsRegisteredInTaskScheduler("UniDesk");
+               || IsOwnedScheduledTask(@"\UniDesk")
+               || IsOwnedScheduledTask("UniDesk");
     }
 
     private static bool HasLegacyStartupEntry()
     {
         return IsRegisteredInRunKey("LumiDesk")
                || IsRegisteredInRunKey("VsirDesk")
-               || IsRegisteredInTaskScheduler(@"\LumiDesk")
-               || IsRegisteredInTaskScheduler("LumiDesk")
-               || IsRegisteredInTaskScheduler(@"\VsirDesk")
-               || IsRegisteredInTaskScheduler("VsirDesk");
+               || IsOwnedScheduledTask(@"\LumiDesk")
+               || IsOwnedScheduledTask("LumiDesk")
+               || IsOwnedScheduledTask(@"\VsirDesk")
+               || IsOwnedScheduledTask("VsirDesk");
     }
 
     private static bool SetRunKeyValue(string exePath)
@@ -139,6 +139,13 @@ public class StartupService : IStartupService
 
             using var key = Registry.CurrentUser.CreateSubKey(RunKeyPath, writable: true);
             if (key == null)
+            {
+                return false;
+            }
+
+            if (key.GetValue(RegistryValueName) is string existingValue &&
+                !string.IsNullOrWhiteSpace(existingValue) &&
+                !IsOwnedRunKeyValue(RegistryValueName, existingValue, exePath))
             {
                 return false;
             }
@@ -173,7 +180,10 @@ public class StartupService : IStartupService
             }
 
             using var key = Registry.CurrentUser.OpenSubKey(RunKeyPath, writable: false);
-            return key?.GetValue(valueName) is string value && !string.IsNullOrWhiteSpace(value);
+            var executablePath = GetExecutablePath();
+            return key?.GetValue(valueName) is string value &&
+                   !string.IsNullOrWhiteSpace(executablePath) &&
+                   IsOwnedRunKeyValue(valueName, value, executablePath);
         }
         catch
         {
@@ -194,7 +204,7 @@ public class StartupService : IStartupService
 
     private static bool DeleteScheduledTask(string taskName)
     {
-        if (!OperatingSystem.IsWindows() || !IsRegisteredInTaskScheduler(taskName))
+        if (!OperatingSystem.IsWindows() || !IsOwnedScheduledTask(taskName))
         {
             return false;
         }
@@ -213,6 +223,136 @@ public class StartupService : IStartupService
         return DeleteScheduledTaskElevated(taskName) || !IsRegisteredInTaskScheduler(taskName);
     }
 
+    private static bool IsOwnedScheduledTask(string taskName)
+    {
+        if (!OperatingSystem.IsWindows() || !IsRegisteredInTaskScheduler(taskName))
+        {
+            return false;
+        }
+
+        var executablePath = GetExecutablePath();
+        var actionPath = GetScheduledTaskActionPath(taskName);
+        return !string.IsNullOrWhiteSpace(executablePath) &&
+               !string.IsNullOrWhiteSpace(actionPath) &&
+               IsOwnedScheduledTaskAction(taskName, actionPath, executablePath);
+    }
+
+    internal static bool IsOwnedScheduledTaskAction(
+        string taskName,
+        string actionPath,
+        string currentExecutablePath)
+    {
+        if (string.IsNullOrWhiteSpace(taskName) ||
+            string.IsNullOrWhiteSpace(actionPath) ||
+            string.IsNullOrWhiteSpace(currentExecutablePath))
+        {
+            return false;
+        }
+
+        var taskLeafName = GetScheduledTaskLeafName(taskName);
+        return IsOwnedStartupExecutable(taskLeafName, actionPath, currentExecutablePath);
+    }
+
+    internal static bool IsOwnedRunKeyValue(
+        string valueName,
+        string command,
+        string currentExecutablePath)
+    {
+        if (string.IsNullOrWhiteSpace(command))
+        {
+            return false;
+        }
+
+        var trimmedCommand = command.Trim();
+        string executablePath;
+        if (trimmedCommand.StartsWith('"'))
+        {
+            var closingQuote = trimmedCommand.IndexOf('"', 1);
+            if (closingQuote <= 1)
+            {
+                return false;
+            }
+            if (closingQuote + 1 < trimmedCommand.Length &&
+                !char.IsWhiteSpace(trimmedCommand[closingQuote + 1]))
+            {
+                return false;
+            }
+            executablePath = trimmedCommand[1..closingQuote];
+        }
+        else
+        {
+            var executableEnd = trimmedCommand.IndexOf(".exe", StringComparison.OrdinalIgnoreCase);
+            if (executableEnd < 0)
+            {
+                return false;
+            }
+            var executableBoundary = executableEnd + 4;
+            if (executableBoundary < trimmedCommand.Length &&
+                !char.IsWhiteSpace(trimmedCommand[executableBoundary]))
+            {
+                return false;
+            }
+            executablePath = trimmedCommand[..executableBoundary];
+        }
+
+        return IsOwnedStartupExecutable(valueName, executablePath, currentExecutablePath);
+    }
+
+    private static bool IsOwnedStartupExecutable(
+        string entryName,
+        string actionPath,
+        string currentExecutablePath)
+    {
+        var expectedExecutableName = entryName switch
+        {
+            "UniDesk" => "UniDesk.exe",
+            "LumiDesk" => "LumiDesk.exe",
+            "VsirDesk" => "VsirDesk.exe",
+            _ => null
+        };
+        if (expectedExecutableName == null)
+        {
+            return false;
+        }
+
+        try
+        {
+            var normalizedActionPath = Environment.ExpandEnvironmentVariables(
+                actionPath.Trim().Trim('"'));
+            if (!Path.IsPathRooted(normalizedActionPath))
+            {
+                return false;
+            }
+
+            var actionFullPath = Path.GetFullPath(normalizedActionPath);
+            var currentFullPath = Path.GetFullPath(currentExecutablePath);
+            return Path.GetFileName(actionFullPath).Equals(
+                       expectedExecutableName,
+                       StringComparison.OrdinalIgnoreCase) &&
+                   string.Equals(
+                       Path.GetDirectoryName(actionFullPath),
+                       Path.GetDirectoryName(currentFullPath),
+                       StringComparison.OrdinalIgnoreCase);
+        }
+        catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException)
+        {
+            return false;
+        }
+    }
+
+    private static string? GetScheduledTaskActionPath(string taskName)
+    {
+        var taskLeafName = EscapePowerShellSingleQuoted(GetScheduledTaskLeafName(taskName));
+        var taskPath = EscapePowerShellSingleQuoted(GetScheduledTaskPath(taskName));
+        var command =
+            $"$task = Get-ScheduledTask -TaskPath '{taskPath}' -TaskName '{taskLeafName}' -ErrorAction Stop; " +
+            "$actions = @($task.Actions); " +
+            "if ($actions.Count -ne 1 -or [string]::IsNullOrWhiteSpace($actions[0].Execute)) { exit 3 }; " +
+            "[Console]::Out.Write($actions[0].Execute)";
+        var result = RunPowerShell(command);
+        return result.ExitCode == 0 ? result.Output.Trim() : null;
+    }
+
     private static bool DeleteRunKeyValue(string valueName)
     {
         try
@@ -223,7 +363,14 @@ public class StartupService : IStartupService
             }
 
             using var key = Registry.CurrentUser.OpenSubKey(RunKeyPath, writable: true);
-            if (key?.GetValue(valueName) == null)
+            if (key?.GetValue(valueName) is not string value)
+            {
+                return false;
+            }
+
+            var executablePath = GetExecutablePath();
+            if (string.IsNullOrWhiteSpace(executablePath) ||
+                !IsOwnedRunKeyValue(valueName, value, executablePath))
             {
                 return false;
             }

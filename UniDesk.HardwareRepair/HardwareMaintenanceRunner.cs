@@ -5,36 +5,79 @@ internal sealed class HardwareMaintenanceRunner
     internal const string ServiceName = "UniDeskHardwareService";
     internal const string PawnIoServiceName = "PawnIO";
     private const string ServiceDisplayName = "UniDesk Hardware Monitoring Service";
+    private const int ServiceStopWaitAttempts = 20;
     private const string ServiceDescription =
         "为 UniDesk 提供只读的本机硬件传感器快照；主程序保持普通权限。";
     private readonly IProcessRunner _processRunner;
     private readonly HardwarePackageVerifier _packageVerifier;
     private readonly HardwareRepairLogger _logger;
+    private readonly IServicePayloadSecurityVerifier _payloadSecurityVerifier;
+    private readonly IServiceOwnershipVerifier _serviceOwnershipVerifier;
     private readonly string _pawnIoInstallerPath;
     private readonly string _serviceBinaryPath;
     private readonly string _scPath;
+    private readonly string _taskKillPath;
+    private readonly string _powerShellPath;
+    private readonly Action<TimeSpan> _delay;
 
     public HardwareMaintenanceRunner()
-        : this(CreateDefaultPaths(), new SystemProcessRunner(), new HardwareRepairLogger())
+        : this(
+            CreateDefaultPaths(),
+            new SystemProcessRunner(),
+            new HardwareRepairLogger(),
+            new ServicePayloadSecurityVerifier(),
+            new ServiceOwnershipVerifier())
     {
     }
 
     internal HardwareMaintenanceRunner(
         HardwareMaintenancePaths paths,
         IProcessRunner processRunner,
-        HardwareRepairLogger logger)
+        HardwareRepairLogger logger,
+        IServicePayloadSecurityVerifier payloadSecurityVerifier,
+        IServiceOwnershipVerifier serviceOwnershipVerifier,
+        Action<TimeSpan>? delay = null)
     {
         _processRunner = processRunner;
         _logger = logger;
+        _payloadSecurityVerifier = payloadSecurityVerifier;
+        _serviceOwnershipVerifier = serviceOwnershipVerifier;
         _packageVerifier = new HardwarePackageVerifier(processRunner, logger);
         _pawnIoInstallerPath = paths.PawnIoInstallerPath;
         _serviceBinaryPath = paths.ServiceBinaryPath;
         _scPath = paths.ServiceControlPath;
+        var systemDirectory = Path.GetDirectoryName(_scPath);
+        _taskKillPath = string.IsNullOrEmpty(systemDirectory)
+            ? "taskkill.exe"
+            : Path.Combine(systemDirectory, "taskkill.exe");
+        _powerShellPath = string.IsNullOrEmpty(systemDirectory)
+            ? "powershell.exe"
+            : Path.Combine(systemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe");
+        _delay = delay ?? Thread.Sleep;
     }
 
     public HardwareRepairExitCode InstallOrRepair()
     {
         _logger.Log("Install-or-repair started.");
+        if (!File.Exists(_serviceBinaryPath))
+        {
+            return Complete(HardwareRepairExitCode.ServiceBinaryMissing);
+        }
+
+        var payloadSecurity = _payloadSecurityVerifier.Verify(_serviceBinaryPath);
+        if (!payloadSecurity.IsSecure)
+        {
+            _logger.Log($"Service payload security verification failed: {payloadSecurity.Reason}");
+            return Complete(HardwareRepairExitCode.ServicePayloadSecurityInvalid);
+        }
+
+        var serviceOwnership = _serviceOwnershipVerifier.Verify(ServiceName, _serviceBinaryPath);
+        if (serviceOwnership.Status is ServiceOwnershipStatus.Foreign or ServiceOwnershipStatus.Unavailable)
+        {
+            _logger.Log($"Service ownership verification failed: {serviceOwnership.Reason}");
+            return Complete(HardwareRepairExitCode.ServiceOwnershipInvalid);
+        }
+
         var pawnIoStatus = RunSc(["query", PawnIoServiceName]);
         if (pawnIoStatus.ExitCode == 1060)
         {
@@ -75,22 +118,29 @@ internal sealed class HardwareMaintenanceRunner
             return Complete(HardwareRepairExitCode.PawnIoStartFailed);
         }
 
-        if (!File.Exists(_serviceBinaryPath))
-        {
-            return Complete(HardwareRepairExitCode.ServiceBinaryMissing);
-        }
-
         var quotedServiceBinaryPath = $"\"{_serviceBinaryPath}\"";
-        var create = RunSc([
-            "create", ServiceName,
-            "binPath=", quotedServiceBinaryPath,
-            "start=", "auto",
-            "obj=", "LocalSystem",
-            "DisplayName=", ServiceDisplayName
-        ]);
-        if (create.ExitCode is not (0 or 1073))
+        if (serviceOwnership.Status == ServiceOwnershipStatus.Missing)
         {
-            return Complete(HardwareRepairExitCode.ServiceCreateFailed);
+            var create = RunSc([
+                "create", ServiceName,
+                "binPath=", quotedServiceBinaryPath,
+                "start=", "auto",
+                "obj=", "LocalSystem",
+                "DisplayName=", ServiceDisplayName
+            ]);
+            if (create.ExitCode == 1073)
+            {
+                serviceOwnership = _serviceOwnershipVerifier.Verify(ServiceName, _serviceBinaryPath);
+                if (serviceOwnership.Status != ServiceOwnershipStatus.Owned)
+                {
+                    _logger.Log($"Service appeared during creation but is not owned: {serviceOwnership.Reason}");
+                    return Complete(HardwareRepairExitCode.ServiceOwnershipInvalid);
+                }
+            }
+            else if (create.ExitCode != 0)
+            {
+                return Complete(HardwareRepairExitCode.ServiceCreateFailed);
+            }
         }
 
         var configure = RunSc([
@@ -144,16 +194,76 @@ internal sealed class HardwareMaintenanceRunner
     public HardwareRepairExitCode RemoveService()
     {
         _logger.Log("Remove-service started.");
-        var stop = RunSc(["stop", ServiceName]);
-        if (stop.ExitCode is not (0 or 1060 or 1062))
+        var ownership = _serviceOwnershipVerifier.Verify(ServiceName, _serviceBinaryPath);
+        if (ownership.Status == ServiceOwnershipStatus.Missing)
         {
-            _logger.Log($"Service stop returned {stop.ExitCode}; delete will still be attempted.");
+            return Complete(HardwareRepairExitCode.Success);
+        }
+        if (ownership.Status != ServiceOwnershipStatus.Owned)
+        {
+            _logger.Log($"Service removal rejected: {ownership.Reason}");
+            return Complete(HardwareRepairExitCode.ServiceOwnershipInvalid);
+        }
+
+        var disable = RunSc(["config", ServiceName, "start=", "disabled"]);
+        if (disable.ExitCode != 0)
+        {
+            _logger.Log($"Service disable returned {disable.ExitCode}; removal will continue fail-closed.");
+        }
+
+        var stop = RunSc(["stop", ServiceName]);
+        _logger.Log($"Service stop request returned {stop.ExitCode}; actual stopped state will be verified.");
+
+        ownership = _serviceOwnershipVerifier.Verify(ServiceName, _serviceBinaryPath);
+        if (ownership.Status == ServiceOwnershipStatus.Missing)
+        {
+            return Complete(HardwareRepairExitCode.Success);
+        }
+        if (ownership.Status != ServiceOwnershipStatus.Owned)
+        {
+            _logger.Log($"Service ownership changed before process termination: {ownership.Reason}");
+            return Complete(HardwareRepairExitCode.ServiceOwnershipInvalid);
+        }
+
+        Run(
+            _taskKillPath,
+            ["/F", "/FI", $"SERVICES eq {ServiceName}"],
+            TimeSpan.FromSeconds(30));
+        if (!WaitForServiceStopped())
+        {
+            _logger.Log("Service process could not be confirmed stopped; delete was not attempted.");
+            return Complete(HardwareRepairExitCode.ServiceRemoveFailed);
         }
 
         var delete = RunSc(["delete", ServiceName]);
         return Complete(delete.ExitCode is 0 or 1060
             ? HardwareRepairExitCode.Success
             : HardwareRepairExitCode.ServiceRemoveFailed);
+    }
+
+    private bool WaitForServiceStopped()
+    {
+        const string command =
+            "$s = Get-Service -Name 'UniDeskHardwareService' -ErrorAction SilentlyContinue; " +
+            "if (($null -eq $s) -or ($s.Status -eq 'Stopped')) { exit 0 } else { exit 1 }";
+        for (var attempt = 0; attempt < ServiceStopWaitAttempts; attempt++)
+        {
+            var status = Run(
+                _powerShellPath,
+                ["-NoLogo", "-NoProfile", "-NonInteractive", "-Command", command],
+                TimeSpan.FromSeconds(30));
+            if (status.ExitCode == 0)
+            {
+                return true;
+            }
+
+            if (attempt + 1 < ServiceStopWaitAttempts)
+            {
+                _delay(TimeSpan.FromMilliseconds(500));
+            }
+        }
+
+        return false;
     }
 
     private ProcessExecutionResult RunSc(IReadOnlyList<string> arguments) =>

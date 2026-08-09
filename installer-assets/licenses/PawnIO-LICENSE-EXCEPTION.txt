@@ -1,0 +1,20 @@
+PawnIO - Input-output driver
+Copyright (C) 2026 namazso <admin@namazso.eu>
+
+PawnIO is licensed under the GNU General Public License, version 2 or (at your
+option) any later version. The complete GPL version 2 text is distributed in
+PawnIO-COPYING.txt.
+
+Special exception from the upstream PawnIO README at source revision
+5cdf470831fdfff3f7f1d06363ca6b230f3bf35a:
+
+The copyright holders give permission to combine PawnIO with free software
+programs or libraries released under the GNU LGPL and with independent modules
+that communicate with PawnIO solely through the device IO control interface.
+Such a system may be copied and distributed under the GNU GPL terms for PawnIO
+and the licenses of the other code concerned, subject to the GPL source-code
+requirements. The exception does not cover programs communicating through the
+Pawn interface; modules loaded into PawnIO must remain license-compatible.
+
+Upstream source and complete exception text:
+https://github.com/namazso/PawnIO/blob/5cdf470831fdfff3f7f1d06363ca6b230f3bf35a/README.md#license

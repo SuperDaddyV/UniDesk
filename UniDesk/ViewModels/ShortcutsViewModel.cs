@@ -184,8 +184,10 @@ public partial class ShortcutsViewModel : ObservableObject
     
     private async Task CreateShortcutAndReloadAsync(ShortcutItem shortcut)
     {
-        var maxCount = GetShortcutMaxCount();
-        var allShortcuts = await _shortcutService.GetAllShortcutsAsync();
+        try
+        {
+            var maxCount = GetShortcutMaxCount();
+            var allShortcuts = await _shortcutService.GetAllShortcutsAsync();
     
         if (allShortcuts.Count >= maxCount)
         {
@@ -207,7 +209,13 @@ public partial class ShortcutsViewModel : ObservableObject
             return;
         }
     
-        await LoadShortcutsAsync();
+            await LoadShortcutsAsync();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "ShortcutsViewModel.CreateShortcutAndReloadAsync");
+            _notificationService.ShowWarningMessage(L("Shortcut.AddFailed"));
+        }
     }
     
     public async Task<ShortcutImportResult> AddFromPathsAsync(IEnumerable<string>? paths)
@@ -356,8 +364,16 @@ public partial class ShortcutsViewModel : ObservableObject
     {
         if (shortcut == null) return;
     
-        await _shortcutService.DeleteShortcutAsync(shortcut.Id);
-        await LoadShortcutsAsync();
+        try
+        {
+            await _shortcutService.DeleteShortcutAsync(shortcut.Id);
+            await LoadShortcutsAsync();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, $"ShortcutsViewModel.DeleteShortcutAsync({shortcut.Id})");
+            _notificationService.ShowWarningMessage(L("Common.OperationFailed"));
+        }
     }
     
     [RelayCommand(CanExecute = nameof(CanMoveShortcutUp))]
@@ -479,10 +495,19 @@ public partial class ShortcutsViewModel : ObservableObject
             orderedShortcuts[i].SortOrder = i;
         }
     
-        _allShortcuts = orderedShortcuts;
-        RefreshVisibleShortcuts();
-        await _shortcutService.UpdateSortOrderAsync(_allShortcuts.Select(shortcut => shortcut.Id).ToList());
-        NotifyShortcutOrderCommandsCanExecuteChanged();
+        try
+        {
+            await _shortcutService.UpdateSortOrderAsync(orderedShortcuts.Select(shortcut => shortcut.Id).ToList());
+            _allShortcuts = orderedShortcuts;
+            RefreshVisibleShortcuts();
+            NotifyShortcutOrderCommandsCanExecuteChanged();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "ShortcutsViewModel.ApplyShortcutOrderAsync");
+            _notificationService.ShowWarningMessage(L("Common.OperationFailed"));
+            await LoadShortcutsAsync();
+        }
     }
     
     private void NotifyShortcutOrderCommandsCanExecuteChanged()

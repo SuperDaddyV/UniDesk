@@ -32,29 +32,55 @@ public static class DirectoryHelper
 
     private static void MigrateLegacyDataIfNeeded()
     {
-        if (!System.IO.Directory.Exists(LegacyAppDataPath))
+        MigrateLegacyDataIfNeeded(
+            LegacyAppDataPath,
+            AppDataPath,
+            DatabaseFile,
+            System.IO.Path.Combine(System.IO.Path.GetTempPath(), "UniDesk-migration-error.log"));
+    }
+
+    internal static void MigrateLegacyDataIfNeeded(
+        string legacyAppDataPath,
+        string appDataPath,
+        string databaseFile,
+        string fallbackLog)
+    {
+        if (System.IO.File.Exists(databaseFile) ||
+            !System.IO.Directory.Exists(legacyAppDataPath))
         {
             return;
         }
 
         try
         {
-            if (!System.IO.Directory.Exists(AppDataPath))
+            if (!System.IO.Directory.Exists(appDataPath))
             {
-                System.IO.Directory.CreateDirectory(AppDataPath);
+                System.IO.Directory.CreateDirectory(appDataPath);
             }
 
-            CopyDirectoryWithoutOverwrite(LegacyAppDataPath, AppDataPath);
+            CopyDirectoryWithoutOverwrite(legacyAppDataPath, appDataPath);
 
-            var legacyDatabase = System.IO.Path.Combine(LegacyAppDataPath, "LumiDesk.db");
-            if (System.IO.File.Exists(legacyDatabase) && !System.IO.File.Exists(DatabaseFile))
+            var legacyDatabase = System.IO.Path.Combine(legacyAppDataPath, "LumiDesk.db");
+            if (System.IO.File.Exists(legacyDatabase) && !System.IO.File.Exists(databaseFile))
             {
-                System.IO.File.Copy(legacyDatabase, DatabaseFile, overwrite: false);
+                System.IO.File.Copy(legacyDatabase, databaseFile, overwrite: false);
             }
         }
-        catch
+        catch (Exception ex)
         {
-            // Startup must continue even if old user data cannot be migrated.
+            try
+            {
+                System.IO.File.AppendAllText(
+                    fallbackLog,
+                    $"[{DateTime.Now:O}] {ex.GetType().Name}: {ex.Message}{Environment.NewLine}{ex.StackTrace}{Environment.NewLine}");
+            }
+            catch
+            {
+            }
+
+            throw new System.IO.IOException(
+                $"无法迁移旧版 LumiDesk 用户数据，已停止启动以避免创建不完整的数据副本。诊断日志：{fallbackLog}",
+                ex);
         }
     }
 

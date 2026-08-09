@@ -102,15 +102,115 @@ public class TodoBackupService : ITodoBackupService
         BackupExportOptions? options = null)
     {
         options ??= new BackupExportOptions();
-        var todos = await _todoService.GetAllTodosAsync();
-        var quickNotes = await _quickNoteService.GetAllQuickNotesAsync();
-        var clipboardHistory = options.IncludeClipboardHistory
-            ? await _quickTextService.GetClipboardHistoryAsync(10_000)
-            : null;
-        var textSnippets = await _quickTextService.GetTextSnippetsAsync();
-        var shortcuts = await _shortcutService.GetAllShortcutsAsync();
-        var settings = await GetSettingsBackupAsync();
-        var payload = new TodoBackupFile
+        await _settingsService.FlushPendingSavesAsync();
+        var payload = await _databaseService.ExecuteInTransactionAsync(
+            session => ReadExportSnapshotAsync(session, options));
+
+        var json = JsonSerializer.Serialize(payload, JsonOptions);
+        var fullPath = Path.GetFullPath(filePath);
+        var directory = Path.GetDirectoryName(fullPath)
+            ?? throw new InvalidOperationException("备份目标路径无效。");
+        var temporaryPath = Path.Combine(directory, $".{Path.GetFileName(fullPath)}.{Guid.NewGuid():N}.tmp");
+        try
+        {
+            await File.WriteAllTextAsync(temporaryPath, json, Utf8NoBom);
+            File.Move(temporaryPath, fullPath, overwrite: true);
+        }
+        finally
+        {
+            if (File.Exists(temporaryPath))
+            {
+                File.Delete(temporaryPath);
+            }
+        }
+    }
+
+    private async Task<TodoBackupFile> ReadExportSnapshotAsync(
+        IDatabaseSession session,
+        BackupExportOptions options)
+    {
+        var settings = await session.QueryAsync(
+            "SELECT Key, Value FROM Settings ORDER BY Key",
+            reader => new KeyValuePair<string, string?>(
+                reader.GetString(0),
+                reader.IsDBNull(1) ? null : reader.GetString(1)));
+        var shortcuts = await session.QueryAsync(
+            "SELECT Name, Path, LaunchArguments, Type, SortOrder, CreatedAt FROM Shortcuts ORDER BY SortOrder, CreatedAt, Id",
+            reader => new ShortcutBackupEntry
+            {
+                Name = reader.GetString(0),
+                Path = reader.GetString(1),
+                LaunchArguments = reader.IsDBNull(2) ? null : reader.GetString(2),
+                Type = Enum.TryParse<ShortcutType>(reader.GetString(3), out var type) ? type : ShortcutType.Application,
+                SortOrder = reader.GetInt32(4),
+                CreatedAt = ReadDateTime(reader.GetString(5), "Shortcuts.CreatedAt")
+            });
+        var todos = await session.QueryAsync(
+            "SELECT Title, IsCompleted, DueDate, Priority, CreatedAt, CompletedAt FROM Todos ORDER BY Id",
+            reader => new TodoBackupEntry
+            {
+                Title = reader.GetString(0),
+                IsCompleted = reader.GetInt32(1) != 0,
+                DueDate = reader.IsDBNull(2) ? null : ReadDateTime(reader.GetString(2), "Todos.DueDate"),
+                Priority = Enum.IsDefined(typeof(TodoPriority), reader.GetInt32(3))
+                    ? (TodoPriority)reader.GetInt32(3)
+                    : TodoPriority.Medium,
+                CreatedAt = ReadDateTime(reader.GetString(4), "Todos.CreatedAt"),
+                CompletedAt = reader.IsDBNull(5) ? null : ReadDateTime(reader.GetString(5), "Todos.CompletedAt")
+            });
+        var quickNotes = await session.QueryAsync(
+            "SELECT Title, Content, IsPinned, SortOrder, CreatedAt, UpdatedAt FROM QuickNotes ORDER BY Id",
+            reader => new QuickNoteBackupEntry
+            {
+                Title = reader.GetString(0),
+                Content = reader.GetString(1),
+                IsPinned = reader.GetInt32(2) != 0,
+                SortOrder = reader.GetInt32(3),
+                CreatedAt = ReadDateTime(reader.GetString(4), "QuickNotes.CreatedAt"),
+                UpdatedAt = ReadDateTime(reader.GetString(5), "QuickNotes.UpdatedAt")
+            });
+        var textSnippets = await session.QueryAsync(
+            "SELECT Title, Content, Category, IsPinned, SortOrder, UseCount, CreatedAt, UpdatedAt, LastUsedAt FROM TextSnippets ORDER BY Id",
+            reader => new TextSnippetBackupEntry
+            {
+                Title = reader.GetString(0),
+                Content = reader.GetString(1),
+                Category = reader.GetString(2),
+                IsPinned = reader.GetInt32(3) != 0,
+                SortOrder = reader.GetInt32(4),
+                UseCount = reader.GetInt32(5),
+                CreatedAt = ReadDateTime(reader.GetString(6), "TextSnippets.CreatedAt"),
+                UpdatedAt = ReadDateTime(reader.GetString(7), "TextSnippets.UpdatedAt"),
+                LastUsedAt = reader.IsDBNull(8) ? null : ReadDateTime(reader.GetString(8), "TextSnippets.LastUsedAt")
+            });
+        List<ClipboardHistoryBackupEntry>? clipboardHistory = null;
+        if (options.IncludeClipboardHistory)
+        {
+            clipboardHistory = await session.QueryAsync(
+                "SELECT Id, Content, ContentHash, CreatedAt, LastUsedAt, UseCount FROM ClipboardHistory ORDER BY LastUsedAt DESC",
+                reader =>
+                {
+                    var id = reader.GetInt32(0);
+                    var storedContent = reader.GetString(1);
+                    var content = storedContent;
+                    if (_userDataProtector.IsProtected(storedContent) &&
+                        !_userDataProtector.TryUnprotect(storedContent, out content))
+                    {
+                        throw new InvalidDataException($"剪贴板历史 {id} 无法解密，备份已取消以避免生成不完整文件。");
+                    }
+
+                    return new ClipboardHistoryBackupEntry
+                    {
+                        Content = content,
+                        ContentHash = reader.GetString(2),
+                        CreatedAt = ReadDateTime(reader.GetString(3), "ClipboardHistory.CreatedAt"),
+                        LastUsedAt = ReadDateTime(reader.GetString(4), "ClipboardHistory.LastUsedAt"),
+                        UseCount = reader.GetInt32(5)
+                    };
+                });
+        }
+
+        return new TodoBackupFile
         {
             Version = CurrentBackupVersion,
             ExportedAt = DateTime.UtcNow,
@@ -118,16 +218,29 @@ public class TodoBackupService : ITodoBackupService
                 ? ["settings", "shortcuts", "todos", "quickNotes", "clipboardHistory", "textSnippets"]
                 : ["settings", "shortcuts", "todos", "quickNotes", "textSnippets"],
             ContainsSensitivePlaintext = options.IncludeClipboardHistory,
-            Settings = settings,
-            Shortcuts = shortcuts.Select(ShortcutBackupEntry.FromShortcut).ToList(),
-            Todos = todos.Select(TodoBackupEntry.FromTodo).ToList(),
-            QuickNotes = quickNotes.Select(QuickNoteBackupEntry.FromQuickNote).ToList(),
-            ClipboardHistory = clipboardHistory?.Select(ClipboardHistoryBackupEntry.FromHistory).ToList(),
-            TextSnippets = textSnippets.Select(TextSnippetBackupEntry.FromSnippet).ToList()
+            Settings = settings
+                .Where(setting => !ExportExcludedSettingKeys.Contains(setting.Key))
+                .ToDictionary(setting => setting.Key, setting => setting.Value, StringComparer.Ordinal),
+            Shortcuts = shortcuts,
+            Todos = todos,
+            QuickNotes = quickNotes,
+            ClipboardHistory = clipboardHistory,
+            TextSnippets = textSnippets
         };
+    }
 
-        var json = JsonSerializer.Serialize(payload, JsonOptions);
-        await File.WriteAllTextAsync(filePath, json, Utf8NoBom);
+    private static DateTime ReadDateTime(string value, string field)
+    {
+        if (DateTime.TryParse(
+                value,
+                CultureInfo.InvariantCulture,
+                DateTimeStyles.RoundtripKind,
+                out var parsed))
+        {
+            return parsed;
+        }
+
+        throw new InvalidDataException($"数据库字段 {field} 包含无效日期，备份已取消。");
     }
 
     public async Task<BackupImportPlan> PrepareImportAsync(string filePath)

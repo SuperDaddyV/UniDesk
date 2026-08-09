@@ -1,9 +1,13 @@
 param(
     [string]$Version = '2.1.0',
     [Parameter(Mandatory)]
+    [string]$ExpectedSourceRevision,
+    [Parameter(Mandatory)]
     [string]$PayloadRoot,
     [Parameter(Mandatory)]
     [string]$OutputDirectory,
+    [string]$UnsignedSourceManifestPath,
+    [string]$ExpectedUnsignedSourceManifestSha256,
     [string]$IsccPath,
     [switch]$RequireSignedPayload
 )
@@ -14,6 +18,18 @@ Set-StrictMode -Version Latest
 $projectRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $payloadPath = [IO.Path]::GetFullPath($PayloadRoot, $projectRoot)
 $outputPath = [IO.Path]::GetFullPath($OutputDirectory, $projectRoot)
+
+if ($RequireSignedPayload) {
+    $repositoryRevision = (& git -C $projectRoot rev-parse HEAD).Trim()
+    if ($LASTEXITCODE -ne 0 -or
+        -not $repositoryRevision.Equals($ExpectedSourceRevision, [StringComparison]::OrdinalIgnoreCase)) {
+        throw "Installer source HEAD '$repositoryRevision' does not match '$ExpectedSourceRevision'."
+    }
+    $repositoryStatus = @(& git -C $projectRoot status --porcelain --untracked-files=all)
+    if ($LASTEXITCODE -ne 0 -or $repositoryStatus.Count -ne 0) {
+        throw 'A public installer must be compiled from a clean installer-source worktree.'
+    }
+}
 
 if (-not (Test-Path -LiteralPath $payloadPath -PathType Container)) {
     throw "Release payload directory was not found: $payloadPath"
@@ -26,6 +42,50 @@ $appDirectory = Join-Path $payloadPath 'App'
 $serviceDirectory = Join-Path $payloadPath 'HardwareService'
 $repairDirectory = Join-Path $payloadPath 'HardwareRepair'
 $sourceManifestPath = Join-Path $payloadPath 'release-source.json'
+if ($RequireSignedPayload) {
+    if ([string]::IsNullOrWhiteSpace($UnsignedSourceManifestPath)) {
+        throw 'The independently preserved unsigned source manifest is required for a signed payload.'
+    }
+    $trustedManifestPath = [IO.Path]::GetFullPath($UnsignedSourceManifestPath, $projectRoot)
+    if ($ExpectedUnsignedSourceManifestSha256 -cnotmatch '^[0-9a-fA-F]{64}$') {
+        throw 'The expected unsigned source manifest SHA-256 is missing or invalid.'
+    }
+    if ([IO.Path]::GetFullPath($sourceManifestPath).Equals(
+            $trustedManifestPath,
+            [StringComparison]::OrdinalIgnoreCase)) {
+        throw 'The trusted unsigned source manifest must be outside the signed payload.'
+    }
+    $trustedManifestHash = (Get-FileHash -LiteralPath $trustedManifestPath -Algorithm SHA256).Hash
+    $returnedManifestHash = (Get-FileHash -LiteralPath $sourceManifestPath -Algorithm SHA256).Hash
+    if (-not $trustedManifestHash.Equals($ExpectedUnsignedSourceManifestSha256, [StringComparison]::OrdinalIgnoreCase) -or
+        -not $returnedManifestHash.Equals($ExpectedUnsignedSourceManifestSha256, [StringComparison]::OrdinalIgnoreCase)) {
+        throw 'The source manifest returned with the signed payload differs from the independently preserved unsigned manifest.'
+    }
+}
+$sourceManifest = Get-Content -LiteralPath $sourceManifestPath -Raw | ConvertFrom-Json
+if ($sourceManifest.schema -ne 3) {
+    throw "Unsupported release source manifest schema '$($sourceManifest.schema)'."
+}
+if ($sourceManifest.version -ne $Version) {
+    throw "Release source manifest version '$($sourceManifest.version)' does not match $Version."
+}
+if ($sourceManifest.sourceRevision -ne $ExpectedSourceRevision) {
+    throw "Release source revision '$($sourceManifest.sourceRevision)' does not match '$ExpectedSourceRevision'."
+}
+if ($sourceManifest.isDirty -and $RequireSignedPayload) {
+    throw 'A public installer cannot be built from a dirty source manifest.'
+}
+
+$integrityParameters = @{
+    PayloadRoot = $payloadPath
+    SourceManifestPath = $sourceManifestPath
+}
+if ($RequireSignedPayload) {
+    $integrityParameters.AllowSigningChanges = $true
+}
+& (Join-Path $PSScriptRoot 'Test-ReleasePayloadIntegrity.ps1') @integrityParameters
+
+$expectedProductVersion = "$Version+$ExpectedSourceRevision"
 $firstPartyFiles = @(
     @{ Name = 'Application'; Path = (Join-Path $appDirectory 'UniDesk.exe') },
     @{ Name = 'Application managed code'; Path = (Join-Path $appDirectory 'UniDesk.dll') },
@@ -39,8 +99,8 @@ $firstPartyFiles = @(
 
 foreach ($firstPartyFile in $firstPartyFiles) {
     $item = Get-Item -LiteralPath $firstPartyFile.Path
-    if (-not $item.VersionInfo.ProductVersion.StartsWith($Version, [StringComparison]::Ordinal)) {
-        throw "$($firstPartyFile.Name) version '$($item.VersionInfo.ProductVersion)' does not match $Version."
+    if (-not $item.VersionInfo.ProductVersion.Equals($expectedProductVersion, [StringComparison]::Ordinal)) {
+        throw "$($firstPartyFile.Name) product version '$($item.VersionInfo.ProductVersion)' does not bind to source revision '$ExpectedSourceRevision'."
     }
     if ($RequireSignedPayload) {
         $signature = Get-AuthenticodeSignature -LiteralPath $item.FullName
@@ -48,14 +108,6 @@ foreach ($firstPartyFile in $firstPartyFiles) {
             throw "$($firstPartyFile.Name) must be signed before building the public installer."
         }
     }
-}
-
-$sourceManifest = Get-Content -LiteralPath $sourceManifestPath -Raw | ConvertFrom-Json
-if ($sourceManifest.version -ne $Version) {
-    throw "Release source manifest version '$($sourceManifest.version)' does not match $Version."
-}
-if ($sourceManifest.isDirty -and $RequireSignedPayload) {
-    throw 'A public installer cannot be built from a dirty source manifest.'
 }
 
 if ([string]::IsNullOrWhiteSpace($IsccPath)) {

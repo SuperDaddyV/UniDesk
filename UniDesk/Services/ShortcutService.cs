@@ -13,17 +13,24 @@ public class ShortcutService : IShortcutService
         "SELECT Id, Name, Path, Type, IconPath, SortOrder, CreatedAt, LaunchArguments FROM Shortcuts";
 
     private readonly IDatabaseService _databaseService;
+    private readonly Func<ShortcutItem, int, string?> _createDerivedIcon;
 
     public ShortcutService(IDatabaseService databaseService)
+        : this(databaseService, CreateDerivedIcon)
+    {
+    }
+
+    internal ShortcutService(
+        IDatabaseService databaseService,
+        Func<ShortcutItem, int, string?> createDerivedIcon)
     {
         _databaseService = databaseService;
+        _createDerivedIcon = createDerivedIcon;
     }
 
     public async Task<List<ShortcutItem>> GetAllShortcutsAsync()
     {
-        try
-        {
-            var shortcuts = await _databaseService.QueryAsync(
+        var shortcuts = await _databaseService.QueryAsync(
                 $"{ShortcutSelectSql} ORDER BY SortOrder ASC, CreatedAt ASC, Id ASC",
                 MapShortcut
             );
@@ -33,35 +40,21 @@ public class ShortcutService : IShortcutService
                 await SaveSortOrderAsync(shortcuts);
             }
 
-            return shortcuts;
-        }
-        catch
-        {
-            return new List<ShortcutItem>();
-        }
+        return shortcuts;
     }
 
     public async Task<ShortcutItem?> GetShortcutAsync(int id)
     {
-        try
-        {
-            return await _databaseService.QuerySingleAsync(
+        return await _databaseService.QuerySingleAsync(
                 $"{ShortcutSelectSql} WHERE Id = @p0",
                 MapShortcut,
                 id
             );
-        }
-        catch
-        {
-            return null;
-        }
     }
 
     public async Task<int> CreateShortcutAsync(ShortcutItem shortcut)
     {
-        try
-        {
-            var createdAt = shortcut.CreatedAt == default ? DateTime.UtcNow : shortcut.CreatedAt;
+        var createdAt = shortcut.CreatedAt == default ? DateTime.UtcNow : shortcut.CreatedAt;
             var id = await _databaseService.QuerySingleAsync(
                 "INSERT INTO Shortcuts (Name, Path, Type, IconPath, SortOrder, CreatedAt, LaunchArguments) VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6) RETURNING Id",
                 reader => reader.GetInt32(0),
@@ -76,31 +69,62 @@ public class ShortcutService : IShortcutService
 
             if (id > 0 && string.IsNullOrEmpty(shortcut.IconPath))
             {
-                var iconPath = !string.IsNullOrEmpty(shortcut.BundledIconFileName)
-                    ? CopyBundledIcon(shortcut.BundledIconFileName, id)
-                    : ExtractAndSaveIcon(shortcut.IconLookupPath ?? shortcut.Path, id);
-                if (!string.IsNullOrEmpty(iconPath))
+                string? iconPath = null;
+                try
                 {
-                    await _databaseService.ExecuteNonQueryAsync(
-                        "UPDATE Shortcuts SET IconPath = @p0 WHERE Id = @p1",
-                        iconPath, id
-                    );
+                    iconPath = _createDerivedIcon(shortcut, id);
+                    if (!string.IsNullOrEmpty(iconPath))
+                    {
+                        var affected = await _databaseService.ExecuteNonQueryAsync(
+                            "UPDATE Shortcuts SET IconPath = @p0 WHERE Id = @p1",
+                            iconPath,
+                            id);
+                        if (affected != 1)
+                        {
+                            throw new InvalidOperationException($"快捷方式 {id} 的派生图标未能写入。");
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Logger.LogError(ex, $"ShortcutService.CreateDerivedIcon({id})");
+                    DeleteDerivedIcon(iconPath, id);
                 }
             }
 
-            return id;
-        }
-        catch
+        if (id <= 0)
         {
-            return 0;
+            throw new InvalidOperationException("快捷方式未能写入数据库。");
+        }
+
+        return id;
+    }
+
+    private static string? CreateDerivedIcon(ShortcutItem shortcut, int id) =>
+        !string.IsNullOrEmpty(shortcut.BundledIconFileName)
+            ? CopyBundledIcon(shortcut.BundledIconFileName, id)
+            : ExtractAndSaveIcon(shortcut.IconLookupPath ?? shortcut.Path, id);
+
+    private static void DeleteDerivedIcon(string? iconPath, int id)
+    {
+        if (string.IsNullOrEmpty(iconPath) || !File.Exists(iconPath))
+        {
+            return;
+        }
+
+        try
+        {
+            File.Delete(iconPath);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, $"ShortcutService.DeleteDerivedIcon({id})");
         }
     }
 
     public async Task UpdateShortcutAsync(ShortcutItem shortcut)
     {
-        try
-        {
-            await _databaseService.ExecuteNonQueryAsync(
+        var affected = await _databaseService.ExecuteNonQueryAsync(
                 "UPDATE Shortcuts SET Name = @p0, Path = @p1, Type = @p2, IconPath = @p3, SortOrder = @p4, LaunchArguments = @p5 WHERE Id = @p6",
                 shortcut.Name,
                 shortcut.Path,
@@ -110,48 +134,38 @@ public class ShortcutService : IShortcutService
                 shortcut.LaunchArguments,
                 shortcut.Id
             );
-        }
-        catch
+        if (affected != 1)
         {
+            throw new InvalidOperationException($"快捷方式 {shortcut.Id} 不存在或未能更新。");
         }
     }
 
     public async Task DeleteShortcutAsync(int id)
     {
-        try
+        var shortcut = await GetShortcutAsync(id);
+        var affected = await _databaseService.ExecuteNonQueryAsync(
+            "DELETE FROM Shortcuts WHERE Id = @p0",
+            id
+        );
+        if (affected != 1)
         {
-            var shortcut = await GetShortcutAsync(id);
-            if (shortcut != null && !string.IsNullOrEmpty(shortcut.IconPath) && File.Exists(shortcut.IconPath))
-            {
-                try { File.Delete(shortcut.IconPath); } catch { }
-            }
-
-            await _databaseService.ExecuteNonQueryAsync(
-                "DELETE FROM Shortcuts WHERE Id = @p0",
-                id
-            );
+            throw new InvalidOperationException($"快捷方式 {id} 不存在或未能删除。");
         }
-        catch
+
+        if (shortcut != null && !string.IsNullOrEmpty(shortcut.IconPath) && File.Exists(shortcut.IconPath))
         {
+            try { File.Delete(shortcut.IconPath); } catch (Exception ex) { Logger.LogError(ex, $"ShortcutService.DeleteIcon({id})"); }
         }
     }
 
     public async Task UpdateSortOrderAsync(List<int> ids)
     {
-        try
-        {
-            await SaveSortOrderAsync(ids);
-        }
-        catch
-        {
-        }
+        await SaveSortOrderAsync(ids);
     }
 
     public async Task NormalizeSortOrderAsync()
     {
-        try
-        {
-            var shortcuts = await _databaseService.QueryAsync(
+        var shortcuts = await _databaseService.QueryAsync(
                 $"{ShortcutSelectSql} ORDER BY SortOrder ASC, CreatedAt ASC, Id ASC",
                 MapShortcut
             );
@@ -160,10 +174,6 @@ public class ShortcutService : IShortcutService
             {
                 await SaveSortOrderAsync(shortcuts);
             }
-        }
-        catch
-        {
-        }
     }
 
     public async Task RefreshMissingIconsAsync()
@@ -343,14 +353,23 @@ public class ShortcutService : IShortcutService
 
     private async Task SaveSortOrderAsync(IReadOnlyList<int> ids)
     {
-        for (var i = 0; i < ids.Count; i++)
+        await _databaseService.ExecuteInTransactionAsync(async session =>
         {
-            await _databaseService.ExecuteNonQueryAsync(
-                "UPDATE Shortcuts SET SortOrder = @p0 WHERE Id = @p1",
-                i,
-                ids[i]
-            );
-        }
+            for (var i = 0; i < ids.Count; i++)
+            {
+                var affected = await session.ExecuteNonQueryAsync(
+                    "UPDATE Shortcuts SET SortOrder = @p0 WHERE Id = @p1",
+                    i,
+                    ids[i]
+                );
+                if (affected != 1)
+                {
+                    throw new InvalidOperationException($"快捷方式 {ids[i]} 不存在或未能更新排序。");
+                }
+            }
+
+            return true;
+        });
     }
 
     private static ShortcutItem MapShortcut(Microsoft.Data.Sqlite.SqliteDataReader reader)

@@ -2,6 +2,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
+using System.Windows.Interop;
 using System.Windows.Media;
 using UniDesk.Helpers;
 using UniDesk.ViewModels;
@@ -12,27 +13,54 @@ public partial class SettingsWindow : Window
 {
     private readonly SettingsViewModel _viewModel;
     private readonly EventHandler<bool> _requestCloseHandler;
+    private readonly IMonitorWorkAreaProvider _monitorWorkAreas;
     private bool _isClosing;
+    private bool _initialBoundsApplied;
 
     private bool _isWindowDragging;
     private Point _windowDragScreenStart;
 
     private const double DragChromeHeight = 56;
+    private const double DefaultMinimumHeight = 420;
+    private const double WorkAreaMargin = 24;
 
-    public SettingsWindow(SettingsViewModel viewModel, double ownerWidth, double ownerHeight)
+    public SettingsWindow(
+        SettingsViewModel viewModel,
+        double ownerWidth,
+        double ownerHeight,
+        IMonitorWorkAreaProvider? monitorWorkAreas = null)
     {
         InitializeComponent();
         DataContext = viewModel;
         _viewModel = viewModel;
         _requestCloseHandler = OnRequestClose;
+        _monitorWorkAreas = monitorWorkAreas ?? Win32MonitorWorkAreaProvider.Instance;
 
         AppIconHelper.ApplyWindowIcon(this);
         DesktopWidgetWindowHelper.Configure(this);
 
-        ApplySizeFromOwner(ownerWidth, ownerHeight);
-        SetDefaultPosition();
+        _ = ownerWidth;
+        _ = ownerHeight;
+        SourceInitialized += SettingsWindow_OnSourceInitialized;
 
         _viewModel.RequestClose += _requestCloseHandler;
+    }
+
+    private void SettingsWindow_OnSourceInitialized(object? sender, EventArgs e)
+    {
+        if (_initialBoundsApplied)
+        {
+            return;
+        }
+
+        _initialBoundsApplied = true;
+        var owner = Owner ?? Application.Current.MainWindow;
+        var targetHandle = owner != null
+            ? new WindowInteropHelper(owner).Handle
+            : new WindowInteropHelper(this).Handle;
+        var workArea = _monitorWorkAreas.GetForWindow(targetHandle).WorkArea;
+        ApplySizeFromWorkArea(workArea);
+        SetDefaultPosition(owner, workArea);
     }
 
     private void OnRequestClose(object? sender, bool saved)
@@ -52,20 +80,18 @@ public partial class SettingsWindow : Window
         Close();
     }
 
-    private void ApplySizeFromOwner(double ownerWidth, double ownerHeight)
+    private void ApplySizeFromWorkArea(LogicalRect workArea)
     {
-        _ = ownerWidth;
-        _ = ownerHeight;
-        var workArea = SystemParameters.WorkArea;
-        Width = Math.Min(720, Math.Max(680, workArea.Width - 32));
-        Height = Math.Min(620, Math.Max(560, workArea.Height - 32));
-        MinWidth = 680;
-        MinHeight = 560;
+        var usableHeight = Math.Max(320, workArea.Height - WorkAreaMargin);
+        var usableWidth = Math.Max(320, workArea.Width - 32);
+        MinWidth = Math.Min(680, usableWidth);
+        Width = Math.Min(720, usableWidth);
+        MinHeight = Math.Min(DefaultMinimumHeight, usableHeight);
+        Height = Math.Min(620, usableHeight);
     }
 
-    private void SetDefaultPosition()
+    private void SetDefaultPosition(Window? owner, LogicalRect workArea)
     {
-        var owner = Owner ?? Application.Current.MainWindow;
         if (owner != null)
         {
             Left = owner.Left + (owner.Width - Width) / 2;
@@ -73,14 +99,17 @@ public partial class SettingsWindow : Window
         }
         else
         {
-            var workArea = SystemParameters.WorkArea;
             Left = workArea.Left + (workArea.Width - Width) / 2;
             Top = workArea.Top + (workArea.Height - Height) / 2;
         }
 
-        var work = SystemParameters.WorkArea;
-        Left = Math.Clamp(Left, work.Left, Math.Max(work.Left, work.Right - Width));
-        Top = Math.Clamp(Top, work.Top, Math.Max(work.Top, work.Bottom - Height));
+        var clamped = MonitorWorkAreaGeometry.Clamp(
+            new LogicalRect(Left, Top, Width, Height),
+            workArea);
+        Left = clamped.Left;
+        Top = clamped.Top;
+        Width = clamped.Width;
+        Height = clamped.Height;
     }
 
     private void Window_OnPreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -111,8 +140,9 @@ public partial class SettingsWindow : Window
         }
 
         var current = PointToScreen(e.GetPosition(this));
-        Left += current.X - _windowDragScreenStart.X;
-        Top += current.Y - _windowDragScreenStart.Y;
+        var monitor = _monitorWorkAreas.GetForWindow(new WindowInteropHelper(this).Handle);
+        Left += (current.X - _windowDragScreenStart.X) * 96 / monitor.DpiX;
+        Top += (current.Y - _windowDragScreenStart.Y) * 96 / monitor.DpiY;
         _windowDragScreenStart = current;
     }
 

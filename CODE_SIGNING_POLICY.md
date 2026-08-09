@@ -36,11 +36,11 @@ Third-party runtimes, libraries, drivers, and installers are not re-signed as Un
 2. An approver manually starts the `Build and sign release candidate` workflow for the exact `main` revision and version.
 3. GitHub Actions creates a fresh application payload from that revision and sends only the declared first-party PE files to SignPath.
 4. After SignPath signs the first-party payload, the workflow builds the installer from that signed payload and submits the installer for signing.
-5. Release-readiness checks verify the source revision, version, Authenticode status, third-party PawnIO hash, and final SHA-256 manifest.
+5. Release-readiness checks verify the source revision, version, expected and consistent first-party signer identity, third-party PawnIO hash and upstream signer, and final SHA-256 manifest.
 6. Creating a Git tag or GitHub Release remains a separate manual decision after installation and release-matrix testing.
 
 The SignPath API token is stored only as a GitHub Actions secret. The repository does not contain a certificate private key, signing token, or other signing identity material.
 
 ## Reporting concerns
 
-Report suspected misuse of the signing certificate, an unexpected signed file, or a release-integrity issue through [GitHub Issues](https://github.com/SuperDaddyV/UniDesk/issues). Include the affected file name, release URL, SHA-256 value, and signature details when possible.
+Report suspected misuse of the signing certificate, an unexpected signed file, or a release-integrity issue through [GitHub private vulnerability reporting](https://github.com/SuperDaddyV/UniDesk/security/advisories/new). Include the affected file name, release URL, SHA-256 value, and signature details when possible. Do not publish unpatched exploit details in a public issue.
