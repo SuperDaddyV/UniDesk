@@ -150,7 +150,8 @@ public class ReleasePipelineTests
             ProjectRoot,
             ".github",
             "workflows",
-            "release-signing.yml"));
+            "release-signing.yml"))
+            .ReplaceLineEndings("\n");
 
         foreach (var jobName in new[]
                  {
@@ -238,8 +239,9 @@ public class ReleasePipelineTests
     private static string GetWorkflowJob(string workflow, string jobName, string nextJobName)
     {
         var start = workflow.IndexOf($"  {jobName}:\n", StringComparison.Ordinal);
+        Assert.True(start >= 0, $"Unable to find workflow job '{jobName}'.");
         var end = workflow.IndexOf($"  {nextJobName}:\n", start, StringComparison.Ordinal);
-        Assert.True(start >= 0 && end > start, $"Unable to isolate workflow job '{jobName}'.");
+        Assert.True(end > start, $"Unable to isolate workflow job '{jobName}'.");
         return workflow[start..end];
     }
 
