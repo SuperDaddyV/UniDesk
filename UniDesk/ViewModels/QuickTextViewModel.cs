@@ -96,23 +96,45 @@ public partial class QuickTextViewModel : ObservableObject, IDisposable
     private async Task DeleteClipboardHistoryAsync(ClipboardHistoryItem? item)
     {
         if (item == null) return;
-        await _quickTextService.DeleteClipboardHistoryAsync(item.Id);
-        await ReloadAsync();
+        await RunDataOperationAsync(
+            async () =>
+            {
+                await _quickTextService.DeleteClipboardHistoryAsync(item.Id);
+                await ReloadAsync();
+            },
+            $"QuickTextViewModel.DeleteClipboardHistoryAsync({item.Id})");
     }
 
     [RelayCommand]
     private async Task ClearClipboardHistoryAsync()
     {
         if (!_notificationService.ShowConfirmDialog(L("QuickText.ClearHistoryConfirm"), L("QuickText.ClearHistoryTitle"))) return;
-        await _quickTextService.ClearClipboardHistoryAsync();
-        await ReloadAsync();
-        _notificationService.ShowSuccessMessage(L("QuickText.HistoryCleared"));
+        if (await RunDataOperationAsync(
+                async () =>
+                {
+                    await _quickTextService.ClearClipboardHistoryAsync();
+                    await ReloadAsync();
+                },
+                "QuickTextViewModel.ClearClipboardHistoryAsync"))
+        {
+            _notificationService.ShowSuccessMessage(L("QuickText.HistoryCleared"));
+        }
     }
 
     [RelayCommand]
     private async Task FavoriteClipboardHistoryAsync(ClipboardHistoryItem? item)
     {
-        var snippet = await _quickTextService.CreateSnippetFromHistoryAsync(item);
+        TextSnippet? snippet;
+        try
+        {
+            snippet = await _quickTextService.CreateSnippetFromHistoryAsync(item);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "QuickTextViewModel.FavoriteClipboardHistoryAsync");
+            _notificationService.ShowWarningMessage(L("QuickText.FavoriteFailed"));
+            return;
+        }
         if (snippet == null)
         {
             _notificationService.ShowWarningMessage(L("QuickText.FavoriteFailed"));
@@ -171,8 +193,13 @@ public partial class QuickTextViewModel : ObservableObject, IDisposable
             return;
         }
 
-        await _quickTextService.DeleteTextSnippetAsync(snippet.Id);
-        await ReloadAsync();
+        await RunDataOperationAsync(
+            async () =>
+            {
+                await _quickTextService.DeleteTextSnippetAsync(snippet.Id);
+                await ReloadAsync();
+            },
+            $"QuickTextViewModel.DeleteTextSnippetAsync({snippet.Id})");
     }
 
     [RelayCommand]
@@ -262,6 +289,21 @@ public partial class QuickTextViewModel : ObservableObject, IDisposable
         if (_disposed) return;
         _disposed = true;
         _clipboardMonitorService.ClipboardHistoryChanged -= ClipboardMonitor_OnHistoryChanged;
+    }
+
+    private async Task<bool> RunDataOperationAsync(Func<Task> operation, string context)
+    {
+        try
+        {
+            await operation();
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, context);
+            _notificationService.ShowWarningMessage(L("Common.OperationFailed"));
+            return false;
+        }
     }
 
     private string L(string key) => _localizationService.GetString(key);

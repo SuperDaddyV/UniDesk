@@ -12,4 +12,5 @@ public interface ISettingsService
     void SetValue(string key, string value);
     void InvalidateCache();
     Task FlushPendingSavesAsync();
+    Task SaveBatchAsync(IReadOnlyDictionary<string, string?> values);
 }

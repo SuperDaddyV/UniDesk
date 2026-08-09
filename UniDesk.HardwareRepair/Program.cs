@@ -25,6 +25,7 @@ internal static class Program
             {
                 "--install-or-repair" => (int)runner.InstallOrRepair(),
                 "--remove-service" => (int)runner.RemoveService(),
+                "--cleanup-startup" => (int)new StartupCleanupRunner().Cleanup(),
                 _ => (int)HardwareRepairExitCode.InvalidArguments
             };
         }

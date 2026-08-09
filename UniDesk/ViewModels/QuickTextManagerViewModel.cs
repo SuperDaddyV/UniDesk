@@ -72,9 +72,17 @@ public partial class QuickTextManagerViewModel : ObservableObject
     [RelayCommand]
     private async Task ReloadAsync()
     {
-        _allHistory = await _quickTextService.GetClipboardHistoryAsync(10_000);
-        _allSnippets = await _quickTextService.GetTextSnippetsAsync();
-        ApplyFilters();
+        try
+        {
+            _allHistory = await _quickTextService.GetClipboardHistoryAsync(10_000);
+            _allSnippets = await _quickTextService.GetTextSnippetsAsync();
+            ApplyFilters();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "QuickTextManagerViewModel.ReloadAsync");
+            _notificationService.ShowWarningMessage(L("Common.OperationFailed"));
+        }
     }
 
     [RelayCommand]
@@ -107,7 +115,17 @@ public partial class QuickTextManagerViewModel : ObservableObject
     [RelayCommand]
     private async Task FavoriteHistoryAsync(ClipboardHistoryItem? item)
     {
-        var snippet = await _quickTextService.CreateSnippetFromHistoryAsync(item);
+        TextSnippet? snippet;
+        try
+        {
+            snippet = await _quickTextService.CreateSnippetFromHistoryAsync(item);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "QuickTextManagerViewModel.FavoriteHistoryAsync");
+            _notificationService.ShowWarningMessage(L("QuickText.FavoriteFailed"));
+            return;
+        }
         if (snippet == null)
         {
             _notificationService.ShowWarningMessage(L("QuickText.FavoriteFailed"));
@@ -127,8 +145,13 @@ public partial class QuickTextManagerViewModel : ObservableObject
             return;
         }
 
-        await _quickTextService.DeleteClipboardHistoryAsync(item.Id);
-        await ReloadAsync();
+        await RunDataOperationAsync(
+            async () =>
+            {
+                await _quickTextService.DeleteClipboardHistoryAsync(item.Id);
+                await ReloadAsync();
+            },
+            $"QuickTextManagerViewModel.DeleteHistoryAsync({item.Id})");
     }
 
     [RelayCommand]
@@ -139,9 +162,16 @@ public partial class QuickTextManagerViewModel : ObservableObject
             return;
         }
 
-        await _quickTextService.ClearClipboardHistoryAsync();
-        await ReloadAsync();
-        _notificationService.ShowSuccessMessage(L("QuickText.HistoryCleared"));
+        if (await RunDataOperationAsync(
+                async () =>
+                {
+                    await _quickTextService.ClearClipboardHistoryAsync();
+                    await ReloadAsync();
+                },
+                "QuickTextManagerViewModel.ClearHistoryAsync"))
+        {
+            _notificationService.ShowSuccessMessage(L("QuickText.HistoryCleared"));
+        }
     }
 
     [RelayCommand]
@@ -217,8 +247,13 @@ public partial class QuickTextManagerViewModel : ObservableObject
             return;
         }
 
-        await _quickTextService.DeleteTextSnippetAsync(snippet.Id);
-        await ReloadAsync();
+        await RunDataOperationAsync(
+            async () =>
+            {
+                await _quickTextService.DeleteTextSnippetAsync(snippet.Id);
+                await ReloadAsync();
+            },
+            $"QuickTextManagerViewModel.DeleteSnippetAsync({snippet.Id})");
     }
 
     private void ApplyFilters()
@@ -244,6 +279,21 @@ public partial class QuickTextManagerViewModel : ObservableObject
         string.IsNullOrWhiteSpace(query) ||
         (!string.IsNullOrWhiteSpace(value) &&
          value.Contains(query, StringComparison.OrdinalIgnoreCase));
+
+    private async Task<bool> RunDataOperationAsync(Func<Task> operation, string context)
+    {
+        try
+        {
+            await operation();
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, context);
+            _notificationService.ShowWarningMessage(L("Common.OperationFailed"));
+            return false;
+        }
+    }
 
     private string L(string key) => _localizationService.GetString(key);
 }

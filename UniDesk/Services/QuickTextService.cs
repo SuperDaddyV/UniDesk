@@ -28,6 +28,16 @@ public partial class QuickTextService : IQuickTextService
     private const string SnippetColumns =
         "Id, Title, Content, Category, IsPinned, SortOrder, UseCount, CreatedAt, UpdatedAt, LastUsedAt";
 
+    private const string TrimHistorySql =
+        """
+        DELETE FROM ClipboardHistory
+        WHERE Id NOT IN (
+            SELECT Id FROM ClipboardHistory
+            ORDER BY LastUsedAt DESC
+            LIMIT @p0
+        )
+        """;
+
     public QuickTextService(IDatabaseService databaseService, ISettingsService settingsService)
         : this(databaseService, settingsService, new DpapiUserDataProtector())
     {
@@ -45,41 +55,25 @@ public partial class QuickTextService : IQuickTextService
 
     public async Task<List<ClipboardHistoryItem>> GetClipboardHistoryAsync(int? limit = null)
     {
-        try
-        {
-            var take = Math.Max(1, limit ?? GetHistoryMaxCount());
-            var items = await _databaseService.QueryAsync<ClipboardHistoryItem?>(
-                $"SELECT {HistoryColumns} FROM ClipboardHistory ORDER BY LastUsedAt DESC LIMIT @p0",
-                TryMapHistory,
-                take);
-            return items.OfType<ClipboardHistoryItem>().ToList();
-        }
-        catch (Exception ex)
-        {
-            Logger.LogError(ex, "QuickTextService.GetClipboardHistoryAsync");
-            return [];
-        }
+        var take = Math.Max(1, limit ?? GetHistoryMaxCount());
+        var items = await _databaseService.QueryAsync<ClipboardHistoryItem?>(
+            $"SELECT {HistoryColumns} FROM ClipboardHistory ORDER BY LastUsedAt DESC LIMIT @p0",
+            TryMapHistory,
+            take);
+        return items.OfType<ClipboardHistoryItem>().ToList();
     }
 
     public async Task<List<TextSnippet>> GetTextSnippetsAsync()
     {
-        try
-        {
-            var snippets = await _databaseService.QueryAsync(
+        var snippets = await _databaseService.QueryAsync(
                 $"SELECT {SnippetColumns} FROM TextSnippets",
                 MapSnippet);
 
-            return snippets
-                .OrderByDescending(snippet => snippet.IsPinned)
-                .ThenBy(snippet => snippet.SortOrder)
-                .ThenByDescending(snippet => snippet.LastUsedAt ?? snippet.UpdatedAt)
-                .ToList();
-        }
-        catch (Exception ex)
-        {
-            Logger.LogError(ex, "QuickTextService.GetTextSnippetsAsync");
-            return [];
-        }
+        return snippets
+            .OrderByDescending(snippet => snippet.IsPinned)
+            .ThenBy(snippet => snippet.SortOrder)
+            .ThenByDescending(snippet => snippet.LastUsedAt ?? snippet.UpdatedAt)
+            .ToList();
     }
 
     public async Task<bool> RecordClipboardTextAsync(string? text)
@@ -103,10 +97,11 @@ public partial class QuickTextService : IQuickTextService
 
         var hash = ComputeHash(normalized);
         var now = DateTime.UtcNow;
+        var safeMax = NormalizeHistoryLimit(GetHistoryMaxCount());
 
-        try
+        return await _databaseService.ExecuteInTransactionAsync(async session =>
         {
-            var latest = await _databaseService.QuerySingleAsync(
+            var latest = await session.QuerySingleAsync(
                 "SELECT Id, ContentHash FROM ClipboardHistory ORDER BY LastUsedAt DESC LIMIT 1",
                 MapHistoryIdentity);
 
@@ -115,21 +110,22 @@ public partial class QuickTextService : IQuickTextService
                 return false;
             }
 
-            var existing = await _databaseService.QuerySingleAsync(
+            var existing = await session.QuerySingleAsync(
                 "SELECT Id, ContentHash FROM ClipboardHistory WHERE ContentHash = @p0",
                 MapHistoryIdentity,
                 hash);
 
+            int affected;
             if (existing != null)
             {
-                await _databaseService.ExecuteNonQueryAsync(
+                affected = await session.ExecuteNonQueryAsync(
                     "UPDATE ClipboardHistory SET LastUsedAt = @p0, UseCount = UseCount + 1 WHERE Id = @p1",
                     now.ToString("o", CultureInfo.InvariantCulture),
                     existing.Id);
             }
             else
             {
-                await _databaseService.ExecuteNonQueryAsync(
+                affected = await session.ExecuteNonQueryAsync(
                     "INSERT INTO ClipboardHistory (Content, ContentHash, CreatedAt, LastUsedAt, UseCount) VALUES (@p0, @p1, @p2, @p3, @p4)",
                     _userDataProtector.Protect(normalized),
                     hash,
@@ -138,71 +134,43 @@ public partial class QuickTextService : IQuickTextService
                     1);
             }
 
-            await TrimClipboardHistoryAsync(GetHistoryMaxCount());
+            if (affected != 1)
+            {
+                throw new InvalidOperationException("剪贴板历史未能写入数据库。");
+            }
+
+            await session.ExecuteNonQueryAsync(TrimHistorySql, safeMax);
             return true;
-        }
-        catch (Exception ex)
-        {
-            Logger.LogError(ex, "QuickTextService.RecordClipboardTextAsync");
-            return false;
-        }
+        });
     }
 
     public async Task DeleteClipboardHistoryAsync(int id)
     {
-        try
+        var affected = await _databaseService.ExecuteNonQueryAsync("DELETE FROM ClipboardHistory WHERE Id = @p0", id);
+        if (affected != 1)
         {
-            await _databaseService.ExecuteNonQueryAsync("DELETE FROM ClipboardHistory WHERE Id = @p0", id);
-        }
-        catch (Exception ex)
-        {
-            Logger.LogError(ex, $"QuickTextService.DeleteClipboardHistoryAsync({id})");
+            throw new InvalidOperationException($"剪贴板历史 {id} 不存在或未能删除。");
         }
     }
 
     public async Task ClearClipboardHistoryAsync()
     {
-        try
-        {
-            await _databaseService.ExecuteNonQueryAsync("DELETE FROM ClipboardHistory");
-        }
-        catch (Exception ex)
-        {
-            Logger.LogError(ex, "QuickTextService.ClearClipboardHistoryAsync");
-        }
+        await _databaseService.ExecuteNonQueryAsync("DELETE FROM ClipboardHistory");
     }
 
     public async Task TrimClipboardHistoryAsync(int maxCount)
     {
-        try
-        {
-            var safeMax = NormalizeHistoryLimit(maxCount);
-            await _databaseService.ExecuteNonQueryAsync(
-                """
-                DELETE FROM ClipboardHistory
-                WHERE Id NOT IN (
-                    SELECT Id FROM ClipboardHistory
-                    ORDER BY LastUsedAt DESC
-                    LIMIT @p0
-                )
-                """,
-                safeMax);
-        }
-        catch (Exception ex)
-        {
-            Logger.LogError(ex, "QuickTextService.TrimClipboardHistoryAsync");
-        }
+        var safeMax = NormalizeHistoryLimit(maxCount);
+        await _databaseService.ExecuteNonQueryAsync(TrimHistorySql, safeMax);
     }
 
     public async Task<int> CreateTextSnippetAsync(TextSnippet snippet)
     {
-        try
-        {
-            var now = DateTime.UtcNow;
+        var now = DateTime.UtcNow;
             var createdAt = snippet.CreatedAt == default ? now : snippet.CreatedAt;
             var updatedAt = snippet.UpdatedAt == default ? now : snippet.UpdatedAt;
 
-            return await _databaseService.QuerySingleAsync(
+        var id = await _databaseService.QuerySingleAsync(
                 "INSERT INTO TextSnippets (Title, Content, Category, IsPinned, SortOrder, UseCount, CreatedAt, UpdatedAt, LastUsedAt) VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8) RETURNING Id",
                 reader => reader.GetInt32(0),
                 snippet.Title ?? string.Empty,
@@ -214,20 +182,18 @@ public partial class QuickTextService : IQuickTextService
                 createdAt.ToString("o", CultureInfo.InvariantCulture),
                 updatedAt.ToString("o", CultureInfo.InvariantCulture),
                 snippet.LastUsedAt?.ToString("o", CultureInfo.InvariantCulture));
-        }
-        catch (Exception ex)
+        if (id <= 0)
         {
-            Logger.LogError(ex, "QuickTextService.CreateTextSnippetAsync");
-            return 0;
+            throw new InvalidOperationException("快捷文本未能写入数据库。");
         }
+
+        return id;
     }
 
     public async Task UpdateTextSnippetAsync(TextSnippet snippet)
     {
-        try
-        {
-            var updatedAt = DateTime.UtcNow;
-            await _databaseService.ExecuteNonQueryAsync(
+        var updatedAt = DateTime.UtcNow;
+        var affected = await _databaseService.ExecuteNonQueryAsync(
                 "UPDATE TextSnippets SET Title = @p0, Content = @p1, Category = @p2, IsPinned = @p3, SortOrder = @p4, UpdatedAt = @p5 WHERE Id = @p6",
                 snippet.Title ?? string.Empty,
                 snippet.Content ?? string.Empty,
@@ -236,22 +202,18 @@ public partial class QuickTextService : IQuickTextService
                 snippet.SortOrder,
                 updatedAt.ToString("o", CultureInfo.InvariantCulture),
                 snippet.Id);
-        }
-        catch (Exception ex)
+        if (affected != 1)
         {
-            Logger.LogError(ex, $"QuickTextService.UpdateTextSnippetAsync({snippet.Id})");
+            throw new InvalidOperationException($"快捷文本 {snippet.Id} 不存在或未能更新。");
         }
     }
 
     public async Task DeleteTextSnippetAsync(int id)
     {
-        try
+        var affected = await _databaseService.ExecuteNonQueryAsync("DELETE FROM TextSnippets WHERE Id = @p0", id);
+        if (affected != 1)
         {
-            await _databaseService.ExecuteNonQueryAsync("DELETE FROM TextSnippets WHERE Id = @p0", id);
-        }
-        catch (Exception ex)
-        {
-            Logger.LogError(ex, $"QuickTextService.DeleteTextSnippetAsync({id})");
+            throw new InvalidOperationException($"快捷文本 {id} 不存在或未能删除。");
         }
     }
 
@@ -285,16 +247,13 @@ public partial class QuickTextService : IQuickTextService
 
     public async Task MarkSnippetUsedAsync(int id)
     {
-        try
-        {
-            await _databaseService.ExecuteNonQueryAsync(
+        var affected = await _databaseService.ExecuteNonQueryAsync(
                 "UPDATE TextSnippets SET UseCount = UseCount + 1, LastUsedAt = @p0 WHERE Id = @p1",
                 DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture),
                 id);
-        }
-        catch (Exception ex)
+        if (affected != 1)
         {
-            Logger.LogError(ex, $"QuickTextService.MarkSnippetUsedAsync({id})");
+            throw new InvalidOperationException($"快捷文本 {id} 不存在或未能更新使用次数。");
         }
     }
 

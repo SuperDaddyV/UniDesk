@@ -104,7 +104,7 @@ Common use cases:
 
 Download the latest installer from [GitHub Releases](https://github.com/SuperDaddyV/UniDesk/releases/latest).
 
-Current installer example:
+The repository is preparing `2.1.0`. Until trusted signing and the release gates are complete, rely on the `Latest` marker on the Releases page. The unpublished candidate filename is:
 
 ```powershell
 UniDesk_Setup_2.1.0.exe
@@ -198,4 +198,4 @@ UniDesk is developed based on [Happyeveryweek/LumiDesk](https://github.com/Happy
 
 ## 📄 License
 
-This project is licensed under the [MIT License](LICENSE). Please also respect the licenses and copyright notices of the original project and third-party dependencies.
+This project is licensed under the [MIT License](LICENSE). The dependencies, license texts, and sources distributed by the self-contained installer are listed in [Third-party notices](THIRD-PARTY-NOTICES.md).

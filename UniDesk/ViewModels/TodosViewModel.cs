@@ -83,8 +83,16 @@ public partial class TodosViewModel : ObservableObject
     private async Task ToggleTodoAsync(TodoItem? todo)
     {
         if (todo == null) return;
-        await _todoService.ToggleCompleteAsync(todo.Id);
-        await ReloadAsync();
+        try
+        {
+            await _todoService.ToggleCompleteAsync(todo.Id);
+            await ReloadAsync();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, $"TodosViewModel.ToggleTodoAsync({todo.Id})");
+            _notificationService.ShowWarningMessage(L("Common.OperationFailed"));
+        }
     }
 
     [RelayCommand]

@@ -13,6 +13,50 @@ public class StartupServiceTests
         Assert.Null(exception);
     }
 
+    [Theory]
+    [InlineData(@"\UniDesk", @"C:\Program Files\UniDesk\UniDesk.exe", true)]
+    [InlineData("LumiDesk", @"C:\Program Files\UniDesk\LumiDesk.exe", true)]
+    [InlineData("VsirDesk", @"C:\Program Files\UniDesk\VsirDesk.exe", true)]
+    [InlineData("LumiDesk", @"C:\Temp\LumiDesk.exe", false)]
+    [InlineData("UniDesk", @"C:\Program Files\UniDesk\not-unidesk.exe", false)]
+    [InlineData("UniDesk", @"C:\Program Files\UniDesk\UniDesk.exe.evil", false)]
+    [InlineData("UniDesk", "\"C:\\Program Files\\UniDesk\\UniDesk.exe\"evil", false)]
+    [InlineData("UniDesk", "powershell.exe", false)]
+    public void IsOwnedScheduledTaskAction_ShouldRequireSupportedExecutableInCurrentInstallDirectory(
+        string taskName,
+        string actionPath,
+        bool expected)
+    {
+        var actual = StartupService.IsOwnedScheduledTaskAction(
+            taskName,
+            actionPath,
+            @"C:\Program Files\UniDesk\UniDesk.exe");
+
+        Assert.Equal(expected, actual);
+    }
+
+    [Theory]
+    [InlineData("UniDesk", "\"C:\\Program Files\\UniDesk\\UniDesk.exe\" --minimized", true)]
+    [InlineData("LumiDesk", "C:\\Program Files\\UniDesk\\LumiDesk.exe --legacy", true)]
+    [InlineData("VsirDesk", "\"C:\\Temp\\VsirDesk.exe\"", false)]
+    [InlineData("UniDesk", "powershell.exe -File C:\\Program Files\\UniDesk\\UniDesk.exe", false)]
+    [InlineData("UniDesk", "C:\\Program Files\\UniDesk\\UniDesk.exe.evil", false)]
+    [InlineData("UniDesk", "C:\\Program Files\\UniDesk\\UniDesk.exe/arg", false)]
+    [InlineData("UniDesk", "\"C:\\Program Files\\UniDesk\\UniDesk.exe\"evil", false)]
+    [InlineData("Other", "\"C:\\Program Files\\UniDesk\\UniDesk.exe\"", false)]
+    public void IsOwnedRunKeyValue_ShouldRequireSupportedExecutableInCurrentInstallDirectory(
+        string valueName,
+        string command,
+        bool expected)
+    {
+        var actual = StartupService.IsOwnedRunKeyValue(
+            valueName,
+            command,
+            @"C:\Program Files\UniDesk\UniDesk.exe");
+
+        Assert.Equal(expected, actual);
+    }
+
     private sealed class NoOpNotificationService : INotificationService
     {
         public void ShowInfoMessage(string message) { }

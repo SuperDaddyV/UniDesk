@@ -1,8 +1,37 @@
 # UniDesk v2.1.0 最终发布审核
 
-审核日期：2026-07-28（2026-08-02 更新）
+审核日期：2026-07-28（2026-08-09 对抗式终审更新）
 审核范围：`C:\Users\Administrator\Documents\UniDesk` 当前工作区
-审核结论：代码级发布阻断问题已修复；在可信签名和跨环境人工门禁完成前，不得公开发布。
+审核结论：最新代码未发现剩余 P0／P1；在干净提交、可信签名和跨环境人工门禁完成前仍不得公开发布。当前电脑的旧安装位于弱 ACL 的 `D:\Program Files\UniDesk`，不再视为安全候选，也不得运行其中的旧卸载器；应由新版安装器完成受信迁移。
+
+## 2026-08-09 对抗式终审结论
+
+- 安装器固定到系统 `{autopf}\UniDesk`，在复制文件和创建提权卸载器前验证 Program Files 到卷根的所有祖先 ACL；普通用户具备删除子项、删除目录、改 ACL 或取得所有权时 fail-closed，且不修改宽泛父目录权限。
+- 同 AppId 旧版位于不受保护目录时，新安装器只从固定 HKLM 卸载注册读取旧路径，严格退役 owned 服务并清理 owned 启动项；不执行旧 `unins000.exe`、不自动删除旧目录，用户数据继续保留。
+- 服务安装、覆盖和卸载均验证 `ImagePath` 所有权，并以 `disable → stop → 按服务名 taskkill → 轮询真实停止 → delete` 收口；同名外部服务绝不接管。
+- 设置保存改为单事务批次；备份使用同一数据库事务快照和原子文件替换；持久化失败不再伪装成功；恢复事务提交与后续 UI 刷新使用不同成功边界。
+- 签名流水线拆成五个独立 GitHub-hosted job。签名前清单记录全部 `1431` 个文件、`20` 个目录、SHA-256、固定签名目标与 Authenticode 规范化内容哈希；文件／目录增删、reparse point、非签名文件变化、签名目标代码变化和安装器内容变化均被门禁拒绝。
+- 主窗口和设置窗口按 Win32 物理像素选择真实显示器，选定后才转换 WPF DIP；已覆盖右侧 150% DPI、负坐标、断屏和非矩形排列。
+- 许可证、第三方源码可得性、四语错误提示、首次语言、普通权限清单、天气网络错误和硬件陈旧快照均已复核。
+
+本轮统一自动验证：
+
+| 项目 | 结果 |
+| --- | --- |
+| `dotnet restore UniDesk.sln -r win-x64 --locked-mode` | 通过；锁文件已包含发布 RID |
+| `dotnet build UniDesk.sln -c Release --no-restore -m:1` | 0 警告，0 错误 |
+| `dotnet test UniDesk.sln -c Release --no-restore` | `481/481` 通过，0 跳过 |
+| 版本一致性、NuGet 漏洞、PowerShell AST、`git diff --check` | 全部通过 |
+| 五 job 签名工作流与固定 Action SHA 静态回归 | 通过 |
+| 对抗式只读复核 | 未发现剩余 P0／P1 |
+| `dotnet format --verify-no-changes` | 非项目门禁；因仓库既有空格格式债务未通过，未全仓格式化无关代码 |
+
+本轮未签名验证包：
+
+- 路径：`artifacts\release\2.1.0-2a7356fe1b2e-20260809-122412\installer\UniDesk_Setup_2.1.0.exe`
+- 大小：`124567828` 字节
+- SHA-256：`8FF238E0189DD4111244BE39CE88B482B978C496E42E6A28F774468387B298A3`
+- 状态：`NotSigned`；`release-source.json` 为 schema 3、`isDirty=true`、源提交 `2a7356fe1b2ec00efbfe590af24910a1973f6b29`。仅用于构建和门禁验证，禁止发布。
 
 ## 已修复
 
@@ -91,6 +120,6 @@
 5. 安装签名候选包并检查 `UniDeskHardwareService` 注册路径带双引号，完成剩余人工矩阵。
 6. 用户最终确认后，才能创建 `v2.1.0` tag 和 GitHub Release。
 
-当前 Windows 11 电脑的只读复核结果为：`D:\Program Files\UniDesk\UniDesk.exe` 正以 Medium Integrity 运行；`UniDeskHardwareService` 状态为 Running、启动类型为 Automatic、账户为 `LocalSystem`，注册路径是带完整双引号的 `"D:\Program Files\UniDesk\HardwareService\UniDesk.HardwareService.exe"`。当前未签名安装已通过 I-09 与 I-13，但正式签名候选包仍须重新安装并复核同样结果。
+当前 Windows 11 电脑的只读复核发现：`D:\Program Files` 与卷根允许 `Authenticated Users` 修改，而 `UniDeskHardwareService` 以 `LocalSystem` 从该树运行；`C:\` 也存在异常宽松 ACL。旧安装因此不再记为 I-09／I-13 安全通过。新版安装器会在复制前拒绝当前异常祖先 ACL，并在环境修复后以受信迁移替代运行旧目录中的提权卸载器；本轮未自动修改系统 ACL、停止服务或卸载旧版。
 
 除上述发布门禁外，本轮没有发现需要在 `v2.1.0` 增加的新功能或升级的大版本依赖。

@@ -26,7 +26,16 @@ public sealed class TodoDeletionHandler : ITodoDeletionHandler
             _localizationService.GetString("Dialog.DeleteConfirmTitle"));
         if (!confirmed) return false;
 
-        await _todoService.DeleteTodoAsync(todo.Id);
-        return true;
+        try
+        {
+            await _todoService.DeleteTodoAsync(todo.Id);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            UniDesk.Helpers.Logger.LogError(ex, $"TodoDeletionHandler.Delete({todo.Id})");
+            _notificationService.ShowWarningMessage(_localizationService.GetString("Common.OperationFailed"));
+            return false;
+        }
     }
 }

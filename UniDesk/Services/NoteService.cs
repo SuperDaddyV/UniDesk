@@ -39,40 +39,24 @@ public class NoteService : INoteService
 
     private async Task<List<NoteItem>> GetAllNotesInternalAsync()
     {
-        try
-        {
-            return await _databaseService.QueryAsync(
+        return await _databaseService.QueryAsync(
                 "SELECT Id, Title, Content, Color, CreatedAt, UpdatedAt FROM Notes ORDER BY UpdatedAt DESC",
                 MapNote
             );
-        }
-        catch
-        {
-            return new List<NoteItem>();
-        }
     }
 
     private async Task<NoteItem?> GetNoteInternalAsync(int id)
     {
-        try
-        {
-            return await _databaseService.QuerySingleAsync(
+        return await _databaseService.QuerySingleAsync(
                 "SELECT Id, Title, Content, Color, CreatedAt, UpdatedAt FROM Notes WHERE Id = @p0",
                 MapNote,
                 id
             );
-        }
-        catch
-        {
-            return null;
-        }
     }
 
     private async Task<int> CreateNoteInternalAsync(NoteItem note)
     {
-        try
-        {
-            var now = DateTime.UtcNow;
+        var now = DateTime.UtcNow;
             var createdAt = note.CreatedAt == default ? now : note.CreatedAt;
             var updatedAt = note.UpdatedAt == default ? now : note.UpdatedAt;
 
@@ -90,21 +74,19 @@ public class NoteService : INoteService
                 updatedAt.ToString("o", CultureInfo.InvariantCulture)
             );
 
-            return id;
-        }
-        catch
+        if (id <= 0)
         {
-            return 0;
+            throw new InvalidOperationException("便签未能写入数据库。");
         }
+
+        return id;
     }
 
     private async Task UpdateNoteInternalAsync(NoteItem note)
     {
-        try
-        {
-            var updatedAt = note.UpdatedAt == default ? DateTime.UtcNow : note.UpdatedAt;
+        var updatedAt = note.UpdatedAt == default ? DateTime.UtcNow : note.UpdatedAt;
 
-            await _databaseService.ExecuteNonQueryAsync(
+        var affected = await _databaseService.ExecuteNonQueryAsync(
                 "UPDATE Notes SET Title = @p0, Content = @p1, Color = @p2, UpdatedAt = @p3 WHERE Id = @p4",
                 note.Title ?? string.Empty,
                 note.Content ?? string.Empty,
@@ -112,23 +94,21 @@ public class NoteService : INoteService
                 updatedAt.ToString("o", CultureInfo.InvariantCulture),
                 note.Id
             );
-        }
-        catch
+        if (affected != 1)
         {
+            throw new InvalidOperationException($"便签 {note.Id} 不存在或未能更新。");
         }
     }
 
     private async Task DeleteNoteInternalAsync(int id)
     {
-        try
-        {
-            await _databaseService.ExecuteNonQueryAsync(
+        var affected = await _databaseService.ExecuteNonQueryAsync(
                 "DELETE FROM Notes WHERE Id = @p0",
                 id
             );
-        }
-        catch
+        if (affected != 1)
         {
+            throw new InvalidOperationException($"便签 {id} 不存在或未能删除。");
         }
     }
 

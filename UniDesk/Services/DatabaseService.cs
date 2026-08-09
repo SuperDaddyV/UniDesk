@@ -9,11 +9,15 @@ public class DatabaseService : IDatabaseService
 {
     private const string DatabaseVersion = "1.5";
     private readonly string _connectionString;
+    private readonly string _initialLanguage;
 
-    public DatabaseService(string? connectionString = null)
+    public DatabaseService(
+        string? connectionString = null,
+        string? initialLanguage = null)
     {
         DirectoryHelper.EnsureDirectoriesExist();
         _connectionString = connectionString ?? $"Data Source={DirectoryHelper.DatabaseFile}";
+        _initialLanguage = initialLanguage ?? ILocalizationService.DefaultLanguage;
     }
 
     public async Task InitializeAsync()
@@ -231,7 +235,7 @@ public class DatabaseService : IDatabaseService
             { "WindowTop", "" },
             { "WidgetLayout", "" },
             { "Hotkey", "Ctrl+Alt+Space" },
-            { ILocalizationService.LanguageSettingKey, ILocalizationService.DefaultLanguage },
+            { ILocalizationService.LanguageSettingKey, _initialLanguage },
             { "WeatherApiKey", "" },
             { "WeatherApiHost", "" },
             { WeatherApiDefaults.DefaultApiKeySettingKey, WeatherApiDefaults.BuiltInApiKeyEncrypted },

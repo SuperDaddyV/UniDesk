@@ -63,6 +63,35 @@ public class ShortcutServiceTests
     }
 
     [Fact]
+    public async Task CreateShortcutAsync_WhenDerivedIconUpdateFails_ShouldKeepTheCreatedShortcut()
+    {
+        Cleanup();
+        var db = new DatabaseService($"Data Source={_testDbFile}");
+        await db.InitializeAsync();
+        await db.ExecuteNonQueryAsync(
+            "CREATE TRIGGER fail_shortcut_icon BEFORE UPDATE OF IconPath ON Shortcuts BEGIN SELECT RAISE(ABORT, 'forced icon update failure'); END");
+        var derivedIcon = Path.Combine(Path.GetTempPath(), $"UniDesk-shortcut-icon-{Guid.NewGuid():N}.png");
+        var service = new ShortcutService(
+            db,
+            (_, _) =>
+            {
+                File.WriteAllText(derivedIcon, "derived icon");
+                return derivedIcon;
+            });
+
+        var id = await service.CreateShortcutAsync(new ShortcutItem
+        {
+            Name = "Keeps record",
+            Path = "notepad.exe"
+        });
+
+        Assert.True(id > 0);
+        Assert.NotNull(await service.GetShortcutAsync(id));
+        Assert.False(File.Exists(derivedIcon));
+        Cleanup();
+    }
+
+    [Fact]
     public async Task UpdateSortOrderAsync_ShouldUpdateOrders()
     {
         var (db, svc) = await InitAsync();

@@ -2,6 +2,7 @@ using System.Windows;
 using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Threading;
+using System.Globalization;
 using Microsoft.Extensions.DependencyInjection;
 using UniDesk.Services;
 using UniDesk.ViewModels;
@@ -20,6 +21,7 @@ public partial class App : Application
     private IHotkeyService? _hotkeyService;
     private ISystemThemeService? _systemThemeService;
     private int _activationPending;
+    private string _currentErrorLanguage = ILocalizationService.DefaultLanguage;
 
     public App()
     {
@@ -38,10 +40,10 @@ public partial class App : Application
         args.Handled = true;
         if (!_fatalExceptionCoordinator.TryBeginShutdown()) return;
 
-        var localization = Services?.GetService<ILocalizationService>();
-        var message = localization?.Format("App.FatalErrorFormat", DirectoryHelper.LogsDirectory)
-            ?? $"UniDesk 遇到无法恢复的错误，即将退出。\n日志：{DirectoryHelper.LogsDirectory}";
-        MessageBox.Show(message, "UniDesk", MessageBoxButton.OK, MessageBoxImage.Error);
+        var error = StartupErrorMessageProvider.GetFatalFailure(
+            _currentErrorLanguage,
+            DirectoryHelper.LogsDirectory);
+        MessageBox.Show(error.Message, error.Title, MessageBoxButton.OK, MessageBoxImage.Error);
         Shutdown(-1);
     }
 
@@ -49,11 +51,15 @@ public partial class App : Application
     {
         base.OnStartup(e);
 
-        DirectoryHelper.EnsureDirectoriesExist();
+        _currentErrorLanguage = InitialLanguageResolver.Resolve(
+            e.Args,
+            CultureInfo.CurrentUICulture);
+
         SetupExceptionHandling();
 
         try
         {
+            DirectoryHelper.EnsureDirectoriesExist();
             _singleInstanceHelper = new SingleInstanceHelper();
             if (!_singleInstanceHelper.TryAcquire())
             {
@@ -73,13 +79,15 @@ public partial class App : Application
             _singleInstanceHelper.StartListening();
 
             var services = new ServiceCollection();
-            ConfigureServices(services);
+            ConfigureServices(services, _currentErrorLanguage);
             Services = services.BuildServiceProvider();
 
             var settingsService = Services.GetRequiredService<ISettingsService>();
             await settingsService.InitializeAsync();
             await Services.GetRequiredService<IPrivacyMigrationService>().MigrateAsync();
-            Services.GetRequiredService<ILocalizationService>().Initialize(settingsService);
+            var localizationService = Services.GetRequiredService<ILocalizationService>();
+            localizationService.Initialize(settingsService);
+            _currentErrorLanguage = localizationService.CurrentLanguage;
             _systemThemeService = Services.GetRequiredService<ISystemThemeService>();
             _systemThemeService.Initialize();
             _systemThemeService.ThemeChanged += OnSystemThemeChanged;
@@ -136,9 +144,12 @@ public partial class App : Application
         catch (Exception ex)
         {
             Logger.LogError(ex, "App.OnStartup");
+            var error = StartupErrorMessageProvider.GetStartupFailure(
+                _currentErrorLanguage,
+                DirectoryHelper.LogsDirectory);
             MessageBox.Show(
-                $"启动失败：{ex.Message}\n请查看：{DirectoryHelper.LogsDirectory}",
-                "UniDesk 启动失败",
+                error.Message,
+                error.Title,
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
             Shutdown(-1);
@@ -254,7 +265,9 @@ public partial class App : Application
         };
     }
 
-    private void ConfigureServices(IServiceCollection services)
+    private void ConfigureServices(
+        IServiceCollection services,
+        string initialLanguage)
     {
         services.AddSingleton<MainWindow>();
         services.AddSingleton<MainWindowViewModel>();
@@ -263,7 +276,7 @@ public partial class App : Application
         services.AddSingleton<IUserDataProtector, DpapiUserDataProtector>();
         services.AddSingleton<IPrivacyMigrationService, PrivacyMigrationService>();
         services.AddSingleton<ILocalizationService, LocalizationService>();
-        services.AddSingleton<IDatabaseService, DatabaseService>();
+        services.AddSingleton<IDatabaseService>(_ => new DatabaseService(initialLanguage: initialLanguage));
         services.AddSingleton<INotificationService, NotificationService>();
         services.AddSingleton<IUpdateService, GitHubUpdateService>();
         services.AddSingleton<IWindowService, WindowService>();

@@ -9,11 +9,12 @@ $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
 $projectRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
+$sourceRevision = (& git -C $projectRoot rev-parse HEAD).Trim()
+if ($LASTEXITCODE -ne 0) {
+    throw 'Unable to resolve the source Git commit.'
+}
 if ([string]::IsNullOrWhiteSpace($OutputRoot)) {
-    $shortRevision = (& git -C $projectRoot rev-parse --short=12 HEAD).Trim()
-    if ($LASTEXITCODE -ne 0) {
-        throw 'Unable to resolve the source Git commit.'
-    }
+    $shortRevision = $sourceRevision.Substring(0, [Math]::Min(12, $sourceRevision.Length))
     $buildId = "{0}-{1}-{2}" -f $Version, $shortRevision, (Get-Date -Format 'yyyyMMdd-HHmmss')
     $OutputRoot = Join-Path $projectRoot "artifacts\release\$buildId"
 }
@@ -31,6 +32,7 @@ $publishParameters = @{
 
 $installerParameters = @{
     Version = $Version
+    ExpectedSourceRevision = $sourceRevision
     PayloadRoot = $payloadRoot
     OutputDirectory = $installerOutput
 }

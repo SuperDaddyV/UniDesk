@@ -157,6 +157,34 @@ public class TodoBackupServiceTests
     }
 
     [Fact]
+    public async Task ExportToFileAsync_WhenSnapshotReadFails_ShouldPreserveExistingTarget()
+    {
+        var (db, _, _, _, _, _, backupService) = await InitAsync();
+        await File.WriteAllTextAsync(_backupFile, "existing backup");
+        await db.ExecuteNonQueryAsync(
+            "INSERT INTO Todos (Title, IsCompleted, DueDate, CreatedAt, CompletedAt, Priority) VALUES ('broken', 0, NULL, 'not-a-date', NULL, 1)");
+
+        await Assert.ThrowsAsync<InvalidDataException>(
+            () => backupService.ExportToFileAsync(_backupFile));
+
+        Assert.Equal("existing backup", await File.ReadAllTextAsync(_backupFile));
+        Cleanup();
+    }
+
+    [Fact]
+    public async Task ExportToFileAsync_ShouldFlushPendingSettingsBeforeSnapshot()
+    {
+        var (_, _, _, _, _, settingsService, backupService) = await InitAsync();
+        settingsService.SetValue("PanelWidth", "512");
+
+        await backupService.ExportToFileAsync(_backupFile);
+
+        using var document = JsonDocument.Parse(await File.ReadAllTextAsync(_backupFile));
+        Assert.Equal("512", document.RootElement.GetProperty("settings").GetProperty("PanelWidth").GetString());
+        Cleanup();
+    }
+
+    [Fact]
     public async Task ImportFromFileAsync_InvalidTodo_ShouldPreserveExistingData()
     {
         var (_, todoService, _, _, _, _, backupService) = await InitAsync();

@@ -19,8 +19,10 @@ public sealed class HardwareServiceComputerHost :
     ILibreHardwareComputerHost,
     IHardwareServiceDiagnosticsProvider
 {
+    public static readonly TimeSpan MaximumSnapshotAge = TimeSpan.FromSeconds(10);
     private readonly object _sync = new();
     private readonly IHardwareServiceClient _client;
+    private readonly TimeProvider _timeProvider;
     private IReadOnlyList<HardwareSensorSnapshot> _currentSensors = [];
     private LibreHardwareHostDiagnosticStatus _diagnosticStatus =
         new(false, false, "Hardware service has not been sampled.", null, []);
@@ -32,8 +34,14 @@ public sealed class HardwareServiceComputerHost :
     private bool _disposed;
 
     public HardwareServiceComputerHost(IHardwareServiceClient client)
+        : this(client, TimeProvider.System)
+    {
+    }
+
+    public HardwareServiceComputerHost(IHardwareServiceClient client, TimeProvider timeProvider)
     {
         _client = client;
+        _timeProvider = timeProvider;
     }
 
     public IReadOnlyList<HardwareSensorSnapshot> CurrentSensors
@@ -90,6 +98,27 @@ public sealed class HardwareServiceComputerHost :
                 return;
             }
 
+            var snapshotAge = _timeProvider.GetUtcNow() - response.CapturedAtUtc;
+            if (snapshotAge > MaximumSnapshotAge)
+            {
+                var error = $"Hardware service snapshot is stale ({snapshotAge.TotalSeconds:F1} seconds old).";
+                _currentSensors = [];
+                _diagnosticStatus = new(
+                    false,
+                    response.Provider.IsElevated,
+                    error,
+                    response.Provider.LastRefreshUtc,
+                    response.Provider.HardwareNames.ToArray());
+                _serviceStatus = new(
+                    HardwareServiceAvailability.TimedOut,
+                    response.PawnIo,
+                    _serviceStatus.LastSuccessUtc,
+                    error,
+                    response.ServiceVersion,
+                    response.ProtocolVersion);
+                return;
+            }
+
             _currentSensors = response.Sensors.Select(MapSensor).ToArray();
             _diagnosticStatus = new(
                 response.Provider.IsInitialized,
@@ -100,7 +129,7 @@ public sealed class HardwareServiceComputerHost :
             _serviceStatus = new(
                 response.Availability,
                 response.PawnIo,
-                DateTimeOffset.UtcNow,
+                response.CapturedAtUtc,
                 response.Error,
                 response.ServiceVersion,
                 response.ProtocolVersion);

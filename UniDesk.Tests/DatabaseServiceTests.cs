@@ -360,6 +360,46 @@ public class DatabaseServiceTests
     }
 
     [Fact]
+    public async Task InitializeAsync_ShouldUseResolvedInitialLanguageForNewDatabase()
+    {
+        var databaseService = new DatabaseService(
+            $"Data Source={_testDbFile}",
+            initialLanguage: "ja-JP");
+        await databaseService.InitializeAsync();
+
+        var language = await databaseService.QuerySingleAsync<string>(
+            "SELECT Value FROM Settings WHERE Key = 'Language'",
+            reader => reader.GetString(0));
+
+        Assert.Equal("ja-JP", language);
+        Cleanup();
+    }
+
+    [Fact]
+    public async Task InitializeAsync_ShouldPreserveExistingLanguageDuringUpgradeInitialization()
+    {
+        var firstRun = new DatabaseService(
+            $"Data Source={_testDbFile}",
+            initialLanguage: "en-US");
+        await firstRun.InitializeAsync();
+        await firstRun.ExecuteNonQueryAsync(
+            "UPDATE Settings SET Value = @p0 WHERE Key = 'Language'",
+            "es-ES");
+
+        var laterRun = new DatabaseService(
+            $"Data Source={_testDbFile}",
+            initialLanguage: "ja-JP");
+        await laterRun.InitializeAsync();
+
+        var language = await laterRun.QuerySingleAsync<string>(
+            "SELECT Value FROM Settings WHERE Key = 'Language'",
+            reader => reader.GetString(0));
+
+        Assert.Equal("es-ES", language);
+        Cleanup();
+    }
+
+    [Fact]
     public async Task InitializeAsync_ShouldPreserveExistingStartupAndAutoLocationChoices()
     {
         var databaseService = GetService();

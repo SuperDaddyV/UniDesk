@@ -285,13 +285,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
             SaveModuleSettings();
         }
 
-        HardwareMonitor.IsEnabled = IsModuleEnabled(DashboardModuleIds.HardwareMonitor);
-
-        TimeWeather.IsEnabled = IsModuleEnabled(DashboardModuleIds.TimeWeather);
-        if (TimeWeather.IsEnabled && !TimeWeather.HasWeatherData)
-        {
-            _ = TimeWeather.InitializeAsync();
-        }
+        ApplyModuleRuntimeState();
 
         if (IsModuleEnabled(DashboardModuleIds.QuickNotes) && QuickNotes.QuickNotes.Count == 0)
         {
@@ -309,9 +303,13 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
 
     private void SaveModuleSettings()
     {
-        var json = JsonSerializer.Serialize(GetModuleSettingsSnapshot(), ModuleSettingsJsonOptions);
-        _settingsService.SetValue(DashboardModuleCatalog.SettingsKey, json);
+        _settingsService.SetValue(
+            DashboardModuleCatalog.SettingsKey,
+            SerializeModuleSettings(GetModuleSettingsSnapshot()));
     }
+
+    internal static string SerializeModuleSettings(IEnumerable<ModuleSetting> modules) =>
+        JsonSerializer.Serialize(DashboardModuleCatalog.Normalize(modules), ModuleSettingsJsonOptions);
 
     public bool IsModuleEnabled(string moduleId) =>
         ModuleSettings.FirstOrDefault(module => module.ModuleId == moduleId)?.IsEnabled ?? true;
@@ -382,12 +380,38 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
     {
         OnPropertyChanged(nameof(PanelCollapseToolTip));
         _settingsService.SetValue("PanelCollapsed", value.ToString());
+        ApplyModuleRuntimeState();
+    }
+
+    private void ApplyModuleRuntimeState()
+    {
+        HardwareMonitor.IsEnabled = IsPanelCollapsed || IsModuleEnabled(DashboardModuleIds.HardwareMonitor);
+        TimeWeather.IsEnabled = IsPanelCollapsed || IsModuleEnabled(DashboardModuleIds.TimeWeather);
+        if (TimeWeather.IsEnabled && !TimeWeather.HasWeatherData)
+        {
+            _ = TimeWeather.InitializeAsync();
+        }
     }
 
     public (double Left, double Top)? GetSavedWindowPosition()
     {
         var leftText = _settingsService.GetSetting("WindowLeft");
         var topText = _settingsService.GetSetting("WindowTop");
+        if (!double.TryParse(leftText, NumberStyles.Float, CultureInfo.InvariantCulture, out var left) ||
+            !double.TryParse(topText, NumberStyles.Float, CultureInfo.InvariantCulture, out var top) ||
+            !double.IsFinite(left) ||
+            !double.IsFinite(top))
+        {
+            return null;
+        }
+
+        return (left, top);
+    }
+
+    public (double Left, double Top)? GetSavedWindowPixelPosition()
+    {
+        var leftText = _settingsService.GetSetting("WindowLeftPixels");
+        var topText = _settingsService.GetSetting("WindowTopPixels");
         if (!double.TryParse(leftText, NumberStyles.Float, CultureInfo.InvariantCulture, out var left) ||
             !double.TryParse(topText, NumberStyles.Float, CultureInfo.InvariantCulture, out var top) ||
             !double.IsFinite(left) ||
@@ -408,6 +432,17 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
 
         _settingsService.SetValue("WindowLeft", left.ToString(CultureInfo.InvariantCulture));
         _settingsService.SetValue("WindowTop", top.ToString(CultureInfo.InvariantCulture));
+    }
+
+    public void SaveWindowPixelPosition(double left, double top)
+    {
+        if (!double.IsFinite(left) || !double.IsFinite(top))
+        {
+            return;
+        }
+
+        _settingsService.SetValue("WindowLeftPixels", left.ToString(CultureInfo.InvariantCulture));
+        _settingsService.SetValue("WindowTopPixels", top.ToString(CultureInfo.InvariantCulture));
     }
 
     public Task ReloadTodosAsync() => Todos.ReloadAsync();
@@ -454,7 +489,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
             if (owner != null)
             {
                 settingsWindow.Owner = owner;
-                settingsWindow.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+                settingsWindow.WindowStartupLocation = WindowStartupLocation.Manual;
             }
 
             settingsWindow.ShowActivated = true;
@@ -463,7 +498,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         catch (Exception ex)
         {
             Logger.LogError(ex, "MainWindowViewModel.OpenSettings");
-            _notificationService.ShowErrorMessage(_localizationService.Format("Settings.SaveFailedFormat", ex.Message));
+            _notificationService.ShowErrorMessage(_localizationService.GetString("Settings.OpenFailed"));
             return;
         }
 

@@ -254,6 +254,38 @@ public class SettingsServiceTests
     }
 
     [Fact]
+    public async Task SaveBatchAsync_WhenOneSettingFails_ShouldRollBackTheWholeBatchWithoutRetry()
+    {
+        Cleanup();
+        var databaseService = GetDb();
+        var settingsService = new SettingsService(databaseService);
+        await settingsService.InitializeAsync();
+        await settingsService.SetSettingAsync("BatchA", "old-a");
+        await settingsService.SetSettingAsync("BatchB", "old-b");
+        await databaseService.ExecuteNonQueryAsync(
+            "CREATE TRIGGER fail_settings_batch BEFORE INSERT ON Settings WHEN NEW.Key = 'BatchB' BEGIN SELECT RAISE(ABORT, 'forced batch failure'); END");
+
+        await Assert.ThrowsAnyAsync<Exception>(() => settingsService.SaveBatchAsync(
+            new Dictionary<string, string?>
+            {
+                ["BatchA"] = "new-a",
+                ["BatchB"] = "new-b"
+            }));
+        await Task.Delay(150);
+
+        var storedA = await databaseService.QuerySingleAsync(
+            "SELECT Value FROM Settings WHERE Key = 'BatchA'",
+            reader => reader.GetString(0));
+        var storedB = await databaseService.QuerySingleAsync(
+            "SELECT Value FROM Settings WHERE Key = 'BatchB'",
+            reader => reader.GetString(0));
+        Assert.Equal("old-a", storedA);
+        Assert.Equal("old-b", storedB);
+        settingsService.Dispose();
+        Cleanup();
+    }
+
+    [Fact]
     public async Task ConcurrentSetAndGet_ShouldPersistEveryValueWithoutErrors()
     {
         var databaseService = new RecoverableDatabaseService();
@@ -354,7 +386,7 @@ public class SettingsServiceTests
         }
 
         public Task<T> ExecuteInTransactionAsync<T>(Func<IDatabaseSession, Task<T>> operation) =>
-            throw new NotSupportedException();
+            operation(this);
     }
 
     private sealed class BlockingDatabaseService : IDatabaseService
@@ -385,7 +417,7 @@ public class SettingsServiceTests
             params object?[] parameters) => Task.FromResult<T?>(default);
 
         public Task<T> ExecuteInTransactionAsync<T>(Func<IDatabaseSession, Task<T>> operation) =>
-            throw new NotSupportedException();
+            operation(this);
     }
 
     private sealed class FakeUserDataProtector : IUserDataProtector

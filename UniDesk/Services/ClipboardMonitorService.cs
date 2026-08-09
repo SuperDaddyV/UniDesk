@@ -262,10 +262,25 @@ public sealed class ClipboardMonitorService : IClipboardMonitorService
             return;
         }
 
-        var recorded = await _quickTextService.RecordClipboardTextAsync(text);
-        if (recorded)
+        await TryRecordClipboardTextAsync(text);
+    }
+
+    internal async Task<bool> TryRecordClipboardTextAsync(string text)
+    {
+        try
         {
-            ClipboardHistoryChanged?.Invoke();
+            var recorded = await _quickTextService.RecordClipboardTextAsync(text);
+            if (recorded)
+            {
+                ClipboardHistoryChanged?.Invoke();
+            }
+
+            return recorded;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "ClipboardMonitorService.RecordClipboardText");
+            return false;
         }
     }
 

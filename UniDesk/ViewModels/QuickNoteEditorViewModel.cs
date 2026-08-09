@@ -117,13 +117,19 @@ public partial class QuickNoteEditorViewModel : ObservableObject, IDisposable
         }
 
         _saveTimer.Stop();
-        if (_noteId > 0)
+        try
         {
-            if (!await _quickNoteService.DeleteQuickNoteAsync(_noteId))
+            if (_noteId > 0 && !await _quickNoteService.DeleteQuickNoteAsync(_noteId))
             {
                 _notificationService.ShowWarningMessage(L("Common.OperationFailed"));
                 return false;
             }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, $"QuickNoteEditorViewModel.DeleteAsync({_noteId})");
+            _notificationService.ShowWarningMessage(L("Common.OperationFailed"));
+            return false;
         }
 
         _isDeleted = true;

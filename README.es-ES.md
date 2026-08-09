@@ -104,7 +104,7 @@ Casos de uso habituales:
 
 Descarga el instalador más reciente desde [GitHub Releases](https://github.com/SuperDaddyV/UniDesk/releases/latest).
 
-Ejemplo del instalador actual:
+El repositorio está preparando `2.1.0`. Hasta completar la firma de confianza y las puertas de publicación, usa la marca `Latest` de la página Releases. El nombre del candidato aún no publicado es:
 
 ```powershell
 UniDesk_Setup_2.1.0.exe
@@ -198,4 +198,4 @@ UniDesk está desarrollado sobre [Happyeveryweek/LumiDesk](https://github.com/Ha
 
 ## 📄 Licencia
 
-Este proyecto está publicado bajo la [MIT License](LICENSE). Respeta también las licencias y avisos de copyright del proyecto original y de las dependencias de terceros.
+Este proyecto está publicado bajo la [MIT License](LICENSE). Las dependencias, los textos de licencia y las fuentes incluidas en el instalador autocontenido se detallan en [Third-party notices](THIRD-PARTY-NOTICES.md).

@@ -104,7 +104,7 @@ UniDesk は、デスクトップをすっきり保ちながら、情報確認、
 
 最新のインストーラーは [GitHub Releases](https://github.com/SuperDaddyV/UniDesk/releases/latest) からダウンロードできます。
 
-現在のインストーラー例：
+リポジトリでは `2.1.0` を準備中です。信頼された署名とリリースゲートが完了するまでは、Releases ページの `Latest` 表示を基準にしてください。未公開の候補ファイル名：
 
 ```powershell
 UniDesk_Setup_2.1.0.exe
@@ -198,4 +198,4 @@ UniDesk は [Happyeveryweek/LumiDesk](https://github.com/Happyeveryweek/LumiDesk
 
 ## 📄 License
 
-このプロジェクトは [MIT License](LICENSE) のもとで公開されています。元プロジェクトおよびサードパーティ依存関係のライセンスと著作権表示も尊重してください。
+このプロジェクトは [MIT License](LICENSE) のもとで公開されています。自己完結型インストーラーに同梱される依存関係、ライセンス本文、入手元は [Third-party notices](THIRD-PARTY-NOTICES.md) を参照してください。

@@ -16,7 +16,8 @@ public class SettingsHotkeyIntegrationTests
         Assert.Contains("GetValue(\"Hotkey\", DefaultHotkey)", viewModel, StringComparison.Ordinal);
         Assert.Contains("ApplyGlobalHotkey(requestedHotkey)", viewModel, StringComparison.Ordinal);
         Assert.Contains("if (!hotkeyResult.Success)", viewModel, StringComparison.Ordinal);
-        Assert.Contains("_settingsService.SetValue(\"Hotkey\", hotkeyToPersist)", viewModel, StringComparison.Ordinal);
+        Assert.Contains("[\"Hotkey\"] = hotkeyToPersist", viewModel, StringComparison.Ordinal);
+        Assert.Contains("await _settingsService.SaveBatchAsync(settingsBatch)", viewModel, StringComparison.Ordinal);
         Assert.Contains("ApplyGlobalHotkey(originalHotkey)", viewModel, StringComparison.Ordinal);
     }
 
@@ -28,7 +29,7 @@ public class SettingsHotkeyIntegrationTests
         Assert.Contains("var hotkeySettingChanged", viewModel, StringComparison.Ordinal);
         Assert.Contains("if (hotkeySettingChanged)", viewModel, StringComparison.Ordinal);
         Assert.Contains("var hotkeyToPersist", viewModel, StringComparison.Ordinal);
-        Assert.Contains("_settingsService.SetValue(\"Hotkey\", hotkeyToPersist)", viewModel, StringComparison.Ordinal);
+        Assert.Contains("[\"Hotkey\"] = hotkeyToPersist", viewModel, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -92,7 +93,7 @@ public class SettingsHotkeyIntegrationTests
         Assert.Contains("Command=\"{Binding OpenLocationSettingsCommand}\"", xaml, StringComparison.Ordinal);
         Assert.Contains("private string _city = string.Empty", viewModel, StringComparison.Ordinal);
         Assert.Contains("private bool _autoLocation", viewModel, StringComparison.Ordinal);
-        Assert.Contains("_settingsService.SetValue(\"AutoLocation\"", viewModel, StringComparison.Ordinal);
+        Assert.Contains("[\"AutoLocation\"] = AutoLocation.ToString()", viewModel, StringComparison.Ordinal);
         Assert.Contains("ms-settings:privacy-location", viewModel, StringComparison.Ordinal);
         Assert.Contains("StartupEnabled = true;", viewModel, StringComparison.Ordinal);
         Assert.Contains("AutoLocation = true;", viewModel, StringComparison.Ordinal);
@@ -103,9 +104,10 @@ public class SettingsHotkeyIntegrationTests
     {
         var viewModel = ReadProjectFile("UniDesk", "ViewModels", "SettingsViewModel.cs");
         var validation = viewModel.IndexOf("ValidateApiKeyAsync(apiKeyToValidate, apiHostToValidate)", StringComparison.Ordinal);
-        var persistence = viewModel.IndexOf("_settingsService.SetValue(\"WeatherApiKey\", apiKeyToValidate)", StringComparison.Ordinal);
+        var persistence = viewModel.IndexOf("await _settingsService.SaveBatchAsync(settingsBatch)", StringComparison.Ordinal);
 
         Assert.True(validation >= 0);
+        Assert.Contains("[\"WeatherApiKey\"] = apiKeyToValidate", viewModel, StringComparison.Ordinal);
         Assert.True(persistence > validation);
     }
 
