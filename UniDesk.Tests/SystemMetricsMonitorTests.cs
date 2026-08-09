@@ -3,6 +3,7 @@ using UniDesk.Services;
 
 namespace UniDesk.Tests;
 
+[Collection(SystemMetricsMonitorTestCollection.Name)]
 public class SystemMetricsMonitorTests
 {
     [Fact]
@@ -111,4 +112,10 @@ public class SystemMetricsMonitorTests
             return new SystemMetricsSnapshot();
         }
     }
+}
+
+[CollectionDefinition(Name, DisableParallelization = true)]
+public sealed class SystemMetricsMonitorTestCollection
+{
+    public const string Name = "System metrics monitor tests";
 }
