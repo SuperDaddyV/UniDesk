@@ -2,7 +2,7 @@
 
 审核日期：2026-07-28（2026-08-11 安装兼容修订）
 审核范围：`C:\Users\Administrator\Documents\UniDesk` 当前工作区
-审核结论：最新代码未发现剩余 P0／P1；在干净提交、可信签名和跨环境人工门禁完成前仍不得公开发布。当前电脑的旧安装位于弱 ACL 的 `D:\Program Files\UniDesk`，不再视为安全候选，也不得运行其中的旧卸载器；应由新版安装器完成受信迁移。
+审核结论：最新代码未发现剩余 P0／P1；当前 Windows 11 电脑上的真实覆盖安装、普通权限启动、D 盘主程序保留、受保护系统组件迁移和硬件服务健康检查已经通过。在可信签名和剩余跨环境人工门禁完成前仍不得创建正式 `v2.1.0` Release，但当前源码与文档可以先更新到 GitHub。
 
 ## 2026-08-11 安装兼容修订结论
 
@@ -23,7 +23,7 @@
 | --- | --- |
 | `dotnet restore UniDesk.sln -r win-x64 --locked-mode` | 通过；锁文件已包含发布 RID |
 | `dotnet build UniDesk.sln -c Release --no-restore -m:1` | 0 警告，0 错误 |
-| `dotnet test UniDesk.sln -c Release --no-restore` | `492/492` 通过，0 跳过 |
+| `dotnet test UniDesk.sln -c Release --no-restore` | `503/503` 通过，0 跳过 |
 | 版本一致性、NuGet 漏洞、PowerShell AST、`git diff --check` | 全部通过 |
 | 五 job 签名工作流与固定 Action SHA 静态回归 | 通过 |
 | 对抗式只读复核 | 未发现剩余 P0／P1 |
@@ -38,6 +38,14 @@
 - `artifacts\release\2.1.0-3d3f1bc95fbd-20260811-121628\installer\UniDesk_Setup_2.1.0.exe` 包含分离安装布局，但仍受 Windows PowerShell 模块路径冲突影响，已由人工测试确认失败并废弃。
 - `artifacts\release\2.1.0-4c1fe3d64280-20260811-130653\installer\UniDesk_Setup_2.1.0.exe` 误把 Inno `{commonpf}` 当成 Common Files；实际展开到 `C:\Program Files` 后错误检查卷根 ACL，人工覆盖测试返回 `22`，且错误消息显示字面量 `{log}`。该候选已废弃，不得继续测试或发布；修订版统一使用 `{commoncf}` 并通过 `FmtMessage` 注入实际日志路径。
 - `artifacts\release\2.1.0-43c8f6e1a20d-20260811-132815\installer\UniDesk_Setup_2.1.0.exe` 已正确迁移到 `{commoncf}`，但维护工具把包含读取位的 `FullControl`／`Modify`／`Write` 复合枚举合并为危险权限掩码，导致实际只有 `ReadAndExecute` 的 `BUILTIN\Users` 仍被误判为可写并返回 `26`。该候选已废弃，不得继续测试或发布；修订版只按基础写入、创建、追加、删除、属性、ACL 与所有权权限位判定危险权限。
+
+当前通过人工覆盖安装的未签名候选：
+
+- 路径：`artifacts\release\2.1.0-97913bc55f3a-20260811-134023\installer\UniDesk_Setup_2.1.0.exe`
+- 大小：`124586690` 字节
+- SHA-256：`DEE09DCDCB00491D1398E84ECD7FEF8C6EA593E1A65B69CB3AF6D6BF389AC0CE`
+- 状态：`NotSigned`；`release-source.json` 为干净源提交 `97913bc55f3adb8f669e5a91acbb224be9599c80`。该包仅用于最终人工验收，正式发布仍须由 GitHub 签名流水线从最终 `main` 重新生成。
+- 实机结果：主程序继续位于 `D:\Program Files\UniDesk` 并以非提升权限运行；卸载器、修复工具与硬件服务迁移到 `C:\Program Files\Common Files\UniDesk`；`UniDeskHardwareService` 为 `LocalSystem／Automatic／Running`，`ImagePath` 完整加引号；组件根 ACL 为 `SYSTEM／Administrators: FullControl`、`Users: ReadAndExecute`；维护日志最终返回 `0 (Success)`。
 
 ## 已修复
 
@@ -126,6 +134,6 @@
 5. 安装签名候选包并检查 `UniDeskHardwareService` 注册路径带双引号，完成剩余人工矩阵。
 6. 用户最终确认后，才能创建 `v2.1.0` tag 和 GitHub Release。
 
-当前 Windows 11 电脑的只读复核发现：`D:\Program Files` 与卷根允许 `Authenticated Users` 修改，而旧 `UniDeskHardwareService` 以 `LocalSystem` 从该树运行；旧安装因此不再记为 I-09／I-13 安全通过。新版允许普通权限主程序继续位于 D 盘，但会退役旧目录服务，并把服务、修复工具和卸载器迁移到系统 `{commoncf}\UniDesk`；本轮未自动修改系统 ACL、停止服务或卸载旧版，仍须用最终候选包完成覆盖安装人工验证。
+当前 Windows 11 电脑已用 `97913bc` 候选完成上述安全迁移：弱 ACL 的 D 盘目录只承载普通权限主程序，`LocalSystem` 服务和提权维护载荷已固定到受保护的 `{commoncf}\UniDesk`，原有用户数据和开机启动路径得到保留。该结果确认当前机器的 I-09／I-13 覆盖安装路径通过，但不能替代 Windows 10 LTSC、标准账户、取消 UAC、安全软件拦截和卸载场景的独立人工门禁。
 
 除上述发布门禁外，本轮没有发现需要在 `v2.1.0` 增加的新功能或升级的大版本依赖。
