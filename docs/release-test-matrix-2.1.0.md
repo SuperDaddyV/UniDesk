@@ -84,6 +84,7 @@
 - 主程序安装位置恢复为可选择的本地盘安全目录；提权维护工具、硬件服务、PawnIO 安装包和卸载器固定到 `{commonpf}\UniDesk`。
 - 覆盖旧版时，安装器不会运行旧目录中的卸载器；只在同 AppId 注册路径、目录锁和 ACL 校验均通过后，逐个删除精确匹配的旧 `uninsNNN.exe／.dat／.msg`。
 - 安装／硬件／启动项定向测试 `54/54` 通过；全量 Release 测试 `488/488` 通过；Release 构建 `0` 警告、`0` 错误；Inno Setup 6.7.3 实际编译通过。
+- 人工覆盖测试确认 `3d3f1bc` 候选会因 Windows PowerShell 5.1 继承 PowerShell 7 模块路径而在 `Get-Acl` 自动加载阶段误拒绝正常 `Common Program Files`；该候选判定失败并废弃。预检现直接使用 .NET ACL API，自动回归锁定安装脚本不得再调用 `Get-Acl`。
 - 版本一致性、NuGet 直接与传递依赖漏洞、PowerShell AST 和 `git diff --check` 均通过。新候选必须在本轮修改提交并保持工作区干净后重新生成，上一轮未签名包不得继续使用。
 
 ## 2026-08-09 对抗式终审记录

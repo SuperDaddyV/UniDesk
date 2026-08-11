@@ -406,10 +406,11 @@ begin
     '-NoLogo -NoProfile -NonInteractive -Command "' +
     '$trusted=@(''S-1-5-18'',''S-1-5-32-544'',''S-1-5-80-956008885-3418522649-1831038044-1853292631-2271478464''); ' +
     '$danger=[Security.AccessControl.FileSystemRights]::Delete -bor [Security.AccessControl.FileSystemRights]::DeleteSubdirectoriesAndFiles -bor [Security.AccessControl.FileSystemRights]::ChangePermissions -bor [Security.AccessControl.FileSystemRights]::TakeOwnership; ' +
+    '$sections=[Security.AccessControl.AccessControlSections]::Access -bor [Security.AccessControl.AccessControlSections]::Owner; ' +
     '$paths=@($env:UNIDESK_PROTECTED_ROOT,$env:UNIDESK_PROTECTED_PARENT); foreach($path in $paths){ ' +
-    '$current=Get-Item -LiteralPath $path -Force -ErrorAction Stop; ' +
+    '$current=[IO.DirectoryInfo]::new($path); if(-not $current.Exists){exit 23}; ' +
     'if(($current.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0){exit 20}; ' +
-    '$acl=Get-Acl -LiteralPath $current.FullName -ErrorAction Stop; ' +
+    '$acl=$current.GetAccessControl($sections); ' +
     '$owner=$acl.GetOwner([Security.Principal.SecurityIdentifier]).Value; ' +
     'if($trusted -notcontains $owner){exit 21}; ' +
     'foreach($rule in $acl.GetAccessRules($true,$true,[Security.Principal.SecurityIdentifier])){ ' +

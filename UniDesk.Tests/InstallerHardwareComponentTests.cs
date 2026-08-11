@@ -319,6 +319,13 @@ public class InstallerHardwareComponentTests
         Assert.DoesNotContain("$env:ProgramFiles", script, StringComparison.Ordinal);
         Assert.DoesNotContain("$current=$current.Parent", script, StringComparison.Ordinal);
         Assert.Contains("ExpandConstant('{commonpf}')", script, StringComparison.Ordinal);
+        Assert.Contains("$current=[IO.DirectoryInfo]::new($path)", script, StringComparison.Ordinal);
+        Assert.Contains("$acl=$current.GetAccessControl($sections)", script, StringComparison.Ordinal);
+        Assert.Contains(
+            "$acl.GetAccessRules($true,$true,[Security.Principal.SecurityIdentifier])",
+            script,
+            StringComparison.Ordinal);
+        Assert.DoesNotContain("Get-Acl", script, StringComparison.Ordinal);
         Assert.DoesNotContain("if not IsProtectedInstallTargetAllowed", script, StringComparison.Ordinal);
 
         var prepareIndex = script.IndexOf("function PrepareToInstall", StringComparison.Ordinal);

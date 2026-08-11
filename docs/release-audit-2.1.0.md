@@ -8,6 +8,7 @@
 
 - 主程序安装页重新允许选择任意本地盘符下的安全目录，覆盖安装默认沿用同一 AppId 的原位置；网络路径、磁盘根目录、重解析路径和无法确认归属的非空目录在复制前被拒绝。
 - 硬件服务、修复工具、PawnIO 安装包和 Inno 卸载器与主程序位置解耦，固定到系统 `{commonpf}\UniDesk`；安装器在复制或执行这些提权组件前验证 Common Program Files 及其直属 Program Files 父目录，并只收紧该固定组件目录，绝不递归修改用户选择的主程序目录，也不因盘符根目录的无关宽 ACL 误拒绝。
+- 首次人工覆盖测试发现 Windows PowerShell 5.1 会继承 PowerShell 7 的模块路径，导致 `Get-Acl` 自动加载不兼容模块并把正常系统目录误报为不安全。ACL 预检已改为直接使用 .NET `DirectoryInfo.GetAccessControl`，不再依赖 PowerShell 模块；同一污染环境下旧命令返回 `21`，新命令返回 `0`。
 - 同 AppId 旧版位于自定义目录时，新安装器只从固定 HKLM 卸载注册读取旧路径；先锁定并收紧旧目录，仅删除严格匹配注册归属的 `uninsNNN.exe／.dat／.msg`，绝不执行旧卸载器或宽泛删除，再退役旧目录中的 owned 服务并从固定组件目录注册新版服务。仅当主程序位置改变时清理 owned 启动项，不整体删除旧目录，用户数据继续保留。
 - 服务安装、覆盖和卸载均验证 `ImagePath` 所有权，并以 `disable → stop → 按服务名 taskkill → 轮询真实停止 → delete` 收口；同名外部服务绝不接管。
 - 设置保存改为单事务批次；备份使用同一数据库事务快照和原子文件替换；持久化失败不再伪装成功；恢复事务提交与后续 UI 刷新使用不同成功边界。
@@ -27,12 +28,13 @@
 | 对抗式只读复核 | 未发现剩余 P0／P1 |
 | `dotnet format --verify-no-changes` | 非项目门禁；因仓库既有空格格式债务未通过，未全仓格式化无关代码 |
 
-上一轮未签名验证包（现已废弃）：
+先前未签名验证包（均已废弃）：
 
 - 路径：`artifacts\release\2.1.0-2a7356fe1b2e-20260809-122412\installer\UniDesk_Setup_2.1.0.exe`
 - 大小：`124567828` 字节
 - SHA-256：`8FF238E0189DD4111244BE39CE88B482B978C496E42E6A28F774468387B298A3`
 - 状态：`NotSigned`；`release-source.json` 为 schema 3、`isDirty=true`、源提交 `2a7356fe1b2ec00efbfe590af24910a1973f6b29`。它不包含本轮安装兼容修订，不得再用于测试或发布；新候选必须从本轮干净提交重新生成。
+- `artifacts\release\2.1.0-3d3f1bc95fbd-20260811-121628\installer\UniDesk_Setup_2.1.0.exe` 包含分离安装布局，但仍受 Windows PowerShell 模块路径冲突影响，已由人工测试确认失败并废弃。
 
 ## 已修复
 
