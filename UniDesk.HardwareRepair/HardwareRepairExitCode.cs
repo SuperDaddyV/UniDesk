@@ -20,6 +20,7 @@ public enum HardwareRepairExitCode
     ServicePayloadSecurityInvalid = 26,
     ServiceOwnershipInvalid = 27,
     HealthCheckFailed = 30,
+    HardwareCompatibilityMode = 31,
     ServiceRemoveFailed = 40,
     StartupCleanupFailed = 50,
     UnexpectedError = 100

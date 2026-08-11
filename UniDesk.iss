@@ -36,7 +36,7 @@ AppUpdatesURL={#MyAppURL}
 DefaultDirName={autopf}\{#MyAppName}
 DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes
-DisableDirPage=yes
+DisableDirPage=no
 UsePreviousAppDir=no
 PrivilegesRequired=admin
 MinVersion=10.0.18362
@@ -66,6 +66,8 @@ chinesesimp.LaunchProgram=启动 %1
 chinesesimp.CompleteHardwareTask=安装完整硬件监控组件（推荐，将安装 PawnIO 驱动和以 LocalSystem 运行的只读硬件监控服务）
 chinesesimp.HardwareMonitoringGroup=硬件监控
 chinesesimp.HardwareRepairFailed=UniDesk 基础程序已安装，但硬件监控组件未能完成安装或修复（退出码 %1）。基础功能仍可正常使用；请在 UniDesk 设置中导出硬件诊断或稍后重试。详细日志位于 ProgramData\UniDesk\logs\hardware-repair.log。
+chinesesimp.HardwareCompatibilityMode=UniDesk 已安装，并将使用 Windows 和硬件厂商的兼容数据来源。CPU、GPU、内存和网络仍可显示；部分主板传感器可能缺失。
+chinesesimp.ProtectedInstallLocationNotice=UniDesk 将安装到系统 Program Files 的默认目录。为保证覆盖安装和硬件监控稳定，该位置不可更改。
 chinesesimp.HardwareServiceRemoveFailed=未能删除 UniDesk 硬件监控服务（退出码 %1）。卸载将继续；请查看 ProgramData\UniDesk\logs\hardware-repair.log 并以管理员身份删除 UniDeskHardwareService。
 chinesesimp.HardwareServiceStopFailed=无法停止现有硬件监控服务（退出码 %1）。请关闭 UniDesk 后重试安装。
 chinesesimp.HardwareServiceOwnershipFailed=发现同名硬件服务，但它不属于当前 UniDesk 安装。为避免影响其他软件，安装已停止。
@@ -79,6 +81,8 @@ chinesesimp.PawnIoRemoveFailed=PawnIO 卸载失败。UniDesk 将继续卸载，�
 english.CompleteHardwareTask=Install complete hardware monitoring (recommended; installs the PawnIO driver and a read-only LocalSystem service)
 english.HardwareMonitoringGroup=Hardware monitoring
 english.HardwareRepairFailed=The UniDesk base application was installed, but hardware monitoring installation or repair did not complete (exit code %1). Base features remain available; export hardware diagnostics from Settings or retry later. Details are in ProgramData\UniDesk\logs\hardware-repair.log.
+english.HardwareCompatibilityMode=UniDesk is installed and will use compatible Windows and hardware-vendor data sources. CPU, GPU, memory, and network data remain available; some motherboard sensors may be missing.
+english.ProtectedInstallLocationNotice=UniDesk will use its default directory under the system Program Files folder. This location is fixed to keep upgrades and hardware monitoring reliable.
 english.HardwareServiceRemoveFailed=The UniDesk hardware service could not be removed (exit code %1). Uninstall will continue; review ProgramData\UniDesk\logs\hardware-repair.log and remove UniDeskHardwareService as an administrator.
 english.HardwareServiceStopFailed=The existing hardware service could not be stopped (exit code %1). Close UniDesk and retry setup.
 english.HardwareServiceOwnershipFailed=A service with the same name exists but does not belong to this UniDesk installation. Setup stopped to avoid changing another application.
@@ -92,6 +96,8 @@ english.PawnIoRemoveFailed=PawnIO could not be uninstalled. UniDesk uninstall wi
 japanese.CompleteHardwareTask=完全なハードウェア監視をインストール（推奨。PawnIO ドライバーと LocalSystem の読み取り専用サービスをインストールします）
 japanese.HardwareMonitoringGroup=ハードウェア監視
 japanese.HardwareRepairFailed=UniDesk 本体はインストールされましたが、ハードウェア監視のインストールまたは修復を完了できませんでした（終了コード %1）。基本機能は使用できます。設定から診断をエクスポートするか、後でもう一度お試しください。詳細ログ：ProgramData\UniDesk\logs\hardware-repair.log。
+japanese.HardwareCompatibilityMode=UniDesk はインストールされ、Windows とハードウェアベンダーの互換データソースを使用します。CPU、GPU、メモリ、ネットワークは引き続き表示されますが、一部のマザーボードセンサーは表示されない場合があります。
+japanese.ProtectedInstallLocationNotice=UniDesk はシステムの Program Files 内の既定フォルダーにインストールされます。アップグレードとハードウェア監視を安定させるため、この場所は変更できません。
 japanese.HardwareServiceRemoveFailed=UniDesk ハードウェア監視サービスを削除できませんでした（終了コード %1）。アンインストールは続行します。ProgramData\UniDesk\logs\hardware-repair.log を確認し、管理者として UniDeskHardwareService を削除してください。
 japanese.HardwareServiceStopFailed=既存のハードウェア監視サービスを停止できませんでした（終了コード %1）。UniDesk を終了してからセットアップを再試行してください。
 japanese.HardwareServiceOwnershipFailed=同名のサービスがありますが、この UniDesk インストールのものではありません。他のアプリを変更しないよう、インストールを中止しました。
@@ -105,6 +111,8 @@ japanese.PawnIoRemoveFailed=PawnIO をアンインストールできませんで
 spanish.CompleteHardwareTask=Instalar supervisión completa de hardware (recomendado; instala el controlador PawnIO y un servicio de solo lectura LocalSystem)
 spanish.HardwareMonitoringGroup=Supervisión de hardware
 spanish.HardwareRepairFailed=La aplicación base UniDesk se instaló, pero no se completó la instalación o reparación de la supervisión de hardware (código %1). Las funciones básicas siguen disponibles; exporte el diagnóstico desde Configuración o vuelva a intentarlo más tarde. Registro: ProgramData\UniDesk\logs\hardware-repair.log.
+spanish.HardwareCompatibilityMode=UniDesk está instalado y usará fuentes compatibles de Windows y del fabricante. Los datos de CPU, GPU, memoria y red seguirán disponibles; pueden faltar algunos sensores de la placa base.
+spanish.ProtectedInstallLocationNotice=UniDesk se instalará en su carpeta predeterminada dentro de Program Files del sistema. Esta ubicación es fija para mantener estables las actualizaciones y la supervisión del hardware.
 spanish.HardwareServiceRemoveFailed=No se pudo eliminar el servicio de hardware de UniDesk (código %1). La desinstalación continuará; revise ProgramData\UniDesk\logs\hardware-repair.log y elimine UniDeskHardwareService como administrador.
 spanish.HardwareServiceStopFailed=No se pudo detener el servicio de hardware existente (código %1). Cierre UniDesk y vuelva a ejecutar el instalador.
 spanish.HardwareServiceOwnershipFailed=Existe un servicio con el mismo nombre, pero no pertenece a esta instalación de UniDesk. La instalación se detuvo para no modificar otra aplicación.
@@ -147,6 +155,7 @@ Filename: "{app}\{#MyAppExeName}"; Parameters: "--initial-language={language}"; 
 const
   FileAttributeDirectory = $10;
   FileAttributeReparsePoint = $400;
+  HardwareCompatibilityExitCode = 31;
   LegacyStartupMigrationMarkerName = '.unidesk-legacy-startup-path';
 
 var
@@ -154,10 +163,19 @@ var
   LegacyRegisteredPathInvalid: Boolean;
   ValidatedAclTarget: String;
   StoppedOwnedHardwareService: Boolean;
+  HardwareCompatibilityMode: Boolean;
 
 function CleanupOwnedStartupEntries: Boolean; forward;
 function SetEnvironmentVariable(Name, Value: String): Boolean;
   external 'SetEnvironmentVariableW@kernel32.dll stdcall';
+
+procedure InitializeWizard;
+begin
+  WizardForm.DirEdit.Enabled := False;
+  WizardForm.DirBrowseButton.Enabled := False;
+  WizardForm.SelectDirBrowseLabel.Caption :=
+    ExpandConstant('{cm:ProtectedInstallLocationNotice}');
+end;
 
 function HardwareServiceExists: Boolean;
 begin
@@ -175,6 +193,12 @@ begin
   Log(MessageText);
   if not WizardSilent then
     MsgBox(MessageText, mbError, MB_OK);
+end;
+
+procedure ReportHardwareCompatibilityMode;
+begin
+  HardwareCompatibilityMode := True;
+  Log(ExpandConstant('{cm:HardwareCompatibilityMode}'));
 end;
 
 procedure InstallHardwareComponent;
@@ -198,13 +222,21 @@ begin
     Exit;
   end;
 
-  if (not Exec(
+  if not Exec(
     HelperPath,
     '--install-or-repair',
     '',
     SW_HIDE,
     ewWaitUntilTerminated,
-    ResultCode)) or (ResultCode <> 0) then
+    ResultCode) then
+  begin
+    ReportHardwareComponentFailure(ResultCode);
+    Exit;
+  end;
+
+  if ResultCode = HardwareCompatibilityExitCode then
+    ReportHardwareCompatibilityMode
+  else if ResultCode <> 0 then
     ReportHardwareComponentFailure(ResultCode);
 end;
 
@@ -340,7 +372,6 @@ begin
     '$trusted=@(''S-1-5-18'',''S-1-5-32-544'',''S-1-5-80-956008885-3418522649-1831038044-1853292631-2271478464''); ' +
     '$danger=[Security.AccessControl.FileSystemRights]::Delete -bor [Security.AccessControl.FileSystemRights]::DeleteSubdirectoriesAndFiles -bor [Security.AccessControl.FileSystemRights]::ChangePermissions -bor [Security.AccessControl.FileSystemRights]::TakeOwnership; ' +
     '$current=Get-Item -LiteralPath $env:UNIDESK_PROTECTED_ROOT -Force -ErrorAction Stop; ' +
-    'while($null -ne $current){ ' +
     'if(($current.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0){exit 20}; ' +
     '$acl=Get-Acl -LiteralPath $current.FullName -ErrorAction Stop; ' +
     '$owner=$acl.GetOwner([Security.Principal.SecurityIdentifier]).Value; ' +
@@ -349,8 +380,7 @@ begin
     'if(($rule.AccessControlType -eq [Security.AccessControl.AccessControlType]::Allow) -and ' +
     '(($rule.PropagationFlags -band [Security.AccessControl.PropagationFlags]::InheritOnly) -eq 0) -and ' +
     '(($rule.FileSystemRights -band $danger) -ne 0) -and ' +
-    '($trusted -notcontains $rule.IdentityReference.Value)){exit 22} }; ' +
-    '$current=$current.Parent }; exit 0"';
+    '($trusted -notcontains $rule.IdentityReference.Value)){exit 22} }; exit 0"';
   ResultCode := -1;
   Result := Exec(
     ExpandConstant('{sys}\WindowsPowerShell\v1.0\powershell.exe'),
@@ -376,7 +406,7 @@ begin
     IsSameDirectory(NormalizedPath, ExpandConstant('{pf}')) or
     IsSameDirectory(NormalizedPath, ExpandConstant('{pf32}')) or
     IsSameDirectory(NormalizedPath, ExpandConstant('{commonappdata}')) or
-    IsSameDirectory(NormalizedPath, ExpandConstant('{userprofile}')) or
+    IsSameDirectory(NormalizedPath, ExpandConstant('{%USERPROFILE}')) or
     IsSameDirectory(NormalizedPath, ExpandConstant('{localappdata}')) or
     IsSameDirectory(NormalizedPath, ExpandConstant('{userappdata}'));
 end;
@@ -889,6 +919,13 @@ begin
     MsgBox(ExpandConstant('{cm:HardwareProtectedLocationRequired}'), mbError, MB_OK);
     Result := False;
   end;
+end;
+
+procedure CurPageChanged(CurPageID: Integer);
+begin
+  if (CurPageID = wpFinished) and HardwareCompatibilityMode then
+    WizardForm.FinishedLabel.Caption :=
+      ExpandConstant('{cm:HardwareCompatibilityMode}');
 end;
 
 procedure CurStepChanged(CurStep: TSetupStep);

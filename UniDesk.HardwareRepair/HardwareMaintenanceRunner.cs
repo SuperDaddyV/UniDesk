@@ -4,6 +4,7 @@ internal sealed class HardwareMaintenanceRunner
 {
     internal const string ServiceName = "UniDeskHardwareService";
     internal const string PawnIoServiceName = "PawnIO";
+    private const int DriverUnavailableHealthCheckExitCode = 22;
     private const string ServiceDisplayName = "UniDesk Hardware Monitoring Service";
     private const int ServiceStopWaitAttempts = 20;
     private const string ServiceDescription =
@@ -177,15 +178,23 @@ internal sealed class HardwareMaintenanceRunner
             return Complete(HardwareRepairExitCode.ServiceStartFailed);
         }
 
+        var lastHealthCheckExitCode = -1;
         for (var attempt = 0; attempt < 20; attempt++)
         {
             var health = Run(_serviceBinaryPath, ["--health-check"], TimeSpan.FromSeconds(5));
+            lastHealthCheckExitCode = health.ExitCode;
             if (health.ExitCode == 0)
             {
                 return Complete(HardwareRepairExitCode.Success);
             }
 
-            Thread.Sleep(500);
+            _delay(TimeSpan.FromMilliseconds(500));
+        }
+
+        if (lastHealthCheckExitCode == DriverUnavailableHealthCheckExitCode)
+        {
+            _logger.Log("The low-level driver remained unavailable; UniDesk will use compatible user-mode hardware sources.");
+            return Complete(HardwareRepairExitCode.HardwareCompatibilityMode);
         }
 
         return Complete(HardwareRepairExitCode.HealthCheckFailed);

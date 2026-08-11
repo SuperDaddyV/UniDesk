@@ -5,12 +5,36 @@ namespace UniDesk.Tests;
 public class HardwareRepairTests
 {
     [Fact]
-    public void ServicePayloadVerifier_ShouldEnumerateEveryParentThroughTheVolumeRoot()
+    public void ServicePayloadVerifier_ShouldVerifyOnlyTheDirectProgramFilesBoundary()
     {
-        var ancestors = ServicePayloadSecurityVerifier.EnumerateAncestorDirectories(
+        var protectedRoot = ServicePayloadSecurityVerifier.GetProtectedInstallationRoot(
             @"C:\Program Files\UniDesk");
 
-        Assert.Equal([@"C:\Program Files", @"C:\"], ancestors);
+        Assert.Equal(@"C:\Program Files", protectedRoot);
+    }
+
+    [Fact]
+    public void InstallOrRepair_WhenDriverRemainsUnavailable_ShouldReturnCompatibilityMode()
+    {
+        var processRunner = new RecordingProcessRunner(
+            healthCheckExitCodes: Enumerable.Repeat(22, 20).ToArray());
+        var runner = CreateRunner(processRunner, delay: _ => { });
+
+        var result = runner.InstallOrRepair();
+
+        Assert.Equal(HardwareRepairExitCode.HardwareCompatibilityMode, result);
+    }
+
+    [Fact]
+    public void InstallOrRepair_WhenHealthCheckFailsForAnotherReason_ShouldReturnFailure()
+    {
+        var processRunner = new RecordingProcessRunner(
+            healthCheckExitCodes: Enumerable.Repeat(21, 20).ToArray());
+        var runner = CreateRunner(processRunner, delay: _ => { });
+
+        var result = runner.InstallOrRepair();
+
+        Assert.Equal(HardwareRepairExitCode.HealthCheckFailed, result);
     }
 
     [Fact]
@@ -254,9 +278,11 @@ public class HardwareRepairTests
     private sealed class RecordingProcessRunner(
         int serviceCreateExitCode = 0,
         int pawnIoQueryExitCode = 1060,
-        IReadOnlyList<int>? serviceStoppedQueryExitCodes = null) : IProcessRunner
+        IReadOnlyList<int>? serviceStoppedQueryExitCodes = null,
+        IReadOnlyList<int>? healthCheckExitCodes = null) : IProcessRunner
     {
         private int _serviceStoppedQueryIndex;
+        private int _healthCheckIndex;
 
         public List<ProcessCall> Calls { get; } = [];
 
@@ -267,12 +293,12 @@ public class HardwareRepairTests
         {
             var capturedArguments = arguments.ToArray();
             Calls.Add(new ProcessCall(fileName, capturedArguments));
-            var exitCode = Path.GetFileName(fileName).Equals(
-                "powershell.exe",
-                StringComparison.OrdinalIgnoreCase)
-                ? GetServiceStoppedQueryExitCode()
-                : capturedArguments switch
+            var exitCode = capturedArguments switch
             {
+                ["--health-check"] => GetHealthCheckExitCode(),
+                _ when Path.GetFileName(fileName).Equals(
+                    "powershell.exe",
+                    StringComparison.OrdinalIgnoreCase) => GetServiceStoppedQueryExitCode(),
                 ["query", "PawnIO"] => pawnIoQueryExitCode,
                 ["create", ..] => serviceCreateExitCode,
                 _ => 0
@@ -289,6 +315,17 @@ public class HardwareRepairTests
 
             var index = Math.Min(_serviceStoppedQueryIndex++, serviceStoppedQueryExitCodes.Count - 1);
             return serviceStoppedQueryExitCodes[index];
+        }
+
+        private int GetHealthCheckExitCode()
+        {
+            if (healthCheckExitCodes == null || healthCheckExitCodes.Count == 0)
+            {
+                return 0;
+            }
+
+            var index = Math.Min(_healthCheckIndex++, healthCheckExitCodes.Count - 1);
+            return healthCheckExitCodes[index];
         }
     }
 

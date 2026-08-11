@@ -240,7 +240,8 @@ public class InstallerHardwareComponentTests
         Assert.Contains("ExpandConstant('{pf}')", script, StringComparison.Ordinal);
         Assert.Contains("ExpandConstant('{pf32}')", script, StringComparison.Ordinal);
         Assert.Contains("ExpandConstant('{commonappdata}')", script, StringComparison.Ordinal);
-        Assert.Contains("ExpandConstant('{userprofile}')", script, StringComparison.Ordinal);
+        Assert.Contains("ExpandConstant('{%USERPROFILE}')", script, StringComparison.Ordinal);
+        Assert.DoesNotContain("ExpandConstant('{userprofile}')", script, StringComparison.Ordinal);
         Assert.Contains("if not DirExists(NormalizedPath) then", script, StringComparison.Ordinal);
         Assert.Contains("Result := IsDirectoryEmpty(NormalizedPath)", script, StringComparison.Ordinal);
         Assert.Contains("IsKnownUniDeskInstallationDirectory(NormalizedPath)", script, StringComparison.Ordinal);
@@ -268,8 +269,12 @@ public class InstallerHardwareComponentTests
     {
         var script = File.ReadAllText(Path.Combine(ProjectRoot, "UniDesk.iss"));
 
-        Assert.Contains("DisableDirPage=yes", script, StringComparison.Ordinal);
+        Assert.Contains("DisableDirPage=no", script, StringComparison.Ordinal);
         Assert.Contains("UsePreviousAppDir=no", script, StringComparison.Ordinal);
+        Assert.Contains("procedure InitializeWizard", script, StringComparison.Ordinal);
+        Assert.Contains("WizardForm.DirEdit.Enabled := False", script, StringComparison.Ordinal);
+        Assert.Contains("WizardForm.DirBrowseButton.Enabled := False", script, StringComparison.Ordinal);
+        Assert.Contains("{cm:ProtectedInstallLocationNotice}", script, StringComparison.Ordinal);
         Assert.Contains("function IsProtectedInstallTargetAllowed", script, StringComparison.Ordinal);
         Assert.Contains("function VerifyProtectedInstallAncestorAcl", script, StringComparison.Ordinal);
         Assert.Contains("GetAccessRules", script, StringComparison.Ordinal);
@@ -280,6 +285,7 @@ public class InstallerHardwareComponentTests
             StringComparison.Ordinal);
         Assert.Contains("$env:UNIDESK_PROTECTED_ROOT", script, StringComparison.Ordinal);
         Assert.DoesNotContain("$env:ProgramFiles", script, StringComparison.Ordinal);
+        Assert.DoesNotContain("$current=$current.Parent", script, StringComparison.Ordinal);
         Assert.Contains("ExpandConstant('{autopf}\\{#MyAppName}')", script, StringComparison.Ordinal);
         Assert.Contains("{cm:HardwareProtectedLocationRequired}", script, StringComparison.Ordinal);
         Assert.DoesNotContain(
@@ -305,10 +311,41 @@ public class InstallerHardwareComponentTests
             ProjectRoot,
             "UniDesk.HardwareRepair",
             "ServicePayloadSecurityVerifier.cs"));
-        Assert.Contains("EnumerateAncestorDirectories", verifier, StringComparison.Ordinal);
+        Assert.Contains("GetProtectedInstallationRoot", verifier, StringComparison.Ordinal);
+        Assert.Contains("Environment.SpecialFolder.ProgramFiles", verifier, StringComparison.Ordinal);
+        Assert.Contains("Path.Combine(applicationDirectory, \"HardwareService\")", verifier, StringComparison.Ordinal);
         Assert.Contains("AncestorDangerousRights", verifier, StringComparison.Ordinal);
         Assert.Contains("FileAttributes.ReparsePoint", verifier, StringComparison.Ordinal);
         Assert.Contains("PropagationFlags.InheritOnly", verifier, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Installer_DriverUnavailable_ShouldUseFinishPageCompatibilityNoticeWithoutErrorDialog()
+    {
+        var script = File.ReadAllText(Path.Combine(ProjectRoot, "UniDesk.iss"));
+        var exitCodes = File.ReadAllText(Path.Combine(
+            ProjectRoot,
+            "UniDesk.HardwareRepair",
+            "HardwareRepairExitCode.cs"));
+
+        Assert.Contains("HardwareCompatibilityMode = 31", exitCodes, StringComparison.Ordinal);
+        Assert.Contains("HardwareCompatibilityExitCode = 31", script, StringComparison.Ordinal);
+        Assert.Contains("procedure ReportHardwareCompatibilityMode", script, StringComparison.Ordinal);
+        Assert.Contains("{cm:HardwareCompatibilityMode}", script, StringComparison.Ordinal);
+        Assert.Contains("WizardForm.FinishedLabel.Caption", script, StringComparison.Ordinal);
+
+        var compatibilityStart = script.IndexOf(
+            "procedure ReportHardwareCompatibilityMode",
+            StringComparison.Ordinal);
+        var compatibilityEnd = script.IndexOf(
+            "procedure InstallHardwareComponent",
+            compatibilityStart,
+            StringComparison.Ordinal);
+        Assert.True(compatibilityStart >= 0 && compatibilityEnd > compatibilityStart);
+        Assert.DoesNotContain(
+            "MsgBox(",
+            script[compatibilityStart..compatibilityEnd],
+            StringComparison.Ordinal);
     }
 
     [Fact]

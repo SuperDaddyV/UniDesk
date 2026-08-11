@@ -54,13 +54,31 @@ internal sealed class ServicePayloadSecurityVerifier : IServicePayloadSecurityVe
                 return new(false, "Service payload parent directories could not be resolved.");
             }
 
-            foreach (var ancestor in EnumerateAncestorDirectories(applicationDirectory))
+            var expectedApplicationDirectory = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
+                "UniDesk");
+            if (!string.Equals(
+                    Path.TrimEndingDirectorySeparator(applicationDirectory),
+                    Path.TrimEndingDirectorySeparator(expectedApplicationDirectory),
+                    StringComparison.OrdinalIgnoreCase))
             {
-                var ancestorResult = VerifyAncestorPath(ancestor);
-                if (!ancestorResult.IsSecure)
-                {
-                    return ancestorResult;
-                }
+                return new(false, "Service payload is not under the protected UniDesk Program Files directory.");
+            }
+
+            var expectedServiceDirectory = Path.Combine(applicationDirectory, "HardwareService");
+            if (!string.Equals(
+                    Path.TrimEndingDirectorySeparator(serviceDirectory),
+                    Path.TrimEndingDirectorySeparator(expectedServiceDirectory),
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                return new(false, "Service payload is not in the expected HardwareService directory.");
+            }
+
+            var protectedRoot = GetProtectedInstallationRoot(applicationDirectory);
+            var ancestorResult = VerifyAncestorPath(protectedRoot);
+            if (!ancestorResult.IsSecure)
+            {
+                return ancestorResult;
             }
 
             var paths = new List<string> { applicationDirectory, serviceDirectory };
@@ -86,17 +104,10 @@ internal sealed class ServicePayloadSecurityVerifier : IServicePayloadSecurityVe
         }
     }
 
-    internal static IReadOnlyList<string> EnumerateAncestorDirectories(string directoryPath)
+    internal static string GetProtectedInstallationRoot(string directoryPath)
     {
-        var ancestors = new List<string>();
-        var current = Directory.GetParent(Path.GetFullPath(directoryPath));
-        while (current != null)
-        {
-            ancestors.Add(current.FullName);
-            current = current.Parent;
-        }
-
-        return ancestors;
+        return Directory.GetParent(Path.GetFullPath(directoryPath))?.FullName
+            ?? throw new InvalidOperationException("Protected installation root could not be resolved.");
     }
 
     private static ServicePayloadSecurityVerificationResult VerifyAncestorPath(string path)
