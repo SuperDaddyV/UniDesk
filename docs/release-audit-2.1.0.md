@@ -7,7 +7,7 @@
 ## 2026-08-11 安装兼容修订结论
 
 - 主程序安装页重新允许选择本地固定 NTFS／ReFS 盘上的安全目录，覆盖安装默认沿用同一 AppId 的原位置；UNC、映射网络盘、可移动盘、FAT／exFAT、磁盘根目录、重解析路径和无法确认归属的非空目录在复制前被拒绝。
-- 硬件服务、修复工具、PawnIO 安装包和 Inno 卸载器与主程序位置解耦，固定到系统 `{commonpf}\UniDesk`；安装器在复制或执行这些提权组件前验证 Common Program Files 及其直属 Program Files 父目录，并只收紧该固定组件目录，绝不递归修改用户选择的主程序目录，也不因盘符根目录的无关宽 ACL 误拒绝。
+- 硬件服务、修复工具、PawnIO 安装包和 Inno 卸载器与主程序位置解耦，固定到系统 `{commoncf}\UniDesk`；Inno Setup 的 `{commonpf}` 实际表示 Program Files 根，不能用于 Common Files。安装器在复制或执行这些提权组件前验证 Common Files 及其直属 Program Files 父目录，并只收紧该固定组件目录，绝不递归修改用户选择的主程序目录，也不因盘符根目录的无关宽 ACL 误拒绝。
 - 首次人工覆盖测试发现 Windows PowerShell 5.1 会继承 PowerShell 7 的模块路径，导致 `Get-Acl` 自动加载不兼容模块并把正常系统目录误报为不安全。ACL 预检已改为直接使用 .NET `DirectoryInfo.GetAccessControl`，不再依赖 PowerShell 模块；同一污染环境下旧命令返回 `21`，新命令返回 `0`。
 - 硬件包 Authenticode 校验和服务停止确认在调用 Windows PowerShell 5.1 时会把 `PSModulePath` 固定到其自身模块目录，避免继承 PowerShell 7 模块路径后把有效 PawnIO 包误判为签名失败；已注册但仍不可用的 PawnIO 只执行一次验证后的修复、服务重启和健康复查，最终失败则进入兼容模式而不循环安装。
 - 同 AppId 旧版位于自定义目录时，新安装器只从固定 HKLM 卸载注册读取旧路径；先锁定并收紧旧目录、退役旧目录中的 owned 服务并从固定组件目录注册新版服务；只有新版卸载器已经创建后，才删除严格匹配注册归属的旧 `uninsNNN.exe／.dat／.msg`，绝不执行旧卸载器或宽泛删除。旧卸载文件清理失败是带日志路径的非致命警告，新版仍可正常卸载。仅当主程序位置改变时清理 owned 启动项，不整体删除旧目录，用户数据继续保留。
@@ -36,6 +36,7 @@
 - SHA-256：`8FF238E0189DD4111244BE39CE88B482B978C496E42E6A28F774468387B298A3`
 - 状态：`NotSigned`；`release-source.json` 为 schema 3、`isDirty=true`、源提交 `2a7356fe1b2ec00efbfe590af24910a1973f6b29`。它不包含本轮安装兼容修订，不得再用于测试或发布；新候选必须从本轮干净提交重新生成。
 - `artifacts\release\2.1.0-3d3f1bc95fbd-20260811-121628\installer\UniDesk_Setup_2.1.0.exe` 包含分离安装布局，但仍受 Windows PowerShell 模块路径冲突影响，已由人工测试确认失败并废弃。
+- `artifacts\release\2.1.0-4c1fe3d64280-20260811-130653\installer\UniDesk_Setup_2.1.0.exe` 误把 Inno `{commonpf}` 当成 Common Files；实际展开到 `C:\Program Files` 后错误检查卷根 ACL，人工覆盖测试返回 `22`，且错误消息显示字面量 `{log}`。该候选已废弃，不得继续测试或发布；修订版统一使用 `{commoncf}` 并通过 `FmtMessage` 注入实际日志路径。
 
 ## 已修复
 
@@ -124,6 +125,6 @@
 5. 安装签名候选包并检查 `UniDeskHardwareService` 注册路径带双引号，完成剩余人工矩阵。
 6. 用户最终确认后，才能创建 `v2.1.0` tag 和 GitHub Release。
 
-当前 Windows 11 电脑的只读复核发现：`D:\Program Files` 与卷根允许 `Authenticated Users` 修改，而旧 `UniDeskHardwareService` 以 `LocalSystem` 从该树运行；旧安装因此不再记为 I-09／I-13 安全通过。新版允许普通权限主程序继续位于 D 盘，但会退役旧目录服务，并把服务、修复工具和卸载器迁移到系统 `{commonpf}\UniDesk`；本轮未自动修改系统 ACL、停止服务或卸载旧版，仍须用最终候选包完成覆盖安装人工验证。
+当前 Windows 11 电脑的只读复核发现：`D:\Program Files` 与卷根允许 `Authenticated Users` 修改，而旧 `UniDeskHardwareService` 以 `LocalSystem` 从该树运行；旧安装因此不再记为 I-09／I-13 安全通过。新版允许普通权限主程序继续位于 D 盘，但会退役旧目录服务，并把服务、修复工具和卸载器迁移到系统 `{commoncf}\UniDesk`；本轮未自动修改系统 ACL、停止服务或卸载旧版，仍须用最终候选包完成覆盖安装人工验证。
 
 除上述发布门禁外，本轮没有发现需要在 `v2.1.0` 增加的新功能或升级的大版本依赖。

@@ -171,7 +171,7 @@ public class InstallerHardwareComponentTests
             StringComparison.Ordinal);
         Assert.Contains("MyHardwareRepairSourceDir", script, StringComparison.Ordinal);
         Assert.Contains(
-            "DestDir: \"{commonpf}\\UniDesk\\HardwareRepair\"",
+            "DestDir: \"{commoncf}\\UniDesk\\HardwareRepair\"",
             script,
             StringComparison.Ordinal);
         Assert.DoesNotContain("DestDir: \"{app}\\HardwareRepair\"", script, StringComparison.Ordinal);
@@ -204,7 +204,7 @@ public class InstallerHardwareComponentTests
         Assert.DoesNotContain("HardenDirectoryAcl(ExpandConstant('{app}'))", script, StringComparison.Ordinal);
         Assert.Contains("if not HardenProtectedComponentPayload then", script, StringComparison.Ordinal);
         Assert.Contains(
-            "Result := ExpandConstant('{cm:HardwareAclFailed}')",
+            "ExpandConstant('{cm:HardwareAclFailed}')",
             script,
             StringComparison.Ordinal);
 
@@ -301,10 +301,11 @@ public class InstallerHardwareComponentTests
         Assert.DoesNotContain("WizardForm.DirEdit.Enabled := False", script, StringComparison.Ordinal);
         Assert.DoesNotContain("WizardForm.DirBrowseButton.Enabled := False", script, StringComparison.Ordinal);
         Assert.Contains("{cm:ProtectedComponentLocationNotice}", script, StringComparison.Ordinal);
-        Assert.Contains("UninstallFilesDir={commonpf}\\UniDesk\\Uninstall", script, StringComparison.Ordinal);
-        Assert.Contains("DestDir: \"{commonpf}\\UniDesk\\HardwareService\"", script, StringComparison.Ordinal);
-        Assert.Contains("DestDir: \"{commonpf}\\UniDesk\\HardwareRepair\"", script, StringComparison.Ordinal);
-        Assert.Contains("DestDir: \"{commonpf}\\UniDesk\\Hardware\"", script, StringComparison.Ordinal);
+        Assert.Contains("UninstallFilesDir={commoncf}\\UniDesk\\Uninstall", script, StringComparison.Ordinal);
+        Assert.Contains("DestDir: \"{commoncf}\\UniDesk\\HardwareService\"", script, StringComparison.Ordinal);
+        Assert.Contains("DestDir: \"{commoncf}\\UniDesk\\HardwareRepair\"", script, StringComparison.Ordinal);
+        Assert.Contains("DestDir: \"{commoncf}\\UniDesk\\Hardware\"", script, StringComparison.Ordinal);
+        Assert.DoesNotContain("{commonpf}", script, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("function GetProtectedComponentRoot", script, StringComparison.Ordinal);
         Assert.Contains("GetDriveTypeW@kernel32.dll", script, StringComparison.Ordinal);
         Assert.Contains("GetVolumeInformationW@kernel32.dll", script, StringComparison.Ordinal);
@@ -312,7 +313,9 @@ public class InstallerHardwareComponentTests
         Assert.Contains("FilePersistentAcls", script, StringComparison.Ordinal);
         Assert.Contains("{cm:ApplicationLocationNetwork}", script, StringComparison.Ordinal);
         Assert.Contains("{cm:ApplicationLocationAclUnsupported}", script, StringComparison.Ordinal);
-        Assert.Contains("{log}", script, StringComparison.Ordinal);
+        var customMessages = script[..script.IndexOf("[Tasks]", StringComparison.Ordinal)];
+        Assert.DoesNotContain("{log}", customMessages, StringComparison.Ordinal);
+        Assert.Contains("ExpandConstant('{log}')", script, StringComparison.Ordinal);
         Assert.Contains("220 MB", script, StringComparison.Ordinal);
         Assert.Contains("function VerifyProtectedComponentRootAcl", script, StringComparison.Ordinal);
         Assert.Contains("GetAccessRules", script, StringComparison.Ordinal);
@@ -329,7 +332,7 @@ public class InstallerHardwareComponentTests
         Assert.Contains("$env:UNIDESK_PROTECTED_PARENT", script, StringComparison.Ordinal);
         Assert.DoesNotContain("$env:ProgramFiles", script, StringComparison.Ordinal);
         Assert.DoesNotContain("$current=$current.Parent", script, StringComparison.Ordinal);
-        Assert.Contains("ExpandConstant('{commonpf}')", script, StringComparison.Ordinal);
+        Assert.Contains("ExpandConstant('{commoncf}')", script, StringComparison.Ordinal);
         Assert.Contains("$current=[IO.DirectoryInfo]::new($path)", script, StringComparison.Ordinal);
         Assert.Contains("$acl=$current.GetAccessControl($sections)", script, StringComparison.Ordinal);
         Assert.Contains(

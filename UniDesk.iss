@@ -38,7 +38,7 @@ DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes
 DisableDirPage=no
 UsePreviousAppDir=yes
-UninstallFilesDir={commonpf}\UniDesk\Uninstall
+UninstallFilesDir={commoncf}\UniDesk\Uninstall
 AllowNetworkDrive=no
 AllowUNCPath=no
 AllowRootDirectory=no
@@ -74,16 +74,16 @@ chinesesimp.HardwareRepairFailed=UniDesk 基础程序已安装，但硬件监控
 chinesesimp.HardwareCompatibilityMode=UniDesk 已安装，并将使用 Windows 和硬件厂商的兼容数据来源。CPU、GPU、内存和网络仍可显示；部分主板传感器可能缺失。
 chinesesimp.ProtectedComponentLocationNotice=您可以选择主程序的安装位置；离线硬件修复与卸载组件仍会在系统受保护目录占用约 220 MB。
 chinesesimp.HardwareServiceRemoveFailed=未能删除 UniDesk 硬件监控服务（退出码 %1）。卸载将继续；请查看 ProgramData\UniDesk\logs\hardware-repair.log 并以管理员身份删除 UniDeskHardwareService。
-chinesesimp.HardwareServiceStopFailed=无法停止现有硬件监控服务（退出码 %1）。请关闭 UniDesk 后重试安装。安装日志：{log}
-chinesesimp.HardwareServiceOwnershipFailed=发现同名硬件服务，但它不属于当前 UniDesk 安装。为避免影响其他软件，安装已停止。安装日志：{log}
-chinesesimp.HardwareAclFailed=无法安全准备 UniDesk 系统组件目录。安装已停止，请检查 Windows 的 Common Program Files 目录后重试。安装日志：{log}
+chinesesimp.HardwareServiceStopFailed=无法停止现有硬件监控服务（退出码 %1）。请关闭 UniDesk 后重试安装。安装日志：%2
+chinesesimp.HardwareServiceOwnershipFailed=发现同名硬件服务，但它不属于当前 UniDesk 安装。为避免影响其他软件，安装已停止。安装日志：%1
+chinesesimp.HardwareAclFailed=无法安全准备 UniDesk 系统组件目录。安装已停止，请检查 Windows 的 Common Files 目录后重试。安装日志：%1
 chinesesimp.ApplicationLocationInvalid=所选主程序目录无法安全使用。请选择一个新的空目录，或原有的 UniDesk 安装目录。
 chinesesimp.ApplicationLocationNetwork=主程序只能安装到本地固定磁盘，请不要选择网络盘或可移动磁盘。
 chinesesimp.ApplicationLocationAclUnsupported=所选磁盘不支持 UniDesk 所需的安全权限，请选择 NTFS 或 ReFS 本地磁盘。
-chinesesimp.LegacyUninstallerCleanupFailed=新版 UniDesk 已安装且可以正常卸载，但旧目录中的卸载组件未能清理。请不要运行旧卸载程序；确认新版正常后可手动删除旧程序文件夹。安装日志：{log}
+chinesesimp.LegacyUninstallerCleanupFailed=新版 UniDesk 已安装且可以正常卸载，但旧目录中的卸载组件未能清理。请不要运行旧卸载程序；确认新版正常后可手动删除旧程序文件夹。安装日志：%1
 chinesesimp.ApplicationLocationMigrationComplete=UniDesk 已安装到新位置，并已清理可确认属于旧位置的启动项。安装器没有运行旧卸载程序或删除旧目录；确认新版正常后，可手动删除旧程序文件夹，用户数据不受影响。
-chinesesimp.HardwareUnsafeServiceRetirementFailed=检测到旧版 UniDesk 在非受保护目录运行硬件服务，但无法确认它已安全停止并禁用。安装已停止；请不要继续使用旧硬件服务，并查看安装日志后手动删除 UniDeskHardwareService。
-chinesesimp.LegacyMigrationCleanupFailed=UniDesk 已安装到新位置，但未能完整清理旧位置的启动项。请不要运行旧卸载程序；请查看安装日志并确认旧版不再开机启动。
+chinesesimp.HardwareUnsafeServiceRetirementFailed=检测到旧版 UniDesk 在非受保护目录运行硬件服务，但无法确认它已安全停止并禁用。安装已停止；请不要继续使用旧硬件服务，并查看安装日志后手动删除 UniDeskHardwareService。安装日志：%1
+chinesesimp.LegacyMigrationCleanupFailed=UniDesk 已安装到新位置，但未能完整清理旧位置的启动项。请不要运行旧卸载程序；请查看安装日志并确认旧版不再开机启动。安装日志：%1
 chinesesimp.RemovePawnIoPrompt=是否同时卸载共享的 PawnIO 驱动？PawnIO 可能也被其他硬件监控或风扇控制软件使用。建议选择“否”并保留；只有确认没有其他程序依赖它时才选择“是”。
 chinesesimp.PawnIoRemoveFailed=PawnIO 卸载失败。UniDesk 将继续卸载，但 PawnIO 会保留在系统中。
 english.CompleteHardwareTask=Install complete hardware monitoring (recommended; installs the PawnIO driver and a read-only LocalSystem service)
@@ -92,16 +92,16 @@ english.HardwareRepairFailed=The UniDesk base application was installed, but har
 english.HardwareCompatibilityMode=UniDesk is installed and will use compatible Windows and hardware-vendor data sources. CPU, GPU, memory, and network data remain available; some motherboard sensors may be missing.
 english.ProtectedComponentLocationNotice=You can choose the main app location. Offline hardware repair and uninstall files still use about 220 MB in a protected system directory.
 english.HardwareServiceRemoveFailed=The UniDesk hardware service could not be removed (exit code %1). Uninstall will continue; review ProgramData\UniDesk\logs\hardware-repair.log and remove UniDeskHardwareService as an administrator.
-english.HardwareServiceStopFailed=The existing hardware service could not be stopped (exit code %1). Close UniDesk and retry setup. Setup log: {log}
-english.HardwareServiceOwnershipFailed=A service with the same name exists but does not belong to this UniDesk installation. Setup stopped to avoid changing another application. Setup log: {log}
-english.HardwareAclFailed=The UniDesk system component directory could not be prepared securely. Setup stopped; check the Windows Common Program Files directory and retry. Setup log: {log}
+english.HardwareServiceStopFailed=The existing hardware service could not be stopped (exit code %1). Close UniDesk and retry setup. Setup log: %2
+english.HardwareServiceOwnershipFailed=A service with the same name exists but does not belong to this UniDesk installation. Setup stopped to avoid changing another application. Setup log: %1
+english.HardwareAclFailed=The UniDesk system component directory could not be prepared securely. Setup stopped; check the Windows Common Files directory and retry. Setup log: %1
 english.ApplicationLocationInvalid=The selected application directory cannot be used safely. Choose a new empty directory or an existing UniDesk installation directory.
 english.ApplicationLocationNetwork=The main app can only be installed on a local fixed disk. Do not select a network or removable drive.
 english.ApplicationLocationAclUnsupported=The selected disk does not support the security permissions UniDesk requires. Choose a local NTFS or ReFS disk.
-english.LegacyUninstallerCleanupFailed=The new UniDesk installation can be uninstalled normally, but the old uninstall files could not be cleaned. Do not run the old uninstaller; after verifying the new version, you may delete the old program folder manually. Setup log: {log}
+english.LegacyUninstallerCleanupFailed=The new UniDesk installation can be uninstalled normally, but the old uninstall files could not be cleaned. Do not run the old uninstaller; after verifying the new version, you may delete the old program folder manually. Setup log: %1
 english.ApplicationLocationMigrationComplete=UniDesk was installed in the new location and strictly owned startup entries for the previous location were cleaned. Setup did not run the old uninstaller or delete the old folder. After verifying the new version, you can delete the old program folder manually; user data is unaffected.
-english.HardwareUnsafeServiceRetirementFailed=An older UniDesk hardware service is running from an unprotected directory, but setup could not confirm that it was safely stopped and disabled. Setup stopped; do not keep using the old service, and remove UniDeskHardwareService manually after reviewing the setup log.
-english.LegacyMigrationCleanupFailed=UniDesk was installed in the new location, but startup cleanup for the previous location did not complete. Do not run the old uninstaller; review the setup log and confirm that the old version no longer starts with Windows.
+english.HardwareUnsafeServiceRetirementFailed=An older UniDesk hardware service is running from an unprotected directory, but setup could not confirm that it was safely stopped and disabled. Setup stopped; do not keep using the old service, and remove UniDeskHardwareService manually after reviewing the setup log. Setup log: %1
+english.LegacyMigrationCleanupFailed=UniDesk was installed in the new location, but startup cleanup for the previous location did not complete. Do not run the old uninstaller; review the setup log and confirm that the old version no longer starts with Windows. Setup log: %1
 english.RemovePawnIoPrompt=Also uninstall the shared PawnIO driver? Other hardware-monitoring or fan-control applications may use PawnIO. Keep it unless you are certain that no other application depends on it.
 english.PawnIoRemoveFailed=PawnIO could not be uninstalled. UniDesk uninstall will continue and PawnIO will remain installed.
 japanese.CompleteHardwareTask=完全なハードウェア監視をインストール（推奨。PawnIO ドライバーと LocalSystem の読み取り専用サービスをインストールします）
@@ -110,16 +110,16 @@ japanese.HardwareRepairFailed=UniDesk 本体はインストールされました
 japanese.HardwareCompatibilityMode=UniDesk はインストールされ、Windows とハードウェアベンダーの互換データソースを使用します。CPU、GPU、メモリ、ネットワークは引き続き表示されますが、一部のマザーボードセンサーは表示されない場合があります。
 japanese.ProtectedComponentLocationNotice=メインアプリの場所を選択できます。オフライン修復とアンインストール用ファイルは、保護されたシステムフォルダーで約 220 MB 使用します。
 japanese.HardwareServiceRemoveFailed=UniDesk ハードウェア監視サービスを削除できませんでした（終了コード %1）。アンインストールは続行します。ProgramData\UniDesk\logs\hardware-repair.log を確認し、管理者として UniDeskHardwareService を削除してください。
-japanese.HardwareServiceStopFailed=既存のハードウェア監視サービスを停止できませんでした（終了コード %1）。UniDesk を終了してから再試行してください。セットアップログ：{log}
-japanese.HardwareServiceOwnershipFailed=同名のサービスがありますが、この UniDesk インストールのものではありません。他のアプリを変更しないよう、インストールを中止しました。セットアップログ：{log}
-japanese.HardwareAclFailed=UniDesk のシステムコンポーネント用フォルダーを安全に準備できませんでした。Windows の Common Program Files を確認してください。セットアップログ：{log}
+japanese.HardwareServiceStopFailed=既存のハードウェア監視サービスを停止できませんでした（終了コード %1）。UniDesk を終了してから再試行してください。セットアップログ：%2
+japanese.HardwareServiceOwnershipFailed=同名のサービスがありますが、この UniDesk インストールのものではありません。他のアプリを変更しないよう、インストールを中止しました。セットアップログ：%1
+japanese.HardwareAclFailed=UniDesk のシステムコンポーネント用フォルダーを安全に準備できませんでした。Windows の Common Files を確認してください。セットアップログ：%1
 japanese.ApplicationLocationInvalid=選択したアプリフォルダーは安全に使用できません。新しい空のフォルダーまたは既存の UniDesk インストール先を選択してください。
 japanese.ApplicationLocationNetwork=メインアプリはローカル固定ディスクにのみインストールできます。ネットワークドライブやリムーバブルドライブは選択しないでください。
 japanese.ApplicationLocationAclUnsupported=選択したディスクは UniDesk に必要なセキュリティ権限をサポートしていません。ローカルの NTFS または ReFS ディスクを選択してください。
-japanese.LegacyUninstallerCleanupFailed=新版 UniDesk は正常にアンインストールできますが、旧フォルダーのアンインストールファイルを削除できませんでした。旧アンインストーラーは実行せず、新版を確認後に旧プログラムフォルダーを手動削除してください。セットアップログ：{log}
+japanese.LegacyUninstallerCleanupFailed=新版 UniDesk は正常にアンインストールできますが、旧フォルダーのアンインストールファイルを削除できませんでした。旧アンインストーラーは実行せず、新版を確認後に旧プログラムフォルダーを手動削除してください。セットアップログ：%1
 japanese.ApplicationLocationMigrationComplete=UniDesk を新しい場所にインストールし、旧場所に厳密に属するスタートアップ項目をクリーンアップしました。旧アンインストーラーの実行や旧フォルダーの削除は行っていません。新版を確認後、旧フォルダーを手動削除できます。ユーザーデータには影響しません。
-japanese.HardwareUnsafeServiceRetirementFailed=保護されていない場所の旧版 UniDesk ハードウェアサービスを安全に停止して無効化できたことを確認できません。インストールを中止しました。ログを確認し、UniDeskHardwareService を手動で削除してください。
-japanese.LegacyMigrationCleanupFailed=UniDesk は新しい場所にインストールされましたが、旧場所のスタートアップ項目を完全にクリーンアップできませんでした。旧アンインストーラーは実行せず、ログを確認してください。
+japanese.HardwareUnsafeServiceRetirementFailed=保護されていない場所の旧版 UniDesk ハードウェアサービスを安全に停止して無効化できたことを確認できません。インストールを中止しました。ログを確認し、UniDeskHardwareService を手動で削除してください。セットアップログ：%1
+japanese.LegacyMigrationCleanupFailed=UniDesk は新しい場所にインストールされましたが、旧場所のスタートアップ項目を完全にクリーンアップできませんでした。旧アンインストーラーは実行せず、ログを確認してください。セットアップログ：%1
 japanese.RemovePawnIoPrompt=共有 PawnIO ドライバーもアンインストールしますか？他のハードウェア監視ソフトやファン制御ソフトが使用している場合があります。他のソフトが依存していないことを確認できる場合だけ削除してください。
 japanese.PawnIoRemoveFailed=PawnIO をアンインストールできませんでした。UniDesk のアンインストールは続行し、PawnIO はシステムに残ります。
 spanish.CompleteHardwareTask=Instalar supervisión completa de hardware (recomendado; instala el controlador PawnIO y un servicio de solo lectura LocalSystem)
@@ -128,16 +128,16 @@ spanish.HardwareRepairFailed=La aplicación base UniDesk se instaló, pero no se
 spanish.HardwareCompatibilityMode=UniDesk está instalado y usará fuentes compatibles de Windows y del fabricante. Los datos de CPU, GPU, memoria y red seguirán disponibles; pueden faltar algunos sensores de la placa base.
 spanish.ProtectedComponentLocationNotice=Puede elegir la ubicación de la aplicación. Los archivos de reparación sin conexión y desinstalación usan unos 220 MB en una carpeta protegida del sistema.
 spanish.HardwareServiceRemoveFailed=No se pudo eliminar el servicio de hardware de UniDesk (código %1). La desinstalación continuará; revise ProgramData\UniDesk\logs\hardware-repair.log y elimine UniDeskHardwareService como administrador.
-spanish.HardwareServiceStopFailed=No se pudo detener el servicio de hardware existente (código %1). Cierre UniDesk y vuelva a intentarlo. Registro de instalación: {log}
-spanish.HardwareServiceOwnershipFailed=Existe un servicio con el mismo nombre, pero no pertenece a esta instalación de UniDesk. La instalación se detuvo para no modificar otra aplicación. Registro: {log}
-spanish.HardwareAclFailed=No se pudo preparar de forma segura la carpeta de componentes del sistema de UniDesk. Revise Common Program Files de Windows. Registro: {log}
+spanish.HardwareServiceStopFailed=No se pudo detener el servicio de hardware existente (código %1). Cierre UniDesk y vuelva a intentarlo. Registro de instalación: %2
+spanish.HardwareServiceOwnershipFailed=Existe un servicio con el mismo nombre, pero no pertenece a esta instalación de UniDesk. La instalación se detuvo para no modificar otra aplicación. Registro: %1
+spanish.HardwareAclFailed=No se pudo preparar de forma segura la carpeta de componentes del sistema de UniDesk. Revise Common Files de Windows. Registro: %1
 spanish.ApplicationLocationInvalid=No se puede usar con seguridad la carpeta seleccionada. Elija una carpeta nueva y vacía o una instalación existente de UniDesk.
 spanish.ApplicationLocationNetwork=La aplicación solo se puede instalar en un disco fijo local. No seleccione una unidad de red o extraíble.
 spanish.ApplicationLocationAclUnsupported=El disco seleccionado no admite los permisos de seguridad necesarios. Elija un disco local NTFS o ReFS.
-spanish.LegacyUninstallerCleanupFailed=La nueva instalación se puede desinstalar normalmente, pero no se pudieron limpiar los archivos de desinstalación antiguos. No ejecute el desinstalador anterior; tras verificar la nueva versión, puede eliminar manualmente la carpeta antigua. Registro: {log}
+spanish.LegacyUninstallerCleanupFailed=La nueva instalación se puede desinstalar normalmente, pero no se pudieron limpiar los archivos de desinstalación antiguos. No ejecute el desinstalador anterior; tras verificar la nueva versión, puede eliminar manualmente la carpeta antigua. Registro: %1
 spanish.ApplicationLocationMigrationComplete=UniDesk se instaló en la nueva ubicación y se limpiaron las entradas de inicio que pertenecían estrictamente a la ubicación anterior. El instalador no ejecutó el desinstalador antiguo ni eliminó su carpeta. Tras verificar la nueva versión, puede eliminar manualmente la carpeta anterior; los datos de usuario no se ven afectados.
-spanish.HardwareUnsafeServiceRetirementFailed=No se pudo confirmar que el servicio de hardware antiguo de UniDesk se detuviera y deshabilitara de forma segura. La instalación se detuvo; revise el registro y elimine UniDeskHardwareService manualmente.
-spanish.LegacyMigrationCleanupFailed=UniDesk se instaló en la nueva ubicación, pero no se completó la limpieza de las entradas de inicio anteriores. No ejecute el desinstalador antiguo; revise el registro y confirme que la versión anterior ya no se inicia con Windows.
+spanish.HardwareUnsafeServiceRetirementFailed=No se pudo confirmar que el servicio de hardware antiguo de UniDesk se detuviera y deshabilitara de forma segura. La instalación se detuvo; revise el registro y elimine UniDeskHardwareService manualmente. Registro: %1
+spanish.LegacyMigrationCleanupFailed=UniDesk se instaló en la nueva ubicación, pero no se completó la limpieza de las entradas de inicio anteriores. No ejecute el desinstalador antiguo; revise el registro y confirme que la versión anterior ya no se inicia con Windows. Registro: %1
 spanish.RemovePawnIoPrompt=¿Desinstalar también el controlador compartido PawnIO? Otras aplicaciones de supervisión de hardware o control de ventiladores pueden utilizarlo. Consérvelo salvo que esté seguro de que ninguna otra aplicación depende de él.
 spanish.PawnIoRemoveFailed=No se pudo desinstalar PawnIO. La desinstalación de UniDesk continuará y PawnIO permanecerá instalado.
 
@@ -152,9 +152,9 @@ Source: "{#MyAppSourceDir}\*"; DestDir: "{app}"; Excludes: "icon\*;*.pdb"; Flags
 Source: "{#MyAppIconSourceDir}\*"; DestDir: "{app}\icon"; Flags: ignoreversion recursesubdirs createallsubdirs
 ; Keep the repair payload installed even when the optional component is not selected,
 ; so Settings can add or repair it later without retaining the full setup package.
-Source: "{#MyHardwareServiceSourceDir}\*"; DestDir: "{commonpf}\UniDesk\HardwareService"; Excludes: "*.pdb"; Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "{#MyHardwareRepairSourceDir}\*"; DestDir: "{commonpf}\UniDesk\HardwareRepair"; Excludes: "*.pdb"; Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "installer-assets\PawnIO_setup.exe"; DestDir: "{commonpf}\UniDesk\Hardware"; Flags: ignoreversion
+Source: "{#MyHardwareServiceSourceDir}\*"; DestDir: "{commoncf}\UniDesk\HardwareService"; Excludes: "*.pdb"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "{#MyHardwareRepairSourceDir}\*"; DestDir: "{commoncf}\UniDesk\HardwareRepair"; Excludes: "*.pdb"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "installer-assets\PawnIO_setup.exe"; DestDir: "{commoncf}\UniDesk\Hardware"; Flags: ignoreversion
 Source: "installer-assets\PawnIO-COPYING.txt"; DestDir: "{app}\licenses"; Flags: ignoreversion
 Source: "installer-assets\LibreHardwareMonitor-THIRD-PARTY-NOTICES.txt"; DestDir: "{app}\licenses"; Flags: ignoreversion
 Source: "installer-assets\licenses\*"; DestDir: "{app}\licenses"; Flags: ignoreversion
@@ -238,7 +238,7 @@ end;
 
 function GetProtectedComponentRoot: String;
 begin
-  Result := RemoveBackslashUnlessRoot(ExpandConstant('{commonpf}\UniDesk'));
+  Result := RemoveBackslashUnlessRoot(ExpandConstant('{commoncf}\UniDesk'));
 end;
 
 function GetHardwareRepairHelperPath: String;
@@ -409,7 +409,7 @@ var
   ProtectedRoot: String;
   ResultCode: Integer;
 begin
-  ProtectedRoot := NormalizeDirectoryPath(ExpandConstant('{commonpf}'));
+  ProtectedRoot := NormalizeDirectoryPath(ExpandConstant('{commoncf}'));
   ProtectedParent := NormalizeDirectoryPath(ExtractFileDir(ProtectedRoot));
   if (ProtectedParent = '') or IsSameDirectory(ProtectedParent, ProtectedRoot) then
   begin
@@ -472,7 +472,7 @@ begin
     IsSameDirectory(NormalizedPath, ExpandConstant('{win}')) or
     IsSameDirectory(NormalizedPath, ExpandConstant('{pf}')) or
     IsSameDirectory(NormalizedPath, ExpandConstant('{pf32}')) or
-    IsSameDirectory(NormalizedPath, ExpandConstant('{commonpf}')) or
+    IsSameDirectory(NormalizedPath, ExpandConstant('{commoncf}')) or
     IsSameDirectory(NormalizedPath, ExpandConstant('{commonappdata}')) or
     IsSameDirectory(NormalizedPath, ExpandConstant('{%USERPROFILE}')) or
     IsSameDirectory(NormalizedPath, ExpandConstant('{localappdata}')) or
@@ -1318,26 +1318,30 @@ begin
 
   if not VerifyProtectedComponentRootAcl then
   begin
-    Result := ExpandConstant('{cm:HardwareAclFailed}');
+    Result := FmtMessage(
+      ExpandConstant('{cm:HardwareAclFailed}'), [ExpandConstant('{log}')]);
     Exit;
   end;
 
   if not IsSafeProtectedComponentTargetForAcl(GetProtectedComponentRoot) then
   begin
     Log('Refusing the fixed protected component target: ' + GetProtectedComponentRoot);
-    Result := ExpandConstant('{cm:HardwareAclFailed}');
+    Result := FmtMessage(
+      ExpandConstant('{cm:HardwareAclFailed}'), [ExpandConstant('{log}')]);
     Exit;
   end;
 
   if not HardenProtectedComponentPayload then
   begin
-    Result := ExpandConstant('{cm:HardwareAclFailed}');
+    Result := FmtMessage(
+      ExpandConstant('{cm:HardwareAclFailed}'), [ExpandConstant('{log}')]);
     Exit;
   end;
 
   if not RetireLegacyAppHostedHardwareService(RetiredLegacyService) then
   begin
-    Result := ExpandConstant('{cm:HardwareUnsafeServiceRetirementFailed}');
+    Result := FmtMessage(
+      ExpandConstant('{cm:HardwareUnsafeServiceRetirementFailed}'), [ExpandConstant('{log}')]);
     Exit;
   end;
 
@@ -1346,7 +1350,8 @@ begin
     if not IsHardwareServiceOwned then
     begin
       Log('Refusing to stop a foreign service named {#HardwareServiceName}.');
-      Result := ExpandConstant('{cm:HardwareServiceOwnershipFailed}');
+      Result := FmtMessage(
+        ExpandConstant('{cm:HardwareServiceOwnershipFailed}'), [ExpandConstant('{log}')]);
       Exit;
     end;
 
@@ -1360,7 +1365,7 @@ begin
       ((ResultCode <> 0) and (ResultCode <> 1060) and (ResultCode <> 1062)) then
     begin
       Result := FmtMessage(
-        ExpandConstant('{cm:HardwareServiceStopFailed}'), [IntToStr(ResultCode)]);
+        ExpandConstant('{cm:HardwareServiceStopFailed}'), [IntToStr(ResultCode), ExpandConstant('{log}')]);
       Exit;
     end;
     StoppedOwnedHardwareService := ResultCode = 0;
@@ -1368,7 +1373,8 @@ begin
     begin
       if not IsHardwareServiceOwned then
       begin
-        Result := ExpandConstant('{cm:HardwareServiceOwnershipFailed}');
+        Result := FmtMessage(
+          ExpandConstant('{cm:HardwareServiceOwnershipFailed}'), [ExpandConstant('{log}')]);
         Exit;
       end;
       TaskKillCode := -1;
@@ -1382,7 +1388,7 @@ begin
       if not WaitForHardwareServiceStopped then
       begin
         Result := FmtMessage(
-          ExpandConstant('{cm:HardwareServiceStopFailed}'), [IntToStr(TaskKillCode)]);
+          ExpandConstant('{cm:HardwareServiceStopFailed}'), [IntToStr(TaskKillCode), ExpandConstant('{log}')]);
         Exit;
       end;
     end;
@@ -1411,6 +1417,7 @@ end;
 procedure CleanupLegacyUninstallerAfterInstall;
 var
   CleanupSucceeded: Boolean;
+  FailureMessage: String;
 begin
   if LegacyUninstallerCleanupPath = '' then
     Exit;
@@ -1438,12 +1445,11 @@ begin
   end
   else
   begin
-    Log(ExpandConstant('{cm:LegacyUninstallerCleanupFailed}'));
+    FailureMessage := FmtMessage(
+      ExpandConstant('{cm:LegacyUninstallerCleanupFailed}'), [ExpandConstant('{log}')]);
+    Log(FailureMessage);
     if not WizardSilent then
-      MsgBox(
-        ExpandConstant('{cm:LegacyUninstallerCleanupFailed}'),
-        mbError,
-        MB_OK);
+      MsgBox(FailureMessage, mbError, MB_OK);
   end;
 end;
 
@@ -1481,7 +1487,11 @@ begin
     begin
       Log('Trusted legacy installation migration completed with startup cleanup warnings.');
       if not WizardSilent then
-        MsgBox(ExpandConstant('{cm:LegacyMigrationCleanupFailed}'), mbError, MB_OK);
+        MsgBox(
+          FmtMessage(
+            ExpandConstant('{cm:LegacyMigrationCleanupFailed}'), [ExpandConstant('{log}')]),
+          mbError,
+          MB_OK);
     end;
   end;
 end;
