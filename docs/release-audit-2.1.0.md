@@ -6,10 +6,11 @@
 
 ## 2026-08-11 安装兼容修订结论
 
-- 主程序安装页重新允许选择任意本地盘符下的安全目录，覆盖安装默认沿用同一 AppId 的原位置；网络路径、磁盘根目录、重解析路径和无法确认归属的非空目录在复制前被拒绝。
+- 主程序安装页重新允许选择本地固定 NTFS／ReFS 盘上的安全目录，覆盖安装默认沿用同一 AppId 的原位置；UNC、映射网络盘、可移动盘、FAT／exFAT、磁盘根目录、重解析路径和无法确认归属的非空目录在复制前被拒绝。
 - 硬件服务、修复工具、PawnIO 安装包和 Inno 卸载器与主程序位置解耦，固定到系统 `{commonpf}\UniDesk`；安装器在复制或执行这些提权组件前验证 Common Program Files 及其直属 Program Files 父目录，并只收紧该固定组件目录，绝不递归修改用户选择的主程序目录，也不因盘符根目录的无关宽 ACL 误拒绝。
 - 首次人工覆盖测试发现 Windows PowerShell 5.1 会继承 PowerShell 7 的模块路径，导致 `Get-Acl` 自动加载不兼容模块并把正常系统目录误报为不安全。ACL 预检已改为直接使用 .NET `DirectoryInfo.GetAccessControl`，不再依赖 PowerShell 模块；同一污染环境下旧命令返回 `21`，新命令返回 `0`。
-- 同 AppId 旧版位于自定义目录时，新安装器只从固定 HKLM 卸载注册读取旧路径；先锁定并收紧旧目录，仅删除严格匹配注册归属的 `uninsNNN.exe／.dat／.msg`，绝不执行旧卸载器或宽泛删除，再退役旧目录中的 owned 服务并从固定组件目录注册新版服务。仅当主程序位置改变时清理 owned 启动项，不整体删除旧目录，用户数据继续保留。
+- 硬件包 Authenticode 校验和服务停止确认在调用 Windows PowerShell 5.1 时会把 `PSModulePath` 固定到其自身模块目录，避免继承 PowerShell 7 模块路径后把有效 PawnIO 包误判为签名失败；已注册但仍不可用的 PawnIO 只执行一次验证后的修复、服务重启和健康复查，最终失败则进入兼容模式而不循环安装。
+- 同 AppId 旧版位于自定义目录时，新安装器只从固定 HKLM 卸载注册读取旧路径；先锁定并收紧旧目录、退役旧目录中的 owned 服务并从固定组件目录注册新版服务；只有新版卸载器已经创建后，才删除严格匹配注册归属的旧 `uninsNNN.exe／.dat／.msg`，绝不执行旧卸载器或宽泛删除。旧卸载文件清理失败是带日志路径的非致命警告，新版仍可正常卸载。仅当主程序位置改变时清理 owned 启动项，不整体删除旧目录，用户数据继续保留。
 - 服务安装、覆盖和卸载均验证 `ImagePath` 所有权，并以 `disable → stop → 按服务名 taskkill → 轮询真实停止 → delete` 收口；同名外部服务绝不接管。
 - 设置保存改为单事务批次；备份使用同一数据库事务快照和原子文件替换；持久化失败不再伪装成功；恢复事务提交与后续 UI 刷新使用不同成功边界。
 - 签名流水线拆成五个独立 GitHub-hosted job。签名前清单记录全部 `1431` 个文件、`20` 个目录、SHA-256、固定签名目标与 Authenticode 规范化内容哈希；文件／目录增删、reparse point、非签名文件变化、签名目标代码变化和安装器内容变化均被门禁拒绝。
@@ -22,7 +23,7 @@
 | --- | --- |
 | `dotnet restore UniDesk.sln -r win-x64 --locked-mode` | 通过；锁文件已包含发布 RID |
 | `dotnet build UniDesk.sln -c Release --no-restore -m:1` | 0 警告，0 错误 |
-| `dotnet test UniDesk.sln -c Release --no-restore` | `488/488` 通过，0 跳过 |
+| `dotnet test UniDesk.sln -c Release --no-restore` | `492/492` 通过，0 跳过 |
 | 版本一致性、NuGet 漏洞、PowerShell AST、`git diff --check` | 全部通过 |
 | 五 job 签名工作流与固定 Action SHA 静态回归 | 通过 |
 | 对抗式只读复核 | 未发现剩余 P0／P1 |

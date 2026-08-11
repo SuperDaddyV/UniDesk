@@ -294,6 +294,9 @@ public class InstallerHardwareComponentTests
 
         Assert.Contains("DisableDirPage=no", script, StringComparison.Ordinal);
         Assert.Contains("UsePreviousAppDir=yes", script, StringComparison.Ordinal);
+        Assert.Contains("AllowNetworkDrive=no", script, StringComparison.Ordinal);
+        Assert.Contains("AllowUNCPath=no", script, StringComparison.Ordinal);
+        Assert.Contains("SetupLogging=yes", script, StringComparison.Ordinal);
         Assert.Contains("procedure InitializeWizard", script, StringComparison.Ordinal);
         Assert.DoesNotContain("WizardForm.DirEdit.Enabled := False", script, StringComparison.Ordinal);
         Assert.DoesNotContain("WizardForm.DirBrowseButton.Enabled := False", script, StringComparison.Ordinal);
@@ -303,6 +306,14 @@ public class InstallerHardwareComponentTests
         Assert.Contains("DestDir: \"{commonpf}\\UniDesk\\HardwareRepair\"", script, StringComparison.Ordinal);
         Assert.Contains("DestDir: \"{commonpf}\\UniDesk\\Hardware\"", script, StringComparison.Ordinal);
         Assert.Contains("function GetProtectedComponentRoot", script, StringComparison.Ordinal);
+        Assert.Contains("GetDriveTypeW@kernel32.dll", script, StringComparison.Ordinal);
+        Assert.Contains("GetVolumeInformationW@kernel32.dll", script, StringComparison.Ordinal);
+        Assert.Contains("DriveFixed", script, StringComparison.Ordinal);
+        Assert.Contains("FilePersistentAcls", script, StringComparison.Ordinal);
+        Assert.Contains("{cm:ApplicationLocationNetwork}", script, StringComparison.Ordinal);
+        Assert.Contains("{cm:ApplicationLocationAclUnsupported}", script, StringComparison.Ordinal);
+        Assert.Contains("{log}", script, StringComparison.Ordinal);
+        Assert.Contains("220 MB", script, StringComparison.Ordinal);
         Assert.Contains("function VerifyProtectedComponentRootAcl", script, StringComparison.Ordinal);
         Assert.Contains("GetAccessRules", script, StringComparison.Ordinal);
         Assert.Contains("PropagationFlags]::InheritOnly", script, StringComparison.Ordinal);
@@ -416,19 +427,72 @@ public class InstallerHardwareComponentTests
             "RetireLegacyAppHostedHardwareService",
             prepareIndex,
             StringComparison.Ordinal);
-        var legacyUninstallerCleanupIndex = script.IndexOf(
-            "RemoveLegacyRegisteredUninstallerFiles",
-            prepareIndex,
-            StringComparison.Ordinal);
         var componentHardeningIndex = script.IndexOf(
             "if not HardenProtectedComponentPayload",
             prepareIndex,
             StringComparison.Ordinal);
         Assert.True(
-            legacyUninstallerCleanupIndex > prepareIndex &&
-            componentHardeningIndex > legacyUninstallerCleanupIndex &&
+            componentHardeningIndex > prepareIndex &&
             retirementIndex > componentHardeningIndex,
-            "Legacy cleanup must be locked and completed before protected component work and service retirement.");
+            "Protected component validation and service retirement must complete before installation starts.");
+
+        var prepareEndIndex = script.IndexOf(
+            "function NextButtonClick",
+            prepareIndex,
+            StringComparison.Ordinal);
+        Assert.DoesNotContain(
+            "RemoveLegacyRegisteredUninstallerFiles(",
+            script[prepareIndex..prepareEndIndex],
+            StringComparison.Ordinal);
+
+        var postInstallIndex = script.IndexOf(
+            "if CurStep <> ssPostInstall",
+            StringComparison.Ordinal);
+        var legacyUninstallerCleanupIndex = script.IndexOf(
+            "CleanupLegacyUninstallerAfterInstall;",
+            postInstallIndex,
+            StringComparison.Ordinal);
+        Assert.True(
+            postInstallIndex >= 0 && legacyUninstallerCleanupIndex > postInstallIndex,
+            "The legacy uninstaller must only be removed after Inno Setup has completed installation.");
+        Assert.Contains(
+            "CleanupSucceeded := RemoveLegacyRegisteredUninstallerFiles(",
+            script,
+            StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Installer_UninstallShouldNotRecreateMissingAppDirectoryAndShouldRemoveOnlyEmptyDirectory()
+    {
+        var script = File.ReadAllText(Path.Combine(ProjectRoot, "UniDesk.iss"));
+        var initializeIndex = script.IndexOf("function InitializeUninstall: Boolean", StringComparison.Ordinal);
+        var removeServiceIndex = script.IndexOf("procedure RemoveOwnedHardwareService", initializeIndex, StringComparison.Ordinal);
+        var initializeBody = script[initializeIndex..removeServiceIndex];
+
+        Assert.DoesNotContain("ForceDirectories(ExpandConstant('{app}'))", initializeBody, StringComparison.Ordinal);
+        Assert.Contains("if not DirExists(ExpandConstant('{app}')) then", initializeBody, StringComparison.Ordinal);
+        Assert.Contains("CurUninstallStep = usPostUninstall", script, StringComparison.Ordinal);
+        Assert.Contains("ReleaseApplicationPathLocks", script, StringComparison.Ordinal);
+        Assert.Contains("IsDirectoryEmpty", script, StringComparison.Ordinal);
+        Assert.Contains("not ContainsReparsePoint", script, StringComparison.Ordinal);
+        Assert.Contains("RemoveDir", script, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Installer_ReadmeShouldStateTheActualWindows10LtscBaseline()
+    {
+        foreach (var fileName in new[]
+                 {
+                     "README.md",
+                     "README.zh-CN.md",
+                     "README.en-US.md",
+                     "README.ja-JP.md",
+                     "README.es-ES.md"
+                 })
+        {
+            var readme = File.ReadAllText(Path.Combine(ProjectRoot, fileName));
+            Assert.Contains("LTSC 2021", readme, StringComparison.OrdinalIgnoreCase);
+        }
     }
 
     [Fact]

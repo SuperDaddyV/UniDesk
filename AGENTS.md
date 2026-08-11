@@ -2,7 +2,7 @@
 
 ## 项目边界
 
-- 正式支持仍在 Microsoft 与 .NET 10 支持周期内的 Windows 11 x64，以及 Windows 10 Enterprise／IoT Enterprise LTSC x64；Windows API 兼容基线为 10.0.18362.0，目标框架为 `net10.0-windows10.0.18362.0`。
+- 正式支持仍在 Microsoft 与 .NET 10 支持周期内的 Windows 11 x64，以及 Windows 10 Enterprise／IoT Enterprise LTSC 2021 或更新版本 x64；Windows API 兼容基线为 10.0.18362.0，目标框架为 `net10.0-windows10.0.18362.0`。
 - UI 使用 WPF；数据使用 `Microsoft.Data.Sqlite`；不得引入第二套 UI、数据库或依赖注入框架。
 - 默认中文沟通；代码、命令、类型、成员和文件名使用英文。
 

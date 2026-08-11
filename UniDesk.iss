@@ -39,6 +39,10 @@ DisableProgramGroupPage=yes
 DisableDirPage=no
 UsePreviousAppDir=yes
 UninstallFilesDir={commonpf}\UniDesk\Uninstall
+AllowNetworkDrive=no
+AllowUNCPath=no
+AllowRootDirectory=no
+SetupLogging=yes
 PrivilegesRequired=admin
 MinVersion=10.0.18362
 ArchitecturesAllowed=x64os
@@ -68,13 +72,15 @@ chinesesimp.CompleteHardwareTask=安装完整硬件监控组件（推荐，将�
 chinesesimp.HardwareMonitoringGroup=硬件监控
 chinesesimp.HardwareRepairFailed=UniDesk 基础程序已安装，但硬件监控组件未能完成安装或修复（退出码 %1）。基础功能仍可正常使用；请在 UniDesk 设置中导出硬件诊断或稍后重试。详细日志位于 ProgramData\UniDesk\logs\hardware-repair.log。
 chinesesimp.HardwareCompatibilityMode=UniDesk 已安装，并将使用 Windows 和硬件厂商的兼容数据来源。CPU、GPU、内存和网络仍可显示；部分主板传感器可能缺失。
-chinesesimp.ProtectedComponentLocationNotice=您可以选择主程序的安装位置；硬件监控与卸载组件将安装到 Windows 受保护目录。
+chinesesimp.ProtectedComponentLocationNotice=您可以选择主程序的安装位置；离线硬件修复与卸载组件仍会在系统受保护目录占用约 220 MB。
 chinesesimp.HardwareServiceRemoveFailed=未能删除 UniDesk 硬件监控服务（退出码 %1）。卸载将继续；请查看 ProgramData\UniDesk\logs\hardware-repair.log 并以管理员身份删除 UniDeskHardwareService。
-chinesesimp.HardwareServiceStopFailed=无法停止现有硬件监控服务（退出码 %1）。请关闭 UniDesk 后重试安装。
-chinesesimp.HardwareServiceOwnershipFailed=发现同名硬件服务，但它不属于当前 UniDesk 安装。为避免影响其他软件，安装已停止。
-chinesesimp.HardwareAclFailed=无法安全准备 UniDesk 系统组件目录。安装已停止，请检查 Windows 的 Common Program Files 目录后重试。
+chinesesimp.HardwareServiceStopFailed=无法停止现有硬件监控服务（退出码 %1）。请关闭 UniDesk 后重试安装。安装日志：{log}
+chinesesimp.HardwareServiceOwnershipFailed=发现同名硬件服务，但它不属于当前 UniDesk 安装。为避免影响其他软件，安装已停止。安装日志：{log}
+chinesesimp.HardwareAclFailed=无法安全准备 UniDesk 系统组件目录。安装已停止，请检查 Windows 的 Common Program Files 目录后重试。安装日志：{log}
 chinesesimp.ApplicationLocationInvalid=所选主程序目录无法安全使用。请选择一个新的空目录，或原有的 UniDesk 安装目录。
-chinesesimp.LegacyUninstallerCleanupFailed=无法安全移除旧版 UniDesk 卸载组件。安装已停止；请关闭旧卸载程序后重试。
+chinesesimp.ApplicationLocationNetwork=主程序只能安装到本地固定磁盘，请不要选择网络盘或可移动磁盘。
+chinesesimp.ApplicationLocationAclUnsupported=所选磁盘不支持 UniDesk 所需的安全权限，请选择 NTFS 或 ReFS 本地磁盘。
+chinesesimp.LegacyUninstallerCleanupFailed=新版 UniDesk 已安装且可以正常卸载，但旧目录中的卸载组件未能清理。请不要运行旧卸载程序；确认新版正常后可手动删除旧程序文件夹。安装日志：{log}
 chinesesimp.ApplicationLocationMigrationComplete=UniDesk 已安装到新位置，并已清理可确认属于旧位置的启动项。安装器没有运行旧卸载程序或删除旧目录；确认新版正常后，可手动删除旧程序文件夹，用户数据不受影响。
 chinesesimp.HardwareUnsafeServiceRetirementFailed=检测到旧版 UniDesk 在非受保护目录运行硬件服务，但无法确认它已安全停止并禁用。安装已停止；请不要继续使用旧硬件服务，并查看安装日志后手动删除 UniDeskHardwareService。
 chinesesimp.LegacyMigrationCleanupFailed=UniDesk 已安装到新位置，但未能完整清理旧位置的启动项。请不要运行旧卸载程序；请查看安装日志并确认旧版不再开机启动。
@@ -84,13 +90,15 @@ english.CompleteHardwareTask=Install complete hardware monitoring (recommended; 
 english.HardwareMonitoringGroup=Hardware monitoring
 english.HardwareRepairFailed=The UniDesk base application was installed, but hardware monitoring installation or repair did not complete (exit code %1). Base features remain available; export hardware diagnostics from Settings or retry later. Details are in ProgramData\UniDesk\logs\hardware-repair.log.
 english.HardwareCompatibilityMode=UniDesk is installed and will use compatible Windows and hardware-vendor data sources. CPU, GPU, memory, and network data remain available; some motherboard sensors may be missing.
-english.ProtectedComponentLocationNotice=You can choose the main application location. Hardware monitoring and uninstall components will use a protected Windows directory.
+english.ProtectedComponentLocationNotice=You can choose the main app location. Offline hardware repair and uninstall files still use about 220 MB in a protected system directory.
 english.HardwareServiceRemoveFailed=The UniDesk hardware service could not be removed (exit code %1). Uninstall will continue; review ProgramData\UniDesk\logs\hardware-repair.log and remove UniDeskHardwareService as an administrator.
-english.HardwareServiceStopFailed=The existing hardware service could not be stopped (exit code %1). Close UniDesk and retry setup.
-english.HardwareServiceOwnershipFailed=A service with the same name exists but does not belong to this UniDesk installation. Setup stopped to avoid changing another application.
-english.HardwareAclFailed=The UniDesk system component directory could not be prepared securely. Setup stopped; check the Windows Common Program Files directory and retry.
+english.HardwareServiceStopFailed=The existing hardware service could not be stopped (exit code %1). Close UniDesk and retry setup. Setup log: {log}
+english.HardwareServiceOwnershipFailed=A service with the same name exists but does not belong to this UniDesk installation. Setup stopped to avoid changing another application. Setup log: {log}
+english.HardwareAclFailed=The UniDesk system component directory could not be prepared securely. Setup stopped; check the Windows Common Program Files directory and retry. Setup log: {log}
 english.ApplicationLocationInvalid=The selected application directory cannot be used safely. Choose a new empty directory or an existing UniDesk installation directory.
-english.LegacyUninstallerCleanupFailed=The previous UniDesk uninstall component could not be removed safely. Setup stopped; close the previous uninstaller and retry.
+english.ApplicationLocationNetwork=The main app can only be installed on a local fixed disk. Do not select a network or removable drive.
+english.ApplicationLocationAclUnsupported=The selected disk does not support the security permissions UniDesk requires. Choose a local NTFS or ReFS disk.
+english.LegacyUninstallerCleanupFailed=The new UniDesk installation can be uninstalled normally, but the old uninstall files could not be cleaned. Do not run the old uninstaller; after verifying the new version, you may delete the old program folder manually. Setup log: {log}
 english.ApplicationLocationMigrationComplete=UniDesk was installed in the new location and strictly owned startup entries for the previous location were cleaned. Setup did not run the old uninstaller or delete the old folder. After verifying the new version, you can delete the old program folder manually; user data is unaffected.
 english.HardwareUnsafeServiceRetirementFailed=An older UniDesk hardware service is running from an unprotected directory, but setup could not confirm that it was safely stopped and disabled. Setup stopped; do not keep using the old service, and remove UniDeskHardwareService manually after reviewing the setup log.
 english.LegacyMigrationCleanupFailed=UniDesk was installed in the new location, but startup cleanup for the previous location did not complete. Do not run the old uninstaller; review the setup log and confirm that the old version no longer starts with Windows.
@@ -100,13 +108,15 @@ japanese.CompleteHardwareTask=完全なハードウェア監視をインスト�
 japanese.HardwareMonitoringGroup=ハードウェア監視
 japanese.HardwareRepairFailed=UniDesk 本体はインストールされましたが、ハードウェア監視のインストールまたは修復を完了できませんでした（終了コード %1）。基本機能は使用できます。設定から診断をエクスポートするか、後でもう一度お試しください。詳細ログ：ProgramData\UniDesk\logs\hardware-repair.log。
 japanese.HardwareCompatibilityMode=UniDesk はインストールされ、Windows とハードウェアベンダーの互換データソースを使用します。CPU、GPU、メモリ、ネットワークは引き続き表示されますが、一部のマザーボードセンサーは表示されない場合があります。
-japanese.ProtectedComponentLocationNotice=メインアプリのインストール先を選択できます。ハードウェア監視とアンインストールのコンポーネントは Windows の保護されたフォルダーに配置されます。
+japanese.ProtectedComponentLocationNotice=メインアプリの場所を選択できます。オフライン修復とアンインストール用ファイルは、保護されたシステムフォルダーで約 220 MB 使用します。
 japanese.HardwareServiceRemoveFailed=UniDesk ハードウェア監視サービスを削除できませんでした（終了コード %1）。アンインストールは続行します。ProgramData\UniDesk\logs\hardware-repair.log を確認し、管理者として UniDeskHardwareService を削除してください。
-japanese.HardwareServiceStopFailed=既存のハードウェア監視サービスを停止できませんでした（終了コード %1）。UniDesk を終了してからセットアップを再試行してください。
-japanese.HardwareServiceOwnershipFailed=同名のサービスがありますが、この UniDesk インストールのものではありません。他のアプリを変更しないよう、インストールを中止しました。
-japanese.HardwareAclFailed=UniDesk のシステムコンポーネント用フォルダーを安全に準備できませんでした。Windows の Common Program Files を確認して再試行してください。
+japanese.HardwareServiceStopFailed=既存のハードウェア監視サービスを停止できませんでした（終了コード %1）。UniDesk を終了してから再試行してください。セットアップログ：{log}
+japanese.HardwareServiceOwnershipFailed=同名のサービスがありますが、この UniDesk インストールのものではありません。他のアプリを変更しないよう、インストールを中止しました。セットアップログ：{log}
+japanese.HardwareAclFailed=UniDesk のシステムコンポーネント用フォルダーを安全に準備できませんでした。Windows の Common Program Files を確認してください。セットアップログ：{log}
 japanese.ApplicationLocationInvalid=選択したアプリフォルダーは安全に使用できません。新しい空のフォルダーまたは既存の UniDesk インストール先を選択してください。
-japanese.LegacyUninstallerCleanupFailed=旧版 UniDesk のアンインストールコンポーネントを安全に削除できませんでした。インストールを中止しました。旧アンインストーラーを閉じて再試行してください。
+japanese.ApplicationLocationNetwork=メインアプリはローカル固定ディスクにのみインストールできます。ネットワークドライブやリムーバブルドライブは選択しないでください。
+japanese.ApplicationLocationAclUnsupported=選択したディスクは UniDesk に必要なセキュリティ権限をサポートしていません。ローカルの NTFS または ReFS ディスクを選択してください。
+japanese.LegacyUninstallerCleanupFailed=新版 UniDesk は正常にアンインストールできますが、旧フォルダーのアンインストールファイルを削除できませんでした。旧アンインストーラーは実行せず、新版を確認後に旧プログラムフォルダーを手動削除してください。セットアップログ：{log}
 japanese.ApplicationLocationMigrationComplete=UniDesk を新しい場所にインストールし、旧場所に厳密に属するスタートアップ項目をクリーンアップしました。旧アンインストーラーの実行や旧フォルダーの削除は行っていません。新版を確認後、旧フォルダーを手動削除できます。ユーザーデータには影響しません。
 japanese.HardwareUnsafeServiceRetirementFailed=保護されていない場所の旧版 UniDesk ハードウェアサービスを安全に停止して無効化できたことを確認できません。インストールを中止しました。ログを確認し、UniDeskHardwareService を手動で削除してください。
 japanese.LegacyMigrationCleanupFailed=UniDesk は新しい場所にインストールされましたが、旧場所のスタートアップ項目を完全にクリーンアップできませんでした。旧アンインストーラーは実行せず、ログを確認してください。
@@ -116,13 +126,15 @@ spanish.CompleteHardwareTask=Instalar supervisión completa de hardware (recomen
 spanish.HardwareMonitoringGroup=Supervisión de hardware
 spanish.HardwareRepairFailed=La aplicación base UniDesk se instaló, pero no se completó la instalación o reparación de la supervisión de hardware (código %1). Las funciones básicas siguen disponibles; exporte el diagnóstico desde Configuración o vuelva a intentarlo más tarde. Registro: ProgramData\UniDesk\logs\hardware-repair.log.
 spanish.HardwareCompatibilityMode=UniDesk está instalado y usará fuentes compatibles de Windows y del fabricante. Los datos de CPU, GPU, memoria y red seguirán disponibles; pueden faltar algunos sensores de la placa base.
-spanish.ProtectedComponentLocationNotice=Puede elegir la ubicación de la aplicación principal. Los componentes de hardware y desinstalación usarán una carpeta protegida de Windows.
+spanish.ProtectedComponentLocationNotice=Puede elegir la ubicación de la aplicación. Los archivos de reparación sin conexión y desinstalación usan unos 220 MB en una carpeta protegida del sistema.
 spanish.HardwareServiceRemoveFailed=No se pudo eliminar el servicio de hardware de UniDesk (código %1). La desinstalación continuará; revise ProgramData\UniDesk\logs\hardware-repair.log y elimine UniDeskHardwareService como administrador.
-spanish.HardwareServiceStopFailed=No se pudo detener el servicio de hardware existente (código %1). Cierre UniDesk y vuelva a ejecutar el instalador.
-spanish.HardwareServiceOwnershipFailed=Existe un servicio con el mismo nombre, pero no pertenece a esta instalación de UniDesk. La instalación se detuvo para no modificar otra aplicación.
-spanish.HardwareAclFailed=No se pudo preparar de forma segura la carpeta de componentes del sistema de UniDesk. Revise Common Program Files de Windows y vuelva a intentarlo.
+spanish.HardwareServiceStopFailed=No se pudo detener el servicio de hardware existente (código %1). Cierre UniDesk y vuelva a intentarlo. Registro de instalación: {log}
+spanish.HardwareServiceOwnershipFailed=Existe un servicio con el mismo nombre, pero no pertenece a esta instalación de UniDesk. La instalación se detuvo para no modificar otra aplicación. Registro: {log}
+spanish.HardwareAclFailed=No se pudo preparar de forma segura la carpeta de componentes del sistema de UniDesk. Revise Common Program Files de Windows. Registro: {log}
 spanish.ApplicationLocationInvalid=No se puede usar con seguridad la carpeta seleccionada. Elija una carpeta nueva y vacía o una instalación existente de UniDesk.
-spanish.LegacyUninstallerCleanupFailed=No se pudo eliminar de forma segura el componente de desinstalación anterior de UniDesk. La instalación se detuvo; cierre el desinstalador anterior y vuelva a intentarlo.
+spanish.ApplicationLocationNetwork=La aplicación solo se puede instalar en un disco fijo local. No seleccione una unidad de red o extraíble.
+spanish.ApplicationLocationAclUnsupported=El disco seleccionado no admite los permisos de seguridad necesarios. Elija un disco local NTFS o ReFS.
+spanish.LegacyUninstallerCleanupFailed=La nueva instalación se puede desinstalar normalmente, pero no se pudieron limpiar los archivos de desinstalación antiguos. No ejecute el desinstalador anterior; tras verificar la nueva versión, puede eliminar manualmente la carpeta antigua. Registro: {log}
 spanish.ApplicationLocationMigrationComplete=UniDesk se instaló en la nueva ubicación y se limpiaron las entradas de inicio que pertenecían estrictamente a la ubicación anterior. El instalador no ejecutó el desinstalador antiguo ni eliminó su carpeta. Tras verificar la nueva versión, puede eliminar manualmente la carpeta anterior; los datos de usuario no se ven afectados.
 spanish.HardwareUnsafeServiceRetirementFailed=No se pudo confirmar que el servicio de hardware antiguo de UniDesk se detuviera y deshabilitara de forma segura. La instalación se detuvo; revise el registro y elimine UniDeskHardwareService manualmente.
 spanish.LegacyMigrationCleanupFailed=UniDesk se instaló en la nueva ubicación, pero no se completó la limpieza de las entradas de inicio anteriores. No ejecute el desinstalador antiguo; revise el registro y confirme que la versión anterior ya no se inicia con Windows.
@@ -166,6 +178,8 @@ const
   FileFlagOpenReparsePoint = $00200000;
   FileFlagBackupSemantics = $02000000;
   InvalidHandleValue = -1;
+  DriveFixed = 3;
+  FilePersistentAcls = $00000008;
   HardwareCompatibilityExitCode = 31;
   CurrentApplicationMarkerName = '.unidesk-application-path';
   LegacyStartupMigrationMarkerName = '.unidesk-legacy-startup-path';
@@ -175,8 +189,11 @@ var
   ApplicationPathLocksHeld: Boolean;
   LockedApplicationPath: String;
   LegacyMigrationPath: String;
+  LegacyUninstallerCleanupPath: String;
+  LegacyRegisteredUninstallerPath: String;
   LegacyRegisteredUninstallerInvalid: Boolean;
   LegacyRegisteredPathInvalid: Boolean;
+  LastApplicationLocationError: String;
   ValidatedAclTarget: String;
   StoppedOwnedHardwareService: Boolean;
   HardwareCompatibilityMode: Boolean;
@@ -193,6 +210,18 @@ function CreateFile(
   external 'CreateFileW@kernel32.dll stdcall';
 function WindowsCloseHandle(Handle: THandle): Boolean;
   external 'CloseHandle@kernel32.dll stdcall';
+function GetDriveType(RootPathName: String): Cardinal;
+  external 'GetDriveTypeW@kernel32.dll stdcall';
+function GetVolumeInformation(
+  RootPathName: String;
+  VolumeNameBuffer: String;
+  VolumeNameSize: Cardinal;
+  var VolumeSerialNumber: Cardinal;
+  var MaximumComponentLength: Cardinal;
+  var FileSystemFlags: Cardinal;
+  FileSystemNameBuffer: String;
+  FileSystemNameSize: Cardinal): Boolean;
+  external 'GetVolumeInformationW@kernel32.dll stdcall';
 
 procedure InitializeWizard;
 begin
@@ -698,38 +727,68 @@ begin
   Result := (Extension = '.exe') or (Extension = '.dat') or (Extension = '.msg');
 end;
 
+function PrepareLegacyRegisteredUninstallerCleanup(
+  const RegisteredPath: String): Boolean;
+var
+  RegisteredUninstallerDirectory: String;
+  RegisteredUninstallerPath: String;
+begin
+  Result := False;
+  LegacyUninstallerCleanupPath := '';
+  LegacyRegisteredUninstallerPath := '';
+  if not GetRegisteredUniDeskUninstallerPath(RegisteredUninstallerPath) then
+  begin
+    Result := not LegacyRegisteredUninstallerInvalid;
+    Exit;
+  end;
+
+  RegisteredUninstallerDirectory := ExtractFileDir(RegisteredUninstallerPath);
+  if not IsLegacyUninstallerFileName(ExtractFileName(RegisteredUninstallerPath)) or
+    ((not IsSameDirectory(RegisteredUninstallerDirectory, RegisteredPath)) and
+     (not IsSameDirectory(
+       RegisteredUninstallerDirectory,
+       AddBackslash(GetProtectedComponentRoot) + 'Uninstall'))) then
+  begin
+    Log('The registered UniDesk uninstaller is outside an owned uninstall directory.');
+    Exit;
+  end;
+
+  if IsSameDirectory(RegisteredUninstallerDirectory, RegisteredPath) then
+  begin
+    LegacyUninstallerCleanupPath := NormalizeDirectoryPath(RegisteredPath);
+    LegacyRegisteredUninstallerPath := RegisteredUninstallerPath;
+  end;
+  Result := True;
+end;
+
 function RemoveLegacyRegisteredUninstallerFiles(
   const RegisteredPath: String): Boolean;
 var
   FindRec: TFindRec;
-  RegisteredUninstallerPath: String;
   RegisteredUninstallerDirectory: String;
   UninstallerPath: String;
 begin
   Result := False;
+  if LegacyUninstallerCleanupPath = '' then
+  begin
+    Result := True;
+    Exit;
+  end;
   if (not ApplicationPathLocksHeld) or
-    (not IsSameDirectory(RegisteredPath, LockedApplicationPath)) then
+    (not IsSameDirectory(RegisteredPath, LockedApplicationPath)) or
+    (not IsSameDirectory(RegisteredPath, LegacyUninstallerCleanupPath)) then
   begin
     Log('Refusing legacy uninstaller cleanup without a lock on the registered application directory.');
     Exit;
   end;
 
-  if GetRegisteredUniDeskUninstallerPath(RegisteredUninstallerPath) then
+  RegisteredUninstallerDirectory := ExtractFileDir(LegacyRegisteredUninstallerPath);
+  if (LegacyRegisteredUninstallerPath = '') or
+    (not IsLegacyUninstallerFileName(
+      ExtractFileName(LegacyRegisteredUninstallerPath))) or
+    (not IsSameDirectory(RegisteredUninstallerDirectory, RegisteredPath)) then
   begin
-    RegisteredUninstallerDirectory := ExtractFileDir(RegisteredUninstallerPath);
-    if not IsLegacyUninstallerFileName(ExtractFileName(RegisteredUninstallerPath)) or
-      ((not IsSameDirectory(RegisteredUninstallerDirectory, RegisteredPath)) and
-       (not IsSameDirectory(
-         RegisteredUninstallerDirectory,
-         AddBackslash(GetProtectedComponentRoot) + 'Uninstall'))) then
-    begin
-      Log('The registered UniDesk uninstaller is outside an owned uninstall directory.');
-      Exit;
-    end;
-  end
-  else if LegacyRegisteredUninstallerInvalid then
-  begin
-    Log('The registered UniDesk uninstall command is invalid.');
+    Log('The captured legacy UniDesk uninstaller is no longer an owned application file.');
     Exit;
   end;
 
@@ -790,11 +849,55 @@ begin
   Result := Result and IsSameDirectory(NormalizedPath, RegisteredPath);
 end;
 
+function IsSupportedApplicationVolume(const DriveRoot: String): Boolean;
+var
+  DriveKind: Cardinal;
+  FileSystemFlags: Cardinal;
+  FileSystemName: String;
+  MaximumComponentLength: Cardinal;
+  VolumeName: String;
+  VolumeSerialNumber: Cardinal;
+begin
+  Result := False;
+  DriveKind := GetDriveType(DriveRoot);
+  if DriveKind <> DriveFixed then
+  begin
+    LastApplicationLocationError :=
+      ExpandConstant('{cm:ApplicationLocationNetwork}');
+    Exit;
+  end;
+
+  SetLength(VolumeName, 261);
+  SetLength(FileSystemName, 261);
+  FileSystemFlags := 0;
+  MaximumComponentLength := 0;
+  VolumeSerialNumber := 0;
+  if (not GetVolumeInformation(
+      DriveRoot,
+      VolumeName,
+      261,
+      VolumeSerialNumber,
+      MaximumComponentLength,
+      FileSystemFlags,
+      FileSystemName,
+      261)) or
+    ((FileSystemFlags and FilePersistentAcls) = 0) then
+  begin
+    LastApplicationLocationError :=
+      ExpandConstant('{cm:ApplicationLocationAclUnsupported}');
+    Exit;
+  end;
+
+  Result := True;
+end;
+
 function IsSafeApplicationInstallTarget(const DirectoryPath: String): Boolean;
 var
   DrivePath: String;
   NormalizedPath: String;
 begin
+  LastApplicationLocationError :=
+    ExpandConstant('{cm:ApplicationLocationInvalid}');
   NormalizedPath := NormalizeDirectoryPath(DirectoryPath);
   if (NormalizedPath = '') or IsProtectedBroadDirectory(NormalizedPath) then
   begin
@@ -809,6 +912,11 @@ begin
     Exit;
   end;
   if DrivePath[2] <> ':' then
+  begin
+    Result := False;
+    Exit;
+  end;
+  if not IsSupportedApplicationVolume(DrivePath + '\') then
   begin
     Result := False;
     Exit;
@@ -1149,6 +1257,8 @@ var
   TaskKillCode: Integer;
 begin
   Result := '';
+  LegacyUninstallerCleanupPath := '';
+  LegacyRegisteredUninstallerPath := '';
   PreviousInstallationExists := GetPreviousUniDeskApplicationDirectory(
     LegacyInstallPath);
   if LegacyRegisteredPathInvalid then
@@ -1170,7 +1280,7 @@ begin
   if not IsSafeApplicationInstallTarget(ExpandConstant('{app}')) then
   begin
     Log('Refusing the selected application target: ' + ExpandConstant('{app}'));
-    Result := ExpandConstant('{cm:ApplicationLocationInvalid}');
+    Result := LastApplicationLocationError;
     Exit;
   end;
 
@@ -1185,9 +1295,10 @@ begin
       Exit;
     end;
 
-    if not RemoveLegacyRegisteredUninstallerFiles(LegacyInstallPath) then
+    if not PrepareLegacyRegisteredUninstallerCleanup(LegacyInstallPath) then
     begin
-      Result := ExpandConstant('{cm:LegacyUninstallerCleanupFailed}');
+      Log('The registered legacy uninstaller failed ownership validation.');
+      Result := ExpandConstant('{cm:ApplicationLocationInvalid}');
       Exit;
     end;
 
@@ -1285,7 +1396,7 @@ begin
     not IsSafeApplicationInstallTarget(ExpandConstant('{app}')) then
   begin
     Log('Selected application directory was rejected on the location page.');
-    MsgBox(ExpandConstant('{cm:ApplicationLocationInvalid}'), mbError, MB_OK);
+    MsgBox(LastApplicationLocationError, mbError, MB_OK);
     Result := False;
   end;
 end;
@@ -1295,6 +1406,45 @@ begin
   if (CurPageID = wpFinished) and HardwareCompatibilityMode then
     WizardForm.FinishedLabel.Caption :=
       ExpandConstant('{cm:HardwareCompatibilityMode}');
+end;
+
+procedure CleanupLegacyUninstallerAfterInstall;
+var
+  CleanupSucceeded: Boolean;
+begin
+  if LegacyUninstallerCleanupPath = '' then
+    Exit;
+
+  CleanupSucceeded := False;
+  if ApplicationPathLocksHeld and
+    IsSameDirectory(LegacyUninstallerCleanupPath, LockedApplicationPath) then
+    CleanupSucceeded := RemoveLegacyRegisteredUninstallerFiles(
+      LegacyUninstallerCleanupPath)
+  else
+  begin
+    ReleaseApplicationPathLocks;
+    if IsSafeApplicationInstallTarget(LegacyUninstallerCleanupPath) and
+      AcquireApplicationPathLocks(LegacyUninstallerCleanupPath) and
+      HardenLockedApplicationDirectory(LegacyUninstallerCleanupPath) then
+      CleanupSucceeded := RemoveLegacyRegisteredUninstallerFiles(
+        LegacyUninstallerCleanupPath);
+  end;
+
+  if CleanupSucceeded then
+  begin
+    Log('Legacy uninstall files were removed after the new uninstaller was created.');
+    LegacyUninstallerCleanupPath := '';
+    LegacyRegisteredUninstallerPath := '';
+  end
+  else
+  begin
+    Log(ExpandConstant('{cm:LegacyUninstallerCleanupFailed}'));
+    if not WizardSilent then
+      MsgBox(
+        ExpandConstant('{cm:LegacyUninstallerCleanupFailed}'),
+        mbError,
+        MB_OK);
+  end;
 end;
 
 procedure CurStepChanged(CurStep: TSetupStep);
@@ -1316,6 +1466,7 @@ begin
     Exit;
   end;
 
+  CleanupLegacyUninstallerAfterInstall;
   InstallHardwareComponent;
   RestartOwnedHardwareServiceIfNeeded;
   if LegacyMigrationPath <> '' then
@@ -1343,9 +1494,15 @@ end;
 
 function InitializeUninstall: Boolean;
 begin
+  if not DirExists(ExpandConstant('{app}')) then
+  begin
+    Log('The application directory is already absent; protected component cleanup will continue.');
+    Result := True;
+    Exit;
+  end;
+
   Result :=
     IsSafeApplicationInstallTarget(ExpandConstant('{app}')) and
-    ForceDirectories(ExpandConstant('{app}')) and
     AcquireApplicationPathLocks(ExpandConstant('{app}')) and
     HardenApplicationPayload;
   if not Result then
@@ -1426,9 +1583,27 @@ end;
 
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
 var
+  ApplicationPath: String;
   ResultCode: Integer;
   PawnIoInstaller: String;
 begin
+  if CurUninstallStep = usPostUninstall then
+  begin
+    ApplicationPath := NormalizeDirectoryPath(ExpandConstant('{app}'));
+    ReleaseApplicationPathLocks;
+    if DirExists(ApplicationPath) and
+      IsDirectoryEmpty(ApplicationPath) and
+      (not ContainsReparsePoint(ApplicationPath)) and
+      (not ContainsReparsePointInExistingAncestorChain(ApplicationPath)) then
+    begin
+      if RemoveDir(ApplicationPath) then
+        Log('Removed the empty application directory after releasing path locks.')
+      else
+        Log('The empty application directory could not be removed.');
+    end;
+    Exit;
+  end;
+
   if CurUninstallStep <> usUninstall then
     Exit;
 

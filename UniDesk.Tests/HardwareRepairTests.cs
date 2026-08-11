@@ -99,6 +99,57 @@ public class HardwareRepairTests
     }
 
     [Fact]
+    public void InstallOrRepair_WhenExistingPawnIoRemainsUnavailable_ShouldRunOneVerifiedRepair()
+    {
+        var processRunner = new RecordingProcessRunner(
+            pawnIoQueryExitCode: 0,
+            healthCheckExitCodes: Enumerable.Repeat(22, 20).Append(0).ToArray());
+        var runner = CreateRunner(processRunner, delay: _ => { });
+
+        var result = runner.InstallOrRepair();
+
+        Assert.Equal(HardwareRepairExitCode.Success, result);
+        Assert.Single(processRunner.Calls, call =>
+            Path.GetFileName(call.FileName).Equals(
+                "PawnIO_setup.exe",
+                StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(processRunner.Calls, call =>
+            Path.GetFileName(call.FileName).Equals("powershell.exe", StringComparison.OrdinalIgnoreCase) &&
+            call.Arguments.Any(argument => argument.Contains(
+                "Get-AuthenticodeSignature",
+                StringComparison.Ordinal)));
+    }
+
+    [Fact]
+    public void PawnIoSignatureVerification_ShouldIsolateWindowsPowerShellModulePath()
+    {
+        var projectRoot = Path.GetFullPath(Path.Combine(
+            AppContext.BaseDirectory,
+            "..",
+            "..",
+            "..",
+            ".."));
+        var processRunner = new RecordingProcessRunner();
+        var verifier = new HardwarePackageVerifier(
+            processRunner,
+            new HardwareRepairLogger(Path.Combine(
+                Path.GetTempPath(),
+                $"UniDesk_hardware_verifier_test_{Guid.NewGuid():N}.log")));
+
+        var result = verifier.VerifyPawnIo(Path.Combine(
+            projectRoot,
+            "installer-assets",
+            "PawnIO_setup.exe"));
+
+        Assert.Equal(HardwarePackageVerificationResult.Valid, result);
+        var signatureCall = Assert.Single(processRunner.Calls, call =>
+            Path.GetFileName(call.FileName).Equals("powershell.exe", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(signatureCall.Arguments, argument => argument.Contains(
+            "$env:PSModulePath=[IO.Path]::Combine($PSHOME,'Modules')",
+            StringComparison.Ordinal));
+    }
+
+    [Fact]
     public void InstallOrRepair_WhenPayloadAclIsUnsafe_ShouldRefuseServiceRegistration()
     {
         var processRunner = new RecordingProcessRunner();

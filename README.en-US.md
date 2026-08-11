@@ -119,9 +119,9 @@ The installer selects both the desktop shortcut and complete hardware monitoring
 System requirements:
 
 - A supported Windows 11 x64 release
-- A Windows 10 Enterprise or IoT Enterprise LTSC x64 release supported by .NET 10
+- Windows 10 Enterprise or IoT Enterprise LTSC 2021 or later on x64
 
-The project keeps a Windows 10 version 1903 API compatibility baseline, but out-of-support consumer Windows 10 releases are not part of the official support promise.
+The project keeps a Windows 10 version 1903 API compatibility baseline. LTSC 2019 is below that baseline, and out-of-support consumer Windows 10 releases are not part of the official support promise.
 
 ## 🛠️ Build From Source
 

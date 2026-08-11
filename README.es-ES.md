@@ -119,9 +119,9 @@ El acceso directo del escritorio y la supervisión completa de hardware están s
 Requisitos del sistema:
 
 - Una versión compatible de Windows 11 x64
-- Windows 10 Enterprise o IoT Enterprise LTSC x64 compatible con .NET 10
+- Windows 10 Enterprise o IoT Enterprise LTSC 2021 o posterior en x64
 
-El proyecto conserva la base de compatibilidad de API de Windows 10 versión 1903, pero las versiones de consumo sin soporte ya no forman parte del soporte oficial.
+El proyecto conserva la base de compatibilidad de API de Windows 10 versión 1903. LTSC 2019 queda por debajo de esa base y las versiones de consumo sin soporte tampoco forman parte del soporte oficial.
 
 ## 🛠️ Compilar desde el código fuente
 

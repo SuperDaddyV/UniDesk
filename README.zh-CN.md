@@ -119,9 +119,9 @@ UniDesk_Setup_2.1.0.exe
 系统要求：
 
 - 仍在 Microsoft 支持周期内的 Windows 11 x64
-- 受 .NET 10 支持的 Windows 10 Enterprise／IoT Enterprise LTSC x64
+- Windows 10 Enterprise／IoT Enterprise LTSC 2021 或更新版本 x64
 
-项目保留 Windows 10 1903 API 兼容基线，但已停止支持的普通 Windows 10 版本不属于正式支持范围。
+项目保留 Windows 10 1903 API 兼容基线；LTSC 2019 低于该基线，已停止支持的普通 Windows 10 版本也不属于正式支持范围。
 
 ## 🛠️ 本地构建
 

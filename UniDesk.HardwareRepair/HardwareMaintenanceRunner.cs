@@ -80,28 +80,13 @@ internal sealed class HardwareMaintenanceRunner
         }
 
         var pawnIoStatus = RunSc(["query", PawnIoServiceName]);
+        var pawnIoWasAlreadyRegistered = pawnIoStatus.ExitCode == 0;
         if (pawnIoStatus.ExitCode == 1060)
         {
-            var verification = _packageVerifier.VerifyPawnIo(_pawnIoInstallerPath);
-            var verificationExitCode = verification switch
+            var installFailure = InstallVerifiedPawnIo();
+            if (installFailure.HasValue)
             {
-                HardwarePackageVerificationResult.Valid => HardwareRepairExitCode.Success,
-                HardwarePackageVerificationResult.Missing => HardwareRepairExitCode.PawnIoInstallerMissing,
-                HardwarePackageVerificationResult.HashMismatch => HardwareRepairExitCode.PawnIoHashMismatch,
-                _ => HardwareRepairExitCode.PawnIoSignatureInvalid
-            };
-            if (verificationExitCode != HardwareRepairExitCode.Success)
-            {
-                return Complete(verificationExitCode);
-            }
-
-            var pawnIoInstall = Run(
-                _pawnIoInstallerPath,
-                ["-install", "-silent"],
-                TimeSpan.FromMinutes(2));
-            if (pawnIoInstall.ExitCode != 0)
-            {
-                return Complete(HardwareRepairExitCode.PawnIoInstallFailed);
+                return Complete(installFailure.Value);
             }
         }
         else if (pawnIoStatus.ExitCode != 0)
@@ -178,17 +163,46 @@ internal sealed class HardwareMaintenanceRunner
             return Complete(HardwareRepairExitCode.ServiceStartFailed);
         }
 
-        var lastHealthCheckExitCode = -1;
-        for (var attempt = 0; attempt < 20; attempt++)
+        var lastHealthCheckExitCode = WaitForHealthyService();
+        if (lastHealthCheckExitCode == 0)
         {
-            var health = Run(_serviceBinaryPath, ["--health-check"], TimeSpan.FromSeconds(5));
-            lastHealthCheckExitCode = health.ExitCode;
-            if (health.ExitCode == 0)
+            return Complete(HardwareRepairExitCode.Success);
+        }
+
+        if (lastHealthCheckExitCode == DriverUnavailableHealthCheckExitCode &&
+            pawnIoWasAlreadyRegistered)
+        {
+            _logger.Log("PawnIO is registered but unavailable; one verified repair will be attempted.");
+            var repairFailure = InstallVerifiedPawnIo();
+            if (repairFailure.HasValue)
+            {
+                return Complete(repairFailure.Value);
+            }
+
+            var pawnIoRestart = RunSc(["start", PawnIoServiceName]);
+            if (pawnIoRestart.ExitCode is not (0 or 1056))
+            {
+                return Complete(HardwareRepairExitCode.PawnIoStartFailed);
+            }
+
+            var serviceStop = RunSc(["stop", ServiceName]);
+            if (serviceStop.ExitCode is not (0 or 1060 or 1062) || !WaitForServiceStopped())
+            {
+                _logger.Log("The hardware service could not be restarted after PawnIO repair.");
+                return Complete(HardwareRepairExitCode.HealthCheckFailed);
+            }
+
+            var serviceRestart = RunSc(["start", ServiceName]);
+            if (serviceRestart.ExitCode is not (0 or 1056))
+            {
+                return Complete(HardwareRepairExitCode.ServiceStartFailed);
+            }
+
+            lastHealthCheckExitCode = WaitForHealthyService();
+            if (lastHealthCheckExitCode == 0)
             {
                 return Complete(HardwareRepairExitCode.Success);
             }
-
-            _delay(TimeSpan.FromMilliseconds(500));
         }
 
         if (lastHealthCheckExitCode == DriverUnavailableHealthCheckExitCode)
@@ -198,6 +212,48 @@ internal sealed class HardwareMaintenanceRunner
         }
 
         return Complete(HardwareRepairExitCode.HealthCheckFailed);
+    }
+
+    private HardwareRepairExitCode? InstallVerifiedPawnIo()
+    {
+        var verification = _packageVerifier.VerifyPawnIo(_pawnIoInstallerPath);
+        var verificationExitCode = verification switch
+        {
+            HardwarePackageVerificationResult.Valid => HardwareRepairExitCode.Success,
+            HardwarePackageVerificationResult.Missing => HardwareRepairExitCode.PawnIoInstallerMissing,
+            HardwarePackageVerificationResult.HashMismatch => HardwareRepairExitCode.PawnIoHashMismatch,
+            _ => HardwareRepairExitCode.PawnIoSignatureInvalid
+        };
+        if (verificationExitCode != HardwareRepairExitCode.Success)
+        {
+            return verificationExitCode;
+        }
+
+        var pawnIoInstall = Run(
+            _pawnIoInstallerPath,
+            ["-install", "-silent"],
+            TimeSpan.FromMinutes(2));
+        return pawnIoInstall.ExitCode == 0
+            ? null
+            : HardwareRepairExitCode.PawnIoInstallFailed;
+    }
+
+    private int WaitForHealthyService()
+    {
+        var lastHealthCheckExitCode = -1;
+        for (var attempt = 0; attempt < 20; attempt++)
+        {
+            var health = Run(_serviceBinaryPath, ["--health-check"], TimeSpan.FromSeconds(5));
+            lastHealthCheckExitCode = health.ExitCode;
+            if (health.ExitCode == 0)
+            {
+                break;
+            }
+
+            _delay(TimeSpan.FromMilliseconds(500));
+        }
+
+        return lastHealthCheckExitCode;
     }
 
     public HardwareRepairExitCode RemoveService()
@@ -253,6 +309,7 @@ internal sealed class HardwareMaintenanceRunner
     private bool WaitForServiceStopped()
     {
         const string command =
+            "$env:PSModulePath=[IO.Path]::Combine($PSHOME,'Modules'); " +
             "$s = Get-Service -Name 'UniDeskHardwareService' -ErrorAction SilentlyContinue; " +
             "if (($null -eq $s) -or ($s.Status -eq 'Stopped')) { exit 0 } else { exit 1 }";
         for (var attempt = 0; attempt < ServiceStopWaitAttempts; attempt++)

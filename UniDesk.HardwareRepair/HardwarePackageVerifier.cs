@@ -36,6 +36,7 @@ internal sealed class HardwarePackageVerifier(
 
         var escapedPath = installerPath.Replace("'", "''", StringComparison.Ordinal);
         var command =
+            "$env:PSModulePath=[IO.Path]::Combine($PSHOME,'Modules'); " +
             "$signature = Get-AuthenticodeSignature -LiteralPath '" + escapedPath +
             "'; if ($signature.Status -eq 'Valid') { exit 0 } else { exit 1 }";
         var powershellPath = Path.Combine(
