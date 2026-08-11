@@ -37,6 +37,7 @@
 - 状态：`NotSigned`；`release-source.json` 为 schema 3、`isDirty=true`、源提交 `2a7356fe1b2ec00efbfe590af24910a1973f6b29`。它不包含本轮安装兼容修订，不得再用于测试或发布；新候选必须从本轮干净提交重新生成。
 - `artifacts\release\2.1.0-3d3f1bc95fbd-20260811-121628\installer\UniDesk_Setup_2.1.0.exe` 包含分离安装布局，但仍受 Windows PowerShell 模块路径冲突影响，已由人工测试确认失败并废弃。
 - `artifacts\release\2.1.0-4c1fe3d64280-20260811-130653\installer\UniDesk_Setup_2.1.0.exe` 误把 Inno `{commonpf}` 当成 Common Files；实际展开到 `C:\Program Files` 后错误检查卷根 ACL，人工覆盖测试返回 `22`，且错误消息显示字面量 `{log}`。该候选已废弃，不得继续测试或发布；修订版统一使用 `{commoncf}` 并通过 `FmtMessage` 注入实际日志路径。
+- `artifacts\release\2.1.0-43c8f6e1a20d-20260811-132815\installer\UniDesk_Setup_2.1.0.exe` 已正确迁移到 `{commoncf}`，但维护工具把包含读取位的 `FullControl`／`Modify`／`Write` 复合枚举合并为危险权限掩码，导致实际只有 `ReadAndExecute` 的 `BUILTIN\Users` 仍被误判为可写并返回 `26`。该候选已废弃，不得继续测试或发布；修订版只按基础写入、创建、追加、删除、属性、ACL 与所有权权限位判定危险权限。
 
 ## 已修复
 

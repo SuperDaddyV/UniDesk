@@ -15,10 +15,11 @@ internal sealed class ServicePayloadSecurityVerifier : IServicePayloadSecurityVe
     private const string TrustedInstallerSid =
         "S-1-5-80-956008885-3418522649-1831038044-1853292631-2271478464";
 
-    private const FileSystemRights DangerousRights =
-        FileSystemRights.Write |
-        FileSystemRights.Modify |
-        FileSystemRights.FullControl |
+    private const FileSystemRights DangerousWriteRights =
+        FileSystemRights.WriteData |
+        FileSystemRights.AppendData |
+        FileSystemRights.WriteExtendedAttributes |
+        FileSystemRights.WriteAttributes |
         FileSystemRights.Delete |
         FileSystemRights.DeleteSubdirectoriesAndFiles |
         FileSystemRights.ChangePermissions |
@@ -182,7 +183,7 @@ internal sealed class ServicePayloadSecurityVerifier : IServicePayloadSecurityVe
                      typeof(SecurityIdentifier)))
         {
             if (rule.AccessControlType != AccessControlType.Allow ||
-                (rule.FileSystemRights & DangerousRights) == 0)
+                !HasDangerousWriteRights(rule.FileSystemRights))
             {
                 continue;
             }
@@ -196,6 +197,9 @@ internal sealed class ServicePayloadSecurityVerifier : IServicePayloadSecurityVe
 
         return new(true, "Path ACL is secure.");
     }
+
+    internal static bool HasDangerousWriteRights(FileSystemRights rights) =>
+        (rights & DangerousWriteRights) != 0;
 
     private static bool IsTrustedPrincipal(SecurityIdentifier identity) =>
         identity.IsWellKnown(WellKnownSidType.LocalSystemSid) ||

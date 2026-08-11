@@ -1,3 +1,4 @@
+using System.Security.AccessControl;
 using UniDesk.HardwareRepair;
 
 namespace UniDesk.Tests;
@@ -22,6 +23,30 @@ public class HardwareRepairTests
         Assert.Equal(
             [@"C:\Program Files\Common Files", @"C:\Program Files"],
             boundaries);
+    }
+
+    [Theory]
+    [InlineData(FileSystemRights.Read)]
+    [InlineData(FileSystemRights.ReadAndExecute)]
+    [InlineData(FileSystemRights.Synchronize)]
+    public void ServicePayloadVerifier_ReadOnlyRights_ShouldNotBeTreatedAsWritable(
+        FileSystemRights rights)
+    {
+        Assert.False(ServicePayloadSecurityVerifier.HasDangerousWriteRights(rights));
+    }
+
+    [Theory]
+    [InlineData(FileSystemRights.WriteData)]
+    [InlineData(FileSystemRights.AppendData)]
+    [InlineData(FileSystemRights.WriteExtendedAttributes)]
+    [InlineData(FileSystemRights.WriteAttributes)]
+    [InlineData(FileSystemRights.Delete)]
+    [InlineData(FileSystemRights.DeleteSubdirectoriesAndFiles)]
+    [InlineData(FileSystemRights.ChangePermissions)]
+    [InlineData(FileSystemRights.TakeOwnership)]
+    public void ServicePayloadVerifier_WriteRights_ShouldBeRejected(FileSystemRights rights)
+    {
+        Assert.True(ServicePayloadSecurityVerifier.HasDangerousWriteRights(rights));
     }
 
     [Fact]

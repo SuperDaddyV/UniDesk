@@ -89,6 +89,7 @@
 - 安装／硬件／启动项定向测试 `66/66` 通过；全量 Release 测试 `492/492` 通过；Release 构建 `0` 警告、`0` 错误；Inno Setup 6.7.3 实际编译通过。
 - 人工覆盖测试确认 `3d3f1bc` 候选会因 Windows PowerShell 5.1 继承 PowerShell 7 模块路径而在 `Get-Acl` 自动加载阶段误拒绝正常 `Common Program Files`；该候选判定失败并废弃。预检现直接使用 .NET ACL API，自动回归锁定安装脚本不得再调用 `Get-Acl`。
 - 人工覆盖测试确认 `4c1fe3d` 候选误用了 Inno `{commonpf}`；该常量实际展开为 `C:\Program Files`，导致父级 ACL 检查错误扫描 `C:\` 并返回 `22`，且与主程序使用的 .NET `CommonProgramFiles` 路径不一致。安装器现统一使用展开为 `C:\Program Files\Common Files` 的 `{commoncf}`，自动回归禁止再次使用错误常量；错误消息通过 `FmtMessage` 注入真实 `{log}` 路径，不再显示字面量。
+- 人工覆盖测试确认 `43c8f6e` 候选的 `{commoncf}\UniDesk` 实际 ACL 已正确收紧为普通用户只读执行，但维护工具的危险权限位掩码包含 `FullControl`／`Modify`／`Write` 复合枚举，读取位也会发生交集，从而把 `BUILTIN\Users: ReadAndExecute` 误判为可写并返回 `26`。权限回归现分别锁定只读权限必须通过，写入、创建、追加、删除、改 ACL 和取得所有权必须拒绝；该候选已废弃。
 - 版本一致性、NuGet 直接与传递依赖漏洞、PowerShell AST 和 `git diff --check` 均通过。新候选必须在本轮修改提交并保持工作区干净后重新生成，上一轮未签名包不得继续使用。
 
 ## 2026-08-09 对抗式终审记录
