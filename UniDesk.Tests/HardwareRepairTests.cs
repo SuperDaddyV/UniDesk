@@ -8,9 +8,20 @@ public class HardwareRepairTests
     public void ServicePayloadVerifier_ShouldVerifyOnlyTheDirectProgramFilesBoundary()
     {
         var protectedRoot = ServicePayloadSecurityVerifier.GetProtectedInstallationRoot(
-            @"C:\Program Files\UniDesk");
+            @"C:\Program Files\Common Files\UniDesk");
 
-        Assert.Equal(@"C:\Program Files", protectedRoot);
+        Assert.Equal(@"C:\Program Files\Common Files", protectedRoot);
+    }
+
+    [Fact]
+    public void ServicePayloadVerifier_ShouldVerifyCommonFilesAndProgramFilesBoundaries()
+    {
+        var boundaries = ServicePayloadSecurityVerifier.GetProtectedInstallationBoundaries(
+            @"C:\Program Files\Common Files\UniDesk");
+
+        Assert.Equal(
+            [@"C:\Program Files\Common Files", @"C:\Program Files"],
+            boundaries);
     }
 
     [Fact]

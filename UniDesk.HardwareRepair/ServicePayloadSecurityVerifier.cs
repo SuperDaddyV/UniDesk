@@ -55,14 +55,14 @@ internal sealed class ServicePayloadSecurityVerifier : IServicePayloadSecurityVe
             }
 
             var expectedApplicationDirectory = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
+                Environment.GetFolderPath(Environment.SpecialFolder.CommonProgramFiles),
                 "UniDesk");
             if (!string.Equals(
                     Path.TrimEndingDirectorySeparator(applicationDirectory),
                     Path.TrimEndingDirectorySeparator(expectedApplicationDirectory),
                     StringComparison.OrdinalIgnoreCase))
             {
-                return new(false, "Service payload is not under the protected UniDesk Program Files directory.");
+                return new(false, "Service payload is not under the protected UniDesk Common Program Files directory.");
             }
 
             var expectedServiceDirectory = Path.Combine(applicationDirectory, "HardwareService");
@@ -74,11 +74,13 @@ internal sealed class ServicePayloadSecurityVerifier : IServicePayloadSecurityVe
                 return new(false, "Service payload is not in the expected HardwareService directory.");
             }
 
-            var protectedRoot = GetProtectedInstallationRoot(applicationDirectory);
-            var ancestorResult = VerifyAncestorPath(protectedRoot);
-            if (!ancestorResult.IsSecure)
+            foreach (var protectedBoundary in GetProtectedInstallationBoundaries(applicationDirectory))
             {
-                return ancestorResult;
+                var ancestorResult = VerifyAncestorPath(protectedBoundary);
+                if (!ancestorResult.IsSecure)
+                {
+                    return ancestorResult;
+                }
             }
 
             var paths = new List<string> { applicationDirectory, serviceDirectory };
@@ -108,6 +110,14 @@ internal sealed class ServicePayloadSecurityVerifier : IServicePayloadSecurityVe
     {
         return Directory.GetParent(Path.GetFullPath(directoryPath))?.FullName
             ?? throw new InvalidOperationException("Protected installation root could not be resolved.");
+    }
+
+    internal static IReadOnlyList<string> GetProtectedInstallationBoundaries(string directoryPath)
+    {
+        var commonProgramFiles = GetProtectedInstallationRoot(directoryPath);
+        var programFiles = Directory.GetParent(commonProgramFiles)?.FullName
+            ?? throw new InvalidOperationException("Protected Program Files boundary could not be resolved.");
+        return [commonProgramFiles, programFiles];
     }
 
     private static ServicePayloadSecurityVerificationResult VerifyAncestorPath(string path)

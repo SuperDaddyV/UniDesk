@@ -1,13 +1,14 @@
 # UniDesk v2.1.0 最终发布审核
 
-审核日期：2026-07-28（2026-08-09 对抗式终审更新）
+审核日期：2026-07-28（2026-08-11 安装兼容修订）
 审核范围：`C:\Users\Administrator\Documents\UniDesk` 当前工作区
 审核结论：最新代码未发现剩余 P0／P1；在干净提交、可信签名和跨环境人工门禁完成前仍不得公开发布。当前电脑的旧安装位于弱 ACL 的 `D:\Program Files\UniDesk`，不再视为安全候选，也不得运行其中的旧卸载器；应由新版安装器完成受信迁移。
 
-## 2026-08-09 对抗式终审结论
+## 2026-08-11 安装兼容修订结论
 
-- 安装器固定到系统 `{autopf}\UniDesk`，在复制文件和创建提权卸载器前验证 Program Files 到卷根的所有祖先 ACL；普通用户具备删除子项、删除目录、改 ACL 或取得所有权时 fail-closed，且不修改宽泛父目录权限。
-- 同 AppId 旧版位于不受保护目录时，新安装器只从固定 HKLM 卸载注册读取旧路径，严格退役 owned 服务并清理 owned 启动项；不执行旧 `unins000.exe`、不自动删除旧目录，用户数据继续保留。
+- 主程序安装页重新允许选择任意本地盘符下的安全目录，覆盖安装默认沿用同一 AppId 的原位置；网络路径、磁盘根目录、重解析路径和无法确认归属的非空目录在复制前被拒绝。
+- 硬件服务、修复工具、PawnIO 安装包和 Inno 卸载器与主程序位置解耦，固定到系统 `{commonpf}\UniDesk`；安装器在复制或执行这些提权组件前验证 Common Program Files 及其直属 Program Files 父目录，并只收紧该固定组件目录，绝不递归修改用户选择的主程序目录，也不因盘符根目录的无关宽 ACL 误拒绝。
+- 同 AppId 旧版位于自定义目录时，新安装器只从固定 HKLM 卸载注册读取旧路径；先锁定并收紧旧目录，仅删除严格匹配注册归属的 `uninsNNN.exe／.dat／.msg`，绝不执行旧卸载器或宽泛删除，再退役旧目录中的 owned 服务并从固定组件目录注册新版服务。仅当主程序位置改变时清理 owned 启动项，不整体删除旧目录，用户数据继续保留。
 - 服务安装、覆盖和卸载均验证 `ImagePath` 所有权，并以 `disable → stop → 按服务名 taskkill → 轮询真实停止 → delete` 收口；同名外部服务绝不接管。
 - 设置保存改为单事务批次；备份使用同一数据库事务快照和原子文件替换；持久化失败不再伪装成功；恢复事务提交与后续 UI 刷新使用不同成功边界。
 - 签名流水线拆成五个独立 GitHub-hosted job。签名前清单记录全部 `1431` 个文件、`20` 个目录、SHA-256、固定签名目标与 Authenticode 规范化内容哈希；文件／目录增删、reparse point、非签名文件变化、签名目标代码变化和安装器内容变化均被门禁拒绝。
@@ -20,18 +21,18 @@
 | --- | --- |
 | `dotnet restore UniDesk.sln -r win-x64 --locked-mode` | 通过；锁文件已包含发布 RID |
 | `dotnet build UniDesk.sln -c Release --no-restore -m:1` | 0 警告，0 错误 |
-| `dotnet test UniDesk.sln -c Release --no-restore` | `481/481` 通过，0 跳过 |
+| `dotnet test UniDesk.sln -c Release --no-restore` | `488/488` 通过，0 跳过 |
 | 版本一致性、NuGet 漏洞、PowerShell AST、`git diff --check` | 全部通过 |
 | 五 job 签名工作流与固定 Action SHA 静态回归 | 通过 |
 | 对抗式只读复核 | 未发现剩余 P0／P1 |
 | `dotnet format --verify-no-changes` | 非项目门禁；因仓库既有空格格式债务未通过，未全仓格式化无关代码 |
 
-本轮未签名验证包：
+上一轮未签名验证包（现已废弃）：
 
 - 路径：`artifacts\release\2.1.0-2a7356fe1b2e-20260809-122412\installer\UniDesk_Setup_2.1.0.exe`
 - 大小：`124567828` 字节
 - SHA-256：`8FF238E0189DD4111244BE39CE88B482B978C496E42E6A28F774468387B298A3`
-- 状态：`NotSigned`；`release-source.json` 为 schema 3、`isDirty=true`、源提交 `2a7356fe1b2ec00efbfe590af24910a1973f6b29`。仅用于构建和门禁验证，禁止发布。
+- 状态：`NotSigned`；`release-source.json` 为 schema 3、`isDirty=true`、源提交 `2a7356fe1b2ec00efbfe590af24910a1973f6b29`。它不包含本轮安装兼容修订，不得再用于测试或发布；新候选必须从本轮干净提交重新生成。
 
 ## 已修复
 
@@ -120,6 +121,6 @@
 5. 安装签名候选包并检查 `UniDeskHardwareService` 注册路径带双引号，完成剩余人工矩阵。
 6. 用户最终确认后，才能创建 `v2.1.0` tag 和 GitHub Release。
 
-当前 Windows 11 电脑的只读复核发现：`D:\Program Files` 与卷根允许 `Authenticated Users` 修改，而 `UniDeskHardwareService` 以 `LocalSystem` 从该树运行；`C:\` 也存在异常宽松 ACL。旧安装因此不再记为 I-09／I-13 安全通过。新版安装器会在复制前拒绝当前异常祖先 ACL，并在环境修复后以受信迁移替代运行旧目录中的提权卸载器；本轮未自动修改系统 ACL、停止服务或卸载旧版。
+当前 Windows 11 电脑的只读复核发现：`D:\Program Files` 与卷根允许 `Authenticated Users` 修改，而旧 `UniDeskHardwareService` 以 `LocalSystem` 从该树运行；旧安装因此不再记为 I-09／I-13 安全通过。新版允许普通权限主程序继续位于 D 盘，但会退役旧目录服务，并把服务、修复工具和卸载器迁移到系统 `{commonpf}\UniDesk`；本轮未自动修改系统 ACL、停止服务或卸载旧版，仍须用最终候选包完成覆盖安装人工验证。
 
 除上述发布门禁外，本轮没有发现需要在 `v2.1.0` 增加的新功能或升级的大版本依赖。

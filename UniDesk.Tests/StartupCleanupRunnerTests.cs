@@ -84,6 +84,47 @@ public class StartupCleanupRunnerTests
     }
 
     [Fact]
+    public void ResolveApplicationDirectory_ShouldUseProtectedComponentMarker()
+    {
+        var componentDirectory = Path.Combine(
+            Path.GetTempPath(),
+            $"UniDesk_component_marker_test_{Guid.NewGuid():N}");
+        Directory.CreateDirectory(componentDirectory);
+        File.WriteAllText(
+            Path.Combine(componentDirectory, StartupCleanupRunner.CurrentApplicationMarkerName),
+            @"D:\Apps\UniDesk");
+
+        var applicationDirectory = StartupCleanupRunner.ResolveApplicationDirectoryFromMarker(
+            componentDirectory);
+
+        Assert.Equal(@"D:\Apps\UniDesk", applicationDirectory);
+    }
+
+    [Fact]
+    public void Cleanup_WhenLegacyMarkerMatchesCurrentDirectory_ShouldIgnoreIt()
+    {
+        var applicationDirectory = Path.Combine(
+            Path.GetTempPath(),
+            $"UniDesk_same_marker_test_{Guid.NewGuid():N}",
+            "UniDesk");
+        Directory.CreateDirectory(applicationDirectory);
+        File.WriteAllText(
+            Path.Combine(applicationDirectory, StartupCleanupRunner.LegacyMigrationMarkerName),
+            applicationDirectory);
+        var store = new RecordingStartupEntryStore([], []);
+        var runner = new StartupCleanupRunner(
+            applicationDirectory,
+            store,
+            new HardwareRepairLogger(Path.Combine(
+                Path.GetTempPath(),
+                $"UniDesk_startup_cleanup_test_{Guid.NewGuid():N}.log")));
+
+        var result = runner.Cleanup();
+
+        Assert.Equal(HardwareRepairExitCode.Success, result);
+    }
+
+    [Fact]
     public void CleanupImplementation_ShouldLimitRegistryEnumerationToLoadedUserHives()
     {
         var implementation = File.ReadAllText(Path.Combine(

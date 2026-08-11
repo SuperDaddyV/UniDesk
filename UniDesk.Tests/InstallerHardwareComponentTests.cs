@@ -101,7 +101,7 @@ public class InstallerHardwareComponentTests
 
         var prepareIndex = script.IndexOf("function PrepareToInstall", StringComparison.Ordinal);
         var prepareHardeningIndex = script.IndexOf(
-            "if not HardenInstallationPayload then",
+            "if not HardenProtectedComponentPayload then",
             prepareIndex,
             StringComparison.Ordinal);
         var serviceStopIndex = script.IndexOf(
@@ -124,7 +124,7 @@ public class InstallerHardwareComponentTests
             removeIndex,
             StringComparison.Ordinal);
         var fallbackRetirementIndex = script.IndexOf(
-            "RetireUnsafeOwnedHardwareService(ExpandConstant('{app}'))",
+            "RetireOwnedHardwareServiceAt(GetProtectedComponentRoot)",
             removeIndex,
             StringComparison.Ordinal);
         Assert.True(
@@ -170,7 +170,11 @@ public class InstallerHardwareComponentTests
             File.ReadAllText(helperManifest),
             StringComparison.Ordinal);
         Assert.Contains("MyHardwareRepairSourceDir", script, StringComparison.Ordinal);
-        Assert.Contains("DestDir: \"{app}\\HardwareRepair\"", script, StringComparison.Ordinal);
+        Assert.Contains(
+            "DestDir: \"{commonpf}\\UniDesk\\HardwareRepair\"",
+            script,
+            StringComparison.Ordinal);
+        Assert.DoesNotContain("DestDir: \"{app}\\HardwareRepair\"", script, StringComparison.Ordinal);
         Assert.Contains("--install-or-repair", script, StringComparison.Ordinal);
         Assert.DoesNotContain("UniDesk_Setup.exe", script, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("create {#HardwareServiceName} binPath=", script, StringComparison.OrdinalIgnoreCase);
@@ -181,11 +185,11 @@ public class InstallerHardwareComponentTests
     }
 
     [Fact]
-    public void Installer_ShouldHardenInstallPayloadBeforeRunningElevatedMaintenance()
+    public void Installer_ShouldHardenOnlyProtectedComponentsBeforeRunningElevatedMaintenance()
     {
         var script = File.ReadAllText(Path.Combine(ProjectRoot, "UniDesk.iss"));
 
-        Assert.Contains("function HardenInstallationPayload: Boolean", script, StringComparison.Ordinal);
+        Assert.Contains("function HardenProtectedComponentPayload: Boolean", script, StringComparison.Ordinal);
         Assert.Contains("{sys}\\icacls.exe", script, StringComparison.Ordinal);
         Assert.Contains("/setowner", script, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("/inheritance:r", script, StringComparison.OrdinalIgnoreCase);
@@ -196,14 +200,15 @@ public class InstallerHardwareComponentTests
         Assert.Contains("*S-1-5-18:(OI)(CI)F", script, StringComparison.Ordinal);
         Assert.Contains("*S-1-5-32-544:(OI)(CI)F", script, StringComparison.Ordinal);
         Assert.Contains("*S-1-5-32-545:(OI)(CI)RX", script, StringComparison.Ordinal);
-        Assert.Contains("ForceDirectories(AppPath)", script, StringComparison.Ordinal);
-        Assert.Contains("if not HardenInstallationPayload then", script, StringComparison.Ordinal);
+        Assert.Contains("ForceDirectories(ComponentPath)", script, StringComparison.Ordinal);
+        Assert.DoesNotContain("HardenDirectoryAcl(ExpandConstant('{app}'))", script, StringComparison.Ordinal);
+        Assert.Contains("if not HardenProtectedComponentPayload then", script, StringComparison.Ordinal);
         Assert.Contains(
             "Result := ExpandConstant('{cm:HardwareAclFailed}')",
             script,
             StringComparison.Ordinal);
 
-        var hardeningIndex = script.IndexOf("if not HardenInstallationPayload then", StringComparison.Ordinal);
+        var hardeningIndex = script.IndexOf("if not HardenProtectedComponentPayload then", StringComparison.Ordinal);
         var maintenanceIndex = script.IndexOf("InstallHardwareComponent;", hardeningIndex, StringComparison.Ordinal);
         Assert.True(hardeningIndex >= 0, "Installer does not enforce payload ACL hardening.");
         Assert.True(maintenanceIndex > hardeningIndex, "Maintenance runs before payload ACL hardening.");
@@ -223,14 +228,16 @@ public class InstallerHardwareComponentTests
     }
 
     [Fact]
-    public void Installer_ShouldValidateTargetOwnershipBeforeRecursiveAclHardening()
+    public void Installer_ShouldValidateAppTargetWithoutRecursivelyHardeningIt()
     {
         var script = File.ReadAllText(Path.Combine(ProjectRoot, "UniDesk.iss"));
 
-        Assert.Contains("function IsSafeInstallationTargetForAcl", script, StringComparison.Ordinal);
+        Assert.Contains("function IsSafeApplicationInstallTarget", script, StringComparison.Ordinal);
+        Assert.Contains("function IsSafeProtectedComponentTargetForAcl", script, StringComparison.Ordinal);
         Assert.Contains("function IsKnownUniDeskInstallationDirectory", script, StringComparison.Ordinal);
         Assert.Contains("function IsDirectoryEmpty", script, StringComparison.Ordinal);
         Assert.Contains("function ContainsReparsePoint", script, StringComparison.Ordinal);
+        Assert.Contains("function ContainsReparsePointInExistingAncestorChain", script, StringComparison.Ordinal);
         Assert.Contains("FileAttributeReparsePoint", script, StringComparison.Ordinal);
         Assert.Contains("RegQueryStringValue(", script, StringComparison.Ordinal);
         Assert.Contains("HKLM64,", script, StringComparison.Ordinal);
@@ -242,77 +249,98 @@ public class InstallerHardwareComponentTests
         Assert.Contains("ExpandConstant('{commonappdata}')", script, StringComparison.Ordinal);
         Assert.Contains("ExpandConstant('{%USERPROFILE}')", script, StringComparison.Ordinal);
         Assert.DoesNotContain("ExpandConstant('{userprofile}')", script, StringComparison.Ordinal);
+        Assert.Contains("Length(ExtractFileDrive(NormalizedPath)) <> 2", script, StringComparison.Ordinal);
         Assert.Contains("if not DirExists(NormalizedPath) then", script, StringComparison.Ordinal);
         Assert.Contains("Result := IsDirectoryEmpty(NormalizedPath)", script, StringComparison.Ordinal);
         Assert.Contains("IsKnownUniDeskInstallationDirectory(NormalizedPath)", script, StringComparison.Ordinal);
+        Assert.DoesNotContain("function IsExistingUniDeskApplicationDirectory", script, StringComparison.Ordinal);
+        Assert.DoesNotContain("IsExistingUniDeskApplicationDirectory(NormalizedPath)", script, StringComparison.Ordinal);
         Assert.Contains("ContainsReparsePoint(NormalizedPath)", script, StringComparison.Ordinal);
-        Assert.Contains("not IsSafeInstallationTargetForAcl(AppPath)", script, StringComparison.Ordinal);
+        Assert.Contains("ContainsReparsePointInExistingAncestorChain(NormalizedPath)", script, StringComparison.Ordinal);
+        Assert.Contains("not IsSafeApplicationInstallTarget(ExpandConstant('{app}'))", script, StringComparison.Ordinal);
+        Assert.Contains("not IsSafeProtectedComponentTargetForAcl(ComponentPath)", script, StringComparison.Ordinal);
         Assert.Contains("ValidatedAclTarget", script, StringComparison.Ordinal);
-        Assert.Contains("not IsSameDirectory(AppPath, ValidatedAclTarget)", script, StringComparison.Ordinal);
-        Assert.Contains("ValidatedAclTarget := NormalizeDirectoryPath(AppPath)", script, StringComparison.Ordinal);
+        Assert.Contains("not IsSameDirectory(ComponentPath, ValidatedAclTarget)", script, StringComparison.Ordinal);
+        Assert.Contains("ValidatedAclTarget := NormalizeDirectoryPath(ComponentPath)", script, StringComparison.Ordinal);
 
         var validationIndex = script.IndexOf(
-            "not IsSafeInstallationTargetForAcl(AppPath)",
+            "not IsSafeProtectedComponentTargetForAcl(ComponentPath)",
             StringComparison.Ordinal);
         var recursiveHardeningIndex = script.IndexOf(
-            "HardenDirectoryAcl(AppPath)",
+            "HardenDirectoryAcl(ComponentPath)",
             validationIndex,
             StringComparison.Ordinal);
         Assert.True(validationIndex >= 0, "Installer does not validate the target directory scope.");
         Assert.True(
             recursiveHardeningIndex > validationIndex,
             "Recursive ACL hardening runs before target ownership validation.");
+        Assert.Contains("function HardenApplicationPayload", script, StringComparison.Ordinal);
+        Assert.Contains("ApplicationPathLocksHeld", script, StringComparison.Ordinal);
+        Assert.Contains("HardenDirectoryAcl(AppPath)", script, StringComparison.Ordinal);
+        Assert.Contains("function AcquireApplicationPathLocks", script, StringComparison.Ordinal);
+        Assert.Contains("procedure ReleaseApplicationPathLocks", script, StringComparison.Ordinal);
+        Assert.Contains("CreateFileW@kernel32.dll", script, StringComparison.Ordinal);
+        Assert.Contains("FileFlagBackupSemantics", script, StringComparison.Ordinal);
+        Assert.Contains("FileFlagOpenReparsePoint", script, StringComparison.Ordinal);
+        Assert.DoesNotContain("FileShareDelete", script, StringComparison.Ordinal);
+        Assert.Contains("function InitializeUninstall: Boolean", script, StringComparison.Ordinal);
+        Assert.Contains("procedure DeinitializeUninstall", script, StringComparison.Ordinal);
     }
 
     [Fact]
-    public void Installer_ShouldRequireTheProtectedProgramFilesTargetForEveryInstallation()
+    public void Installer_ShouldAllowSelectableAppDirectoryAndProtectSystemComponents()
     {
         var script = File.ReadAllText(Path.Combine(ProjectRoot, "UniDesk.iss"));
 
         Assert.Contains("DisableDirPage=no", script, StringComparison.Ordinal);
-        Assert.Contains("UsePreviousAppDir=no", script, StringComparison.Ordinal);
+        Assert.Contains("UsePreviousAppDir=yes", script, StringComparison.Ordinal);
         Assert.Contains("procedure InitializeWizard", script, StringComparison.Ordinal);
-        Assert.Contains("WizardForm.DirEdit.Enabled := False", script, StringComparison.Ordinal);
-        Assert.Contains("WizardForm.DirBrowseButton.Enabled := False", script, StringComparison.Ordinal);
-        Assert.Contains("{cm:ProtectedInstallLocationNotice}", script, StringComparison.Ordinal);
-        Assert.Contains("function IsProtectedInstallTargetAllowed", script, StringComparison.Ordinal);
-        Assert.Contains("function VerifyProtectedInstallAncestorAcl", script, StringComparison.Ordinal);
+        Assert.DoesNotContain("WizardForm.DirEdit.Enabled := False", script, StringComparison.Ordinal);
+        Assert.DoesNotContain("WizardForm.DirBrowseButton.Enabled := False", script, StringComparison.Ordinal);
+        Assert.Contains("{cm:ProtectedComponentLocationNotice}", script, StringComparison.Ordinal);
+        Assert.Contains("UninstallFilesDir={commonpf}\\UniDesk\\Uninstall", script, StringComparison.Ordinal);
+        Assert.Contains("DestDir: \"{commonpf}\\UniDesk\\HardwareService\"", script, StringComparison.Ordinal);
+        Assert.Contains("DestDir: \"{commonpf}\\UniDesk\\HardwareRepair\"", script, StringComparison.Ordinal);
+        Assert.Contains("DestDir: \"{commonpf}\\UniDesk\\Hardware\"", script, StringComparison.Ordinal);
+        Assert.Contains("function GetProtectedComponentRoot", script, StringComparison.Ordinal);
+        Assert.Contains("function VerifyProtectedComponentRootAcl", script, StringComparison.Ordinal);
         Assert.Contains("GetAccessRules", script, StringComparison.Ordinal);
         Assert.Contains("PropagationFlags]::InheritOnly", script, StringComparison.Ordinal);
         Assert.Contains(
             "SetEnvironmentVariable('UNIDESK_PROTECTED_ROOT'",
             script,
             StringComparison.Ordinal);
+        Assert.Contains(
+            "SetEnvironmentVariable('UNIDESK_PROTECTED_PARENT'",
+            script,
+            StringComparison.Ordinal);
         Assert.Contains("$env:UNIDESK_PROTECTED_ROOT", script, StringComparison.Ordinal);
+        Assert.Contains("$env:UNIDESK_PROTECTED_PARENT", script, StringComparison.Ordinal);
         Assert.DoesNotContain("$env:ProgramFiles", script, StringComparison.Ordinal);
         Assert.DoesNotContain("$current=$current.Parent", script, StringComparison.Ordinal);
-        Assert.Contains("ExpandConstant('{autopf}\\{#MyAppName}')", script, StringComparison.Ordinal);
-        Assert.Contains("{cm:HardwareProtectedLocationRequired}", script, StringComparison.Ordinal);
-        Assert.DoesNotContain(
-            "or clear the complete hardware monitoring option",
-            script,
-            StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("ExpandConstant('{commonpf}')", script, StringComparison.Ordinal);
+        Assert.DoesNotContain("if not IsProtectedInstallTargetAllowed", script, StringComparison.Ordinal);
 
         var prepareIndex = script.IndexOf("function PrepareToInstall", StringComparison.Ordinal);
-        var protectedTargetIndex = script.IndexOf(
-            "if not IsProtectedInstallTargetAllowed",
+        var appTargetIndex = script.IndexOf(
+            "if not IsSafeApplicationInstallTarget(ExpandConstant('{app}'))",
             prepareIndex,
             StringComparison.Ordinal);
         var ancestorAclIndex = script.IndexOf(
-            "if not VerifyProtectedInstallAncestorAcl",
+            "if not VerifyProtectedComponentRootAcl",
             prepareIndex,
             StringComparison.Ordinal);
         var stopIndex = script.IndexOf("'stop {#HardwareServiceName}'", prepareIndex, StringComparison.Ordinal);
         Assert.True(
-            protectedTargetIndex > prepareIndex && ancestorAclIndex > protectedTargetIndex && stopIndex > ancestorAclIndex,
-            "The protected target and its ancestor ACLs must be rejected before stopping an existing service.");
+            appTargetIndex > prepareIndex && ancestorAclIndex > appTargetIndex && stopIndex > ancestorAclIndex,
+            "The app target and protected component ACLs must be rejected before stopping an existing service.");
 
         var verifier = File.ReadAllText(Path.Combine(
             ProjectRoot,
             "UniDesk.HardwareRepair",
             "ServicePayloadSecurityVerifier.cs"));
         Assert.Contains("GetProtectedInstallationRoot", verifier, StringComparison.Ordinal);
-        Assert.Contains("Environment.SpecialFolder.ProgramFiles", verifier, StringComparison.Ordinal);
+        Assert.Contains("Environment.SpecialFolder.CommonProgramFiles", verifier, StringComparison.Ordinal);
         Assert.Contains("Path.Combine(applicationDirectory, \"HardwareService\")", verifier, StringComparison.Ordinal);
         Assert.Contains("AncestorDangerousRights", verifier, StringComparison.Ordinal);
         Assert.Contains("FileAttributes.ReparsePoint", verifier, StringComparison.Ordinal);
@@ -349,24 +377,27 @@ public class InstallerHardwareComponentTests
     }
 
     [Fact]
-    public void Upgrade_ShouldSafelyMigrateALegacyUnsafeInstallWithoutExecutingItsUninstaller()
+    public void Upgrade_ShouldMoveLegacyServiceToProtectedComponentsWithoutExecutingOldUninstaller()
     {
         var script = File.ReadAllText(Path.Combine(ProjectRoot, "UniDesk.iss"));
 
         Assert.Contains("function IsHardwareServiceOwnedAt", script, StringComparison.Ordinal);
         Assert.Contains("function GetRegisteredUniDeskInstallationDirectory", script, StringComparison.Ordinal);
-        Assert.Contains("function HasLegacyUnsafeRegisteredInstallation", script, StringComparison.Ordinal);
-        Assert.Contains("function RetireUnsafeOwnedHardwareService", script, StringComparison.Ordinal);
+        Assert.Contains("function RetireOwnedHardwareServiceAt", script, StringComparison.Ordinal);
+        Assert.Contains("function RetireLegacyAppHostedHardwareService", script, StringComparison.Ordinal);
+        Assert.Contains("function GetRegisteredUniDeskUninstallerPath", script, StringComparison.Ordinal);
+        Assert.Contains("function IsLegacyUninstallerFileName", script, StringComparison.Ordinal);
+        Assert.Contains("function RemoveLegacyRegisteredUninstallerFiles", script, StringComparison.Ordinal);
+        Assert.Contains("DeleteFile(UninstallerPath)", script, StringComparison.Ordinal);
+        Assert.DoesNotContain("DeleteFile(AddBackslash(RegisteredPath) + 'unins*", script, StringComparison.Ordinal);
         Assert.Contains("'config {#HardwareServiceName} start= disabled'", script, StringComparison.Ordinal);
         Assert.Contains("'stop {#HardwareServiceName}'", script, StringComparison.Ordinal);
         Assert.Contains("'delete {#HardwareServiceName}'", script, StringComparison.Ordinal);
-        Assert.Contains("{cm:HardwareUnsafeServiceRetired}", script, StringComparison.Ordinal);
-        Assert.Contains("手动删除旧程序文件夹", script, StringComparison.Ordinal);
         Assert.DoesNotContain("卸载旧版主程序", script, StringComparison.Ordinal);
-        Assert.DoesNotContain("unins000.exe", script, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("if LegacyUnsafeInstallation then", script, StringComparison.Ordinal);
-        Assert.Contains("LegacyMigrationPath := LegacyInstallPath", script, StringComparison.Ordinal);
-        Assert.Contains("PersistLegacyStartupMigrationMarker", script, StringComparison.Ordinal);
+        Assert.DoesNotContain("Exec(LegacyUninstaller", script, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("UsePreviousAppDir=yes", script, StringComparison.Ordinal);
+        Assert.Contains("PersistProtectedApplicationMarkers", script, StringComparison.Ordinal);
+        Assert.Contains("CurrentApplicationMarkerName", script, StringComparison.Ordinal);
         Assert.Contains("CleanupOwnedStartupEntries", script, StringComparison.Ordinal);
         Assert.Contains("function IsHardwareServiceStopped", script, StringComparison.Ordinal);
         Assert.Contains("function WaitForHardwareServiceStopped", script, StringComparison.Ordinal);
@@ -375,24 +406,22 @@ public class InstallerHardwareComponentTests
 
         var prepareIndex = script.IndexOf("function PrepareToInstall", StringComparison.Ordinal);
         var retirementIndex = script.IndexOf(
-            "RetireLegacyUnsafeHardwareService",
+            "RetireLegacyAppHostedHardwareService",
             prepareIndex,
             StringComparison.Ordinal);
-        var protectedTargetIndex = script.IndexOf(
-            "if not IsProtectedInstallTargetAllowed",
+        var legacyUninstallerCleanupIndex = script.IndexOf(
+            "RemoveLegacyRegisteredUninstallerFiles",
             prepareIndex,
             StringComparison.Ordinal);
-        Assert.True(
-            retirementIndex > prepareIndex && protectedTargetIndex > retirementIndex,
-            "An owned legacy unsafe service would remain running when setup migrates to the protected target.");
-
-        var legacyRegistrationIndex = script.IndexOf(
-            "LegacyUnsafeInstallation := HasLegacyUnsafeRegisteredInstallation",
+        var componentHardeningIndex = script.IndexOf(
+            "if not HardenProtectedComponentPayload",
             prepareIndex,
             StringComparison.Ordinal);
         Assert.True(
-            legacyRegistrationIndex > prepareIndex,
-            "A legacy custom installation without a service would not enter the trusted migration path.");
+            legacyUninstallerCleanupIndex > prepareIndex &&
+            componentHardeningIndex > legacyUninstallerCleanupIndex &&
+            retirementIndex > componentHardeningIndex,
+            "Legacy cleanup must be locked and completed before protected component work and service retirement.");
     }
 
     [Fact]

@@ -37,7 +37,8 @@ DefaultDirName={autopf}\{#MyAppName}
 DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes
 DisableDirPage=no
-UsePreviousAppDir=no
+UsePreviousAppDir=yes
+UninstallFilesDir={commonpf}\UniDesk\Uninstall
 PrivilegesRequired=admin
 MinVersion=10.0.18362
 ArchitecturesAllowed=x64os
@@ -67,60 +68,64 @@ chinesesimp.CompleteHardwareTask=安装完整硬件监控组件（推荐，将�
 chinesesimp.HardwareMonitoringGroup=硬件监控
 chinesesimp.HardwareRepairFailed=UniDesk 基础程序已安装，但硬件监控组件未能完成安装或修复（退出码 %1）。基础功能仍可正常使用；请在 UniDesk 设置中导出硬件诊断或稍后重试。详细日志位于 ProgramData\UniDesk\logs\hardware-repair.log。
 chinesesimp.HardwareCompatibilityMode=UniDesk 已安装，并将使用 Windows 和硬件厂商的兼容数据来源。CPU、GPU、内存和网络仍可显示；部分主板传感器可能缺失。
-chinesesimp.ProtectedInstallLocationNotice=UniDesk 将安装到系统 Program Files 的默认目录。为保证覆盖安装和硬件监控稳定，该位置不可更改。
+chinesesimp.ProtectedComponentLocationNotice=您可以选择主程序的安装位置；硬件监控与卸载组件将安装到 Windows 受保护目录。
 chinesesimp.HardwareServiceRemoveFailed=未能删除 UniDesk 硬件监控服务（退出码 %1）。卸载将继续；请查看 ProgramData\UniDesk\logs\hardware-repair.log 并以管理员身份删除 UniDeskHardwareService。
 chinesesimp.HardwareServiceStopFailed=无法停止现有硬件监控服务（退出码 %1）。请关闭 UniDesk 后重试安装。
 chinesesimp.HardwareServiceOwnershipFailed=发现同名硬件服务，但它不属于当前 UniDesk 安装。为避免影响其他软件，安装已停止。
-chinesesimp.HardwareAclFailed=无法安全保护 UniDesk 安装目录。安装已停止，请改用默认安装位置后重试。
-chinesesimp.HardwareProtectedLocationRequired=为保护管理员卸载器和硬件维护组件，UniDesk 必须安装在系统 Program Files 的默认 UniDesk 目录中。安装已停止，请重新运行安装器。
-chinesesimp.HardwareUnsafeServiceRetired=旧版 UniDesk 已安全迁移到受保护位置，可确认属于旧版的启动项已清理。安装器没有运行旧卸载程序，也没有删除旧目录；您现在可以在资源管理器中手动删除旧程序文件夹，用户数据不受影响。
+chinesesimp.HardwareAclFailed=无法安全准备 UniDesk 系统组件目录。安装已停止，请检查 Windows 的 Common Program Files 目录后重试。
+chinesesimp.ApplicationLocationInvalid=所选主程序目录无法安全使用。请选择一个新的空目录，或原有的 UniDesk 安装目录。
+chinesesimp.LegacyUninstallerCleanupFailed=无法安全移除旧版 UniDesk 卸载组件。安装已停止；请关闭旧卸载程序后重试。
+chinesesimp.ApplicationLocationMigrationComplete=UniDesk 已安装到新位置，并已清理可确认属于旧位置的启动项。安装器没有运行旧卸载程序或删除旧目录；确认新版正常后，可手动删除旧程序文件夹，用户数据不受影响。
 chinesesimp.HardwareUnsafeServiceRetirementFailed=检测到旧版 UniDesk 在非受保护目录运行硬件服务，但无法确认它已安全停止并禁用。安装已停止；请不要继续使用旧硬件服务，并查看安装日志后手动删除 UniDeskHardwareService。
-chinesesimp.LegacyMigrationCleanupFailed=新版 UniDesk 已安装到受保护位置，但未能完整清理旧版启动项。请不要运行旧卸载程序；请查看安装日志，确认旧版不再开机启动后，再在资源管理器中手动删除旧程序文件夹。
+chinesesimp.LegacyMigrationCleanupFailed=UniDesk 已安装到新位置，但未能完整清理旧位置的启动项。请不要运行旧卸载程序；请查看安装日志并确认旧版不再开机启动。
 chinesesimp.RemovePawnIoPrompt=是否同时卸载共享的 PawnIO 驱动？PawnIO 可能也被其他硬件监控或风扇控制软件使用。建议选择“否”并保留；只有确认没有其他程序依赖它时才选择“是”。
 chinesesimp.PawnIoRemoveFailed=PawnIO 卸载失败。UniDesk 将继续卸载，但 PawnIO 会保留在系统中。
 english.CompleteHardwareTask=Install complete hardware monitoring (recommended; installs the PawnIO driver and a read-only LocalSystem service)
 english.HardwareMonitoringGroup=Hardware monitoring
 english.HardwareRepairFailed=The UniDesk base application was installed, but hardware monitoring installation or repair did not complete (exit code %1). Base features remain available; export hardware diagnostics from Settings or retry later. Details are in ProgramData\UniDesk\logs\hardware-repair.log.
 english.HardwareCompatibilityMode=UniDesk is installed and will use compatible Windows and hardware-vendor data sources. CPU, GPU, memory, and network data remain available; some motherboard sensors may be missing.
-english.ProtectedInstallLocationNotice=UniDesk will use its default directory under the system Program Files folder. This location is fixed to keep upgrades and hardware monitoring reliable.
+english.ProtectedComponentLocationNotice=You can choose the main application location. Hardware monitoring and uninstall components will use a protected Windows directory.
 english.HardwareServiceRemoveFailed=The UniDesk hardware service could not be removed (exit code %1). Uninstall will continue; review ProgramData\UniDesk\logs\hardware-repair.log and remove UniDeskHardwareService as an administrator.
 english.HardwareServiceStopFailed=The existing hardware service could not be stopped (exit code %1). Close UniDesk and retry setup.
 english.HardwareServiceOwnershipFailed=A service with the same name exists but does not belong to this UniDesk installation. Setup stopped to avoid changing another application.
-english.HardwareAclFailed=The UniDesk installation directory could not be secured. Setup has stopped; retry with the default installation location.
-english.HardwareProtectedLocationRequired=To protect the administrator uninstaller and hardware maintenance tools, UniDesk must use its default directory under the system Program Files folder. Setup stopped; run it again without overriding the install directory.
-english.HardwareUnsafeServiceRetired=The older UniDesk installation was safely migrated to the protected location, and strictly owned legacy startup entries were cleaned. Setup did not run the old uninstaller or delete the old directory. You can now delete the old program folder manually in File Explorer; user data is unaffected.
+english.HardwareAclFailed=The UniDesk system component directory could not be prepared securely. Setup stopped; check the Windows Common Program Files directory and retry.
+english.ApplicationLocationInvalid=The selected application directory cannot be used safely. Choose a new empty directory or an existing UniDesk installation directory.
+english.LegacyUninstallerCleanupFailed=The previous UniDesk uninstall component could not be removed safely. Setup stopped; close the previous uninstaller and retry.
+english.ApplicationLocationMigrationComplete=UniDesk was installed in the new location and strictly owned startup entries for the previous location were cleaned. Setup did not run the old uninstaller or delete the old folder. After verifying the new version, you can delete the old program folder manually; user data is unaffected.
 english.HardwareUnsafeServiceRetirementFailed=An older UniDesk hardware service is running from an unprotected directory, but setup could not confirm that it was safely stopped and disabled. Setup stopped; do not keep using the old service, and remove UniDeskHardwareService manually after reviewing the setup log.
-english.LegacyMigrationCleanupFailed=The new UniDesk version was installed in the protected location, but legacy startup cleanup did not complete. Do not run the old uninstaller. Review the setup log, confirm the old version no longer starts with Windows, and then delete the old program folder manually in File Explorer.
+english.LegacyMigrationCleanupFailed=UniDesk was installed in the new location, but startup cleanup for the previous location did not complete. Do not run the old uninstaller; review the setup log and confirm that the old version no longer starts with Windows.
 english.RemovePawnIoPrompt=Also uninstall the shared PawnIO driver? Other hardware-monitoring or fan-control applications may use PawnIO. Keep it unless you are certain that no other application depends on it.
 english.PawnIoRemoveFailed=PawnIO could not be uninstalled. UniDesk uninstall will continue and PawnIO will remain installed.
 japanese.CompleteHardwareTask=完全なハードウェア監視をインストール（推奨。PawnIO ドライバーと LocalSystem の読み取り専用サービスをインストールします）
 japanese.HardwareMonitoringGroup=ハードウェア監視
 japanese.HardwareRepairFailed=UniDesk 本体はインストールされましたが、ハードウェア監視のインストールまたは修復を完了できませんでした（終了コード %1）。基本機能は使用できます。設定から診断をエクスポートするか、後でもう一度お試しください。詳細ログ：ProgramData\UniDesk\logs\hardware-repair.log。
 japanese.HardwareCompatibilityMode=UniDesk はインストールされ、Windows とハードウェアベンダーの互換データソースを使用します。CPU、GPU、メモリ、ネットワークは引き続き表示されますが、一部のマザーボードセンサーは表示されない場合があります。
-japanese.ProtectedInstallLocationNotice=UniDesk はシステムの Program Files 内の既定フォルダーにインストールされます。アップグレードとハードウェア監視を安定させるため、この場所は変更できません。
+japanese.ProtectedComponentLocationNotice=メインアプリのインストール先を選択できます。ハードウェア監視とアンインストールのコンポーネントは Windows の保護されたフォルダーに配置されます。
 japanese.HardwareServiceRemoveFailed=UniDesk ハードウェア監視サービスを削除できませんでした（終了コード %1）。アンインストールは続行します。ProgramData\UniDesk\logs\hardware-repair.log を確認し、管理者として UniDeskHardwareService を削除してください。
 japanese.HardwareServiceStopFailed=既存のハードウェア監視サービスを停止できませんでした（終了コード %1）。UniDesk を終了してからセットアップを再試行してください。
 japanese.HardwareServiceOwnershipFailed=同名のサービスがありますが、この UniDesk インストールのものではありません。他のアプリを変更しないよう、インストールを中止しました。
-japanese.HardwareAclFailed=UniDesk のインストール先を安全に保護できませんでした。インストールを中止しました。既定の場所で再試行してください。
-japanese.HardwareProtectedLocationRequired=管理者権限のアンインストーラーとハードウェア保守ツールを保護するため、UniDesk はシステムの Program Files 内の既定フォルダーにインストールする必要があります。インストールを中止しました。場所を上書きせずに再実行してください。
-japanese.HardwareUnsafeServiceRetired=旧版 UniDesk を保護された場所へ安全に移行し、旧版に厳密に属するスタートアップ項目をクリーンアップしました。旧アンインストーラーの実行や旧フォルダーの削除は行っていません。エクスプローラーで旧プログラムフォルダーを手動削除できます。ユーザーデータには影響しません。
+japanese.HardwareAclFailed=UniDesk のシステムコンポーネント用フォルダーを安全に準備できませんでした。Windows の Common Program Files を確認して再試行してください。
+japanese.ApplicationLocationInvalid=選択したアプリフォルダーは安全に使用できません。新しい空のフォルダーまたは既存の UniDesk インストール先を選択してください。
+japanese.LegacyUninstallerCleanupFailed=旧版 UniDesk のアンインストールコンポーネントを安全に削除できませんでした。インストールを中止しました。旧アンインストーラーを閉じて再試行してください。
+japanese.ApplicationLocationMigrationComplete=UniDesk を新しい場所にインストールし、旧場所に厳密に属するスタートアップ項目をクリーンアップしました。旧アンインストーラーの実行や旧フォルダーの削除は行っていません。新版を確認後、旧フォルダーを手動削除できます。ユーザーデータには影響しません。
 japanese.HardwareUnsafeServiceRetirementFailed=保護されていない場所の旧版 UniDesk ハードウェアサービスを安全に停止して無効化できたことを確認できません。インストールを中止しました。ログを確認し、UniDeskHardwareService を手動で削除してください。
-japanese.LegacyMigrationCleanupFailed=新版 UniDesk は保護された場所にインストールされましたが、旧版のスタートアップ項目を完全にクリーンアップできませんでした。旧アンインストーラーは実行しないでください。ログを確認し、旧版が自動起動しないことを確認してから、エクスプローラーで旧プログラムフォルダーを手動削除してください。
+japanese.LegacyMigrationCleanupFailed=UniDesk は新しい場所にインストールされましたが、旧場所のスタートアップ項目を完全にクリーンアップできませんでした。旧アンインストーラーは実行せず、ログを確認してください。
 japanese.RemovePawnIoPrompt=共有 PawnIO ドライバーもアンインストールしますか？他のハードウェア監視ソフトやファン制御ソフトが使用している場合があります。他のソフトが依存していないことを確認できる場合だけ削除してください。
 japanese.PawnIoRemoveFailed=PawnIO をアンインストールできませんでした。UniDesk のアンインストールは続行し、PawnIO はシステムに残ります。
 spanish.CompleteHardwareTask=Instalar supervisión completa de hardware (recomendado; instala el controlador PawnIO y un servicio de solo lectura LocalSystem)
 spanish.HardwareMonitoringGroup=Supervisión de hardware
 spanish.HardwareRepairFailed=La aplicación base UniDesk se instaló, pero no se completó la instalación o reparación de la supervisión de hardware (código %1). Las funciones básicas siguen disponibles; exporte el diagnóstico desde Configuración o vuelva a intentarlo más tarde. Registro: ProgramData\UniDesk\logs\hardware-repair.log.
 spanish.HardwareCompatibilityMode=UniDesk está instalado y usará fuentes compatibles de Windows y del fabricante. Los datos de CPU, GPU, memoria y red seguirán disponibles; pueden faltar algunos sensores de la placa base.
-spanish.ProtectedInstallLocationNotice=UniDesk se instalará en su carpeta predeterminada dentro de Program Files del sistema. Esta ubicación es fija para mantener estables las actualizaciones y la supervisión del hardware.
+spanish.ProtectedComponentLocationNotice=Puede elegir la ubicación de la aplicación principal. Los componentes de hardware y desinstalación usarán una carpeta protegida de Windows.
 spanish.HardwareServiceRemoveFailed=No se pudo eliminar el servicio de hardware de UniDesk (código %1). La desinstalación continuará; revise ProgramData\UniDesk\logs\hardware-repair.log y elimine UniDeskHardwareService como administrador.
 spanish.HardwareServiceStopFailed=No se pudo detener el servicio de hardware existente (código %1). Cierre UniDesk y vuelva a ejecutar el instalador.
 spanish.HardwareServiceOwnershipFailed=Existe un servicio con el mismo nombre, pero no pertenece a esta instalación de UniDesk. La instalación se detuvo para no modificar otra aplicación.
-spanish.HardwareAclFailed=No se pudo proteger el directorio de instalación de UniDesk. La instalación se detuvo; vuelva a intentarlo con la ubicación predeterminada.
-spanish.HardwareProtectedLocationRequired=Para proteger el desinstalador administrativo y las herramientas de mantenimiento, UniDesk debe usar su carpeta predeterminada en Program Files del sistema. La instalación se detuvo; vuelva a ejecutarla sin cambiar la carpeta.
-spanish.HardwareUnsafeServiceRetired=La instalación antigua de UniDesk se migró de forma segura a la ubicación protegida y se limpiaron las entradas de inicio que pertenecían estrictamente a ella. El instalador no ejecutó el desinstalador antiguo ni eliminó su carpeta. Ahora puede eliminar manualmente la carpeta antigua desde el Explorador; los datos de usuario no se ven afectados.
+spanish.HardwareAclFailed=No se pudo preparar de forma segura la carpeta de componentes del sistema de UniDesk. Revise Common Program Files de Windows y vuelva a intentarlo.
+spanish.ApplicationLocationInvalid=No se puede usar con seguridad la carpeta seleccionada. Elija una carpeta nueva y vacía o una instalación existente de UniDesk.
+spanish.LegacyUninstallerCleanupFailed=No se pudo eliminar de forma segura el componente de desinstalación anterior de UniDesk. La instalación se detuvo; cierre el desinstalador anterior y vuelva a intentarlo.
+spanish.ApplicationLocationMigrationComplete=UniDesk se instaló en la nueva ubicación y se limpiaron las entradas de inicio que pertenecían estrictamente a la ubicación anterior. El instalador no ejecutó el desinstalador antiguo ni eliminó su carpeta. Tras verificar la nueva versión, puede eliminar manualmente la carpeta anterior; los datos de usuario no se ven afectados.
 spanish.HardwareUnsafeServiceRetirementFailed=No se pudo confirmar que el servicio de hardware antiguo de UniDesk se detuviera y deshabilitara de forma segura. La instalación se detuvo; revise el registro y elimine UniDeskHardwareService manualmente.
-spanish.LegacyMigrationCleanupFailed=La nueva versión de UniDesk se instaló en la ubicación protegida, pero no se completó la limpieza de las entradas de inicio antiguas. No ejecute el desinstalador antiguo. Revise el registro, confirme que la versión anterior ya no se inicia con Windows y elimine manualmente su carpeta desde el Explorador.
+spanish.LegacyMigrationCleanupFailed=UniDesk se instaló en la nueva ubicación, pero no se completó la limpieza de las entradas de inicio anteriores. No ejecute el desinstalador antiguo; revise el registro y confirme que la versión anterior ya no se inicia con Windows.
 spanish.RemovePawnIoPrompt=¿Desinstalar también el controlador compartido PawnIO? Otras aplicaciones de supervisión de hardware o control de ventiladores pueden utilizarlo. Consérvelo salvo que esté seguro de que ninguna otra aplicación depende de él.
 spanish.PawnIoRemoveFailed=No se pudo desinstalar PawnIO. La desinstalación de UniDesk continuará y PawnIO permanecerá instalado.
 
@@ -135,9 +140,9 @@ Source: "{#MyAppSourceDir}\*"; DestDir: "{app}"; Excludes: "icon\*;*.pdb"; Flags
 Source: "{#MyAppIconSourceDir}\*"; DestDir: "{app}\icon"; Flags: ignoreversion recursesubdirs createallsubdirs
 ; Keep the repair payload installed even when the optional component is not selected,
 ; so Settings can add or repair it later without retaining the full setup package.
-Source: "{#MyHardwareServiceSourceDir}\*"; DestDir: "{app}\HardwareService"; Excludes: "*.pdb"; Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "{#MyHardwareRepairSourceDir}\*"; DestDir: "{app}\HardwareRepair"; Excludes: "*.pdb"; Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "installer-assets\PawnIO_setup.exe"; DestDir: "{app}\Hardware"; Flags: ignoreversion
+Source: "{#MyHardwareServiceSourceDir}\*"; DestDir: "{commonpf}\UniDesk\HardwareService"; Excludes: "*.pdb"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "{#MyHardwareRepairSourceDir}\*"; DestDir: "{commonpf}\UniDesk\HardwareRepair"; Excludes: "*.pdb"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "installer-assets\PawnIO_setup.exe"; DestDir: "{commonpf}\UniDesk\Hardware"; Flags: ignoreversion
 Source: "installer-assets\PawnIO-COPYING.txt"; DestDir: "{app}\licenses"; Flags: ignoreversion
 Source: "installer-assets\LibreHardwareMonitor-THIRD-PARTY-NOTICES.txt"; DestDir: "{app}\licenses"; Flags: ignoreversion
 Source: "installer-assets\licenses\*"; DestDir: "{app}\licenses"; Flags: ignoreversion
@@ -155,11 +160,22 @@ Filename: "{app}\{#MyAppExeName}"; Parameters: "--initial-language={language}"; 
 const
   FileAttributeDirectory = $10;
   FileAttributeReparsePoint = $400;
+  FileShareRead = $1;
+  FileShareWrite = $2;
+  OpenExisting = 3;
+  FileFlagOpenReparsePoint = $00200000;
+  FileFlagBackupSemantics = $02000000;
+  InvalidHandleValue = -1;
   HardwareCompatibilityExitCode = 31;
+  CurrentApplicationMarkerName = '.unidesk-application-path';
   LegacyStartupMigrationMarkerName = '.unidesk-legacy-startup-path';
 
 var
+  ApplicationPathLockHandles: array of THandle;
+  ApplicationPathLocksHeld: Boolean;
+  LockedApplicationPath: String;
   LegacyMigrationPath: String;
+  LegacyRegisteredUninstallerInvalid: Boolean;
   LegacyRegisteredPathInvalid: Boolean;
   ValidatedAclTarget: String;
   StoppedOwnedHardwareService: Boolean;
@@ -168,13 +184,20 @@ var
 function CleanupOwnedStartupEntries: Boolean; forward;
 function SetEnvironmentVariable(Name, Value: String): Boolean;
   external 'SetEnvironmentVariableW@kernel32.dll stdcall';
+function CreateFile(
+  FileName: String;
+  DesiredAccess, ShareMode: Cardinal;
+  SecurityAttributes: LongWord;
+  CreationDisposition, FlagsAndAttributes: Cardinal;
+  TemplateFile: THandle): THandle;
+  external 'CreateFileW@kernel32.dll stdcall';
+function WindowsCloseHandle(Handle: THandle): Boolean;
+  external 'CloseHandle@kernel32.dll stdcall';
 
 procedure InitializeWizard;
 begin
-  WizardForm.DirEdit.Enabled := False;
-  WizardForm.DirBrowseButton.Enabled := False;
   WizardForm.SelectDirBrowseLabel.Caption :=
-    ExpandConstant('{cm:ProtectedInstallLocationNotice}');
+    ExpandConstant('{cm:ProtectedComponentLocationNotice}');
 end;
 
 function HardwareServiceExists: Boolean;
@@ -182,6 +205,17 @@ begin
   Result := RegKeyExists(
     HKLM,
     'SYSTEM\CurrentControlSet\Services\{#HardwareServiceName}');
+end;
+
+function GetProtectedComponentRoot: String;
+begin
+  Result := RemoveBackslashUnlessRoot(ExpandConstant('{commonpf}\UniDesk'));
+end;
+
+function GetHardwareRepairHelperPath: String;
+begin
+  Result := AddBackslash(GetProtectedComponentRoot) +
+    'HardwareRepair\UniDesk.HardwareRepair.exe';
 end;
 
 procedure ReportHardwareComponentFailure(ResultCode: Integer);
@@ -206,7 +240,7 @@ var
   ResultCode: Integer;
   HelperPath: String;
 begin
-  HelperPath := ExpandConstant('{app}\HardwareRepair\UniDesk.HardwareRepair.exe');
+  HelperPath := GetHardwareRepairHelperPath;
   ResultCode := -1;
   if not WizardIsTaskSelected('completehardware') then
   begin
@@ -282,7 +316,7 @@ begin
   Result := CompareText(ExtractFileExt(ExecutablePath), '.exe') = 0;
 end;
 
-function IsHardwareServiceOwnedAt(const ApplicationPath: String): Boolean;
+function IsHardwareServiceOwnedAt(const ComponentOrLegacyAppPath: String): Boolean;
 var
   ExecutablePath: String;
   ImagePath: String;
@@ -302,13 +336,13 @@ begin
   Result := CompareText(
     RemoveBackslashUnlessRoot(ExpandFileName(ExecutablePath)),
     RemoveBackslashUnlessRoot(ExpandFileName(
-      AddBackslash(ApplicationPath) +
+      AddBackslash(ComponentOrLegacyAppPath) +
       'HardwareService\UniDesk.HardwareService.exe'))) = 0;
 end;
 
 function IsHardwareServiceOwned: Boolean;
 begin
-  Result := IsHardwareServiceOwnedAt(ExpandConstant('{app}'));
+  Result := IsHardwareServiceOwnedAt(GetProtectedComponentRoot);
 end;
 
 function RunIcacls(const Parameters: String): Boolean;
@@ -339,30 +373,31 @@ begin
     NormalizeDirectoryPath(RightPath)) = 0;
 end;
 
-function IsProtectedInstallTargetAllowed: Boolean;
-begin
-  Result := IsSameDirectory(
-    ExpandConstant('{app}'),
-    ExpandConstant('{autopf}\{#MyAppName}'));
-end;
-
-function IsProtectedHardwareInstallTarget(const DirectoryPath: String): Boolean;
-begin
-  Result := IsSameDirectory(
-    DirectoryPath,
-    ExpandConstant('{autopf}\{#MyAppName}'));
-end;
-
-function VerifyProtectedInstallAncestorAcl: Boolean;
+function VerifyProtectedComponentRootAcl: Boolean;
 var
   Parameters: String;
+  ProtectedParent: String;
   ProtectedRoot: String;
   ResultCode: Integer;
 begin
-  ProtectedRoot := NormalizeDirectoryPath(ExpandConstant('{autopf}'));
+  ProtectedRoot := NormalizeDirectoryPath(ExpandConstant('{commonpf}'));
+  ProtectedParent := NormalizeDirectoryPath(ExtractFileDir(ProtectedRoot));
+  if (ProtectedParent = '') or IsSameDirectory(ProtectedParent, ProtectedRoot) then
+  begin
+    Log('Could not resolve the protected Program Files parent directory.');
+    Result := False;
+    Exit;
+  end;
   if not SetEnvironmentVariable('UNIDESK_PROTECTED_ROOT', ProtectedRoot) then
   begin
-    Log('Could not bind the protected install root for ancestor ACL verification.');
+    Log('Could not bind the protected component root for ACL verification.');
+    Result := False;
+    Exit;
+  end;
+  if not SetEnvironmentVariable('UNIDESK_PROTECTED_PARENT', ProtectedParent) then
+  begin
+    SetEnvironmentVariable('UNIDESK_PROTECTED_ROOT', '');
+    Log('Could not bind the protected component parent for ACL verification.');
     Result := False;
     Exit;
   end;
@@ -371,7 +406,8 @@ begin
     '-NoLogo -NoProfile -NonInteractive -Command "' +
     '$trusted=@(''S-1-5-18'',''S-1-5-32-544'',''S-1-5-80-956008885-3418522649-1831038044-1853292631-2271478464''); ' +
     '$danger=[Security.AccessControl.FileSystemRights]::Delete -bor [Security.AccessControl.FileSystemRights]::DeleteSubdirectoriesAndFiles -bor [Security.AccessControl.FileSystemRights]::ChangePermissions -bor [Security.AccessControl.FileSystemRights]::TakeOwnership; ' +
-    '$current=Get-Item -LiteralPath $env:UNIDESK_PROTECTED_ROOT -Force -ErrorAction Stop; ' +
+    '$paths=@($env:UNIDESK_PROTECTED_ROOT,$env:UNIDESK_PROTECTED_PARENT); foreach($path in $paths){ ' +
+    '$current=Get-Item -LiteralPath $path -Force -ErrorAction Stop; ' +
     'if(($current.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0){exit 20}; ' +
     '$acl=Get-Acl -LiteralPath $current.FullName -ErrorAction Stop; ' +
     '$owner=$acl.GetOwner([Security.Principal.SecurityIdentifier]).Value; ' +
@@ -380,7 +416,7 @@ begin
     'if(($rule.AccessControlType -eq [Security.AccessControl.AccessControlType]::Allow) -and ' +
     '(($rule.PropagationFlags -band [Security.AccessControl.PropagationFlags]::InheritOnly) -eq 0) -and ' +
     '(($rule.FileSystemRights -band $danger) -ne 0) -and ' +
-    '($trusted -notcontains $rule.IdentityReference.Value)){exit 22} }; exit 0"';
+    '($trusted -notcontains $rule.IdentityReference.Value)){exit 22} } }; exit 0"';
   ResultCode := -1;
   Result := Exec(
     ExpandConstant('{sys}\WindowsPowerShell\v1.0\powershell.exe'),
@@ -390,8 +426,9 @@ begin
     ewWaitUntilTerminated,
     ResultCode) and (ResultCode = 0);
   SetEnvironmentVariable('UNIDESK_PROTECTED_ROOT', '');
+  SetEnvironmentVariable('UNIDESK_PROTECTED_PARENT', '');
   if not Result then
-    Log('Protected install ancestor ACL verification failed with exit code ' +
+    Log('Protected component root ACL verification failed with exit code ' +
       IntToStr(ResultCode) + '.');
 end;
 
@@ -405,6 +442,7 @@ begin
     IsSameDirectory(NormalizedPath, ExpandConstant('{win}')) or
     IsSameDirectory(NormalizedPath, ExpandConstant('{pf}')) or
     IsSameDirectory(NormalizedPath, ExpandConstant('{pf32}')) or
+    IsSameDirectory(NormalizedPath, ExpandConstant('{commonpf}')) or
     IsSameDirectory(NormalizedPath, ExpandConstant('{commonappdata}')) or
     IsSameDirectory(NormalizedPath, ExpandConstant('{%USERPROFILE}')) or
     IsSameDirectory(NormalizedPath, ExpandConstant('{localappdata}')) or
@@ -476,22 +514,252 @@ begin
   end;
 end;
 
-function GetRegisteredUniDeskInstallationDirectory(var RegisteredPath: String): Boolean;
+function ContainsReparsePointInExistingAncestorChain(
+  const DirectoryPath: String): Boolean;
+var
+  CurrentPath: String;
+  FindRec: TFindRec;
+  ParentPath: String;
+begin
+  Result := False;
+  CurrentPath := NormalizeDirectoryPath(DirectoryPath);
+
+  while (CurrentPath <> '') and (not DirExists(CurrentPath)) do
+  begin
+    ParentPath := NormalizeDirectoryPath(ExtractFileDir(CurrentPath));
+    if (ParentPath = '') or IsSameDirectory(CurrentPath, ParentPath) then
+      Exit;
+    CurrentPath := ParentPath;
+  end;
+
+  while CurrentPath <> '' do
+  begin
+    if FindFirst(CurrentPath, FindRec) then
+    begin
+      try
+        if (FindRec.Attributes and FileAttributeReparsePoint) <> 0 then
+        begin
+          Result := True;
+          Exit;
+        end;
+      finally
+        FindClose(FindRec);
+      end;
+    end;
+
+    ParentPath := NormalizeDirectoryPath(ExtractFileDir(CurrentPath));
+    if (ParentPath = '') or IsSameDirectory(CurrentPath, ParentPath) then
+      Exit;
+    CurrentPath := ParentPath;
+  end;
+end;
+
+procedure ReleaseApplicationPathLocks;
+var
+  Index: Integer;
+begin
+  if GetArrayLength(ApplicationPathLockHandles) > 0 then
+    for Index := GetArrayLength(ApplicationPathLockHandles) - 1 downto 0 do
+      if ApplicationPathLockHandles[Index] <> InvalidHandleValue then
+        WindowsCloseHandle(ApplicationPathLockHandles[Index]);
+  SetArrayLength(ApplicationPathLockHandles, 0);
+  ApplicationPathLocksHeld := False;
+  LockedApplicationPath := '';
+end;
+
+function AcquireApplicationPathLocks(const DirectoryPath: String): Boolean;
+var
+  CurrentPath: String;
+  DirectoryHandle: THandle;
+  Index: Integer;
+  ParentPath: String;
+  Paths: array of String;
+begin
+  ReleaseApplicationPathLocks;
+  CurrentPath := NormalizeDirectoryPath(DirectoryPath);
+  while CurrentPath <> '' do
+  begin
+    Index := GetArrayLength(Paths);
+    SetArrayLength(Paths, Index + 1);
+    Paths[Index] := CurrentPath;
+
+    ParentPath := NormalizeDirectoryPath(ExtractFileDir(CurrentPath));
+    if (ParentPath = '') or IsSameDirectory(CurrentPath, ParentPath) then
+      Break;
+    CurrentPath := ParentPath;
+  end;
+
+  for Index := GetArrayLength(Paths) - 1 downto 0 do
+  begin
+    DirectoryHandle := CreateFile(
+      Paths[Index],
+      0,
+      FileShareRead or FileShareWrite,
+      0,
+      OpenExisting,
+      FileFlagBackupSemantics or FileFlagOpenReparsePoint,
+      0);
+    if DirectoryHandle = InvalidHandleValue then
+    begin
+      Log('Could not lock application path against delete or rename: ' + Paths[Index]);
+      ReleaseApplicationPathLocks;
+      Result := False;
+      Exit;
+    end;
+
+    SetArrayLength(
+      ApplicationPathLockHandles,
+      GetArrayLength(ApplicationPathLockHandles) + 1);
+    ApplicationPathLockHandles[GetArrayLength(ApplicationPathLockHandles) - 1] :=
+      DirectoryHandle;
+  end;
+
+  if ContainsReparsePoint(DirectoryPath) then
+  begin
+    Log('Application path became a reparse point while acquiring directory locks.');
+    ReleaseApplicationPathLocks;
+    Result := False;
+    Exit;
+  end;
+
+  ApplicationPathLocksHeld := True;
+  LockedApplicationPath := NormalizeDirectoryPath(DirectoryPath);
+  Result := True;
+end;
+
+function GetRegisteredUniDeskUninstallValue(
+  const ValueName: String;
+  var Value: String): Boolean;
 begin
   Result := RegQueryStringValue(
     HKLM64,
     'Software\Microsoft\Windows\CurrentVersion\Uninstall\{4B0F3B03-7F5D-4B5D-B2F4-6816B931C7D2}_is1',
-    'InstallLocation',
-    RegisteredPath);
+    ValueName,
+    Value);
   if not Result then
     Result := RegQueryStringValue(
       HKLM32,
       'Software\Microsoft\Windows\CurrentVersion\Uninstall\{4B0F3B03-7F5D-4B5D-B2F4-6816B931C7D2}_is1',
-      'InstallLocation',
-      RegisteredPath);
+      ValueName,
+      Value);
 end;
 
-function HasLegacyUnsafeRegisteredInstallation(
+function GetRegisteredUniDeskInstallationDirectory(var RegisteredPath: String): Boolean;
+begin
+  Result := GetRegisteredUniDeskUninstallValue('InstallLocation', RegisteredPath);
+end;
+
+function GetRegisteredUniDeskUninstallerPath(var UninstallerPath: String): Boolean;
+var
+  UninstallCommand: String;
+begin
+  UninstallerPath := '';
+  LegacyRegisteredUninstallerInvalid := False;
+  if not GetRegisteredUniDeskUninstallValue('UninstallString', UninstallCommand) then
+  begin
+    Result := False;
+    Exit;
+  end;
+
+  if not TryExtractExecutablePath(UninstallCommand, UninstallerPath) then
+  begin
+    LegacyRegisteredUninstallerInvalid := True;
+    Result := False;
+    Exit;
+  end;
+
+  UninstallerPath := ExpandFileName(UninstallerPath);
+  Result := True;
+end;
+
+function IsAsciiDigit(const Character: Char): Boolean;
+begin
+  Result := (Character >= '0') and (Character <= '9');
+end;
+
+function IsLegacyUninstallerFileName(const FileName: String): Boolean;
+var
+  LowerFileName: String;
+  Extension: String;
+begin
+  LowerFileName := Lowercase(FileName);
+  if (Length(LowerFileName) <> 12) or
+    (Copy(LowerFileName, 1, 5) <> 'unins') or
+    (not IsAsciiDigit(LowerFileName[6])) or
+    (not IsAsciiDigit(LowerFileName[7])) or
+    (not IsAsciiDigit(LowerFileName[8])) then
+  begin
+    Result := False;
+    Exit;
+  end;
+
+  Extension := Copy(LowerFileName, 9, 4);
+  Result := (Extension = '.exe') or (Extension = '.dat') or (Extension = '.msg');
+end;
+
+function RemoveLegacyRegisteredUninstallerFiles(
+  const RegisteredPath: String): Boolean;
+var
+  FindRec: TFindRec;
+  RegisteredUninstallerPath: String;
+  RegisteredUninstallerDirectory: String;
+  UninstallerPath: String;
+begin
+  Result := False;
+  if (not ApplicationPathLocksHeld) or
+    (not IsSameDirectory(RegisteredPath, LockedApplicationPath)) then
+  begin
+    Log('Refusing legacy uninstaller cleanup without a lock on the registered application directory.');
+    Exit;
+  end;
+
+  if GetRegisteredUniDeskUninstallerPath(RegisteredUninstallerPath) then
+  begin
+    RegisteredUninstallerDirectory := ExtractFileDir(RegisteredUninstallerPath);
+    if not IsLegacyUninstallerFileName(ExtractFileName(RegisteredUninstallerPath)) or
+      ((not IsSameDirectory(RegisteredUninstallerDirectory, RegisteredPath)) and
+       (not IsSameDirectory(
+         RegisteredUninstallerDirectory,
+         AddBackslash(GetProtectedComponentRoot) + 'Uninstall'))) then
+    begin
+      Log('The registered UniDesk uninstaller is outside an owned uninstall directory.');
+      Exit;
+    end;
+  end
+  else if LegacyRegisteredUninstallerInvalid then
+  begin
+    Log('The registered UniDesk uninstall command is invalid.');
+    Exit;
+  end;
+
+  if not FindFirst(AddBackslash(RegisteredPath) + 'unins*.*', FindRec) then
+  begin
+    Result := True;
+    Exit;
+  end;
+
+  try
+    repeat
+      if ((FindRec.Attributes and FileAttributeDirectory) = 0) and
+        IsLegacyUninstallerFileName(FindRec.Name) then
+      begin
+        UninstallerPath := AddBackslash(RegisteredPath) + FindRec.Name;
+        if FileExists(UninstallerPath) and (not DeleteFile(UninstallerPath)) then
+        begin
+          Log('Could not delete the verified legacy uninstaller file: ' + UninstallerPath);
+          Exit;
+        end;
+        Log('Deleted verified legacy uninstaller file: ' + UninstallerPath);
+      end;
+    until not FindNext(FindRec);
+  finally
+    FindClose(FindRec);
+  end;
+
+  Result := True;
+end;
+
+function GetPreviousUniDeskApplicationDirectory(
   var RegisteredPath: String): Boolean;
 begin
   LegacyRegisteredPathInvalid := False;
@@ -510,7 +778,7 @@ begin
     Exit;
   end;
 
-  Result := not IsProtectedHardwareInstallTarget(RegisteredPath);
+  Result := True;
 end;
 
 function IsKnownUniDeskInstallationDirectory(const NormalizedPath: String): Boolean;
@@ -521,12 +789,31 @@ begin
   Result := Result and IsSameDirectory(NormalizedPath, RegisteredPath);
 end;
 
-function IsSafeInstallationTargetForAcl(const DirectoryPath: String): Boolean;
+function IsSafeApplicationInstallTarget(const DirectoryPath: String): Boolean;
 var
+  DrivePath: String;
   NormalizedPath: String;
 begin
   NormalizedPath := NormalizeDirectoryPath(DirectoryPath);
   if (NormalizedPath = '') or IsProtectedBroadDirectory(NormalizedPath) then
+  begin
+    Result := False;
+    Exit;
+  end;
+
+  DrivePath := ExtractFileDrive(NormalizedPath);
+  if Length(ExtractFileDrive(NormalizedPath)) <> 2 then
+  begin
+    Result := False;
+    Exit;
+  end;
+  if DrivePath[2] <> ':' then
+  begin
+    Result := False;
+    Exit;
+  end;
+
+  if ContainsReparsePointInExistingAncestorChain(NormalizedPath) then
   begin
     Result := False;
     Exit;
@@ -548,7 +835,24 @@ begin
     IsKnownUniDeskInstallationDirectory(NormalizedPath);
 end;
 
-function GetLegacyUnsafeOwnedServicePath(var OwnedApplicationPath: String): Boolean;
+function IsSafeProtectedComponentTargetForAcl(
+  const DirectoryPath: String): Boolean;
+var
+  NormalizedPath: String;
+begin
+  NormalizedPath := NormalizeDirectoryPath(DirectoryPath);
+  if not IsSameDirectory(NormalizedPath, GetProtectedComponentRoot) then
+  begin
+    Result := False;
+    Exit;
+  end;
+
+  Result := (not DirExists(NormalizedPath)) or
+    (not ContainsReparsePoint(NormalizedPath));
+end;
+
+function GetLegacyAppHostedOwnedServicePath(
+  var OwnedApplicationPath: String): Boolean;
 var
   RegisteredPath: String;
 begin
@@ -557,8 +861,10 @@ begin
   if not HardwareServiceExists then
     Exit;
 
-  if (not IsProtectedHardwareInstallTarget(ExpandConstant('{app}'))) and
-    IsHardwareServiceOwnedAt(ExpandConstant('{app}')) then
+  if IsHardwareServiceOwned then
+    Exit;
+
+  if IsHardwareServiceOwnedAt(ExpandConstant('{app}')) then
   begin
     OwnedApplicationPath := ExpandConstant('{app}');
     Result := True;
@@ -566,7 +872,6 @@ begin
   end;
 
   if GetRegisteredUniDeskInstallationDirectory(RegisteredPath) and
-    (not IsProtectedHardwareInstallTarget(RegisteredPath)) and
     IsHardwareServiceOwnedAt(RegisteredPath) then
   begin
     OwnedApplicationPath := RegisteredPath;
@@ -612,7 +917,7 @@ begin
   end;
 end;
 
-function RetireUnsafeOwnedHardwareService(
+function RetireOwnedHardwareServiceAt(
   const OwnedApplicationPath: String): Boolean;
 var
   DeleteCode: Integer;
@@ -625,7 +930,7 @@ var
 begin
   if not IsHardwareServiceOwnedAt(OwnedApplicationPath) then
   begin
-    Log('Legacy hardware service ownership changed before retirement; refusing to act.');
+    Log('Hardware service ownership changed before retirement; refusing to act.');
     Result := False;
     Exit;
   end;
@@ -667,25 +972,25 @@ begin
     DeleteCode) and ((DeleteCode = 0) or (DeleteCode = 1060));
 
   Result := StopSafe and (DeleteSafe or DisableSafe);
-  Log('Legacy unsafe hardware service retirement: disabled=' +
+  Log('Owned hardware service retirement: disabled=' +
     BooleanLogValue(DisableSafe) + '; stopped=' + BooleanLogValue(StopSafe) +
     '; deleted=' + BooleanLogValue(DeleteSafe) + '.');
 end;
 
-function RetireLegacyUnsafeHardwareService(var Retired: Boolean): Boolean;
+function RetireLegacyAppHostedHardwareService(var Retired: Boolean): Boolean;
 var
   OwnedApplicationPath: String;
 begin
-  Retired := GetLegacyUnsafeOwnedServicePath(OwnedApplicationPath);
+  Retired := GetLegacyAppHostedOwnedServicePath(OwnedApplicationPath);
   if not Retired then
   begin
     Result := True;
     Exit;
   end;
 
-  Log('Retiring owned hardware service from legacy unsafe path: ' +
+  Log('Retiring owned hardware service from legacy application path: ' +
     OwnedApplicationPath);
-  Result := RetireUnsafeOwnedHardwareService(OwnedApplicationPath);
+  Result := RetireOwnedHardwareServiceAt(OwnedApplicationPath);
 end;
 
 function ResetDirectoryChildrenAcl(const DirectoryPath: String): Boolean;
@@ -722,51 +1027,88 @@ begin
     ResetDirectoryChildrenAcl(DirectoryPath);
 end;
 
-function HardenInstallationPayload: Boolean;
+function HardenProtectedComponentPayload: Boolean;
 var
-  AppPath: String;
+  ComponentPath: String;
 begin
-  AppPath := ExpandConstant('{app}');
-  if ((ValidatedAclTarget = '') and not IsSafeInstallationTargetForAcl(AppPath)) or
-    ((ValidatedAclTarget <> '') and not IsSameDirectory(AppPath, ValidatedAclTarget)) then
+  ComponentPath := GetProtectedComponentRoot;
+  if ((ValidatedAclTarget = '') and
+      not IsSafeProtectedComponentTargetForAcl(ComponentPath)) or
+    ((ValidatedAclTarget <> '') and
+      not IsSameDirectory(ComponentPath, ValidatedAclTarget)) then
   begin
-    Log('Refusing recursive ACL hardening for unsafe or unowned install target: ' + AppPath);
+    Log('Refusing recursive ACL hardening outside the fixed protected component target: ' +
+      ComponentPath);
     Result := False;
     Exit;
   end;
 
   Result :=
-    ForceDirectories(AppPath) and
-    ForceDirectories(AddBackslash(AppPath) + 'HardwareService') and
-    ForceDirectories(AddBackslash(AppPath) + 'HardwareRepair') and
-    ForceDirectories(AddBackslash(AppPath) + 'Hardware');
+    ForceDirectories(ComponentPath) and
+    ForceDirectories(AddBackslash(ComponentPath) + 'HardwareService') and
+    ForceDirectories(AddBackslash(ComponentPath) + 'HardwareRepair') and
+    ForceDirectories(AddBackslash(ComponentPath) + 'Hardware') and
+    ForceDirectories(AddBackslash(ComponentPath) + 'Uninstall');
   if not Result then
     Exit;
 
   Result :=
-    HardenDirectoryAcl(AppPath) and
-    HardenDirectoryAcl(AddBackslash(AppPath) + 'HardwareService') and
-    HardenDirectoryAcl(AddBackslash(AppPath) + 'HardwareRepair') and
-    HardenDirectoryAcl(AddBackslash(AppPath) + 'Hardware');
+    HardenDirectoryAcl(ComponentPath) and
+    HardenDirectoryAcl(AddBackslash(ComponentPath) + 'HardwareService') and
+    HardenDirectoryAcl(AddBackslash(ComponentPath) + 'HardwareRepair') and
+    HardenDirectoryAcl(AddBackslash(ComponentPath) + 'Hardware') and
+    HardenDirectoryAcl(AddBackslash(ComponentPath) + 'Uninstall');
   if Result and (ValidatedAclTarget = '') then
-    ValidatedAclTarget := NormalizeDirectoryPath(AppPath);
+    ValidatedAclTarget := NormalizeDirectoryPath(ComponentPath);
 end;
 
-function PersistLegacyStartupMigrationMarker: Boolean;
+function HardenLockedApplicationDirectory(const DirectoryPath: String): Boolean;
 var
-  MarkerPath: String;
+  AppPath: String;
 begin
-  if LegacyMigrationPath = '' then
+  AppPath := NormalizeDirectoryPath(DirectoryPath);
+  if (not ApplicationPathLocksHeld) or
+    (not IsSameDirectory(AppPath, LockedApplicationPath)) or
+    (not IsSafeApplicationInstallTarget(AppPath)) or
+    ContainsReparsePoint(AppPath) then
   begin
-    Result := True;
+    Log('Refusing application ACL hardening without a locked, validated target: ' + AppPath);
+    Result := False;
     Exit;
   end;
 
-  MarkerPath := AddBackslash(ExpandConstant('{app}')) +
+  Result := HardenDirectoryAcl(AppPath) and
+    (not ContainsReparsePoint(AppPath));
+end;
+
+function HardenApplicationPayload: Boolean;
+begin
+  Result := HardenLockedApplicationDirectory(ExpandConstant('{app}'));
+end;
+
+function PersistProtectedApplicationMarkers: Boolean;
+var
+  CurrentMarkerPath: String;
+  LegacyMarkerPath: String;
+  LegacyMarkerValue: String;
+begin
+  CurrentMarkerPath := AddBackslash(GetProtectedComponentRoot) +
+    CurrentApplicationMarkerName;
+  LegacyMarkerPath := AddBackslash(GetProtectedComponentRoot) +
     LegacyStartupMigrationMarkerName;
-  Result := SaveStringToFile(MarkerPath, LegacyMigrationPath, False);
+  if LegacyMigrationPath = '' then
+    LegacyMarkerValue := NormalizeDirectoryPath(ExpandConstant('{app}'))
+  else
+    LegacyMarkerValue := LegacyMigrationPath;
+
+  Result :=
+    SaveStringToFile(
+      CurrentMarkerPath,
+      NormalizeDirectoryPath(ExpandConstant('{app}')),
+      False) and
+    SaveStringToFile(LegacyMarkerPath, LegacyMarkerValue, False);
   if not Result then
-    Log('Could not persist the protected legacy startup migration marker.');
+    Log('Could not persist protected application path markers.');
 end;
 
 procedure RestartOwnedHardwareServiceIfNeeded;
@@ -800,64 +1142,90 @@ end;
 function PrepareToInstall(var NeedsRestart: Boolean): String;
 var
   LegacyInstallPath: String;
-  LegacyUnsafeInstallation: Boolean;
+  PreviousInstallationExists: Boolean;
   RetiredLegacyService: Boolean;
   ResultCode: Integer;
   TaskKillCode: Integer;
 begin
   Result := '';
-  LegacyUnsafeInstallation := HasLegacyUnsafeRegisteredInstallation(
+  PreviousInstallationExists := GetPreviousUniDeskApplicationDirectory(
     LegacyInstallPath);
-  if not RetireLegacyUnsafeHardwareService(RetiredLegacyService) then
-  begin
-    Result := ExpandConstant('{cm:HardwareUnsafeServiceRetirementFailed}');
-    Exit;
-  end;
   if LegacyRegisteredPathInvalid then
   begin
-    Log('The registered legacy installation directory is empty or dangerously broad.');
-    Result := ExpandConstant('{cm:HardwareAclFailed}');
+    Log('The registered application directory is empty or dangerously broad.');
+    Result := ExpandConstant('{cm:ApplicationLocationInvalid}');
     Exit;
   end;
-  if LegacyUnsafeInstallation then
+  if PreviousInstallationExists and
+    (not IsSameDirectory(LegacyInstallPath, ExpandConstant('{app}'))) then
   begin
     LegacyMigrationPath := LegacyInstallPath;
-    Log('Preparing trusted migration from legacy unsafe installation directory: ' +
-      LegacyMigrationPath + '. Owned hardware service retired=' +
-      BooleanLogValue(RetiredLegacyService) + '.');
+    Log('Preparing startup entry migration from the previous application directory: ' +
+      LegacyMigrationPath + '.');
   end
   else
     LegacyMigrationPath := '';
 
-  if not IsProtectedInstallTargetAllowed then
+  if not IsSafeApplicationInstallTarget(ExpandConstant('{app}')) then
   begin
-    Log('Complete hardware monitoring was rejected outside the protected Program Files target.');
-    Result := ExpandConstant('{cm:HardwareProtectedLocationRequired}');
+    Log('Refusing the selected application target: ' + ExpandConstant('{app}'));
+    Result := ExpandConstant('{cm:ApplicationLocationInvalid}');
     Exit;
   end;
 
-  if not VerifyProtectedInstallAncestorAcl then
+  if PreviousInstallationExists and DirExists(LegacyInstallPath) then
+  begin
+    if (not IsSafeApplicationInstallTarget(LegacyInstallPath)) or
+      (not AcquireApplicationPathLocks(LegacyInstallPath)) or
+      (not HardenLockedApplicationDirectory(LegacyInstallPath)) then
+    begin
+      Log('Could not lock and secure the registered legacy application directory.');
+      Result := ExpandConstant('{cm:ApplicationLocationInvalid}');
+      Exit;
+    end;
+
+    if not RemoveLegacyRegisteredUninstallerFiles(LegacyInstallPath) then
+    begin
+      Result := ExpandConstant('{cm:LegacyUninstallerCleanupFailed}');
+      Exit;
+    end;
+
+    if not IsSameDirectory(LegacyInstallPath, ExpandConstant('{app}')) then
+      ReleaseApplicationPathLocks;
+  end;
+
+  if (not ForceDirectories(ExpandConstant('{app}'))) or
+    ((not ApplicationPathLocksHeld) and
+      (not AcquireApplicationPathLocks(ExpandConstant('{app}')))) or
+    (not HardenApplicationPayload) then
+  begin
+    Log('Could not lock and secure the selected application target.');
+    Result := ExpandConstant('{cm:ApplicationLocationInvalid}');
+    Exit;
+  end;
+
+  if not VerifyProtectedComponentRootAcl then
   begin
     Result := ExpandConstant('{cm:HardwareAclFailed}');
     Exit;
   end;
 
-  if not IsSafeInstallationTargetForAcl(ExpandConstant('{app}')) then
+  if not IsSafeProtectedComponentTargetForAcl(GetProtectedComponentRoot) then
   begin
-    Log('Refusing installation into unsafe or unowned target: ' + ExpandConstant('{app}'));
+    Log('Refusing the fixed protected component target: ' + GetProtectedComponentRoot);
     Result := ExpandConstant('{cm:HardwareAclFailed}');
     Exit;
   end;
 
-  if not HardenInstallationPayload then
+  if not HardenProtectedComponentPayload then
   begin
     Result := ExpandConstant('{cm:HardwareAclFailed}');
     Exit;
   end;
 
-  if not PersistLegacyStartupMigrationMarker then
+  if not RetireLegacyAppHostedHardwareService(RetiredLegacyService) then
   begin
-    Result := ExpandConstant('{cm:HardwareAclFailed}');
+    Result := ExpandConstant('{cm:HardwareUnsafeServiceRetirementFailed}');
     Exit;
   end;
 
@@ -912,11 +1280,11 @@ end;
 function NextButtonClick(CurPageID: Integer): Boolean;
 begin
   Result := True;
-  if ((CurPageID = wpSelectDir) or (CurPageID = wpSelectTasks)) and
-    not IsProtectedInstallTargetAllowed then
+  if (CurPageID = wpSelectDir) and
+    not IsSafeApplicationInstallTarget(ExpandConstant('{app}')) then
   begin
-    Log('Complete hardware monitoring target rejected on the task selection page.');
-    MsgBox(ExpandConstant('{cm:HardwareProtectedLocationRequired}'), mbError, MB_OK);
+    Log('Selected application directory was rejected on the location page.');
+    MsgBox(ExpandConstant('{cm:ApplicationLocationInvalid}'), mbError, MB_OK);
     Result := False;
   end;
 end;
@@ -933,10 +1301,17 @@ begin
   if CurStep <> ssPostInstall then
     Exit;
 
-  if not HardenInstallationPayload then
+  if not HardenProtectedComponentPayload then
   begin
     RestartOwnedHardwareServiceIfNeeded;
     ReportHardwareComponentFailure(90);
+    Exit;
+  end;
+
+  if not PersistProtectedApplicationMarkers then
+  begin
+    RestartOwnedHardwareServiceIfNeeded;
+    ReportHardwareComponentFailure(91);
     Exit;
   end;
 
@@ -948,7 +1323,7 @@ begin
     begin
       Log('Trusted legacy installation migration completed.');
       if not WizardSilent then
-        MsgBox(ExpandConstant('{cm:HardwareUnsafeServiceRetired}'), mbInformation, MB_OK);
+        MsgBox(ExpandConstant('{cm:ApplicationLocationMigrationComplete}'), mbInformation, MB_OK);
     end
     else
     begin
@@ -962,6 +1337,23 @@ end;
 procedure DeinitializeSetup;
 begin
   RestartOwnedHardwareServiceIfNeeded;
+  ReleaseApplicationPathLocks;
+end;
+
+function InitializeUninstall: Boolean;
+begin
+  Result :=
+    IsSafeApplicationInstallTarget(ExpandConstant('{app}')) and
+    ForceDirectories(ExpandConstant('{app}')) and
+    AcquireApplicationPathLocks(ExpandConstant('{app}')) and
+    HardenApplicationPayload;
+  if not Result then
+  begin
+    Log('Uninstall refused an unlocked or unsafe application directory.');
+    if not UninstallSilent then
+      MsgBox(ExpandConstant('{cm:ApplicationLocationInvalid}'), mbError, MB_OK);
+    ReleaseApplicationPathLocks;
+  end;
 end;
 
 procedure RemoveOwnedHardwareService;
@@ -970,7 +1362,7 @@ var
   HelperPath: String;
   MessageText: String;
 begin
-  HelperPath := ExpandConstant('{app}\HardwareRepair\UniDesk.HardwareRepair.exe');
+  HelperPath := GetHardwareRepairHelperPath;
   ResultCode := -1;
   if FileExists(HelperPath) and
     Exec(
@@ -995,7 +1387,7 @@ begin
   end;
 
   Log('Hardware repair helper could not remove the owned service; using the strict owned stop-and-delete fallback.');
-  if (not RetireUnsafeOwnedHardwareService(ExpandConstant('{app}'))) or
+  if (not RetireOwnedHardwareServiceAt(GetProtectedComponentRoot)) or
     HardwareServiceExists then
   begin
     MessageText := FmtMessage(
@@ -1011,7 +1403,7 @@ var
   HelperPath: String;
   ResultCode: Integer;
 begin
-  HelperPath := ExpandConstant('{app}\HardwareRepair\UniDesk.HardwareRepair.exe');
+  HelperPath := GetHardwareRepairHelperPath;
   ResultCode := -1;
   if not FileExists(HelperPath) then
   begin
@@ -1043,7 +1435,8 @@ begin
     Log('Uninstall startup cleanup did not complete.');
   RemoveOwnedHardwareService;
 
-  PawnIoInstaller := ExpandConstant('{app}\Hardware\PawnIO_setup.exe');
+  PawnIoInstaller := AddBackslash(GetProtectedComponentRoot) +
+    'Hardware\PawnIO_setup.exe';
   if (not UninstallSilent) and FileExists(PawnIoInstaller) and
     (MsgBox(
       ExpandConstant('{cm:RemovePawnIoPrompt}'),
@@ -1061,4 +1454,9 @@ begin
       MsgBox(ExpandConstant('{cm:PawnIoRemoveFailed}'), mbError, MB_OK);
     end;
   end;
+end;
+
+procedure DeinitializeUninstall;
+begin
+  ReleaseApplicationPathLocks;
 end;

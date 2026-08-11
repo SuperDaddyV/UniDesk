@@ -28,6 +28,7 @@ public interface IHardwareMonitoringMaintenanceService
 
 public sealed class HardwareMonitoringMaintenanceService : IHardwareMonitoringMaintenanceService
 {
+    public const string ProtectedComponentDirectoryName = "UniDesk";
     public const string RepairHelperRelativePath =
         @"HardwareRepair\UniDesk.HardwareRepair.exe";
 
@@ -37,9 +38,16 @@ public sealed class HardwareMonitoringMaintenanceService : IHardwareMonitoringMa
     public HardwareMonitoringMaintenanceService(IHardwareMetricsDiagnosticsSource diagnosticsSource)
         : this(
             diagnosticsSource,
-            Path.Combine(AppContext.BaseDirectory, RepairHelperRelativePath))
+            GetDefaultRepairHelperPath(Environment.GetFolderPath(
+                Environment.SpecialFolder.CommonProgramFiles)))
     {
     }
+
+    internal static string GetDefaultRepairHelperPath(string commonProgramFilesPath) =>
+        Path.Combine(
+            commonProgramFilesPath,
+            ProtectedComponentDirectoryName,
+            RepairHelperRelativePath);
 
     public HardwareMonitoringMaintenanceService(
         IHardwareMetricsDiagnosticsSource diagnosticsSource,
