@@ -191,6 +191,17 @@ public class HardwareServiceIntegrationTests
     }
 
     [Fact]
+    public void MaintenanceService_ShouldResolveRepairHelperOnlyFromProtectedCommonProgramFiles()
+    {
+        var path = HardwareMonitoringMaintenanceService.GetDefaultRepairHelperPath(
+            @"C:\Program Files\Common Files");
+
+        Assert.Equal(
+            @"C:\Program Files\Common Files\UniDesk\HardwareRepair\UniDesk.HardwareRepair.exe",
+            path);
+    }
+
+    [Fact]
     public async Task PipeRequestReader_ShouldRejectFrameBeyondProtocolLimit()
     {
         var bytes = new byte[HardwareIpcProtocol.MaxRequestBytes + 2];

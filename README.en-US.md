@@ -112,14 +112,16 @@ UniDesk_Setup_2.1.0.exe
 
 It is recommended to exit any running UniDesk instance before installing or upgrading.
 
-Double-click the installer normally and approve the Windows UAC prompt; a standard user must supply administrator credentials, with no need to use **Run as administrator**. The installer selects both the desktop shortcut and complete hardware monitoring by default and clearly discloses that it installs the shared PawnIO driver and a read-only Windows service running as `LocalSystem`. `UniDesk.exe` itself remains a normal-user process. The completion page selects launching UniDesk by default and starts it with the original normal-user identity. Clearing the component or a component installation failure leaves weather, notes, shortcuts, and other base features available, but low-level metrics such as CPU temperature may be unavailable; diagnostics and repair remain available from Settings.
+Double-click the installer normally and approve the Windows UAC prompt; a standard user must supply administrator credentials, with no need to use **Run as administrator**. The main application can be installed in a safe directory on any local drive, and an upgrade reuses the previous location by default. The hardware service, repair tool, and uninstaller remain in the protected Windows `Common Program Files\UniDesk` directory. Network paths, drive roots, reparse-point paths, and unrelated non-empty directories are not accepted.
+
+The installer selects both the desktop shortcut and complete hardware monitoring by default and clearly discloses that it installs the shared PawnIO driver and a read-only Windows service running as `LocalSystem`. `UniDesk.exe` itself remains a normal-user process. The completion page selects launching UniDesk by default and starts it with the original normal-user identity. Clearing the component or a component installation failure leaves weather, notes, shortcuts, and other base features available, but low-level metrics such as CPU temperature may be unavailable; diagnostics and repair remain available from Settings.
 
 System requirements:
 
 - A supported Windows 11 x64 release
-- A Windows 10 Enterprise or IoT Enterprise LTSC x64 release supported by .NET 10
+- Windows 10 Enterprise or IoT Enterprise LTSC 2021 or later on x64
 
-The project keeps a Windows 10 version 1903 API compatibility baseline, but out-of-support consumer Windows 10 releases are not part of the official support promise.
+The project keeps a Windows 10 version 1903 API compatibility baseline. LTSC 2019 is below that baseline, and out-of-support consumer Windows 10 releases are not part of the official support promise.
 
 ## 🛠️ Build From Source
 

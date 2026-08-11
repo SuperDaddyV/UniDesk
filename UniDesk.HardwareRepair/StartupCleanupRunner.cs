@@ -59,14 +59,17 @@ internal static class StartupEntryOwnership
 
 internal sealed class StartupCleanupRunner
 {
+    internal const string CurrentApplicationMarkerName = ".unidesk-application-path";
     internal const string LegacyMigrationMarkerName = ".unidesk-legacy-startup-path";
     private readonly string _applicationDirectory;
+    private readonly string _markerDirectory;
     private readonly IStartupEntryStore _entryStore;
     private readonly HardwareRepairLogger _logger;
 
     internal StartupCleanupRunner()
         : this(
-            ResolveApplicationDirectory(),
+            ResolveApplicationDirectoryFromMarker(ResolveComponentDirectory()),
+            ResolveComponentDirectory(),
             new WindowsStartupEntryStore(new SystemProcessRunner()),
             new HardwareRepairLogger())
     {
@@ -76,8 +79,18 @@ internal sealed class StartupCleanupRunner
         string applicationDirectory,
         IStartupEntryStore entryStore,
         HardwareRepairLogger logger)
+        : this(applicationDirectory, applicationDirectory, entryStore, logger)
+    {
+    }
+
+    internal StartupCleanupRunner(
+        string applicationDirectory,
+        string markerDirectory,
+        IStartupEntryStore entryStore,
+        HardwareRepairLogger logger)
     {
         _applicationDirectory = applicationDirectory;
+        _markerDirectory = markerDirectory;
         _entryStore = entryStore;
         _logger = logger;
     }
@@ -130,7 +143,7 @@ internal sealed class StartupCleanupRunner
     private bool TryGetOwnedApplicationDirectories(out IReadOnlyList<string> directories)
     {
         var result = new List<string> { Path.GetFullPath(_applicationDirectory) };
-        var markerPath = Path.Combine(_applicationDirectory, LegacyMigrationMarkerName);
+        var markerPath = Path.Combine(_markerDirectory, LegacyMigrationMarkerName);
         if (!File.Exists(markerPath))
         {
             directories = result;
@@ -140,6 +153,15 @@ internal sealed class StartupCleanupRunner
         var legacyPath = File.ReadAllText(markerPath).Trim();
         if (!TryNormalizeLegacyDirectory(legacyPath, result[0], out var normalizedLegacyPath))
         {
+            if (string.Equals(
+                    normalizedLegacyPath,
+                    result[0],
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                directories = result;
+                return true;
+            }
+
             _logger.Log("Legacy startup migration marker contains an unsafe directory; cleanup stopped.");
             directories = [];
             return false;
@@ -192,13 +214,28 @@ internal sealed class StartupCleanupRunner
                 StringComparison.OrdinalIgnoreCase));
     }
 
-    private static string ResolveApplicationDirectory()
+    internal static string ResolveApplicationDirectoryFromMarker(string componentDirectory)
+    {
+        var markerPath = Path.Combine(componentDirectory, CurrentApplicationMarkerName);
+        var applicationDirectory = File.ReadAllText(markerPath).Trim();
+        if (string.IsNullOrWhiteSpace(applicationDirectory) ||
+            !Path.IsPathFullyQualified(applicationDirectory))
+        {
+            throw new InvalidOperationException("The protected application path marker is invalid.");
+        }
+
+        return Path.GetFullPath(applicationDirectory).TrimEnd(
+            Path.DirectorySeparatorChar,
+            Path.AltDirectorySeparatorChar);
+    }
+
+    private static string ResolveComponentDirectory()
     {
         var helperDirectory = AppContext.BaseDirectory.TrimEnd(
             Path.DirectorySeparatorChar,
             Path.AltDirectorySeparatorChar);
         return Directory.GetParent(helperDirectory)?.FullName
-            ?? throw new InvalidOperationException("Unable to resolve the UniDesk installation directory.");
+            ?? throw new InvalidOperationException("Unable to resolve the UniDesk protected component directory.");
     }
 }
 

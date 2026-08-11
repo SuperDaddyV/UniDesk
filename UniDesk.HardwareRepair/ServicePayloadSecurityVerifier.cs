@@ -15,10 +15,11 @@ internal sealed class ServicePayloadSecurityVerifier : IServicePayloadSecurityVe
     private const string TrustedInstallerSid =
         "S-1-5-80-956008885-3418522649-1831038044-1853292631-2271478464";
 
-    private const FileSystemRights DangerousRights =
-        FileSystemRights.Write |
-        FileSystemRights.Modify |
-        FileSystemRights.FullControl |
+    private const FileSystemRights DangerousWriteRights =
+        FileSystemRights.WriteData |
+        FileSystemRights.AppendData |
+        FileSystemRights.WriteExtendedAttributes |
+        FileSystemRights.WriteAttributes |
         FileSystemRights.Delete |
         FileSystemRights.DeleteSubdirectoriesAndFiles |
         FileSystemRights.ChangePermissions |
@@ -54,9 +55,29 @@ internal sealed class ServicePayloadSecurityVerifier : IServicePayloadSecurityVe
                 return new(false, "Service payload parent directories could not be resolved.");
             }
 
-            foreach (var ancestor in EnumerateAncestorDirectories(applicationDirectory))
+            var expectedApplicationDirectory = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.CommonProgramFiles),
+                "UniDesk");
+            if (!string.Equals(
+                    Path.TrimEndingDirectorySeparator(applicationDirectory),
+                    Path.TrimEndingDirectorySeparator(expectedApplicationDirectory),
+                    StringComparison.OrdinalIgnoreCase))
             {
-                var ancestorResult = VerifyAncestorPath(ancestor);
+                return new(false, "Service payload is not under the protected UniDesk Common Program Files directory.");
+            }
+
+            var expectedServiceDirectory = Path.Combine(applicationDirectory, "HardwareService");
+            if (!string.Equals(
+                    Path.TrimEndingDirectorySeparator(serviceDirectory),
+                    Path.TrimEndingDirectorySeparator(expectedServiceDirectory),
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                return new(false, "Service payload is not in the expected HardwareService directory.");
+            }
+
+            foreach (var protectedBoundary in GetProtectedInstallationBoundaries(applicationDirectory))
+            {
+                var ancestorResult = VerifyAncestorPath(protectedBoundary);
                 if (!ancestorResult.IsSecure)
                 {
                     return ancestorResult;
@@ -86,17 +107,18 @@ internal sealed class ServicePayloadSecurityVerifier : IServicePayloadSecurityVe
         }
     }
 
-    internal static IReadOnlyList<string> EnumerateAncestorDirectories(string directoryPath)
+    internal static string GetProtectedInstallationRoot(string directoryPath)
     {
-        var ancestors = new List<string>();
-        var current = Directory.GetParent(Path.GetFullPath(directoryPath));
-        while (current != null)
-        {
-            ancestors.Add(current.FullName);
-            current = current.Parent;
-        }
+        return Directory.GetParent(Path.GetFullPath(directoryPath))?.FullName
+            ?? throw new InvalidOperationException("Protected installation root could not be resolved.");
+    }
 
-        return ancestors;
+    internal static IReadOnlyList<string> GetProtectedInstallationBoundaries(string directoryPath)
+    {
+        var commonProgramFiles = GetProtectedInstallationRoot(directoryPath);
+        var programFiles = Directory.GetParent(commonProgramFiles)?.FullName
+            ?? throw new InvalidOperationException("Protected Program Files boundary could not be resolved.");
+        return [commonProgramFiles, programFiles];
     }
 
     private static ServicePayloadSecurityVerificationResult VerifyAncestorPath(string path)
@@ -161,7 +183,7 @@ internal sealed class ServicePayloadSecurityVerifier : IServicePayloadSecurityVe
                      typeof(SecurityIdentifier)))
         {
             if (rule.AccessControlType != AccessControlType.Allow ||
-                (rule.FileSystemRights & DangerousRights) == 0)
+                !HasDangerousWriteRights(rule.FileSystemRights))
             {
                 continue;
             }
@@ -175,6 +197,9 @@ internal sealed class ServicePayloadSecurityVerifier : IServicePayloadSecurityVe
 
         return new(true, "Path ACL is secure.");
     }
+
+    internal static bool HasDangerousWriteRights(FileSystemRights rights) =>
+        (rights & DangerousWriteRights) != 0;
 
     private static bool IsTrustedPrincipal(SecurityIdentifier identity) =>
         identity.IsWellKnown(WellKnownSidType.LocalSystemSid) ||

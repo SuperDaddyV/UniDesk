@@ -1,3 +1,4 @@
+using System.Security.AccessControl;
 using UniDesk.HardwareRepair;
 
 namespace UniDesk.Tests;
@@ -5,12 +6,71 @@ namespace UniDesk.Tests;
 public class HardwareRepairTests
 {
     [Fact]
-    public void ServicePayloadVerifier_ShouldEnumerateEveryParentThroughTheVolumeRoot()
+    public void ServicePayloadVerifier_ShouldVerifyOnlyTheDirectProgramFilesBoundary()
     {
-        var ancestors = ServicePayloadSecurityVerifier.EnumerateAncestorDirectories(
-            @"C:\Program Files\UniDesk");
+        var protectedRoot = ServicePayloadSecurityVerifier.GetProtectedInstallationRoot(
+            @"C:\Program Files\Common Files\UniDesk");
 
-        Assert.Equal([@"C:\Program Files", @"C:\"], ancestors);
+        Assert.Equal(@"C:\Program Files\Common Files", protectedRoot);
+    }
+
+    [Fact]
+    public void ServicePayloadVerifier_ShouldVerifyCommonFilesAndProgramFilesBoundaries()
+    {
+        var boundaries = ServicePayloadSecurityVerifier.GetProtectedInstallationBoundaries(
+            @"C:\Program Files\Common Files\UniDesk");
+
+        Assert.Equal(
+            [@"C:\Program Files\Common Files", @"C:\Program Files"],
+            boundaries);
+    }
+
+    [Theory]
+    [InlineData(FileSystemRights.Read)]
+    [InlineData(FileSystemRights.ReadAndExecute)]
+    [InlineData(FileSystemRights.Synchronize)]
+    public void ServicePayloadVerifier_ReadOnlyRights_ShouldNotBeTreatedAsWritable(
+        FileSystemRights rights)
+    {
+        Assert.False(ServicePayloadSecurityVerifier.HasDangerousWriteRights(rights));
+    }
+
+    [Theory]
+    [InlineData(FileSystemRights.WriteData)]
+    [InlineData(FileSystemRights.AppendData)]
+    [InlineData(FileSystemRights.WriteExtendedAttributes)]
+    [InlineData(FileSystemRights.WriteAttributes)]
+    [InlineData(FileSystemRights.Delete)]
+    [InlineData(FileSystemRights.DeleteSubdirectoriesAndFiles)]
+    [InlineData(FileSystemRights.ChangePermissions)]
+    [InlineData(FileSystemRights.TakeOwnership)]
+    public void ServicePayloadVerifier_WriteRights_ShouldBeRejected(FileSystemRights rights)
+    {
+        Assert.True(ServicePayloadSecurityVerifier.HasDangerousWriteRights(rights));
+    }
+
+    [Fact]
+    public void InstallOrRepair_WhenDriverRemainsUnavailable_ShouldReturnCompatibilityMode()
+    {
+        var processRunner = new RecordingProcessRunner(
+            healthCheckExitCodes: Enumerable.Repeat(22, 20).ToArray());
+        var runner = CreateRunner(processRunner, delay: _ => { });
+
+        var result = runner.InstallOrRepair();
+
+        Assert.Equal(HardwareRepairExitCode.HardwareCompatibilityMode, result);
+    }
+
+    [Fact]
+    public void InstallOrRepair_WhenHealthCheckFailsForAnotherReason_ShouldReturnFailure()
+    {
+        var processRunner = new RecordingProcessRunner(
+            healthCheckExitCodes: Enumerable.Repeat(21, 20).ToArray());
+        var runner = CreateRunner(processRunner, delay: _ => { });
+
+        var result = runner.InstallOrRepair();
+
+        Assert.Equal(HardwareRepairExitCode.HealthCheckFailed, result);
     }
 
     [Fact]
@@ -61,6 +121,57 @@ public class HardwareRepairTests
                 StringComparison.OrdinalIgnoreCase));
         Assert.Contains(processRunner.Calls, call =>
             call.Arguments.SequenceEqual(["start", "PawnIO"]));
+    }
+
+    [Fact]
+    public void InstallOrRepair_WhenExistingPawnIoRemainsUnavailable_ShouldRunOneVerifiedRepair()
+    {
+        var processRunner = new RecordingProcessRunner(
+            pawnIoQueryExitCode: 0,
+            healthCheckExitCodes: Enumerable.Repeat(22, 20).Append(0).ToArray());
+        var runner = CreateRunner(processRunner, delay: _ => { });
+
+        var result = runner.InstallOrRepair();
+
+        Assert.Equal(HardwareRepairExitCode.Success, result);
+        Assert.Single(processRunner.Calls, call =>
+            Path.GetFileName(call.FileName).Equals(
+                "PawnIO_setup.exe",
+                StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(processRunner.Calls, call =>
+            Path.GetFileName(call.FileName).Equals("powershell.exe", StringComparison.OrdinalIgnoreCase) &&
+            call.Arguments.Any(argument => argument.Contains(
+                "Get-AuthenticodeSignature",
+                StringComparison.Ordinal)));
+    }
+
+    [Fact]
+    public void PawnIoSignatureVerification_ShouldIsolateWindowsPowerShellModulePath()
+    {
+        var projectRoot = Path.GetFullPath(Path.Combine(
+            AppContext.BaseDirectory,
+            "..",
+            "..",
+            "..",
+            ".."));
+        var processRunner = new RecordingProcessRunner();
+        var verifier = new HardwarePackageVerifier(
+            processRunner,
+            new HardwareRepairLogger(Path.Combine(
+                Path.GetTempPath(),
+                $"UniDesk_hardware_verifier_test_{Guid.NewGuid():N}.log")));
+
+        var result = verifier.VerifyPawnIo(Path.Combine(
+            projectRoot,
+            "installer-assets",
+            "PawnIO_setup.exe"));
+
+        Assert.Equal(HardwarePackageVerificationResult.Valid, result);
+        var signatureCall = Assert.Single(processRunner.Calls, call =>
+            Path.GetFileName(call.FileName).Equals("powershell.exe", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(signatureCall.Arguments, argument => argument.Contains(
+            "$env:PSModulePath=[IO.Path]::Combine($PSHOME,'Modules')",
+            StringComparison.Ordinal));
     }
 
     [Fact]
@@ -254,9 +365,11 @@ public class HardwareRepairTests
     private sealed class RecordingProcessRunner(
         int serviceCreateExitCode = 0,
         int pawnIoQueryExitCode = 1060,
-        IReadOnlyList<int>? serviceStoppedQueryExitCodes = null) : IProcessRunner
+        IReadOnlyList<int>? serviceStoppedQueryExitCodes = null,
+        IReadOnlyList<int>? healthCheckExitCodes = null) : IProcessRunner
     {
         private int _serviceStoppedQueryIndex;
+        private int _healthCheckIndex;
 
         public List<ProcessCall> Calls { get; } = [];
 
@@ -267,12 +380,12 @@ public class HardwareRepairTests
         {
             var capturedArguments = arguments.ToArray();
             Calls.Add(new ProcessCall(fileName, capturedArguments));
-            var exitCode = Path.GetFileName(fileName).Equals(
-                "powershell.exe",
-                StringComparison.OrdinalIgnoreCase)
-                ? GetServiceStoppedQueryExitCode()
-                : capturedArguments switch
+            var exitCode = capturedArguments switch
             {
+                ["--health-check"] => GetHealthCheckExitCode(),
+                _ when Path.GetFileName(fileName).Equals(
+                    "powershell.exe",
+                    StringComparison.OrdinalIgnoreCase) => GetServiceStoppedQueryExitCode(),
                 ["query", "PawnIO"] => pawnIoQueryExitCode,
                 ["create", ..] => serviceCreateExitCode,
                 _ => 0
@@ -289,6 +402,17 @@ public class HardwareRepairTests
 
             var index = Math.Min(_serviceStoppedQueryIndex++, serviceStoppedQueryExitCodes.Count - 1);
             return serviceStoppedQueryExitCodes[index];
+        }
+
+        private int GetHealthCheckExitCode()
+        {
+            if (healthCheckExitCodes == null || healthCheckExitCodes.Count == 0)
+            {
+                return 0;
+            }
+
+            var index = Math.Min(_healthCheckIndex++, healthCheckExitCodes.Count - 1);
+            return healthCheckExitCodes[index];
         }
     }
 

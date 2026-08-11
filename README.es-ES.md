@@ -112,14 +112,16 @@ UniDesk_Setup_2.1.0.exe
 
 Se recomienda cerrar UniDesk antes de instalar o actualizar.
 
-Haz doble clic en el instalador normalmente y aprueba la solicitud UAC de Windows; un usuario estándar debe proporcionar credenciales de administrador, sin necesidad de usar **Ejecutar como administrador**. El acceso directo del escritorio y la supervisión completa de hardware están seleccionados de forma predeterminada. El instalador muestra claramente que instalará el controlador compartido PawnIO y un servicio de Windows de solo lectura ejecutado como `LocalSystem`. `UniDesk.exe` se mantiene con permisos de usuario normal. La página final selecciona iniciar UniDesk de forma predeterminada y lo abre con la identidad del usuario normal original. Si desmarcas el componente o su instalación falla, el clima, las notas, los accesos directos y las demás funciones básicas seguirán disponibles, pero métricas como la temperatura de la CPU pueden no mostrarse; Configuración permite exportar diagnósticos y reintentar la reparación.
+Haz doble clic en el instalador normalmente y aprueba la solicitud UAC de Windows; un usuario estándar debe proporcionar credenciales de administrador, sin necesidad de usar **Ejecutar como administrador**. La aplicación principal puede instalarse en una carpeta segura de cualquier unidad local y una actualización reutiliza de forma predeterminada la ubicación anterior. El servicio de hardware, la herramienta de reparación y el desinstalador permanecen en la carpeta protegida de Windows `Common Program Files\UniDesk`. No se aceptan rutas de red, raíces de unidad, rutas con puntos de análisis ni carpetas no vacías que no estén registradas como UniDesk.
+
+El acceso directo del escritorio y la supervisión completa de hardware están seleccionados de forma predeterminada. El instalador muestra claramente que instalará el controlador compartido PawnIO y un servicio de Windows de solo lectura ejecutado como `LocalSystem`. `UniDesk.exe` se mantiene con permisos de usuario normal. La página final selecciona iniciar UniDesk de forma predeterminada y lo abre con la identidad del usuario normal original. Si desmarcas el componente o su instalación falla, el clima, las notas, los accesos directos y las demás funciones básicas seguirán disponibles, pero métricas como la temperatura de la CPU pueden no mostrarse; Configuración permite exportar diagnósticos y reintentar la reparación.
 
 Requisitos del sistema:
 
 - Una versión compatible de Windows 11 x64
-- Windows 10 Enterprise o IoT Enterprise LTSC x64 compatible con .NET 10
+- Windows 10 Enterprise o IoT Enterprise LTSC 2021 o posterior en x64
 
-El proyecto conserva la base de compatibilidad de API de Windows 10 versión 1903, pero las versiones de consumo sin soporte ya no forman parte del soporte oficial.
+El proyecto conserva la base de compatibilidad de API de Windows 10 versión 1903. LTSC 2019 queda por debajo de esa base y las versiones de consumo sin soporte tampoco forman parte del soporte oficial.
 
 ## 🛠️ Compilar desde el código fuente
 
