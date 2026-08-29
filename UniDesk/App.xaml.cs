@@ -290,6 +290,7 @@ public partial class App : Application
         services.AddSingleton<QWeatherApiClient>();
         services.AddSingleton<ILocationProvider, LocationProvider>();
         services.AddSingleton<IWeatherService, WeatherService>();
+        services.AddSingleton<IModelRadarService, ModelRadarService>();
         services.AddSingleton<IClockService, ClockService>();
         services.AddSingleton<INoteService, NoteService>();
         services.AddSingleton<IQuickNoteService, QuickNoteService>();

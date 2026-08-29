@@ -1313,6 +1313,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         DashboardModuleIds.Todos => L("Module.Todos"),
         DashboardModuleIds.QuickNotes => L("Module.QuickNotes"),
         DashboardModuleIds.QuickText => L("Module.QuickText"),
+        DashboardModuleIds.ModelRadar => L("Module.ModelRadar"),
         _ => string.IsNullOrWhiteSpace(fallback) ? moduleId : fallback
     };
 
