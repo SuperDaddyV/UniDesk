@@ -74,6 +74,140 @@ public class TodoBackupServiceTests
     }
 
     [Fact]
+    public async Task ImportFromFileAsync_OldModuleSettings_ShouldNormalizeModelRadarAsDisabled()
+    {
+        var (_, _, _, _, _, settingsService, backupService) = await InitAsync();
+        ModuleSetting[] legacyModules =
+        [
+            new ModuleSetting
+            {
+                ModuleId = DashboardModuleIds.QuickText,
+                DisplayName = "快捷文本",
+                IsEnabled = true,
+                SortOrder = 0
+            },
+            new ModuleSetting
+            {
+                ModuleId = "FutureModule",
+                DisplayName = "未来模块",
+                IsEnabled = true,
+                SortOrder = 1
+            },
+            new ModuleSetting
+            {
+                ModuleId = DashboardModuleIds.TimeWeather,
+                DisplayName = "时间天气",
+                IsEnabled = true,
+                SortOrder = 2
+            },
+            new ModuleSetting
+            {
+                ModuleId = DashboardModuleIds.Todos,
+                DisplayName = "待办事项",
+                IsEnabled = false,
+                SortOrder = 3
+            },
+            new ModuleSetting
+            {
+                ModuleId = DashboardModuleIds.HardwareMonitor,
+                DisplayName = "硬件监视",
+                IsEnabled = true,
+                SortOrder = 4
+            },
+            new ModuleSetting
+            {
+                ModuleId = DashboardModuleIds.Shortcuts,
+                DisplayName = "快捷方式",
+                IsEnabled = true,
+                SortOrder = 5
+            },
+            new ModuleSetting
+            {
+                ModuleId = DashboardModuleIds.QuickNotes,
+                DisplayName = "快速便签",
+                IsEnabled = true,
+                SortOrder = 6
+            }
+        ];
+        var moduleJson = JsonSerializer.Serialize(
+            legacyModules,
+            new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
+        var payload = new
+        {
+            version = 5,
+            exportedAt = "2026-08-30T00:00:00Z",
+            settings = new Dictionary<string, string>
+            {
+                [DashboardModuleCatalog.SettingsKey] = moduleJson
+            }
+        };
+        await File.WriteAllTextAsync(_backupFile, JsonSerializer.Serialize(payload));
+
+        try
+        {
+            var result = await ImportAsync(backupService, _backupFile);
+
+            Assert.Equal(1, result.SettingCount);
+            using var document = JsonDocument.Parse(
+                settingsService.GetValue(DashboardModuleCatalog.SettingsKey, ""));
+            var restored = document.RootElement.EnumerateArray().ToList();
+            Assert.Equal(
+                [
+                    DashboardModuleIds.QuickText,
+                    "FutureModule",
+                    DashboardModuleIds.TimeWeather,
+                    DashboardModuleIds.Todos,
+                    DashboardModuleIds.HardwareMonitor,
+                    DashboardModuleIds.Shortcuts,
+                    DashboardModuleIds.QuickNotes,
+                    DashboardModuleIds.ModelRadar
+                ],
+                restored.Select(module => module.GetProperty("moduleId").GetString()));
+            var radar = restored[^1];
+            Assert.Equal(DashboardModuleIds.ModelRadar, radar.GetProperty("moduleId").GetString());
+            Assert.False(radar.GetProperty("isEnabled").GetBoolean());
+        }
+        finally
+        {
+            Cleanup();
+        }
+    }
+
+    [Fact]
+    public async Task ExportToFileAsync_ShouldNeverIncludeModelRadarCacheFile()
+    {
+        var (_, _, _, _, _, _, backupService) = await InitAsync();
+        var cacheMarker = $"model-radar-cache-only-{Guid.NewGuid():N}";
+        var cacheFile = Path.Combine(
+            Path.GetTempPath(),
+            $"modeldial-radar-{Guid.NewGuid():N}.json");
+        await File.WriteAllTextAsync(cacheFile, cacheMarker);
+
+        try
+        {
+            await backupService.ExportToFileAsync(_backupFile);
+
+            var backupJson = await File.ReadAllTextAsync(_backupFile);
+            Assert.DoesNotContain(cacheMarker, backupJson, StringComparison.Ordinal);
+            using var document = JsonDocument.Parse(backupJson);
+            var root = document.RootElement;
+            Assert.False(root.TryGetProperty("modelRadarCache", out _));
+            Assert.DoesNotContain(
+                root.GetProperty("includedSections").EnumerateArray().Select(section => section.GetString()),
+                section => string.Equals(section, "modelRadarCache", StringComparison.Ordinal));
+        }
+        finally
+        {
+            if (File.Exists(cacheFile))
+            {
+                File.Delete(cacheFile);
+            }
+
+            Cleanup();
+        }
+    }
+
+    [Fact]
     public async Task ImportFromFileAsync_ShouldAcceptOldTodoOnlyBackup()
     {
         var (_, todoService, quickNoteService, quickTextService, shortcutService, _, backupService) = await InitAsync();

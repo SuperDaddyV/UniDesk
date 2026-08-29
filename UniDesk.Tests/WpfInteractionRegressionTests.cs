@@ -237,6 +237,145 @@ public class WpfInteractionRegressionTests
     }
 
     [Fact]
+    public void MainWindow_ShouldWireModelRadarAsSeventhModule()
+    {
+        var mainXaml = ReadProjectFile("UniDesk", "MainWindow.xaml");
+        var mainCode = ReadProjectFile("UniDesk", "MainWindow.xaml.cs");
+        var modulesGrid = Regex.Match(
+            mainXaml,
+            "<Grid x:Name=\"MainModulesGrid\"[\\s\\S]*?</Grid>\\s*</ScrollViewer>");
+
+        Assert.True(modulesGrid.Success);
+        Assert.Equal(
+            7,
+            Regex.Matches(modulesGrid.Value, @"<RowDefinition\s+Height=""Auto""\s*/>").Count);
+        Assert.Contains(
+            "<controls:ModelRadarModuleView x:Name=\"ModelRadarModule\"",
+            mainXaml,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "DashboardModuleIds.ModelRadar => ModelRadarModule",
+            mainCode,
+            StringComparison.Ordinal);
+        Assert.Contains("yield return ModelRadarModule", mainCode, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ModelRadarModule_ShouldUseGenericRadarGraphicAndFixedAttributionLinks()
+    {
+        var radarXaml = ReadProjectFile("UniDesk", "Controls", "ModelRadarModuleView.xaml");
+        var radarCode = ReadProjectFile("UniDesk", "Controls", "ModelRadarModuleView.xaml.cs");
+
+        Assert.Contains("x:Class=\"UniDesk.Controls.ModelRadarModuleView\"", radarXaml, StringComparison.Ordinal);
+        Assert.Contains("<Path", radarXaml, StringComparison.Ordinal);
+        Assert.Contains("Data=", radarXaml, StringComparison.Ordinal);
+        Assert.Contains("https://modeldial.com/radar", radarXaml, StringComparison.Ordinal);
+        Assert.Contains("https://modeldial.com/data-license", radarXaml, StringComparison.Ordinal);
+        Assert.DoesNotContain("Logo", radarXaml, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("<Image", radarXaml, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("e.Uri", radarCode, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ModelRadarModule_ShouldUseCompactConsistentTypographyAndHideMissingRankingTags()
+    {
+        var radarXaml = ReadProjectFile("UniDesk", "Controls", "ModelRadarModuleView.xaml");
+
+        Assert.Contains(
+            "Style=\"{StaticResource ModuleHeaderTextStyle}\"",
+            radarXaml,
+            StringComparison.Ordinal);
+        Assert.Contains("ConverterParameter=12", radarXaml, StringComparison.Ordinal);
+        Assert.DoesNotContain("Text=\"{Binding BatchText}\"", radarXaml, StringComparison.Ordinal);
+        Assert.Equal(
+            1,
+            radarXaml.Split(
+                "Text=\"{Binding PublishedText}\"",
+                StringSplitOptions.None).Length - 1);
+        Assert.Contains("x:Name=\"OverallConfigurationLine\"", radarXaml, StringComparison.Ordinal);
+        Assert.Contains("x:Name=\"ValueConfigurationLine\"", radarXaml, StringComparison.Ordinal);
+        Assert.Contains("x:Name=\"RankingDecisionTags\"", radarXaml, StringComparison.Ordinal);
+        Assert.Contains(
+            "Visibility=\"{Binding DecisionTagsText, Converter={StaticResource StringNotEmptyToVisibilityConverter}}\"",
+            radarXaml,
+            StringComparison.Ordinal);
+
+        var fullRankingLink = Regex.Match(
+            radarXaml,
+            "<Hyperlink x:Name=\"ViewFullRankingLink\"[\\s\\S]*?</Hyperlink>");
+        Assert.True(fullRankingLink.Success);
+        Assert.Contains("FontWeight=\"SemiBold\"", fullRankingLink.Value, StringComparison.Ordinal);
+
+        foreach (var configuration in new[]
+                 {
+                     new
+                     {
+                         Name = "OverallConfigurationLine",
+                         EffortBinding = "{Binding OverallDecision.ReasoningEffort}"
+                     },
+                     new
+                     {
+                         Name = "ValueConfigurationLine",
+                         EffortBinding = "{Binding ValueDecision.ReasoningEffort}"
+                     }
+                 })
+        {
+            var configurationLine = Regex.Match(
+                radarXaml,
+                $"<TextBlock x:Name=\"{configuration.Name}\"[\\s\\S]*?</TextBlock>");
+            Assert.True(configurationLine.Success);
+            Assert.Contains(configuration.EffortBinding, configurationLine.Value, StringComparison.Ordinal);
+            Assert.Contains("FontWeight=\"Bold\"", configurationLine.Value, StringComparison.Ordinal);
+        }
+    }
+
+    [Fact]
+    public void ModelRadarResources_ShouldLocalizeTheModuleAndAllReferencedRadarKeys()
+    {
+        var radarXaml = ReadProjectFile("UniDesk", "Controls", "ModelRadarModuleView.xaml");
+        var referencedKeys = Regex.Matches(
+                radarXaml,
+                @"(?:DynamicResource|StaticResource)\s+(ModelRadar\.[A-Za-z0-9]+)")
+            .Select(match => match.Groups[1].Value)
+            .Distinct(StringComparer.Ordinal)
+            .ToArray();
+
+        Assert.NotEmpty(referencedKeys);
+        foreach (var languageFile in new[]
+                 {
+                     "Strings.zh-CN.xaml",
+                     "Strings.en-US.xaml",
+                     "Strings.ja-JP.xaml",
+                     "Strings.es-ES.xaml"
+                 })
+        {
+            var resources = ReadProjectFile("UniDesk", "Resources", languageFile);
+            Assert.Contains("x:Key=\"Module.ModelRadar\"", resources, StringComparison.Ordinal);
+            foreach (var key in referencedKeys)
+            {
+                Assert.Contains($"x:Key=\"{key}\"", resources, StringComparison.Ordinal);
+            }
+
+            foreach (var semanticPart in new[]
+                     {
+                         "Overall",
+                         "Value",
+                         "Backend",
+                         "Frontend",
+                         "Knowledge",
+                         "Offline",
+                         "Refresh",
+                         "Ranking"
+                     })
+            {
+                Assert.Contains(
+                    referencedKeys,
+                    key => key.Contains(semanticPart, StringComparison.OrdinalIgnoreCase));
+            }
+        }
+    }
+
+    [Fact]
     public void DesktopSettings_ClipboardLimit_ShouldExposePersistentSingleSelection()
     {
         var desktopXaml = ReadProjectFile("UniDesk", "Controls", "Settings", "DesktopSettingsPage.xaml");

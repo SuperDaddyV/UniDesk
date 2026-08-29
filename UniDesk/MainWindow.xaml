@@ -266,6 +266,7 @@
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
 
                         <controls:TimeWeatherModuleView x:Name="TimeWeatherModule"
@@ -292,8 +293,12 @@
                                                       Grid.Row="5"
                                                       DataContext="{Binding QuickText}"/>
 
+                        <controls:ModelRadarModuleView x:Name="ModelRadarModule"
+                                                       Grid.Row="6"
+                                                       DataContext="{Binding ModelRadar}"/>
+
                         <TextBlock x:Name="EmptyModulesMessage"
-                                   Grid.RowSpan="6"
+                                   Grid.RowSpan="7"
                                    Text="{DynamicResource Module.NoEnabled}"
                                    Foreground="{DynamicResource SecondaryTextBrush}"
                                    FontSize="{Binding FontScale, Converter={StaticResource ScaledFontSizeConverter}, ConverterParameter=12}"

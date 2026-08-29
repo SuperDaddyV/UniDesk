@@ -12,6 +12,8 @@ This release makes complete hardware monitoring installable without elevating th
 
 ### Changes
 
+- Added an opt-in Model Radar module backed only by ModelDial's fixed public `latest.json` endpoint. It presents the publisher's overall leader and first official `value` recommendation, stable Top 5 views for overall／backend／frontend／knowledge scores, explicit cache and offline states, bounded refresh, cancellation, and fixed attribution links without calling any model or changing model-tool configuration.
+- Fresh installations now enable Time & Weather, Hardware Monitor, Todos, and Quick Notes while leaving Shortcuts, Quick Text, and Model Radar disabled. Upgrades preserve every saved module switch and ordering choice.
 - Added a default-selected, fully disclosed hardware component that installs the pinned PawnIO driver and a narrowly scoped read-only Windows service while keeping `UniDesk.exe` at normal-user privilege.
 - Added a dedicated administrator-only repair helper with argument-safe service registration, stable exit codes, local logs, and a versioned IPC health check. The main app waits for repair completion and then refreshes the component state.
 - Added bounded service initialization retry, four parallel named-pipe accept loops, detailed service／driver／protocol diagnostics, and localized repair states.
@@ -34,6 +36,8 @@ This release makes complete hardware monitoring installable without elevating th
 
 ### 中文说明
 
+- 新增默认关闭的「模型雷达」模块，运行时仅访问 ModelDial 固定公开 `latest.json` 接口；展示发布方综合第一、首个官方 `value` 性价比推荐，以及综合／后端／前端／知识 Top 5，并提供明确的缓存、离线、刷新取消和固定署名链接。该模块不调用模型、不进行本地评测，也不修改模型工具配置。
+- 全新安装默认启用时间天气、硬件监视、待办事项和快速便签，默认关闭快捷方式、快捷文本和模型雷达；覆盖安装与升级完整保留用户已保存的模块开关和顺序。
 - 新增默认勾选且明确披露的完整硬件监控组件：安装固定版本的 PawnIO 驱动和边界收紧的只读 Windows 服务，`UniDesk.exe` 仍以普通用户权限运行。
 - 新增独立的管理员权限修复助手，以参数数组安全注册服务，提供稳定退出码、本地日志和版本化 IPC 健康检查；主程序等待修复结束后刷新组件状态，且始终保持普通权限。
 - 硬件服务增加有上限的初始化重试、四路并发命名管道接收，以及服务／驱动／协议的细分诊断和本地化修复状态。

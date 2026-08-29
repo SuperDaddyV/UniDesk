@@ -488,6 +488,10 @@ public class ReleasePipelineTests
         Assert.Contains("https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement", privacyPolicy, StringComparison.Ordinal);
         Assert.Contains("Clipboard history is enabled by default for fresh installations", privacyPolicy, StringComparison.Ordinal);
         Assert.Contains("全新安装默认启用剪贴板历史", privacyPolicy, StringComparison.Ordinal);
+        Assert.Contains("https://modeldial.com/api/v1/radar/latest.json", privacyPolicy, StringComparison.Ordinal);
+        Assert.Contains("Model Radar is disabled by default", privacyPolicy, StringComparison.Ordinal);
+        Assert.Contains("模型雷达默认关闭", privacyPolicy, StringComparison.Ordinal);
+        Assert.Contains("cache\\modeldial-radar.json", privacyPolicy, StringComparison.Ordinal);
 
         foreach (var entryPoint in new[]
                  {
@@ -505,5 +509,22 @@ public class ReleasePipelineTests
             Assert.Contains("CODE_SIGNING_POLICY.md", content, StringComparison.Ordinal);
             Assert.Contains("PRIVACY.md", content, StringComparison.Ordinal);
         }
+    }
+
+    [Fact]
+    public void V210ReleaseDocumentation_ShouldCoverModelRadarAndFreshInstallModuleDefaults()
+    {
+        var releaseNotes = File.ReadAllText(Path.Combine(ProjectRoot, "docs", "release-unidesk.md"));
+        var releaseAudit = File.ReadAllText(Path.Combine(ProjectRoot, "docs", "release-audit-2.1.0.md"));
+        var testMatrix = File.ReadAllText(Path.Combine(ProjectRoot, "docs", "release-test-matrix-2.1.0.md"));
+
+        Assert.Contains("Model Radar", releaseNotes, StringComparison.Ordinal);
+        Assert.Contains("模型雷达", releaseNotes, StringComparison.Ordinal);
+        Assert.Contains("时间天气、硬件监视、待办事项和快速便签", releaseNotes, StringComparison.Ordinal);
+        Assert.Contains("2026-08-30 模型雷达候选修订", releaseAudit, StringComparison.Ordinal);
+        Assert.Contains("isDirty=true", releaseAudit, StringComparison.Ordinal);
+        Assert.Contains("MR-01", testMatrix, StringComparison.Ordinal);
+        Assert.Contains("MR-06", testMatrix, StringComparison.Ordinal);
+        Assert.Contains("全新安装默认启用时间天气、硬件监视、待办事项和快速便签", testMatrix, StringComparison.Ordinal);
     }
 }

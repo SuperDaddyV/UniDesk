@@ -25,7 +25,7 @@
 ## 系统概述
 
 ### 应用定位
-UniDesk 是运行于 Windows 11 的桌面侧边助手应用，以悬浮右侧面板形式呈现，集成时钟天气、硬件监视、快捷方式、待办事项、快速便签和快捷文本等核心功能，帮助用户在不中断主要工作流的情况下快速访问信息和启动应用。
+UniDesk 是运行于 Windows 11 的桌面侧边助手应用，以悬浮右侧面板形式呈现，集成时钟天气、硬件监视、快捷方式、待办事项、快速便签、快捷文本和模型雷达等核心功能，帮助用户在不中断主要工作流的情况下快速访问信息和启动应用。模型雷达是默认关闭的只读决策参考，不执行模型调用或修改模型工具配置。
 
 ### 核心目标
 - **顺滑稳定**：耗时任务不阻塞 UI 线程，交互与动画顺滑，未处理 UI 异常会提示并安全终止，避免在未知状态下继续运行
@@ -105,8 +105,8 @@ UniDesk 是运行于 Windows 11 的桌面侧边助手应用，以悬浮右侧面
 ### 仪表盘模块边界
 
 - `MainWindowViewModel` 仅负责窗口状态、模块布局、设置协调、子模块组合，以及供 Settings 恢复流程调用的兼容委托；不直接承载模块 CRUD。
-- 六个可见模块分别由 `TimeWeatherViewModel`、`HardwareMonitorViewModel`、`ShortcutsViewModel`、`TodosViewModel`、`QuickNotesViewModel`、`QuickTextViewModel` 管理状态与命令。
-- 六个 WPF 视图分别位于 `Controls/*ModuleView.xaml`；主窗口只组合控件并按 `DashboardModuleIds` 管理显示、顺序和高度。
+- 七个可见模块分别由 `TimeWeatherViewModel`、`HardwareMonitorViewModel`、`ShortcutsViewModel`、`TodosViewModel`、`QuickNotesViewModel`、`QuickTextViewModel` 和 `ModelRadarViewModel` 管理状态与命令；其中稳定模块 ID 为 `ModelRadar`。
+- 七个 WPF 视图分别位于 `Controls/*ModuleView.xaml`；主窗口只组合控件并按 `DashboardModuleIds` 管理显示、顺序和高度。全新安装默认启用时间天气、硬件监视、待办事项和快速便签，默认关闭快捷方式、快捷文本和模型雷达；升级用户保留已保存的模块开关与顺序。缺失 `ModelRadar` 的旧布局只在当前模块列表末尾追加关闭项，不改变既有模块顺序。用户仍可在现有模块管理中启用、关闭和自由排序。
 - 快捷方式鼠标排序、文件拖放和添加弹层状态归 `ShortcutsModuleView`／`ShortcutsViewModel`；主窗口 code-behind 不处理模块内部输入。
 - 待办完成圆圈由 `TodosModuleView` 的显式鼠标处理器调用 `TodosViewModel.ToggleTodoCommand`，不使用脱离可视树后无法解析祖先绑定的 `MouseBinding`。
 - 便签编辑器的主操作文案为「完成」；窗口关闭必须先完成保存清理，保存失败时保持编辑器打开，成功后再调度到 Dispatcher 下一轮执行真正关闭，不得在 `OnClosing` 调用栈内递归 `Close()`。
@@ -170,6 +170,12 @@ UniDesk 是运行于 Windows 11 的桌面侧边助手应用，以悬浮右侧面
 - 可重入刷新使用 generation／身份校验，仅当前请求可以写回绑定状态或结束加载指示，迟到请求只做清理
 - WeatherService 刷新、数据导入/导出在收到取消后仅做必要清理，目标是在 200ms 内停止后续 I/O 与 UI 更新
 
+#### 模型雷达网络与缓存
+- 模型雷达运行时只访问固定的 `https://modeldial.com/api/v1/radar/latest.json`，使用系统代理；不得抓取 HTML、使用 WebView 或依赖 `/index.json`、`/changes.json`、`/agent-profile.json`、`/data/reference-snapshots/latest.json` 等其它接口。
+- HTTP 客户端超时为 12 秒，发送 `UniDesk/<version>` User-Agent，响应体上限为 1 MiB；请求接受并响应 `CancellationToken`，不自动重试，也不得并发发起相同刷新请求。
+- 只接受 `modeldial.com` 的 HTTPS 请求和固定代码链接；外部重定向不得把请求带到其它域名。未知 JSON 字段忽略，未知主版本或关键结构不兼容必须返回 `SchemaError`，解析或请求失败不得使应用崩溃。
+- 缓存优先展示，后台刷新不得阻塞模块首次显示；模块关闭或应用退出必须取消在途请求并停止刷新调度。
+
 #### UI 线程与节流
 - Service 层不得直接操作 WPF 控件；仅返回模型或通过事件/回调通知 ViewModel
 - ViewModel 仅在最终需要更新绑定属性时切回 UI 线程，避免在 UI 线程执行 I/O 或复杂计算
@@ -204,8 +210,10 @@ UniDesk 是运行于 Windows 11 的桌面侧边助手应用，以悬浮右侧面
 - 应用数据根目录：`%LOCALAPPDATA%\UniDesk\`
 - 数据库：`UniDesk.db`
 - 天气缓存：`weather_cache.json`
+- 模型雷达缓存：`cache\modeldial-radar.json`（完整路径为 `%LOCALAPPDATA%\UniDesk\cache\modeldial-radar.json`）
 - 图标缓存：`icons\`
 - 日志目录：`logs\`
+- 模型雷达缓存是可重新下载的派生数据，不进入用户备份；备份仅保留模块开关和模块排序等 `ModuleSettings`，不写入榜单缓存。
 - `WeatherApiKey` 与 `ClipboardHistory.Content` 使用 Windows DPAPI `CurrentUser` 范围保护，存储前缀为 `dpapi:v1:`；服务层对调用方保持明文语义
 - `WeatherApiHost` 只接受 HTTPS、默认 443 端口且位于 `qweatherapi.com` 的开发者专属子域；禁止用户信息、路径、查询、片段、IP 地址和相似后缀域名，避免密钥被发送到非官方主机
 - 自定义 `WeatherApiHost` 与 `WeatherApiKey` 必须成对配置并在持久化前完成连通性验证；验证失败时保留上一组有效配置，内置配额凭据不得与用户自定义 Host 混用
@@ -256,9 +264,8 @@ UniDesk 是运行于 Windows 11 的桌面侧边助手应用，以悬浮右侧面
   - 最小化按钮：隐藏到托盘
 
 #### 卡片排列顺序（从上到下）
-1. 时钟天气区域（时间、日期、天气信息）
-2. 快捷启动区
-3. 待办区
+- 展开态严格按照 `DashboardModuleIds` 中已启用模块的用户顺序排列；旧用户未保存 `ModelRadar` 时，追加的关闭项不会改变现有顺序。
+- 新安装默认顺序仍为时间天气、硬件监视、快捷方式、待办事项、快速便签、快捷文本、模型雷达；首次展开只显示默认启用的时间天气、硬件监视、待办事项和快速便签，关闭项保留其模块管理顺序，启用后显示在用户选择的位置。
 
 #### UI 样式
 - **背景**：WPF 分层透明窗口与半透明主题画刷，透明度可调并真实透出桌面；不在分层窗口上叠加 DWM Mica/Acrylic 矩形底板
@@ -571,6 +578,7 @@ public class ShortcutItem
 | 窗口置顶 | Toggle | true | MainWindow 始终置顶 |
 | 面板透明度 | Slider | 85% | 范围：30%-100% |
 | 面板宽度 | Slider | 360px | 范围：320px-520px |
+| 模块启用与顺序 | ModuleSettings | 时间天气、硬件监视、待办事项、快速便签启用 | 全新安装默认关闭快捷方式、快捷文本和模型雷达；升级保留既有开关与顺序，缺失的 `ModelRadar` 以关闭状态追加到列表末尾 |
 | 全局热键 | HotkeyBox | Ctrl+Alt+Space | 呼出/隐藏 MainWindow（可配置并持久化） |
 | 天气 API Key | TextBox | 空 | 和风天气 API Key |
 | 天气 API Host | TextBox | 空 | 与 API Key 配套的 `*.qweatherapi.com` 专属主机 |
@@ -589,6 +597,7 @@ Key: "TopMost" → Value: "true" | "false"
 Key: "WindowOpacity" → Value: "0.85"
 Key: "PanelWidth" → Value: "360"
 Key: "WidgetLayout" → Value: "{...json...}"
+Key: "ModuleSettings" → Value: "{...json...}"（包含模块 ID、启用状态和顺序；备份包含此设置，不包含模型雷达缓存）
 Key: "Hotkey" → Value: "Ctrl+Alt+Space"
 Key: "WeatherApiKey" → Value: "dpapi:v1:..."（Windows 当前用户范围）
 Key: "WeatherApiHost" → Value: "abc.example.qweatherapi.com"（仅允许官方 HTTPS 专属主机）
@@ -695,6 +704,35 @@ private void Window_LocationChanged(object sender, EventArgs e)
         Left = workArea.Left;
 }
 ```
+
+---
+
+### 7. 模型雷达模块 (ModelRadar)
+
+#### 定位与职责
+- `ModelRadar` 是与时钟天气、硬件监视、快捷方式、待办事项、快速便签和快捷文本平级的只读决策参考模块。它只展示 ModelDial 官方公开评测数据，不执行模型调用、不进行本地评测，也不修改任何模型工具配置。
+- 模块由 `ModelRadarService`、`ModelRadarViewModel` 和 `ModelRadarModuleView` 组成：Service 负责固定端点的 HTTP、JSON 校验、决策选择、四维排序和文件缓存；ViewModel 负责启用／禁用、刷新、取消、状态和迟到结果抑制；View 只负责 WPF 展示与固定链接事件转发。
+
+#### 数据源与兼容性
+- 运行时唯一数据源为 `https://modeldial.com/api/v1/radar/latest.json`。不得抓取 ModelDial HTML、使用 WebView，或把 `/index.json`、`/changes.json`、`/agent-profile.json`、`/data/reference-snapshots/latest.json` 作为 MVP 运行时依赖。
+- 必须验证 `schemaVersion` 属于支持的 `1.x`，发布时间可解析，`overallBatch`／排名数组结构有效，排名为正整数，模型 ID、完整模型名称和推理强度非空；可用得分必须在 0-100。未知字段忽略，未知主版本、关键字段缺失、结构无效或发布时间不可解析均进入 `SchemaError`。耗时、参考费用和能力分数是可选值，缺失显示 `--`，不得转换成零。
+- 在线响应成功后记录批次和发布时间；界面必须区分最新在线结果、离线缓存和过期数据。缓存损坏只忽略并记录，不自动删除；成功响应先写同目录临时文件，再以原子替换更新正式缓存。
+
+#### 排名与决策规则
+- `overallRankings` 的综合榜严格保持发布方顺序，首项作为「综合最高」卡，展示完整模型名称、推理强度、综合得分及可用的后端／前端／知识分数。
+- 后端、前端和知识榜均从综合批次配置派生：分别按 `backendScore`、`frontendScore`、`knowledgeScore` 降序；缺失值排在末尾；同分按原综合排名稳定排序。界面明确标注「按后端得分」「按前端得分」「按知识得分」，不得把派生顺序称为接口提供的独立官方名次。每类最多展示 Top 5，每行显示位置、完整配置（模型名称与推理强度不可拆开）、对应得分和官方 `decisionTags`。
+- 「性价比推荐」在综合可用时只从 `overallRankings`、在 Pending 后端回退时只从 `rankings`，均按发布方顺序选择首个 `decisionTags` 包含精确 `value` 的配置；不得使用 `score / cost`、价格、厂商或其它公式重算，也不得用 `lowest_cost` 冒充。没有官方 `value` 标签时显示「本批次暂无性价比推荐」；参考费用必须标注为评测参考费用，不是用户实际账单。
+- 当 `overallBatch` 尚未发布或 `overallRankings` 为空，状态为 `Pending`，显示「综合结果暂未完成」，禁用综合、前端、知识标签，自动切换到 `rankings` 的后端 Top 5；不得把缺失能力按零分计算综合得分。此时仍只依据官方数组中的 `value` 标签决定推荐，不自行推导推荐。
+
+#### 界面与归属
+- 顶部使用通用雷达风格图标，不使用 ModelDial Logo 或任何模型厂商 Logo；标题字号和样式与相邻模块一致，标题区只保留「模型雷达」和手动刷新按钮，不重复显示最新状态、批次或发布时间。两张纵向紧凑决策卡的主文案固定为「综合最高」和「性价比推荐」；模型名称与加粗的推理强度在同一配置行相邻展示。
+- 排名行显示当前位置、完整模型名称、推理强度、当前分类得分和非空的官方 `decisionTags`；当前配置没有官方标签时不渲染占位行，也不显示误导性的 `--`。ToolTip 提供四项分数、耗时、评测参考费用和路由；这些指标的缺失值统一显示 `--`。
+- 底部显示 `ModelDial Radar`、`CC BY 4.0`、数据发布时间、固定的完整榜单链接 `https://modeldial.com/radar`，并显示「公共评测参考，实际表现可能因账号、路由和端点而异。」许可说明链接固定为 `https://modeldial.com/data-license`。不得打开 JSON 返回的任意 URL。
+
+#### 缓存、刷新与生命周期
+- 缓存文件为 `%LOCALAPPDATA%\UniDesk\cache\modeldial-radar.json`。启用模块时先读缓存，有缓存立即展示；缓存超过 6 小时后后台刷新，启用期间最多每 6 小时检查一次；用户可手动刷新。手动刷新期间禁用刷新按钮，并保证同一时间最多一个请求。
+- UI 状态仅允许 `Loading`、`Fresh`、`Stale`、`Unavailable`、`Pending` 和 `SchemaError`。请求失败但有缓存时继续展示并明确标记「离线缓存」或「数据可能已过期」；无缓存时显示友好错误和重试按钮；SchemaError 不得回退为未经验证的数据。
+- 模块未启用时必须零网络请求、零刷新 Timer；启用后由 ViewModel 持有刷新取消源。禁用模块或应用退出时立即停止刷新并取消在途请求，`Dispose()` 解除事件并释放取消源。每次刷新递增 generation，只有当前 generation 可以写回绑定状态，迟到结果只清理资源，不得覆盖新结果。
 
 ---
 

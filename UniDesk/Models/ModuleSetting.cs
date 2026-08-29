@@ -24,6 +24,7 @@ public static class DashboardModuleIds
     public const string Todos = "Todos";
     public const string QuickNotes = "QuickNotes";
     public const string QuickText = "QuickText";
+    public const string ModelRadar = "ModelRadar";
 }
 
 public static class DashboardModuleCatalog
@@ -50,7 +51,7 @@ public static class DashboardModuleCatalog
         {
             ModuleId = DashboardModuleIds.Shortcuts,
             DisplayName = "快捷方式",
-            IsEnabled = true,
+            IsEnabled = false,
             SortOrder = 2
         },
         new()
@@ -71,8 +72,15 @@ public static class DashboardModuleCatalog
         {
             ModuleId = DashboardModuleIds.QuickText,
             DisplayName = "快捷文本",
-            IsEnabled = true,
+            IsEnabled = false,
             SortOrder = 5
+        },
+        new()
+        {
+            ModuleId = DashboardModuleIds.ModelRadar,
+            DisplayName = "模型雷达",
+            IsEnabled = false,
+            SortOrder = 6
         }
     ];
 
@@ -87,70 +95,45 @@ public static class DashboardModuleCatalog
 
     public static List<ModuleSetting> Normalize(IEnumerable<ModuleSetting>? modules)
     {
-        var incoming = modules?
-            .Where(module => !string.IsNullOrWhiteSpace(module.ModuleId))
-            .GroupBy(module => module.ModuleId.Trim(), StringComparer.Ordinal)
-            .ToDictionary(group => group.Key, group => group.First(), StringComparer.Ordinal)
-            ?? new Dictionary<string, ModuleSetting>(StringComparer.Ordinal);
+        var incoming = (modules ?? [])
+            .Select((module, index) => new { Module = module, Index = index })
+            .Where(item => !string.IsNullOrWhiteSpace(item.Module.ModuleId))
+            .OrderBy(item => item.Module.SortOrder)
+            .ThenBy(item => item.Index)
+            .GroupBy(item => item.Module.ModuleId.Trim(), StringComparer.Ordinal)
+            .Select(group => group.First().Module)
+            .ToList();
 
-        var normalized = new List<ModuleSetting>();
-        foreach (var defaultModule in DefaultModules)
+        var normalized = new List<ModuleSetting>(DefaultModules.Count + incoming.Count);
+        foreach (var module in incoming)
         {
-            if (incoming.TryGetValue(defaultModule.ModuleId, out var module))
-            {
-                normalized.Add(new ModuleSetting
-                {
-                    ModuleId = defaultModule.ModuleId,
-                    DisplayName = defaultModule.DisplayName,
-                    IsEnabled = module.IsEnabled,
-                    SortOrder = module.SortOrder
-                });
-            }
-            else
-            {
-                normalized.Add(defaultModule.Clone());
-            }
-        }
-
-        var nextOrder = normalized.Count;
-        foreach (var unknown in incoming.Values
-                     .Where(module => !KnownModuleIds.Contains(module.ModuleId))
-                     .OrderBy(module => module.SortOrder))
-        {
+            var moduleId = module.ModuleId.Trim();
+            var defaultModule = DefaultModules.FirstOrDefault(candidate => candidate.ModuleId == moduleId);
             normalized.Add(new ModuleSetting
             {
-                ModuleId = unknown.ModuleId.Trim(),
-                DisplayName = string.IsNullOrWhiteSpace(unknown.DisplayName)
-                    ? unknown.ModuleId.Trim()
-                    : unknown.DisplayName.Trim(),
-                IsEnabled = unknown.IsEnabled,
-                SortOrder = nextOrder++
+                ModuleId = moduleId,
+                DisplayName = defaultModule?.DisplayName ??
+                              (string.IsNullOrWhiteSpace(module.DisplayName)
+                                  ? moduleId
+                                  : module.DisplayName.Trim()),
+                IsEnabled = module.IsEnabled,
+                SortOrder = normalized.Count
             });
         }
 
-        var ordered = normalized
-            .OrderBy(module => module.SortOrder)
-            .ThenBy(module => GetDefaultOrder(module.ModuleId))
-            .ToList();
-
-        for (var i = 0; i < ordered.Count; i++)
+        var existingIds = normalized
+            .Select(module => module.ModuleId)
+            .ToHashSet(StringComparer.Ordinal);
+        foreach (var defaultModule in DefaultModules)
         {
-            ordered[i].SortOrder = i;
-        }
-
-        return ordered;
-    }
-
-    private static int GetDefaultOrder(string moduleId)
-    {
-        for (var i = 0; i < DefaultModules.Count; i++)
-        {
-            if (DefaultModules[i].ModuleId == moduleId)
+            if (!existingIds.Contains(defaultModule.ModuleId))
             {
-                return i;
+                var missing = defaultModule.Clone();
+                missing.SortOrder = normalized.Count;
+                normalized.Add(missing);
             }
         }
 
-        return int.MaxValue;
+        return normalized;
     }
 }

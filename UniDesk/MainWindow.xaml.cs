@@ -303,6 +303,7 @@ public partial class MainWindow : Window
         DashboardModuleIds.Todos => TodosModule,
         DashboardModuleIds.QuickNotes => QuickNotesModule,
         DashboardModuleIds.QuickText => QuickTextModule,
+        DashboardModuleIds.ModelRadar => ModelRadarModule,
         _ => null
     };
 
@@ -314,6 +315,7 @@ public partial class MainWindow : Window
         yield return TodosModule;
         yield return QuickNotesModule;
         yield return QuickTextModule;
+        yield return ModelRadarModule;
     }
 
     private void WindowContainer_OnSizeChanged(object sender, SizeChangedEventArgs e) =>

@@ -1,6 +1,6 @@
 # UniDesk Privacy Policy
 
-Last updated: 2026-08-02
+Last updated: 2026-08-30
 
 This program will not transfer any information to other networked systems unless specifically requested by the user or the person installing or operating it.
 
@@ -8,7 +8,7 @@ UniDesk is a local-first Windows desktop application. It has no user account sys
 
 ## Information stored locally
 
-UniDesk stores settings, shortcuts, todos, quick notes, quick text, clipboard history, cached weather, icon cache, and application logs under `%LOCALAPPDATA%\UniDesk`. Clipboard history is enabled by default for fresh installations; upgrades preserve the existing choice. Its content stays on this device, and users can disable it under **Settings > Desktop Experience** or clear it under **Settings > Data & Backup**. Hardware-component maintenance writes a local diagnostic log under `%ProgramData%\UniDesk\logs`.
+UniDesk stores settings, shortcuts, todos, quick notes, quick text, clipboard history, cached weather, Model Radar cache, icon cache, and application logs under `%LOCALAPPDATA%\UniDesk`. Model Radar public evaluation data is cached at `%LOCALAPPDATA%\UniDesk\cache\modeldial-radar.json` and is excluded from user backups because it can be downloaded again. Clipboard history is enabled by default for fresh installations; upgrades preserve the existing choice. Its content stays on this device, and users can disable it under **Settings > Desktop Experience** or clear it under **Settings > Data & Backup**. Hardware-component maintenance writes a local diagnostic log under `%ProgramData%\UniDesk\logs`.
 
 Weather API credentials and clipboard-history content are protected at rest with Windows Data Protection API for the current Windows user. Clipboard sensitive-content filtering reduces accidental collection but cannot guarantee that every secret is detected. Users handling sensitive content should disable clipboard history or clear it after use.
 
@@ -25,6 +25,10 @@ QWeather processes these requests under the [QWeather Privacy Policy](https://ww
 ### Windows location
 
 Automatic location is enabled by default for fresh installations and can be disabled in settings; upgrades do not overwrite the existing choice. Windows controls location permission and may process location according to the [Microsoft Privacy Statement](https://www.microsoft.com/en-us/privacy/privacystatement). UniDesk cannot bypass or enable Windows location permission. Enabling automatic location clears the manually entered city; manually entering a city disables automatic location.
+
+### Model Radar
+
+Model Radar is disabled by default for fresh installations and upgrades. While the user has enabled the module, UniDesk reads its local cache first and accesses only the fixed ModelDial HTTPS endpoint `https://modeldial.com/api/v1/radar/latest.json` when a refresh is due or the user manually refreshes. The request uses the system proxy and identifies the application version; it does not include clipboard history, notes, todos, shortcuts, weather location, hardware readings, model-tool configuration, or model prompts. Disabling the module stops scheduled refreshes and cancels any request in progress. UniDesk does not run models or perform local evaluation. The downloaded public evaluation data is provided under [CC BY 4.0](https://modeldial.com/data-license), and leaderboard links open only after a user action.
 
 ### Update checks
 
@@ -46,7 +50,7 @@ Privacy questions and defect reports can be submitted through [GitHub Issues](ht
 
 # UniDesk 隐私政策
 
-最后更新：2026-08-02
+最后更新：2026-08-30
 
 除非用户或安装、运行本程序的人明确请求，否则本程序不会向其他联网系统传输任何信息。
 
@@ -54,7 +58,7 @@ UniDesk 是一款本地优先的 Windows 桌面应用，不提供用户账户、
 
 ## 本地存储的信息
 
-UniDesk 将设置、快捷方式、待办事项、快速便签、快捷文本、剪贴板历史、天气缓存、图标缓存和应用日志存储在 `%LOCALAPPDATA%\UniDesk`。全新安装默认启用剪贴板历史，覆盖安装和升级保留原有选择；历史正文只保存在本机，用户可在「设置 > 桌面体验」中关闭，并在「设置 > 数据与备份」中清理。硬件组件维护日志存储在 `%ProgramData%\UniDesk\logs`。
+UniDesk 将设置、快捷方式、待办事项、快速便签、快捷文本、剪贴板历史、天气缓存、模型雷达缓存、图标缓存和应用日志存储在 `%LOCALAPPDATA%\UniDesk`。模型雷达公共评测数据缓存位于 `%LOCALAPPDATA%\UniDesk\cache\modeldial-radar.json`，属于可重新下载的数据，不进入用户备份。全新安装默认启用剪贴板历史，覆盖安装和升级保留原有选择；历史正文只保存在本机，用户可在「设置 > 桌面体验」中关闭，并在「设置 > 数据与备份」中清理。硬件组件维护日志存储在 `%ProgramData%\UniDesk\logs`。
 
 天气 API 凭据和剪贴板历史正文使用 Windows 当前用户范围的 DPAPI 保护。剪贴板敏感内容过滤只能降低误存风险，无法保证识别全部秘密；处理敏感内容时应关闭剪贴板历史或及时清理。
 
@@ -71,6 +75,10 @@ UniDesk 将设置、快捷方式、待办事项、快速便签、快捷文本、
 ### Windows 定位
 
 全新安装默认开启自动定位，用户可随时在设置中关闭；覆盖安装和升级不会改写原有选择。定位权限由 Windows 管理，Windows 可能按照 [Microsoft 隐私声明](https://www.microsoft.com/en-us/privacy/privacystatement)处理位置，UniDesk 不能自行绕过或开启系统定位权限。开启自动定位会清除手动城市；手动输入城市会关闭自动定位。
+
+### 模型雷达
+
+模型雷达默认关闭，包括全新安装和覆盖升级。只有用户启用模块后，UniDesk 才会先读取本地缓存，并在到期刷新或用户手动刷新时访问固定的 ModelDial HTTPS 接口 `https://modeldial.com/api/v1/radar/latest.json`。请求使用系统代理并标识应用版本，不会附带剪贴板历史、便签、待办事项、快捷方式、天气位置、硬件读数、模型工具配置或模型提示词。关闭模块会停止计划刷新并取消在途请求。UniDesk 不调用模型，也不执行本地评测。下载的公共评测数据依据 [CC BY 4.0](https://modeldial.com/data-license)提供，完整榜单链接只在用户主动点击后打开。
 
 ### 更新检查
 

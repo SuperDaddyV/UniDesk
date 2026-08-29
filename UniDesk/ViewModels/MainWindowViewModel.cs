@@ -88,6 +88,8 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
 
     public TimeWeatherViewModel TimeWeather { get; }
 
+    public ModelRadarViewModel ModelRadar { get; }
+
     public SearchViewModel Search { get; }
 
     public event EventHandler? TodoSearchResultActivated;
@@ -114,6 +116,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         IHardwareMonitoringMaintenanceService hardwareMonitoringMaintenanceService,
         ISystemMetricsMonitor systemMetricsMonitor,
         IClipboardMonitorService clipboardMonitorService,
+        IModelRadarService modelRadarService,
         ISearchService searchService)
     {
         _notificationService = notificationService;
@@ -160,6 +163,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
             weatherService,
             notificationService,
             localizationService);
+        ModelRadar = new ModelRadarViewModel(modelRadarService, localizationService);
         Search = new SearchViewModel(searchService, localizationService, ActivateSearchResultAsync);
         LoadSettings();
         _layoutService.LoadOrGetDefault();
@@ -387,6 +391,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
     {
         HardwareMonitor.IsEnabled = IsPanelCollapsed || IsModuleEnabled(DashboardModuleIds.HardwareMonitor);
         TimeWeather.IsEnabled = IsPanelCollapsed || IsModuleEnabled(DashboardModuleIds.TimeWeather);
+        _ = ModelRadar.SetEnabledAsync(IsModuleEnabled(DashboardModuleIds.ModelRadar));
         if (TimeWeather.IsEnabled && !TimeWeather.HasWeatherData)
         {
             _ = TimeWeather.InitializeAsync();
@@ -602,5 +607,6 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         QuickText.Dispose();
         HardwareMonitor.Dispose();
         TimeWeather.Dispose();
+        ModelRadar.Dispose();
     }
 }
