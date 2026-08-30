@@ -76,7 +76,7 @@ if ($sourceManifest.globalJsonSha256 -ne $globalJsonSha256) {
 }
 
 $expectedPackageLocks = @(Get-ChildItem -LiteralPath $projectRoot -Filter '*.csproj' -File -Recurse |
-    Where-Object { $_.FullName -notmatch '[\/](?:artifacts|bin|obj|publish)[\/]' } |
+    Where-Object { $_.FullName -notmatch '[\\/](?:artifacts|bin|obj|publish)[\\/]' } |
     ForEach-Object {
         $lockPath = Join-Path $_.DirectoryName 'packages.lock.json'
         if (-not (Test-Path -LiteralPath $lockPath -PathType Leaf)) {

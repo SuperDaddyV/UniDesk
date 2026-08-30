@@ -90,6 +90,10 @@ public class ReleasePipelineTests
         Assert.Contains("-isnot [bool]", script, StringComparison.Ordinal);
         Assert.Contains("rev-parse HEAD", script, StringComparison.Ordinal);
         Assert.Contains("status --porcelain --untracked-files=all", script, StringComparison.Ordinal);
+        Assert.Contains(
+            "'[\\\\/](?:artifacts|bin|obj|publish)[\\\\/]'",
+            script,
+            StringComparison.Ordinal);
         Assert.Contains("sourceRevision -ne $ExpectedSourceRevision", script, StringComparison.Ordinal);
         Assert.Contains("globalJsonSha256", script, StringComparison.Ordinal);
         Assert.Contains("packageLocks", script, StringComparison.Ordinal);
