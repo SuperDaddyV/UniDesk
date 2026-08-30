@@ -102,9 +102,7 @@ UniDesk 适合希望桌面保持清爽，但又想快速查看信息、打开常
 
 ## 📦 安装与使用
 
-从 [GitHub Releases](https://github.com/SuperDaddyV/UniDesk/releases/latest) 下载最新安装包并运行。
-
-仓库源码正在准备 `2.1.0`；可信签名和发布门禁完成前，请以 Releases 页的 `Latest` 标记为准。尚未公开发布的候选包文件名为：
+从 [v2.1.0-rc.2 最新功能预览版](https://github.com/SuperDaddyV/UniDesk/releases/tag/v2.1.0-rc.2) 下载最新功能预览安装包。该未签名预览版包含「模型雷达」和最新模块默认状态，首次运行可能触发 Windows SmartScreen。当前稳定版仍请使用 [v2.0.0 稳定版（Latest）](https://github.com/SuperDaddyV/UniDesk/releases/latest)。RC2 安装包文件名为：
 
 ```powershell
 UniDesk_Setup_2.1.0.exe
