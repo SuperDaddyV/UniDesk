@@ -56,7 +56,7 @@ UniDesk es una barra lateral ligera, personalizable y limpia para el escritorio 
 
 - Primero muestra las tarjetas Líder general y Recomendación de valor; después ofrece listas de referencia Top 5 de General / Backend / Frontend / Conocimiento.
 - Los datos proceden de evaluaciones públicas de [ModelDial Radar](https://modeldial.com/radar) ([CC BY 4.0](https://modeldial.com/data-license)). Recomendación de valor usa únicamente la etiqueta oficial `value` del publicador; UniDesk no recalcula puntuaciones ni costes.
-- Está desactivado de forma predeterminada y no realiza solicitudes de red mientras está desactivado. Al activarlo, primero lee la caché local y solo actualiza desde `https://modeldial.com/api/v1/radar/latest.json`.
+- Está desactivado de forma predeterminada y no realiza solicitudes de red mientras está desactivado. Mientras UniDesk se ejecuta y el módulo está activado, primero lee la caché local, comprueba actualizaciones como máximo una vez cada seis horas desde `https://modeldial.com/api/v1/radar/latest.json` y también permite actualizar manualmente.
 - Es una referencia de decisión de solo lectura: UniDesk no ejecuta modelos, no realiza evaluaciones locales ni modifica la configuración de las herramientas de modelos. Los datos públicos no implican colaboración ni respaldo; el rendimiento real puede variar según la cuenta, la ruta y el endpoint.
 
 ### Gestión de módulos
