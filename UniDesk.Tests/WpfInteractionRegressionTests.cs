@@ -606,6 +606,7 @@ public class WpfInteractionRegressionTests
         Assert.Contains("SettingsViewModel.Restore.ApplyImport", restoreMethod.Value, StringComparison.Ordinal);
         Assert.Contains("SettingsViewModel.Restore.RefreshAfterCommit", restoreMethod.Value, StringComparison.Ordinal);
         Assert.Contains("Settings.RestoreAppliedRefreshFailed", restoreMethod.Value, StringComparison.Ordinal);
+        Assert.Contains("await _settingsService.ReloadCacheAsync()", restoreMethod.Value, StringComparison.Ordinal);
         Assert.True(
             restoreMethod.Value.IndexOf("ApplyImportAsync", StringComparison.Ordinal) <
             restoreMethod.Value.IndexOf("RefreshAfterCommit", StringComparison.Ordinal));

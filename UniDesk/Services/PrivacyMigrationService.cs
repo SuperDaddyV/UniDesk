@@ -54,6 +54,7 @@ public sealed class PrivacyMigrationService : IPrivacyMigrationService
         });
 
         _settingsService.InvalidateCache();
+        await _settingsService.ReloadCacheAsync();
     }
 
     private sealed record ClipboardRow(int Id, string Content);

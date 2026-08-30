@@ -1,8 +1,27 @@
 # UniDesk v2.1.0 最终发布审核
 
-审核日期：2026-08-30（2026-08-11 安装兼容修订；2026-08-30 模型雷达候选与公开下载文档修订）
+审核日期：2026-08-31（2026-08-11 安装兼容修订；2026-08-30 模型雷达候选与公开下载文档修订；2026-08-31 最终修复与本地工程验收）
 审核范围：`C:\Users\Administrator\Documents\UniDesk` 当前工作区
-审核结论：2026-08-11 的安装兼容证据继续作为既有安装器边界的历史证据，但不覆盖 2026-08-30 新增的模型雷达、模块默认状态和新候选载荷。当前正式 `v2.1.0` 仍为 **NO-GO**；必须先生成新候选、完成新增人工矩阵，并从最终干净提交通过签名发布门禁。
+审核结论：本轮代码修复与本地工程验收为 **PASS**，公开发布仍为 **NO-GO**。项目所有者已明确接受 `v2.1.0` 以 `Authenticode: NotSigned` 形式正式发布，因此 SignPath 不再是该版本的硬门槛；但当前修复尚未形成干净提交，GitHub CI 尚未覆盖这些改动，也尚无从最终干净提交生成的新候选和完整人工矩阵。既有 RC 不得覆盖或改名。
+
+## 2026-08-31 最终修复与验收
+
+- 已修复备份恢复语义校验、安装器目录／祖先链／ACL 子项枚举 fail-open 及“已存在目标被误判为缺失”、硬件 IPC 异常帧耗尽接收循环、LibreHardwareMonitor AMD GPU 原生更新导致服务进程崩溃、硬件维护取消状态、设置同步数据库读取与同 key 写入顺序、天气刷新取消源竞态、待办完成状态读改写竞态、快捷方式图标原子写入／所有权清理、未签名门禁信任调用方清单，以及测试日志写入真实用户目录的问题。
+- TDD 过程包含针对非法备份、四个异常 IPC 客户端、目录枚举错误、设置写入顺序、天气迟到完成、原子待办更新、图标原子发布／内容所有权、修复进程取消语义、未签名门禁和日志隔离的回归测试；完整测试现为 `588/588` 通过，`0` 跳过。五个关键并发／竞态用例连续运行 `10/10` 轮，每轮 `5/5` 通过。
+- 使用仓库钉住的 .NET SDK `10.0.302` 完成锁定还原、Release 构建和依赖漏洞查询：构建 `0` 警告、`0` 错误，未发现 NuGet 直接或传递依赖已知漏洞；版本一致性、PowerShell AST 与 `git diff --check` 通过。
+- `dotnet format --verify-no-changes` 仍因仓库既有空格／换行格式债务失败，首批结果包含本轮未修改的 `AssemblyInfo.cs` 和 `NoteService.cs`；它不是当前 CI 或项目发布门禁，本轮未批量格式化无关代码。
+- 当前脏工作区完成了含载荷指纹的端到端预验证出包：`artifacts\prevalidation\v2.1.0-final-fingerprint-20260831-014010\installer-split\UniDesk_Setup_2.1.0.exe`，大小 `124565644` 字节，SHA-256 `F4B7791F94A54CA55F16AEB1345C856938E4C489659514D20104550C72CB6BE5`，产品版本 `2.1.0`，安装包和八个一方 PE 均为 `Authenticode: NotSigned`，载荷 PDB 数量为 `0`。Inno Setup 对单个版本字段存在 64 字符上限，首次实编译暴露完整哈希被截断；修订后将 `release-source.json` 的 64 位 SHA-256 拆分到 `FileDescription` 与 `LegalCopyright` 两个 32 位片段，去除版本资源尾部填充后可精确重组为 `f62e4ddf594e446e66def2eacbf7985fa3afd5c51c5611ff8d67cea907238c47`。该载荷源清单仍为 schema `3`、SDK `10.0.302`、提交 `4e090edcfae04f1c25b9197738658212ed245fd6`、`isDirty=true`；正式门禁按预期拒绝，故该包仅证明完整构建与指纹链可用，不是正式候选。
+- 新增 `scripts/Test-UnsignedReleaseReadiness.ps1`，只接受精确版本 `2.1.0`，并验证 40 位源码提交、严格布尔 `isDirty=false`、当前 `HEAD`、包含未跟踪文件的干净工作区、版本／SDK／`global.json`／锁文件、完整载荷、安装包绑定的源清单 SHA-256 指纹、无 PDB、安装器及全部一方 PE 为 `NotSigned`、PawnIO 固定哈希与上游有效签名；回归确认非布尔清单状态、非当前提交和脏／未跟踪工作区都会在进入制品信任前被拒绝。
+- GitHub 只读核验时，公开仓库 `main` 与本地基线同为 `4e090edcfae04f1c25b9197738658212ed245fd6`，该提交的 CI 运行 `33310598438` 成功；但它不包含本轮未提交修复。默认分支要求严格的 `build-and-test`、管理员同样受保护、禁止强推与删除并要求对话解决；开放 PR、Issue、Dependabot 告警和 Secret Scanning 告警均为 `0`。公开 Release 仍是 `v2.1.0-rc.2`／`v2.1.0-rc.1` 预发布和 `v2.0.0` 最新稳定版，尚无 `v2.1.0` 正式 Release。Code Scanning 返回“no analysis found”，且未发现仓库级 ruleset／tag protection，作为后续治理增强项记录；本轮没有修改 `.github` 或 GitHub 状态。
+- Windows 事件日志曾记录 LibreHardwareMonitor AMD GPU 原生路径的服务进程崩溃。修订后的硬件服务明确跳过顶层及嵌套 `HardwareType.GpuAmd` 的 LibreHardwareMonitor `Update()`，保留 CPU、主板、NVIDIA 和 Intel 更新，并由主程序继续使用 AMD ADL／Windows GPU Engine；策略回归已锁定只隔离 AMD GPU。当前修订源码在受影响的 RX 9060 XT 设备上完成 `300/300` 次、`608` 秒连续采样，持续输出 `64` 项非 AMD LibreHardwareMonitor 传感器，AMD ADL 同时读取到使用率和温度，且对应事件日志时间窗没有新的 `AccessViolationException`；该证据仍是提交前源码级验收，最终精确安装候选仍须重新执行 `H-01`。
+- 本机现有 `UniDeskHardwareService` 已重新处于 `LocalSystem／Automatic／Running`，`ImagePath` 为带双引号的 `C:\Program Files\Common Files\UniDesk\HardwareService\UniDesk.HardwareService.exe`；它仍是先前 RC2，而不是本轮最终候选，不能用该运行状态替代最终安装验收。
+
+## 2026-08-30 未签名正式版修订
+
+- 仅 `v2.1.0` 接受未签名正式发布；SignPath 工作流保留为后续首选能力，未运行或未配置不得表述为签名通过。
+- 正式候选必须由新增的未签名发布就绪门禁确认全部一方 PE 与安装包为 `NotSigned`，同时验证精确干净源码提交、版本、锁文件、完整载荷、无 PDB 和 SHA-256。
+- 发布说明必须明确 Windows SmartScreen／企业策略风险；用户最终确认前不得创建 `v2.1.0` tag 或 GitHub Release。
+- 本轮终审新增的发布阻断为：备份恢复缺少完整语义校验、安装器目录枚举 fail-open、硬件 IPC 异常帧可耗尽接收循环和 LibreHardwareMonitor AMD GPU 原生更新导致服务进程崩溃。上述问题均已形成针对性修复与回归；AMD GPU 隔离、UI 线程数据库同步执行及请求取消竞态仍必须在最终精确候选验收中单独记录，不得被自动测试通过掩盖。
 
 ## 2026-08-30 模型雷达候选修订
 
@@ -146,12 +165,11 @@
 
 以下事项不能由本地代码伪造为完成：
 
-1. SignPath Foundation 审批项目并提供组织、项目、策略和 Artifact Configuration 标识。
-2. 仓库管理员安装 SignPath GitHub App，并配置规定的 Secret 和 Variables。
-3. 当前全部预发布修改形成干净提交并推送；新的 GitHub CI 必须在该精确提交上通过。
-4. 在该提交上运行签名工作流，取得 `Authenticode=Valid` 的候选包和匹配的 `release-manifest.json`。
-5. 安装签名候选包并检查 `UniDeskHardwareService` 注册路径带双引号，完成剩余人工矩阵。
-6. 用户最终确认后，才能创建 `v2.1.0` tag 和 GitHub Release。
+1. 当前全部修复形成干净提交并推送；新的 GitHub CI 必须在该精确提交上通过。
+2. 从该提交重新生成未签名候选，取得 `Authenticode=NotSigned`、精确源码清单和匹配的 SHA-256 校验清单。
+3. 运行未签名发布就绪门禁，确认版本、依赖、完整载荷、无 PDB、源码提交和全部一方 PE 的未签名状态。
+4. 安装该精确候选并检查 `UniDeskHardwareService` 注册路径带双引号，完成剩余人工矩阵和本轮新增缺陷的针对性验收。
+5. 用户最终确认后，才能创建 `v2.1.0` tag 和 GitHub Release；Release 必须明确披露未签名与 SmartScreen／企业策略风险。
 
 当前 Windows 11 电脑已用 `97913bc` 候选完成上述安全迁移：弱 ACL 的 D 盘目录只承载普通权限主程序，`LocalSystem` 服务和提权维护载荷已固定到受保护的 `{commoncf}\UniDesk`，原有用户数据和开机启动路径得到保留。该结果确认当前机器的 I-09／I-13 覆盖安装路径通过，但不能替代 Windows 10 LTSC、标准账户、取消 UAC、安全软件拦截和卸载场景的独立人工门禁。
 

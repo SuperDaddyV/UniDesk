@@ -91,6 +91,7 @@ public class WeatherServiceTests : IDisposable
     [Fact]
     public async Task GetWeatherAsync_WhenHttpTransportFails_ShouldKeepNetworkUnavailableReason()
     {
+        using var testLogs = new TestLogDirectoryScope();
         var settings = new InMemorySettingsService();
         settings.SetValue("WeatherApiKey", "test-key");
         settings.SetValue("WeatherApiHost", "test.qweatherapi.com");
@@ -107,6 +108,49 @@ public class WeatherServiceTests : IDisposable
 
         Assert.Null(result);
         Assert.Equal(WeatherFailureReason.NetworkUnavailable, service.LastFailure);
+    }
+
+    [Fact]
+    public async Task RefreshWeatherAsync_WhenSupersededRefreshCompletes_DoesNotDisposeCurrentCancellationSource()
+    {
+        var settings = new InMemorySettingsService();
+        settings.SetValue("WeatherApiKey", "test-key");
+        settings.SetValue("WeatherApiHost", "test.qweatherapi.com");
+        var location = new OverlappingLocationProvider();
+        using var client = new HttpClient(new ThrowingHttpHandler());
+        using var apiClient = new QWeatherApiClient(settings, client);
+        using var service = new WeatherService(
+            settings,
+            new NoOpNotificationService(),
+            location,
+            apiClient,
+            _cachePath);
+
+        var firstRefresh = service.RefreshWeatherAsync(notifyUser: false);
+        await location.WaitForCallAsync(1);
+
+        using var secondExternalCancellation = new CancellationTokenSource();
+        var secondRefresh = service.RefreshWeatherAsync(
+            secondExternalCancellation.Token,
+            notifyUser: false);
+        await location.WaitForCallAsync(2);
+
+        await firstRefresh;
+
+        service.CancelRefresh();
+
+        try
+        {
+            var completed = await Task.WhenAny(
+                location.SecondCallCancelled.Task,
+                Task.Delay(TimeSpan.FromSeconds(2)));
+            Assert.Same(location.SecondCallCancelled.Task, completed);
+        }
+        finally
+        {
+            secondExternalCancellation.Cancel();
+            await secondRefresh;
+        }
     }
 
     private WeatherService CreateWeatherService(InMemorySettingsService settings)
@@ -155,6 +199,8 @@ public class WeatherServiceTests : IDisposable
 
         public void InvalidateCache() => _values.Clear();
 
+        public Task ReloadCacheAsync() => Task.CompletedTask;
+
         public Task FlushPendingSavesAsync() => Task.CompletedTask;
 
         public Task SaveBatchAsync(IReadOnlyDictionary<string, string?> values)
@@ -185,6 +231,53 @@ public class WeatherServiceTests : IDisposable
 
         public Task<string?> ResolveCityAsync(CancellationToken cancellationToken = default)
             => Task.FromResult<string?>(null);
+    }
+
+    private sealed class OverlappingLocationProvider : ILocationProvider
+    {
+        private readonly TaskCompletionSource<bool> _firstCallStarted =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource<bool> _secondCallStarted =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public readonly TaskCompletionSource<bool> SecondCallCancelled =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private int _callCount;
+
+        public LocationFailureReason LastFailure => LocationFailureReason.WindowsLocationUnavailable;
+
+        public Task<(double Latitude, double Longitude)?> GetLocationAsync(CancellationToken cancellationToken = default)
+            => Task.FromResult<(double, double)?>(null);
+
+        public Task<string?> GetCityByCoordinatesAsync(double latitude, double longitude, CancellationToken cancellationToken = default)
+            => Task.FromResult<string?>(null);
+
+        public async Task<string?> ResolveCityAsync(CancellationToken cancellationToken = default)
+        {
+            var call = Interlocked.Increment(ref _callCount);
+            if (call == 1)
+            {
+                _firstCallStarted.TrySetResult(true);
+            }
+            else if (call == 2)
+            {
+                _secondCallStarted.TrySetResult(true);
+            }
+
+            try
+            {
+                await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
+                return null;
+            }
+            catch (OperationCanceledException) when (call == 2)
+            {
+                SecondCallCancelled.TrySetResult(true);
+                throw;
+            }
+        }
+
+        public Task WaitForCallAsync(int call) =>
+            (call == 1 ? _firstCallStarted.Task : _secondCallStarted.Task)
+                .WaitAsync(TimeSpan.FromSeconds(2));
     }
 
     private sealed class ThrowingHttpHandler : HttpMessageHandler

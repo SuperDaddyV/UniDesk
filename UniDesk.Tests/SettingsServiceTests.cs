@@ -156,6 +156,96 @@ public class SettingsServiceTests
     }
 
     [Fact]
+    public async Task SetSettingAsync_AfterQueuedWrite_ShouldWinDeterministically()
+    {
+        var databaseService = new OrderedWriteDatabaseService();
+        var settingsService = new SettingsService(databaseService);
+
+        settingsService.SetValue("Theme", "queued");
+        await databaseService.FirstWriteStarted.Task.WaitAsync(TimeSpan.FromSeconds(2));
+
+        var directWrite = settingsService.SetSettingAsync("Theme", "direct");
+        databaseService.AllowFirstWrite.TrySetResult();
+        await directWrite;
+        await settingsService.FlushPendingSavesAsync();
+
+        Assert.Equal("direct", databaseService.Values["Theme"]);
+        Assert.Equal("direct", settingsService.GetValue("Theme", string.Empty));
+        settingsService.Dispose();
+    }
+
+    [Fact]
+    public async Task QueuedWrite_AfterSetSettingAsync_ShouldWinDeterministically()
+    {
+        var databaseService = new OrderedWriteDatabaseService();
+        var settingsService = new SettingsService(databaseService);
+
+        var directWrite = settingsService.SetSettingAsync("Theme", "direct");
+        await databaseService.FirstWriteStarted.Task.WaitAsync(TimeSpan.FromSeconds(2));
+        settingsService.SetValue("Theme", "queued");
+        databaseService.AllowFirstWrite.TrySetResult();
+        await directWrite;
+        await settingsService.FlushPendingSavesAsync();
+
+        Assert.Equal("queued", databaseService.Values["Theme"]);
+        Assert.Equal("queued", settingsService.GetValue("Theme", string.Empty));
+        settingsService.Dispose();
+    }
+
+    [Fact]
+    public async Task InitializeAsync_ShouldPreloadAllSettingsForSynchronousReads()
+    {
+        var databaseService = new PreloadedDatabaseService
+        {
+            Values = new Dictionary<string, string?>
+            {
+                ["Theme"] = "Dark",
+                ["PanelWidth"] = "480"
+            }
+        };
+        var settingsService = new SettingsService(databaseService);
+        var callerThreadId = 0;
+        Task? initialization = null;
+        using var started = new ManualResetEventSlim();
+        var caller = new Thread(() =>
+        {
+            callerThreadId = Environment.CurrentManagedThreadId;
+            initialization = settingsService.InitializeAsync();
+            started.Set();
+        });
+
+        caller.Start();
+        Assert.True(started.Wait(TimeSpan.FromSeconds(2)));
+        await initialization!;
+        caller.Join();
+
+        Assert.NotEqual(callerThreadId, databaseService.InitializeThreadId);
+        Assert.Equal("Dark", settingsService.GetValue("Theme", string.Empty));
+        Assert.Equal(480, settingsService.GetSetting<int>("PanelWidth", 0));
+        Assert.Equal(0, databaseService.QuerySingleCallCount);
+
+        databaseService.Values["Theme"] = "Light";
+        var reloadCallerThreadId = 0;
+        Task? reload = null;
+        started.Reset();
+        var reloadCaller = new Thread(() =>
+        {
+            reloadCallerThreadId = Environment.CurrentManagedThreadId;
+            reload = settingsService.ReloadCacheAsync();
+            started.Set();
+        });
+        reloadCaller.Start();
+        Assert.True(started.Wait(TimeSpan.FromSeconds(2)));
+        await reload!;
+        reloadCaller.Join();
+
+        Assert.Equal("Light", settingsService.GetValue("Theme", string.Empty));
+        Assert.Equal(0, databaseService.QuerySingleCallCount);
+        Assert.NotEqual(reloadCallerThreadId, databaseService.QueryThreadId);
+        settingsService.Dispose();
+    }
+
+    [Fact]
     public async Task GetSetting_Generic_ShouldReturnIntValue()
     {
         var databaseService = GetDb();
@@ -383,6 +473,103 @@ public class SettingsServiceTests
             }
 
             return Task.FromResult<T?>(default);
+        }
+
+        public Task<T> ExecuteInTransactionAsync<T>(Func<IDatabaseSession, Task<T>> operation) =>
+            operation(this);
+    }
+
+    private sealed class OrderedWriteDatabaseService : IDatabaseService
+    {
+        private int _writeCount;
+
+        public ConcurrentDictionary<string, string?> Values { get; } = new();
+
+        public TaskCompletionSource FirstWriteStarted { get; } =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public TaskCompletionSource AllowFirstWrite { get; } =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public Task InitializeAsync() => Task.CompletedTask;
+
+        public async Task<int> ExecuteNonQueryAsync(string sql, params object?[] parameters)
+        {
+            if (Interlocked.Increment(ref _writeCount) == 1)
+            {
+                FirstWriteStarted.TrySetResult();
+                await AllowFirstWrite.Task;
+            }
+
+            var key = (string)parameters[0]!;
+            if (sql.StartsWith("DELETE FROM Settings", StringComparison.Ordinal))
+            {
+                Values.TryRemove(key, out _);
+            }
+            else
+            {
+                Values[key] = (string?)parameters[1];
+            }
+
+            return 1;
+        }
+
+        public Task<List<T>> QueryAsync<T>(
+            string sql,
+            Func<SqliteDataReader, T> map,
+            params object?[] parameters) => Task.FromResult(new List<T>());
+
+        public Task<T?> QuerySingleAsync<T>(
+            string sql,
+            Func<SqliteDataReader, T> map,
+            params object?[] parameters) => Task.FromResult<T?>(default);
+
+        public Task<T> ExecuteInTransactionAsync<T>(Func<IDatabaseSession, Task<T>> operation) =>
+            operation(this);
+    }
+
+    private sealed class PreloadedDatabaseService : IDatabaseService
+    {
+        private int _querySingleCallCount;
+
+        public Dictionary<string, string?> Values { get; set; } = new();
+        public int InitializeThreadId { get; private set; }
+        public int QueryThreadId { get; private set; }
+        public int QuerySingleCallCount => _querySingleCallCount;
+
+        public Task InitializeAsync()
+        {
+            InitializeThreadId = Environment.CurrentManagedThreadId;
+            return Task.CompletedTask;
+        }
+
+        public Task<int> ExecuteNonQueryAsync(string sql, params object?[] parameters) =>
+            Task.FromResult(1);
+
+        public Task<List<T>> QueryAsync<T>(
+            string sql,
+            Func<SqliteDataReader, T> map,
+            params object?[] parameters)
+        {
+            QueryThreadId = Environment.CurrentManagedThreadId;
+            if (typeof(T) == typeof(KeyValuePair<string, string?>))
+            {
+                var rows = Values
+                    .Select(pair => (T)(object)new KeyValuePair<string, string?>(pair.Key, pair.Value))
+                    .ToList();
+                return Task.FromResult(rows);
+            }
+
+            return Task.FromResult(new List<T>());
+        }
+
+        public Task<T?> QuerySingleAsync<T>(
+            string sql,
+            Func<SqliteDataReader, T> map,
+            params object?[] parameters)
+        {
+            Interlocked.Increment(ref _querySingleCallCount);
+            throw new InvalidOperationException("同步读取不应访问 SQLite 查询单行接口");
         }
 
         public Task<T> ExecuteInTransactionAsync<T>(Func<IDatabaseSession, Task<T>> operation) =>

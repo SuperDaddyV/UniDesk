@@ -60,6 +60,67 @@ public class SystemMetricsServiceTests
     }
 
     [Fact]
+    public void GpuMetricsReader_ShouldKeepCompleteAmdMetricsWithoutLibreFallback()
+    {
+        var gpuEngineReads = 0;
+        var libreReads = 0;
+        using var reader = new GpuMetricsReader(
+            () => GpuMetrics.Empty,
+            () => new GpuMetrics(
+                42,
+                57,
+                "AMD Radeon",
+                20,
+                true,
+                usageSource: "AMD ADL",
+                usageDeviceId: "pci:1002:01:00:0",
+                temperatureSource: "AMD ADL",
+                temperatureDeviceId: "pci:1002:01:00:0"),
+            () =>
+            {
+                gpuEngineReads++;
+                return new GpuMetrics(99, null, "Windows GPU Engine", 70, false);
+            },
+            () =>
+            {
+                libreReads++;
+                return new GpuMetrics(99, 99, "LibreHardwareMonitor", 20, true);
+            });
+
+        var metrics = reader.Read();
+
+        Assert.Equal(42, metrics.GpuUsage);
+        Assert.Equal(57, metrics.GpuTemperature);
+        Assert.Equal("AMD ADL", metrics.UsageSource);
+        Assert.Equal("AMD ADL", metrics.TemperatureSource);
+        Assert.Equal(0, gpuEngineReads);
+        Assert.Equal(0, libreReads);
+    }
+
+    [Fact]
+    public void GpuMetricsReader_ShouldUseWindowsEngineWhenAmdAndLibreAreUnavailable()
+    {
+        using var reader = new GpuMetricsReader(
+            () => GpuMetrics.Empty,
+            () => GpuMetrics.Empty,
+            () => new GpuMetrics(
+                31,
+                null,
+                "Windows GPU Engine",
+                70,
+                false,
+                usageSource: "Windows GPU Engine",
+                usageDeviceId: "luid:00000000:00000001"),
+            () => GpuMetrics.Empty);
+
+        var metrics = reader.Read();
+
+        Assert.Equal(31, metrics.GpuUsage);
+        Assert.Null(metrics.GpuTemperature);
+        Assert.Equal("Windows GPU Engine", metrics.UsageSource);
+    }
+
+    [Fact]
     public void WindowsMemoryMetricsReader_CreateMetrics_ShouldNormalizeAvailableBytes()
     {
         var normal = WindowsMemoryMetricsReader.CreateMetrics(1_000, 250);

@@ -117,7 +117,7 @@ UniDesk は、デスクトップをすっきり保ちながら、情報確認、
 
 ## 📦 インストール
 
-最新機能プレビュー版のインストーラーは [v2.1.0-rc.2](https://github.com/SuperDaddyV/UniDesk/releases/tag/v2.1.0-rc.2) からダウンロードできます。この未署名プレビュー版には「モデルレーダー」と最新のモジュール既定状態が含まれ、初回起動時に Windows SmartScreen の警告が表示される場合があります。現在の安定版は [v2.0.0 安定版（Latest）](https://github.com/SuperDaddyV/UniDesk/releases/latest) です。RC2 のインストーラー ファイル名：
+`v2.1.0` 安定版インストーラーの公式配布元は [v2.1.0 GitHub Release](https://github.com/SuperDaddyV/UniDesk/releases/tag/v2.1.0) です。このリリースには明示的に承認された未署名安定版の例外が適用され、「モデルレーダー」と最新のモジュール既定状態が含まれます。インストール前に Release ページで公開される SHA-256 を確認してください。Windows SmartScreen または企業ポリシーにより警告やブロックが発生する場合があります。インストーラーのファイル名：
 
 ```powershell
 UniDesk_Setup_2.1.0.exe
@@ -162,7 +162,7 @@ dotnet run --project UniDesk\UniDesk.csproj
 .\scripts\Build-Release.ps1 -Version 2.1.0
 ```
 
-このスクリプトは、アプリ、ハードウェアサービス、修復ツールを新しいバージョン別ディレクトリに発行し、その入力だけからインストーラーを作成します。公開用成果物は、手動で起動する GitHub Actions の `Build and sign release candidate` ワークフローで SignPath 署名を行い、`Test-ReleaseReadiness.ps1` に合格する必要があります。このワークフローが GitHub Release を自動作成することはありません。
+このスクリプトは、アプリ、ハードウェアサービス、修復ツールを新しいバージョン別ディレクトリに発行し、その入力だけからインストーラーを作成します。クリーンなワークツリーから作成した未署名の `v2.1.0` 成果物は、公開前に `Test-UnsignedReleaseReadiness.ps1`、完全な手動テストマトリクス、プロジェクト所有者の最終承認を通過する必要があります。SignPath ワークフローは今後の署名版向けに維持され、GitHub Release を自動作成することはありません。
 
 ## 🧰 技術スタック
 
@@ -184,7 +184,7 @@ UniDesk はローカル優先です。設定、ショートカット、ToDo、�
 
 ## Code signing policy
 
-公開パッケージには[コード署名ポリシー](CODE_SIGNING_POLICY.md)と[プライバシーポリシー](PRIVACY.md)が適用されます。署名候補は公開コミットから構築し、手動承認を受け、ソース版、Authenticode、SHA-256 の検証に合格する必要があります。
+公開パッケージには[コード署名ポリシー](CODE_SIGNING_POLICY.md)と[プライバシーポリシー](PRIVACY.md)が適用されます。`v2.1.0` には明示的に承認された未署名安定版の例外を適用します。正確な公開コミットから構築し、手動承認、完全なペイロード、SHA-256 の検証に合格したうえで、`Authenticode: NotSigned` と Windows SmartScreen／企業ポリシーのリスクを明記する必要があります。
 
 Free code signing provided by SignPath.io, certificate by SignPath Foundation.
 

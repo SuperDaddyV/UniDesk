@@ -50,6 +50,11 @@ if ($readinessScript -notmatch $expectedReadinessDeclaration) {
     throw "Test-ReleaseReadiness.ps1 does not default to release version $ExpectedVersion."
 }
 
+$unsignedReadinessScript = Get-Content -LiteralPath (Join-Path $projectRoot 'scripts\Test-UnsignedReleaseReadiness.ps1') -Raw
+if ($unsignedReadinessScript -notmatch $expectedReadinessDeclaration) {
+    throw "Test-UnsignedReleaseReadiness.ps1 does not default to release version $ExpectedVersion."
+}
+
 $signingWorkflow = Get-Content -LiteralPath (Join-Path $projectRoot '.github\workflows\release-signing.yml') -Raw
 if ($signingWorkflow -notmatch ("default: '" + [regex]::Escape($ExpectedVersion) + "'")) {
     throw "release-signing.yml does not default to release version $ExpectedVersion."

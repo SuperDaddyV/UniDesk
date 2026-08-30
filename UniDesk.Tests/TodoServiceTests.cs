@@ -38,6 +38,34 @@ public class TodoServiceTests
         }
     }
 
+    private sealed class AtomicToggleDatabase : IDatabaseService
+    {
+        public List<(string Sql, object?[] Parameters)> Commands { get; } = new();
+
+        public Task InitializeAsync() => Task.CompletedTask;
+
+        public Task<int> ExecuteNonQueryAsync(string sql, params object?[] parameters)
+        {
+            Commands.Add((sql, parameters));
+            return Task.FromResult(1);
+        }
+
+        public Task<List<T>> QueryAsync<T>(
+            string sql,
+            Func<Microsoft.Data.Sqlite.SqliteDataReader, T> map,
+            params object?[] parameters) =>
+            Task.FromException<List<T>>(new InvalidOperationException("Toggle must not query before updating."));
+
+        public Task<T?> QuerySingleAsync<T>(
+            string sql,
+            Func<Microsoft.Data.Sqlite.SqliteDataReader, T> map,
+            params object?[] parameters) =>
+            Task.FromException<T?>(new InvalidOperationException("Toggle must not query before updating."));
+
+        public Task<T> ExecuteInTransactionAsync<T>(Func<IDatabaseSession, Task<T>> operation) =>
+            Task.FromException<T>(new NotSupportedException());
+    }
+
     [Fact]
     public async Task CreateTodoAsync_ShouldInsertAndReturnId()
     {
@@ -87,6 +115,31 @@ public class TodoServiceTests
         Assert.NotNull(fetched);
         Assert.False(fetched!.IsCompleted);
         Assert.Null(fetched.CompletedAt);
+
+        Cleanup();
+    }
+
+    [Fact]
+    public async Task ToggleCompleteAsync_ShouldUseSingleAtomicUpdate()
+    {
+        var database = new AtomicToggleDatabase();
+        var service = new TodoService(database);
+
+        await service.ToggleCompleteAsync(42);
+
+        var command = Assert.Single(database.Commands);
+        Assert.Contains("CASE", command.Sql, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("IsCompleted", command.Sql, StringComparison.Ordinal);
+        Assert.DoesNotContain("SELECT", command.Sql, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(42, command.Parameters[1]);
+    }
+
+    [Fact]
+    public async Task ToggleCompleteAsync_WhenTodoDoesNotExist_ShouldPreserveAffectedRowFailure()
+    {
+        var (db, service) = await InitAsync();
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => service.ToggleCompleteAsync(-1));
 
         Cleanup();
     }

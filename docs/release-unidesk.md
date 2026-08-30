@@ -2,13 +2,15 @@
 
 ## Code signing policy
 
-Signed public packages follow the [UniDesk code signing policy](../CODE_SIGNING_POLICY.md) and [privacy policy](../PRIVACY.md). Each signed release candidate is built from the documented public source revision and remains subject to manual release approval.
+Public packages follow the [UniDesk code signing policy](../CODE_SIGNING_POLICY.md) and [privacy policy](../PRIVACY.md). `v2.1.0` uses the explicitly approved unsigned-stable exception; it must be rebuilt from the documented public source revision, pass the unsigned readiness gate and manual matrix, and disclose `Authenticode: NotSigned` plus Windows SmartScreen or enterprise-policy risk.
 
 Free code signing provided by SignPath.io, certificate by SignPath Foundation.
 
 ## v2.1.0
 
 This release makes complete hardware monitoring installable without elevating the main app, closes weather and clipboard privacy gaps, and moves the supported runtime to .NET 10 LTS.
+
+Distribution notice: the `v2.1.0` installer and first-party binaries are unsigned. Verify the published SHA-256 before use; Windows SmartScreen or enterprise policy may warn or block installation.
 
 ### Changes
 
@@ -17,6 +19,7 @@ This release makes complete hardware monitoring installable without elevating th
 - Added a default-selected, fully disclosed hardware component that installs the pinned PawnIO driver and a narrowly scoped read-only Windows service while keeping `UniDesk.exe` at normal-user privilege.
 - Added a dedicated administrator-only repair helper with argument-safe service registration, stable exit codes, local logs, and a versioned IPC health check. The main app waits for repair completion and then refreshes the component state.
 - Added bounded service initialization retry, four parallel named-pipe accept loops, detailed service／driver／protocol diagnostics, and localized repair states.
+- Isolated LibreHardwareMonitor's AMD GPU update path after it was observed terminating the hardware service with a native access violation. AMD usage and temperature continue through AMD ADL when supported, Windows GPU Engine remains the usage fallback, and unavailable values are shown as unavailable instead of crashing the service or reporting a false zero.
 - Fixed global clipboard search to search DPAPI-decrypted content instead of encrypted database values; repeated searches now cancel older work and database search runs off the UI thread.
 - Fresh installs now enable start-with-Windows and automatic weather location by default, while upgrades preserve existing choices. Coordinates are sent only to the configured QWeather HTTPS API for city lookup; manual city remains the fallback, legacy placeholder values are ignored, and Settings provides a direct Windows location-settings shortcut.
 - Treats a missing or invalid automatic-location setting as disabled, preventing an implicit Windows location request after incomplete or legacy settings.
@@ -36,11 +39,16 @@ This release makes complete hardware monitoring installable without elevating th
 
 ### 中文说明
 
+分发提示：`v2.1.0` 安装包和一方二进制文件未签名。使用前请核对公开 SHA-256；Windows SmartScreen 或企业策略可能警告或阻止安装。
+
 - 新增默认关闭的「模型雷达」模块，运行时仅访问 ModelDial 固定公开 `latest.json` 接口；展示发布方综合第一、首个官方 `value` 性价比推荐，以及综合／后端／前端／知识 Top 5，并提供明确的缓存、离线、刷新取消和固定署名链接。该模块不调用模型、不进行本地评测，也不修改模型工具配置。
 - 全新安装默认启用时间天气、硬件监视、待办事项和快速便签，默认关闭快捷方式、快捷文本和模型雷达；覆盖安装与升级完整保留用户已保存的模块开关和顺序。
 - 新增默认勾选且明确披露的完整硬件监控组件：安装固定版本的 PawnIO 驱动和边界收紧的只读 Windows 服务，`UniDesk.exe` 仍以普通用户权限运行。
 - 新增独立的管理员权限修复助手，以参数数组安全注册服务，提供稳定退出码、本地日志和版本化 IPC 健康检查；主程序等待修复结束后刷新组件状态，且始终保持普通权限。
 - 硬件服务增加有上限的初始化重试、四路并发命名管道接收，以及服务／驱动／协议的细分诊断和本地化修复状态。
+- 隔离已在受影响设备上触发硬件服务原生访问冲突的 LibreHardwareMonitor AMD GPU 更新路径；支持的 AMD GPU 继续通过 AMD ADL 读取使用率和温度，并保留 Windows GPU Engine 使用率兜底。无法读取时明确显示不可用，不再让服务崩溃或报告错误的零值。
+- 收紧最终稳定性边界：修复助手启动后等待真实终态而不误报取消；快捷方式图标先写临时文件、完整校验后原子发布，并按内容所有权安全清理；备份导入拒绝零次使用的剪贴板记录和空白文本片段分类。
+- 未签名正式版门禁会独立核对当前 `HEAD`、包含未跟踪文件的干净工作区、严格布尔清单状态，以及安装包版本资源绑定的载荷清单 SHA-256；调用方不能仅靠伪造 `release-source.json` 获得发布就绪结论。
 - 修复全局剪贴板搜索：先解密 DPAPI 内容再匹配；新搜索会取消旧任务，数据库检索不再阻塞 UI 线程。
 - 全新安装默认开启开机自启和 Windows 自动定位，覆盖安装与升级保留既有选择；经纬度仅发送到已配置的和风天气 HTTPS API 查询城市，手动城市仍作为兜底，旧版占位值会被忽略，设置页可直接打开 Windows 位置设置。
 - 自动定位设置缺失或无效时统一按关闭处理，避免旧数据缺项时隐式请求 Windows 位置权限。
@@ -61,8 +69,8 @@ This release makes complete hardware monitoring installable without elevating th
 ### Installer integrity / 安装包校验
 
 - `UniDesk_Setup_2.1.0.exe`
-- SHA-256：生成正式签名制品后填写
-- Authenticode：公开发布前必须为 `Valid`
+- SHA-256：以 GitHub Release 同页发布的 `SHA256SUMS.txt` 为准
+- Authenticode：`NotSigned`；公开发布说明必须披露 SmartScreen／企业策略风险
 
 ## v2.0.0
 

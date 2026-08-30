@@ -5,6 +5,8 @@ using System;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.IO;
+using System.Drawing;
+using System.Drawing.Imaging;
 using UniDesk.Helpers;
 
 namespace UniDesk.Tests;
@@ -65,6 +67,7 @@ public class ShortcutServiceTests
     [Fact]
     public async Task CreateShortcutAsync_WhenDerivedIconUpdateFails_ShouldKeepTheCreatedShortcut()
     {
+        using var testLogs = new TestLogDirectoryScope();
         Cleanup();
         var db = new DatabaseService($"Data Source={_testDbFile}");
         await db.InitializeAsync();
@@ -76,7 +79,7 @@ public class ShortcutServiceTests
             (_, _) =>
             {
                 File.WriteAllText(derivedIcon, "derived icon");
-                return derivedIcon;
+                return new ShortcutService.DerivedIcon(derivedIcon, IsNewFile: true);
             });
 
         var id = await service.CreateShortcutAsync(new ShortcutItem
@@ -89,6 +92,190 @@ public class ShortcutServiceTests
         Assert.NotNull(await service.GetShortcutAsync(id));
         Assert.False(File.Exists(derivedIcon));
         Cleanup();
+    }
+
+    [Fact]
+    public async Task CreateShortcutAsync_WhenIconUpdateMissesTarget_ShouldKeepPreExistingIcon()
+    {
+        using var testLogs = new TestLogDirectoryScope();
+        Cleanup();
+        var db = new DatabaseService($"Data Source={_testDbFile}");
+        await db.InitializeAsync();
+        var preExistingIcon = Path.Combine(Path.GetTempPath(), $"UniDesk-shortcut-existing-{Guid.NewGuid():N}.png");
+        File.WriteAllText(preExistingIcon, "pre-existing icon");
+
+        try
+        {
+            var service = new ShortcutService(
+                db,
+                (_, id) =>
+                {
+                    db.ExecuteNonQueryAsync("DELETE FROM Shortcuts WHERE Id = @p0", id)
+                        .GetAwaiter()
+                        .GetResult();
+                    return new ShortcutService.DerivedIcon(preExistingIcon, IsNewFile: false);
+                });
+
+            var id = await service.CreateShortcutAsync(new ShortcutItem
+            {
+                Name = "Keeps existing icon",
+                Path = "notepad.exe"
+            });
+
+            Assert.True(id > 0);
+            Assert.True(File.Exists(preExistingIcon));
+            Assert.Equal("pre-existing icon", await File.ReadAllTextAsync(preExistingIcon));
+        }
+        finally
+        {
+            if (File.Exists(preExistingIcon))
+            {
+                File.Delete(preExistingIcon);
+            }
+
+            Cleanup();
+        }
+    }
+
+    [Fact]
+    public async Task RefreshMissingIconsAsync_WhenTargetDisappears_ShouldCleanNewDerivedIcon()
+    {
+        Cleanup();
+        var db = new DatabaseService($"Data Source={_testDbFile}");
+        await db.InitializeAsync();
+        var id = 1_000_000_000 + Random.Shared.Next(100_000_000);
+        var derivedIcon = Path.Combine(Path.GetTempPath(), $"UniDesk-shortcut-refresh-{Guid.NewGuid():N}.png");
+        var generatorCalled = false;
+
+        await db.ExecuteNonQueryAsync(
+            "INSERT INTO Shortcuts (Id, Name, Path, Type, IconPath, SortOrder, CreatedAt, LaunchArguments) VALUES (@p0, @p1, @p2, @p3, NULL, @p4, @p5, NULL)",
+            id,
+            "Refresh race",
+            "notepad.exe",
+            ShortcutType.Application.ToString(),
+            0,
+            DateTime.UtcNow.ToString("o"));
+
+        try
+        {
+            var service = new ShortcutService(
+                db,
+                (_, shortcutId) =>
+                {
+                    generatorCalled = true;
+                    File.WriteAllText(derivedIcon, "new derived icon");
+                    db.ExecuteNonQueryAsync("DELETE FROM Shortcuts WHERE Id = @p0", shortcutId)
+                        .GetAwaiter()
+                        .GetResult();
+                    return new ShortcutService.DerivedIcon(derivedIcon, IsNewFile: true);
+                });
+
+            await service.RefreshMissingIconsAsync();
+
+            Assert.True(generatorCalled);
+            Assert.False(File.Exists(derivedIcon));
+            Assert.Null(await service.GetShortcutAsync(id));
+        }
+        finally
+        {
+            if (File.Exists(derivedIcon))
+            {
+                File.Delete(derivedIcon);
+            }
+
+            Cleanup();
+        }
+    }
+
+    [Fact]
+    public void WriteDerivedIconAtomically_WhenWriterFails_ShouldNotPublishPartialFile()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), "UniDeskTests", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(directory);
+        var iconPath = Path.Combine(directory, "shortcut_1.png");
+
+        try
+        {
+            var result = ShortcutService.WriteDerivedIconAtomically(
+                iconPath,
+                temporaryPath =>
+                {
+                    File.WriteAllText(temporaryPath, "partial");
+                    throw new IOException("forced write failure");
+                });
+
+            Assert.Null(result);
+            Assert.False(File.Exists(iconPath));
+            Assert.Empty(Directory.EnumerateFiles(directory));
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void WriteDerivedIconAtomically_ShouldReplaceInvalidCacheWithValidPng()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), "UniDeskTests", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(directory);
+        var iconPath = Path.Combine(directory, "shortcut_2.png");
+        File.WriteAllText(iconPath, "truncated png");
+
+        try
+        {
+            var result = ShortcutService.WriteDerivedIconAtomically(
+                iconPath,
+                temporaryPath =>
+                {
+                    using var bitmap = new Bitmap(2, 2);
+                    bitmap.Save(temporaryPath, ImageFormat.Png);
+                });
+
+            Assert.NotNull(result);
+            Assert.True(result!.IsNewFile);
+            Assert.True(ShortcutService.IsReusablePng(iconPath));
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void DeleteDerivedIcon_WhenOwnedContentWasReplaced_ShouldKeepReplacement()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), "UniDeskTests", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(directory);
+        var iconPath = Path.Combine(directory, "shortcut_3.png");
+
+        try
+        {
+            var owned = ShortcutService.WriteDerivedIconAtomically(
+                iconPath,
+                temporaryPath =>
+                {
+                    using var bitmap = new Bitmap(2, 2);
+                    bitmap.SetPixel(0, 0, Color.Red);
+                    bitmap.Save(temporaryPath, ImageFormat.Png);
+                });
+            Assert.NotNull(owned);
+
+            using (var replacement = new Bitmap(2, 2))
+            {
+                replacement.SetPixel(0, 0, Color.Blue);
+                replacement.Save(iconPath, ImageFormat.Png);
+            }
+
+            ShortcutService.DeleteDerivedIcon(owned, 3);
+
+            Assert.True(File.Exists(iconPath));
+            Assert.True(ShortcutService.IsReusablePng(iconPath));
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
     }
 
     [Fact]

@@ -89,13 +89,14 @@ public class TodoService : ITodoService
 
     public async Task ToggleCompleteAsync(int id)
     {
-        var todo = await GetTodoAsync(id)
-            ?? throw new InvalidOperationException($"待办事项 {id} 不存在，无法切换完成状态。");
-
-            todo.IsCompleted = !todo.IsCompleted;
-            todo.CompletedAt = todo.IsCompleted ? DateTime.UtcNow : null;
-
-        await UpdateTodoAsync(todo);
+        var affected = await _databaseService.ExecuteNonQueryAsync(
+            "UPDATE Todos SET IsCompleted = CASE WHEN IsCompleted = 0 THEN 1 ELSE 0 END, CompletedAt = CASE WHEN IsCompleted = 0 THEN @p0 ELSE NULL END WHERE Id = @p1",
+            DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture),
+            id);
+        if (affected != 1)
+        {
+            throw new InvalidOperationException($"待办事项 {id} 不存在或未能切换完成状态。");
+        }
     }
 
     public async Task MarkCompletedAsync(int id)

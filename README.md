@@ -117,7 +117,7 @@ UniDesk 适合希望桌面保持清爽，但又想快速查看信息、打开常
 
 ## 📦 安装与使用
 
-从 [v2.1.0-rc.2 最新功能预览版](https://github.com/SuperDaddyV/UniDesk/releases/tag/v2.1.0-rc.2) 下载最新功能预览安装包。该未签名预览版包含「模型雷达」和最新模块默认状态，首次运行可能触发 Windows SmartScreen。当前稳定版仍请使用 [v2.0.0 稳定版（Latest）](https://github.com/SuperDaddyV/UniDesk/releases/latest)。RC2 安装包文件名为：
+`v2.1.0` 正式安装包的官方分发入口是 [v2.1.0 GitHub Release](https://github.com/SuperDaddyV/UniDesk/releases/tag/v2.1.0)。该版本采用项目所有者明确批准的未签名正式发布例外，包含「模型雷达」和最新模块默认状态；安装前请核对 Release 页公布的 SHA-256，Windows SmartScreen 或企业策略可能警告或阻止安装。安装包文件名为：
 
 ```powershell
 UniDesk_Setup_2.1.0.exe
@@ -162,7 +162,7 @@ dotnet run --project UniDesk\UniDesk.csproj
 .\scripts\Build-Release.ps1 -Version 2.1.0
 ```
 
-脚本会将主程序、硬件服务和修复工具发布到全新的版本目录，再从这些确定输入编译安装包。公开发布制品必须通过 GitHub Actions 的 `Build and sign release candidate` 手动工作流交由 SignPath 签名，并通过 `Test-ReleaseReadiness.ps1`；该工作流不会自动创建 GitHub Release。
+脚本会将主程序、硬件服务和修复工具发布到全新的版本目录，再从这些确定输入编译安装包。干净工作区生成的未签名 `v2.1.0` 制品必须通过 `Test-UnsignedReleaseReadiness.ps1`，完成完整人工矩阵并由项目所有者最终批准后才能公开；SignPath 签名工作流继续保留给未来签名版本，且不会自动创建 GitHub Release。
 
 ## 🧰 技术栈
 
@@ -184,7 +184,7 @@ UniDesk 优先使用本地存储，用户数据保存在本机。当前主要数
 
 ## Code signing policy
 
-公开发布包遵循[代码签名政策](CODE_SIGNING_POLICY.md)和[隐私政策](PRIVACY.md)。签名候选包必须来自公开提交、通过人工批准，并完成源码版本、Authenticode 和 SHA-256 校验。
+公开发布包遵循[代码签名政策](CODE_SIGNING_POLICY.md)和[隐私政策](PRIVACY.md)。`v2.1.0` 采用明确批准的未签名正式版例外：必须来自精确公开提交、通过人工批准、完整载荷和 SHA-256 校验，并醒目标注 `Authenticode: NotSigned` 及 SmartScreen／企业策略风险。
 
 Free code signing provided by SignPath.io, certificate by SignPath Foundation.
 

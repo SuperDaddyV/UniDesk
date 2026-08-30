@@ -1,3 +1,7 @@
+using System.Diagnostics;
+using System.IO.Pipes;
+using System.Text;
+using LibreHardwareMonitor.Hardware;
 using UniDesk.Hardware.Contracts;
 using UniDesk.HardwareService;
 using UniDesk.Services;
@@ -55,6 +59,51 @@ public class HardwareServiceIntegrationTests
         Assert.True(policy.CanAttempt(now.AddSeconds(15)));
         policy.RecordSuccess();
         Assert.True(policy.CanAttempt(now.AddSeconds(15)));
+    }
+
+    [Theory]
+    [InlineData(HardwareType.GpuAmd, false)]
+    [InlineData(HardwareType.GpuNvidia, true)]
+    [InlineData(HardwareType.GpuIntel, true)]
+    [InlineData(HardwareType.Cpu, true)]
+    [InlineData(HardwareType.Motherboard, true)]
+    public void LibreHardwareSnapshotCollector_ShouldIsolateOnlyAmdGpuUpdate(
+        HardwareType hardwareType,
+        bool expected)
+    {
+        Assert.Equal(
+            expected,
+            LibreHardwareSnapshotCollector.ShouldUpdateHardware(hardwareType));
+    }
+
+    [Fact]
+    public void LibreHardwareSnapshotCollector_ShouldSkipNestedAmdGpuUpdate()
+    {
+        var amdGpu = new FakeHardware(HardwareType.GpuAmd, "AMD Radeon");
+        var intelGpu = new FakeHardware(HardwareType.GpuIntel, "Intel Graphics");
+        var motherboard = new FakeHardware(
+            HardwareType.Motherboard,
+            "Motherboard",
+            [amdGpu, intelGpu]);
+
+        LibreHardwareSnapshotCollector.UpdateHardwareTree(motherboard);
+
+        Assert.Equal(1, motherboard.UpdateCount);
+        Assert.Equal(0, amdGpu.UpdateCount);
+        Assert.Equal(1, intelGpu.UpdateCount);
+    }
+
+    [Fact]
+    public void LibreHardwareSnapshotCollector_ShouldLabelIsolatedAmdGpu()
+    {
+        var diagnosticName = LibreHardwareSnapshotCollector.GetHardwareDiagnosticName(
+            HardwareType.GpuAmd,
+            HardwareDeviceType.GpuAmd,
+            "AMD Radeon RX 9060 XT");
+
+        Assert.Equal(
+            "GpuAmd:AMD Radeon RX 9060 XT [LibreHardwareMonitor AMD update isolated]",
+            diagnosticName);
     }
 
     [Fact]
@@ -214,6 +263,100 @@ public class HardwareServiceIntegrationTests
     }
 
     [Fact]
+    public async Task PipeServer_ShouldContinueAcceptingAfterInvalidRequestFrames()
+    {
+        var source = new FakeHardwareSnapshotSource(
+            CreateAvailableResponse() with { ServiceVersion = "pipe-regression-test" });
+        var pipeName = $"UniDesk.HardwareMetrics.Tests.{Guid.NewGuid():N}";
+        var server = new HardwarePipeServer(new HardwareServiceRequestHandler(source), pipeName);
+        using var shutdown = new CancellationTokenSource();
+        var runTask = server.RunAsync(shutdown.Token);
+
+        try
+        {
+            for (var attempt = 0; attempt < HardwarePipeServer.AcceptLoopCount; attempt++)
+            {
+                if (attempt % 2 == 0)
+                {
+                    await SendOversizedRequestFrameAsync(pipeName);
+                }
+                else
+                {
+                    await SendInvalidUtf8RequestFrameAsync(pipeName);
+                }
+            }
+
+            await Task.Delay(100);
+            Assert.False(runTask.IsFaulted, "An invalid request must not fault the accept loop.");
+
+            await using var client = new NamedPipeClientStream(
+                ".",
+                pipeName,
+                PipeDirection.InOut,
+                PipeOptions.Asynchronous);
+            await client.ConnectAsync(3000);
+
+            var request = HardwareIpcProtocol.SerializeRequest(new HardwareServiceRequest(
+                HardwareIpcProtocol.CurrentVersion,
+                HardwareServiceCommand.GetSnapshot));
+            var requestBytes = Encoding.UTF8.GetBytes(request + "\n");
+            await client.WriteAsync(requestBytes);
+            await client.FlushAsync();
+
+            using var responseTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+            var responseJson = await HardwareIpcProtocol.ReadUtf8LineAsync(
+                client,
+                HardwareIpcProtocol.MaxResponseBytes,
+                responseTimeout.Token);
+            Assert.NotNull(responseJson);
+            var response = HardwareIpcProtocol.DeserializeResponse(responseJson!);
+
+            Assert.Equal(HardwareServiceAvailability.Available, response.Availability);
+            Assert.Equal("pipe-regression-test", response.ServiceVersion);
+            Assert.True(source.ReadCount >= 1);
+        }
+        finally
+        {
+            shutdown.Cancel();
+            await runTask;
+            Assert.True(runTask.IsCompletedSuccessfully);
+        }
+    }
+
+    [Fact]
+    public async Task MaintenanceService_WhenCancelledAfterLaunch_ShouldWaitForTerminalResult()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), "UniDeskTests", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(directory);
+        var helperPath = Path.Combine(directory, "UniDesk.HardwareRepair.cmd");
+        var completionMarker = Path.Combine(directory, "completed.txt");
+        await File.WriteAllTextAsync(
+            helperPath,
+            $"@echo off\r\n%SystemRoot%\\System32\\timeout.exe /t 1 /nobreak >nul\r\necho completed>\"{completionMarker}\"\r\n");
+
+        try
+        {
+            var service = new HardwareMonitoringMaintenanceService(
+                new FakeDiagnosticsSource(CreateUnavailableDiagnosticsSnapshot()),
+                helperPath);
+            using var cancellation = new CancellationTokenSource(TimeSpan.FromMilliseconds(100));
+            var stopwatch = Stopwatch.StartNew();
+
+            var result = await service.RepairAsync(cancellation.Token);
+
+            Assert.Equal(HardwareRepairLaunchStatus.Succeeded, result.Status);
+            Assert.Equal(0, result.ExitCode);
+            Assert.True(stopwatch.Elapsed >= TimeSpan.FromMilliseconds(700));
+            Assert.True(File.Exists(completionMarker));
+        }
+        finally
+        {
+            await Task.Delay(1200);
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task ProtocolReader_ShouldRejectResponseBeyondProtocolLimit()
     {
         var bytes = new byte[HardwareIpcProtocol.MaxResponseBytes + 2];
@@ -246,6 +389,46 @@ public class HardwareServiceIntegrationTests
         new PawnIoStatus(true, "2.2.0"),
         new HardwareProviderStatus(true, true, null, DateTimeOffset.Parse("2026-07-28T00:00:00Z"), ["Cpu:AMD Ryzen"]),
         [new HardwareSensorDto("/amdcpu/0", "AMD Ryzen", HardwareDeviceType.Cpu, "Core", "Temperature", 52)]);
+
+    private static HardwareMetricsDiagnosticsSnapshot CreateUnavailableDiagnosticsSnapshot() => new(
+        DateTimeOffset.Parse("2026-07-28T00:00:00Z"),
+        new LibreHardwareHostDiagnosticStatus(false, false, "service unavailable", null, []),
+        null,
+        [],
+        [],
+        new HardwareServiceDiagnosticStatus(
+            HardwareServiceAvailability.ServiceUnavailable,
+            new PawnIoStatus(false, null),
+            null,
+            "service unavailable"));
+
+    private static async Task SendOversizedRequestFrameAsync(string pipeName)
+    {
+        await using var client = new NamedPipeClientStream(
+            ".",
+            pipeName,
+            PipeDirection.InOut,
+            PipeOptions.Asynchronous);
+        await client.ConnectAsync(3000);
+
+        var bytes = new byte[HardwareIpcProtocol.MaxRequestBytes + 1];
+        Array.Fill(bytes, (byte)'x');
+        await client.WriteAsync(bytes);
+        await client.FlushAsync();
+    }
+
+    private static async Task SendInvalidUtf8RequestFrameAsync(string pipeName)
+    {
+        await using var client = new NamedPipeClientStream(
+            ".",
+            pipeName,
+            PipeDirection.InOut,
+            PipeOptions.Asynchronous);
+        await client.ConnectAsync(3000);
+
+        await client.WriteAsync(new byte[] { 0xC3, 0x28, (byte)'\n' });
+        await client.FlushAsync();
+    }
 
     private sealed class FakeHardwareServiceClient : IHardwareServiceClient
     {
@@ -284,6 +467,57 @@ public class HardwareServiceIntegrationTests
         : IHardwareMetricsDiagnosticsSource
     {
         public HardwareMetricsDiagnosticsSnapshot CaptureDiagnostics() => snapshot;
+    }
+
+    private sealed class FakeHardware : IHardware
+    {
+        public FakeHardware(
+            HardwareType hardwareType,
+            string name,
+            IHardware[]? subHardware = null)
+        {
+            HardwareType = hardwareType;
+            Name = name;
+            Identifier = new Identifier("test", name.Replace(' ', '-'));
+            SubHardware = subHardware ?? [];
+        }
+
+        public int UpdateCount { get; private set; }
+        public HardwareType HardwareType { get; }
+        public Identifier Identifier { get; }
+        public string Name { get; set; }
+        public IHardware? Parent => null;
+        public ISensor[] Sensors => [];
+        public IHardware[] SubHardware { get; }
+        public IDictionary<string, string> Properties { get; } =
+            new Dictionary<string, string>();
+
+        event SensorEventHandler IHardware.SensorAdded
+        {
+            add { }
+            remove { }
+        }
+
+        event SensorEventHandler IHardware.SensorRemoved
+        {
+            add { }
+            remove { }
+        }
+
+        public string GetReport() => string.Empty;
+
+        public void Update() => UpdateCount++;
+
+        public void Accept(IVisitor visitor) => visitor.VisitHardware(this);
+
+        public void Traverse(IVisitor visitor)
+        {
+            foreach (var child in SubHardware)
+            {
+                child.Accept(visitor);
+                child.Traverse(visitor);
+            }
+        }
     }
 
     private sealed class FixedTimeProvider(DateTimeOffset now) : TimeProvider

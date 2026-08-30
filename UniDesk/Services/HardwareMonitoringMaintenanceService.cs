@@ -73,13 +73,14 @@ public sealed class HardwareMonitoringMaintenanceService : IHardwareMonitoringMa
     public async Task<HardwareRepairLaunchResult> RepairAsync(
         CancellationToken cancellationToken = default)
     {
-        if (!File.Exists(_repairHelperPath))
-        {
-            return new HardwareRepairLaunchResult(HardwareRepairLaunchStatus.HelperMissing);
-        }
-
         try
         {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (!File.Exists(_repairHelperPath))
+            {
+                return new HardwareRepairLaunchResult(HardwareRepairLaunchStatus.HelperMissing);
+            }
+
             using var process = Process.Start(new ProcessStartInfo(_repairHelperPath)
             {
                 UseShellExecute = true,
@@ -92,13 +93,17 @@ public sealed class HardwareMonitoringMaintenanceService : IHardwareMonitoringMa
                     Error: "The repair helper could not be started.");
             }
 
-            await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
+            await process.WaitForExitAsync().ConfigureAwait(false);
             return process.ExitCode == 0
                 ? new HardwareRepairLaunchResult(HardwareRepairLaunchStatus.Succeeded, 0)
                 : new HardwareRepairLaunchResult(
                     HardwareRepairLaunchStatus.Failed,
                     process.ExitCode,
                     $"Repair helper exited with code {process.ExitCode}.");
+        }
+        catch (OperationCanceledException)
+        {
+            return new HardwareRepairLaunchResult(HardwareRepairLaunchStatus.Cancelled);
         }
         catch (Win32Exception ex) when (ex.NativeErrorCode == 1223)
         {

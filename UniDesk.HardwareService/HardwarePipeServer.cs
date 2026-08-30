@@ -12,10 +12,29 @@ public sealed class HardwarePipeServer
     public const int AcceptLoopCount = 4;
 
     private readonly HardwareServiceRequestHandler _handler;
+    private readonly string _pipeName;
+    private readonly bool _useDefaultPipeSecurity;
 
     public HardwarePipeServer(HardwareServiceRequestHandler handler)
+        : this(handler, HardwareIpcProtocol.PipeName, useDefaultPipeSecurity: false)
+    {
+    }
+
+    internal HardwarePipeServer(
+        HardwareServiceRequestHandler handler,
+        string pipeName)
+        : this(handler, pipeName, useDefaultPipeSecurity: true)
+    {
+    }
+
+    private HardwarePipeServer(
+        HardwareServiceRequestHandler handler,
+        string pipeName,
+        bool useDefaultPipeSecurity)
     {
         _handler = handler;
+        _pipeName = pipeName;
+        _useDefaultPipeSecurity = useDefaultPipeSecurity;
     }
 
     public Task RunAsync(CancellationToken cancellationToken) => Task.WhenAll(
@@ -28,17 +47,28 @@ public sealed class HardwarePipeServer
         {
             try
             {
-                await using var server = CreateServer();
+                await using var server = CreateServer(_pipeName);
                 await server.WaitForConnectionAsync(cancellationToken).ConfigureAwait(false);
                 using var requestTimeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
                 requestTimeout.CancelAfter(TimeSpan.FromSeconds(2));
                 await HandleConnectionAsync(server, requestTimeout.Token).ConfigureAwait(false);
+            }
+            catch (InvalidDataException)
+            {
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                return;
             }
             catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
             {
             }
             catch (IOException) when (!cancellationToken.IsCancellationRequested)
             {
+            }
+            catch (IOException) when (cancellationToken.IsCancellationRequested)
+            {
+                return;
             }
         }
     }
@@ -75,8 +105,20 @@ public sealed class HardwarePipeServer
             HardwareIpcProtocol.MaxRequestBytes,
             cancellationToken).ConfigureAwait(false);
 
-    private static NamedPipeServerStream CreateServer()
+    private NamedPipeServerStream CreateServer(string pipeName)
     {
+        if (_useDefaultPipeSecurity)
+        {
+            return new NamedPipeServerStream(
+                pipeName,
+                PipeDirection.InOut,
+                AcceptLoopCount,
+                PipeTransmissionMode.Byte,
+                PipeOptions.Asynchronous | PipeOptions.WriteThrough,
+                4096,
+                HardwareIpcProtocol.MaxResponseBytes);
+        }
+
         var security = new PipeSecurity();
         security.AddAccessRule(new PipeAccessRule(
             new SecurityIdentifier(WellKnownSidType.NetworkSid, null),
@@ -96,7 +138,7 @@ public sealed class HardwarePipeServer
             AccessControlType.Allow));
 
         return NamedPipeServerStreamAcl.Create(
-            HardwareIpcProtocol.PipeName,
+            pipeName,
             PipeDirection.InOut,
             AcceptLoopCount,
             PipeTransmissionMode.Byte,

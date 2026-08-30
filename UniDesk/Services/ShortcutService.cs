@@ -4,6 +4,7 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 
 namespace UniDesk.Services;
 
@@ -13,7 +14,14 @@ public class ShortcutService : IShortcutService
         "SELECT Id, Name, Path, Type, IconPath, SortOrder, CreatedAt, LaunchArguments FROM Shortcuts";
 
     private readonly IDatabaseService _databaseService;
-    private readonly Func<ShortcutItem, int, string?> _createDerivedIcon;
+    private readonly Func<ShortcutItem, int, DerivedIcon?> _createDerivedIcon;
+    private static readonly object DerivedIconSync = new();
+
+    internal sealed record DerivedIcon(string Path, bool IsNewFile)
+    {
+        internal string? ContentSha256 { get; init; } =
+            IsNewFile ? ComputeFileSha256(Path) : null;
+    }
 
     public ShortcutService(IDatabaseService databaseService)
         : this(databaseService, CreateDerivedIcon)
@@ -22,10 +30,21 @@ public class ShortcutService : IShortcutService
 
     internal ShortcutService(
         IDatabaseService databaseService,
-        Func<ShortcutItem, int, string?> createDerivedIcon)
+        Func<ShortcutItem, int, DerivedIcon?> createDerivedIcon)
     {
         _databaseService = databaseService;
         _createDerivedIcon = createDerivedIcon;
+    }
+
+    internal ShortcutService(
+        IDatabaseService databaseService,
+        Func<ShortcutItem, int, string?> createDerivedIcon)
+        : this(databaseService, (shortcut, id) =>
+        {
+            var iconPath = createDerivedIcon(shortcut, id);
+            return iconPath == null ? null : new DerivedIcon(iconPath, IsNewFile: true);
+        })
+    {
     }
 
     public async Task<List<ShortcutItem>> GetAllShortcutsAsync()
@@ -69,15 +88,15 @@ public class ShortcutService : IShortcutService
 
             if (id > 0 && string.IsNullOrEmpty(shortcut.IconPath))
             {
-                string? iconPath = null;
+                DerivedIcon? derivedIcon = null;
                 try
                 {
-                    iconPath = _createDerivedIcon(shortcut, id);
-                    if (!string.IsNullOrEmpty(iconPath))
+                    derivedIcon = _createDerivedIcon(shortcut, id);
+                    if (derivedIcon != null)
                     {
                         var affected = await _databaseService.ExecuteNonQueryAsync(
                             "UPDATE Shortcuts SET IconPath = @p0 WHERE Id = @p1",
-                            iconPath,
+                            derivedIcon.Path,
                             id);
                         if (affected != 1)
                         {
@@ -88,7 +107,7 @@ public class ShortcutService : IShortcutService
                 catch (Exception ex)
                 {
                     Logger.LogError(ex, $"ShortcutService.CreateDerivedIcon({id})");
-                    DeleteDerivedIcon(iconPath, id);
+                    DeleteDerivedIcon(derivedIcon, id);
                 }
             }
 
@@ -100,25 +119,39 @@ public class ShortcutService : IShortcutService
         return id;
     }
 
-    private static string? CreateDerivedIcon(ShortcutItem shortcut, int id) =>
+    private static DerivedIcon? CreateDerivedIcon(ShortcutItem shortcut, int id) =>
         !string.IsNullOrEmpty(shortcut.BundledIconFileName)
             ? CopyBundledIcon(shortcut.BundledIconFileName, id)
             : ExtractAndSaveIcon(shortcut.IconLookupPath ?? shortcut.Path, id);
 
-    private static void DeleteDerivedIcon(string? iconPath, int id)
+    internal static void DeleteDerivedIcon(DerivedIcon? derivedIcon, int id)
     {
-        if (string.IsNullOrEmpty(iconPath) || !File.Exists(iconPath))
+        lock (DerivedIconSync)
         {
-            return;
-        }
+            if (derivedIcon == null ||
+                !derivedIcon.IsNewFile ||
+                derivedIcon.ContentSha256 == null ||
+                !File.Exists(derivedIcon.Path))
+            {
+                return;
+            }
 
-        try
-        {
-            File.Delete(iconPath);
-        }
-        catch (Exception ex)
-        {
-            Logger.LogError(ex, $"ShortcutService.DeleteDerivedIcon({id})");
+            try
+            {
+                var currentSha256 = ComputeFileSha256(derivedIcon.Path);
+                if (!derivedIcon.ContentSha256.Equals(
+                        currentSha256,
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    return;
+                }
+
+                File.Delete(derivedIcon.Path);
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, $"ShortcutService.DeleteDerivedIcon({id})");
+            }
         }
     }
 
@@ -186,16 +219,29 @@ public class ShortcutService : IShortcutService
 
             foreach (var shortcut in shortcuts)
             {
-                var iconPath = ExtractAndSaveIcon(shortcut.Path, shortcut.Id);
-                if (string.IsNullOrEmpty(iconPath))
+                DerivedIcon? derivedIcon = null;
+                try
                 {
-                    continue;
-                }
+                    derivedIcon = _createDerivedIcon(shortcut, shortcut.Id);
+                    if (derivedIcon == null)
+                    {
+                        continue;
+                    }
 
-                await _databaseService.ExecuteNonQueryAsync(
-                    "UPDATE Shortcuts SET IconPath = @p0 WHERE Id = @p1",
-                    iconPath,
-                    shortcut.Id);
+                    var affected = await _databaseService.ExecuteNonQueryAsync(
+                        "UPDATE Shortcuts SET IconPath = @p0 WHERE Id = @p1",
+                        derivedIcon.Path,
+                        shortcut.Id);
+                    if (affected != 1)
+                    {
+                        DeleteDerivedIcon(derivedIcon, shortcut.Id);
+                    }
+                }
+                catch
+                {
+                    DeleteDerivedIcon(derivedIcon, shortcut.Id);
+                    throw;
+                }
             }
         }
         catch (Exception ex)
@@ -222,7 +268,7 @@ public class ShortcutService : IShortcutService
         }
     }
 
-    private static string? CopyBundledIcon(string fileName, int id)
+    private static DerivedIcon? CopyBundledIcon(string fileName, int id)
     {
         try
         {
@@ -233,8 +279,9 @@ public class ShortcutService : IShortcutService
             }
 
             var iconPath = Path.Combine(DirectoryHelper.IconsDirectory, $"shortcut_{id}.png");
-            File.Copy(sourcePath, iconPath, overwrite: true);
-            return iconPath;
+            return WriteDerivedIconAtomically(
+                iconPath,
+                temporaryPath => File.Copy(sourcePath, temporaryPath, overwrite: false));
         }
         catch
         {
@@ -242,10 +289,16 @@ public class ShortcutService : IShortcutService
         }
     }
 
-    private static string? ExtractAndSaveIcon(string path, int id)
+    private static DerivedIcon? ExtractAndSaveIcon(string path, int id)
     {
         try
         {
+            var iconPath = Path.Combine(DirectoryHelper.IconsDirectory, $"shortcut_{id}.png");
+            if (IsReusablePng(iconPath))
+            {
+                return new DerivedIcon(iconPath, IsNewFile: false);
+            }
+
             var lookupPath = Environment.ExpandEnvironmentVariables(path);
             var icon = ExtractShellIcon(lookupPath);
             if (icon == null && File.Exists(lookupPath))
@@ -258,16 +311,98 @@ public class ShortcutService : IShortcutService
                 return null;
             }
 
-            var iconFileName = $"shortcut_{id}.png";
-            var iconPath = Path.Combine(DirectoryHelper.IconsDirectory, iconFileName);
-
             using (icon)
             using (var bitmap = icon.ToBitmap())
             {
-                bitmap.Save(iconPath, ImageFormat.Png);
+                return WriteDerivedIconAtomically(
+                    iconPath,
+                    temporaryPath => bitmap.Save(temporaryPath, ImageFormat.Png));
+            }
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    internal static DerivedIcon? WriteDerivedIconAtomically(
+        string iconPath,
+        Action<string> writeTemporaryFile)
+    {
+        lock (DerivedIconSync)
+        {
+            if (IsReusablePng(iconPath))
+            {
+                return new DerivedIcon(iconPath, IsNewFile: false);
             }
 
-            return iconPath;
+            var temporaryPath = $"{iconPath}.{Guid.NewGuid():N}.tmp";
+            try
+            {
+                writeTemporaryFile(temporaryPath);
+                if (!IsReusablePng(temporaryPath))
+                {
+                    return null;
+                }
+
+                File.Move(temporaryPath, iconPath, overwrite: true);
+                return new DerivedIcon(iconPath, IsNewFile: true);
+            }
+            catch
+            {
+                return null;
+            }
+            finally
+            {
+                if (File.Exists(temporaryPath))
+                {
+                    try
+                    {
+                        File.Delete(temporaryPath);
+                    }
+                    catch
+                    {
+                    }
+                }
+            }
+        }
+    }
+
+    internal static bool IsReusablePng(string path)
+    {
+        if (!File.Exists(path))
+        {
+            return false;
+        }
+
+        try
+        {
+            using var stream = new FileStream(
+                path,
+                FileMode.Open,
+                FileAccess.Read,
+                FileShare.Read);
+            using var image = Image.FromStream(stream, useEmbeddedColorManagement: false, validateImageData: true);
+            return image.Width > 0 &&
+                   image.Height > 0 &&
+                   image.RawFormat.Guid == ImageFormat.Png.Guid;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static string? ComputeFileSha256(string path)
+    {
+        try
+        {
+            using var stream = new FileStream(
+                path,
+                FileMode.Open,
+                FileAccess.Read,
+                FileShare.Read);
+            return Convert.ToHexString(SHA256.HashData(stream));
         }
         catch
         {

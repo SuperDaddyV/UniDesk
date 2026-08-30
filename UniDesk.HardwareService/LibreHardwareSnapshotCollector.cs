@@ -51,10 +51,18 @@ public sealed class LibreHardwareSnapshotCollector : IDisposable
             var hardwareNames = new List<string>();
             foreach (var hardware in _computer.Hardware)
             {
-                UpdateHardwareTree(hardware);
                 var deviceId = hardware.Identifier.ToString();
                 var deviceType = MapDeviceType(hardware.HardwareType);
-                hardwareNames.Add($"{deviceType}:{hardware.Name}");
+                hardwareNames.Add(GetHardwareDiagnosticName(
+                    hardware.HardwareType,
+                    deviceType,
+                    hardware.Name));
+                if (!ShouldUpdateHardware(hardware.HardwareType))
+                {
+                    continue;
+                }
+
+                UpdateHardwareTree(hardware);
                 CollectSensors(hardware, deviceId, hardware.Name, deviceType, sensors);
             }
 
@@ -141,14 +149,30 @@ public sealed class LibreHardwareSnapshotCollector : IDisposable
     private static string GetServiceVersion() =>
         typeof(LibreHardwareSnapshotCollector).Assembly.GetName().Version?.ToString(3) ?? "unknown";
 
-    private static void UpdateHardwareTree(IHardware hardware)
+    internal static void UpdateHardwareTree(IHardware hardware)
     {
+        if (!ShouldUpdateHardware(hardware.HardwareType))
+        {
+            return;
+        }
+
         hardware.Update();
         foreach (var child in hardware.SubHardware)
         {
             UpdateHardwareTree(child);
         }
     }
+
+    internal static bool ShouldUpdateHardware(HardwareType hardwareType) =>
+        hardwareType is not HardwareType.GpuAmd;
+
+    internal static string GetHardwareDiagnosticName(
+        HardwareType hardwareType,
+        HardwareDeviceType deviceType,
+        string hardwareName) =>
+        ShouldUpdateHardware(hardwareType)
+            ? $"{deviceType}:{hardwareName}"
+            : $"{deviceType}:{hardwareName} [LibreHardwareMonitor AMD update isolated]";
 
     private static void CollectSensors(
         IHardware hardware,
@@ -157,6 +181,11 @@ public sealed class LibreHardwareSnapshotCollector : IDisposable
         HardwareDeviceType deviceType,
         ICollection<HardwareSensorDto> destination)
     {
+        if (!ShouldUpdateHardware(hardware.HardwareType))
+        {
+            return;
+        }
+
         foreach (var sensor in hardware.Sensors)
         {
             destination.Add(new HardwareSensorDto(
