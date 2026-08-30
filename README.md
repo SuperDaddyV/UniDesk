@@ -56,7 +56,7 @@ UniDesk 是一个轻量、个性化、清爽好用的 Windows 桌面侧边栏工
 
 - 先用「综合最高」与「性价比推荐」给出决策结论，再提供综合、后端、前端、知识四类 Top 5 参考。
 - 数据来自 [ModelDial Radar](https://modeldial.com/zh-CN/radar) 公开评测（[CC BY 4.0](https://modeldial.com/data-license)）；「性价比推荐」只采用发布方的官方 `value` 标签，UniDesk 不重新计算评分或费用。
-- 模块默认关闭，关闭时不发起网络请求。启用后优先读取本地缓存，并只通过固定接口 `https://modeldial.com/api/v1/radar/latest.json` 刷新。
+- 模块默认关闭，关闭时不发起网络请求。UniDesk 运行且模块启用期间，优先读取本地缓存，每 6 小时最多自动检查一次，并只通过固定接口 `https://modeldial.com/api/v1/radar/latest.json` 刷新；也可随时手动刷新。
 - 这是只读决策参考，不调用模型、不执行本地评测，也不修改模型工具配置。公开评测不代表合作或背书，实际表现可能因账号、路由和端点而异。
 
 ### 模块管理

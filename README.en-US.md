@@ -56,7 +56,7 @@ UniDesk is a lightweight, customizable, and clean Windows desktop sidebar that b
 
 - Leads with Overall leader and Value recommendation decision cards, followed by Overall / Backend / Frontend / Knowledge Top 5 reference lists.
 - Data comes from [ModelDial Radar](https://modeldial.com/radar) public evaluations ([CC BY 4.0](https://modeldial.com/data-license)). Value recommendation uses only the publisher's official `value` tag; UniDesk does not recompute scores or costs.
-- Disabled by default and makes no network requests while disabled. When enabled, it loads local cache first and refreshes only through `https://modeldial.com/api/v1/radar/latest.json`.
+- Disabled by default and makes no network requests while disabled. While UniDesk is running and the module is enabled, it loads local cache first, checks for updates at most once every six hours through `https://modeldial.com/api/v1/radar/latest.json`, and also supports manual refresh.
 - This is a read-only decision reference: UniDesk does not call models, run local evaluations, or change model-tool configuration. Public evaluation data does not imply partnership or endorsement; actual performance may vary by account, route, and endpoint.
 
 ### Module Management
