@@ -1,6 +1,6 @@
 # UniDesk
 
-UniDesk es una barra lateral ligera, personalizable y limpia para el escritorio de Windows. Reúne hora y clima, monitorización de hardware, accesos directos, tareas, notas rápidas y textos frecuentes en un espacio de trabajo cómodo.
+UniDesk es una barra lateral ligera, personalizable y limpia para el escritorio de Windows. Reúne hora y clima, monitorización de hardware, radar de modelos, accesos directos, tareas, notas rápidas y textos frecuentes en un espacio de trabajo cómodo.
 
 <p align="center">
   <a href="README.md">简体中文</a> ·
@@ -52,6 +52,13 @@ UniDesk es una barra lateral ligera, personalizable y limpia para el escritorio 
 - Permite copiar con un clic.
 - Incluye filtrado de contenido sensible para reducir el guardado accidental de códigos de verificación, contraseñas, tokens, cookies y textos similares.
 
+### Radar de modelos
+
+- Primero muestra las tarjetas Líder general y Recomendación de valor; después ofrece listas de referencia Top 5 de General / Backend / Frontend / Conocimiento.
+- Los datos proceden de evaluaciones públicas de [ModelDial Radar](https://modeldial.com/radar) ([CC BY 4.0](https://modeldial.com/data-license)). Recomendación de valor usa únicamente la etiqueta oficial `value` del publicador; UniDesk no recalcula puntuaciones ni costes.
+- Está desactivado de forma predeterminada y no realiza solicitudes de red mientras está desactivado. Al activarlo, primero lee la caché local y solo actualiza desde `https://modeldial.com/api/v1/radar/latest.json`.
+- Es una referencia de decisión de solo lectura: UniDesk no ejecuta modelos, no realiza evaluaciones locales ni modifica la configuración de las herramientas de modelos. Los datos públicos no implican colaboración ni respaldo; el rendimiento real puede variar según la cuenta, la ruta y el endpoint.
+
 ### Gestión de módulos
 
 - Permite mostrar u ocultar módulos.
@@ -82,6 +89,14 @@ Al contraerse, UniDesk mantiene visibles la hora, el clima, el estado del hardwa
 ### Funciones principales
 
 ![Resumen de funciones de UniDesk](images/unidesk-features.png)
+
+### Radar de modelos
+
+Dos tarjetas de decisión muestran primero el líder general actual y la recomendación de valor oficial de ModelDial; después puedes consultar los Top 5 por tipo de tarea.
+
+![Presentación del radar de modelos de UniDesk](images/unidesk-model-radar.png)
+
+La imagen usa el lote público del 30 de agosto de 2026; los resultados de la aplicación se actualizan con los datos de ModelDial Radar.
 
 ### Personalización
 
@@ -177,6 +192,7 @@ Free code signing provided by SignPath.io, certificate by SignPath Foundation.
 
 Las versiones recientes incluyen:
 
+- Radar de modelos con líder general, recomendación de valor oficial y listas Top 5 de General / Backend / Frontend / Conocimiento.
 - Gestión de módulos con mostrar / ocultar y ordenación.
 - Arrastrar para añadir accesos directos y ordenación libre.
 - Notas rápidas con varias notas, guardado automático, fijar y copiar.

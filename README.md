@@ -1,6 +1,6 @@
 # UniDesk
 
-UniDesk 是一个轻量、个性化、清爽好用的 Windows 桌面侧边栏工具，把时间天气、硬件监视、快捷方式、待办事项、快速便签和快捷文本整合进一个顺手的桌面工作台。
+UniDesk 是一个轻量、个性化、清爽好用的 Windows 桌面侧边栏工具，把时间天气、硬件监视、模型雷达、快捷方式、待办事项、快速便签和快捷文本整合进一个顺手的桌面工作台。
 
 <p align="center">
   简体中文 ·
@@ -52,6 +52,13 @@ UniDesk 是一个轻量、个性化、清爽好用的 Windows 桌面侧边栏工
 - 支持一键复制。
 - 支持敏感内容过滤，尽量避免保存验证码、密码、Token、Cookie 等敏感文本。
 
+### 模型雷达
+
+- 先用「综合最高」与「性价比推荐」给出决策结论，再提供综合、后端、前端、知识四类 Top 5 参考。
+- 数据来自 [ModelDial Radar](https://modeldial.com/zh-CN/radar) 公开评测（[CC BY 4.0](https://modeldial.com/data-license)）；「性价比推荐」只采用发布方的官方 `value` 标签，UniDesk 不重新计算评分或费用。
+- 模块默认关闭，关闭时不发起网络请求。启用后优先读取本地缓存，并只通过固定接口 `https://modeldial.com/api/v1/radar/latest.json` 刷新。
+- 这是只读决策参考，不调用模型、不执行本地评测，也不修改模型工具配置。公开评测不代表合作或背书，实际表现可能因账号、路由和端点而异。
+
 ### 模块管理
 
 - 支持模块显示 / 隐藏。
@@ -82,6 +89,14 @@ UniDesk 是一个轻量、个性化、清爽好用的 Windows 桌面侧边栏工
 ### 核心功能
 
 ![UniDesk 核心功能概览](images/unidesk-features.png)
+
+### 模型雷达
+
+两张决策卡先回答当前综合最高配置和 ModelDial 官方性价比推荐，再查看不同任务维度的 Top 5。
+
+![UniDesk 模型雷达展示](images/unidesk-model-radar.png)
+
+展示图使用 2026 年 8 月 30 日公开批次；应用内结果会随 ModelDial Radar 数据更新。
 
 ### 个性化设置
 
@@ -177,6 +192,7 @@ Free code signing provided by SignPath.io, certificate by SignPath Foundation.
 
 当前版本已补充以下能力：
 
+- 新增模型雷达：展示综合最高、官方性价比推荐及综合、后端、前端、知识四类 Top 5。
 - 新增模块管理：支持模块显示 / 隐藏和排序。
 - 新增快捷方式拖拽添加与自由排序。
 - 新增快速便签：支持多条便签、自动保存、置顶和复制。

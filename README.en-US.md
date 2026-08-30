@@ -1,6 +1,6 @@
 # UniDesk
 
-UniDesk is a lightweight, customizable, and clean Windows desktop sidebar that brings time and weather, hardware monitoring, shortcuts, todos, quick notes, and quick text into one convenient desktop workspace.
+UniDesk is a lightweight, customizable, and clean Windows desktop sidebar that brings time and weather, hardware monitoring, Model Radar, shortcuts, todos, quick notes, and quick text into one convenient desktop workspace.
 
 <p align="center">
   <a href="README.md">简体中文</a> ·
@@ -52,6 +52,13 @@ UniDesk is a lightweight, customizable, and clean Windows desktop sidebar that b
 - Supports one-click copy.
 - Includes sensitive-content filtering to reduce accidental storage of verification codes, passwords, tokens, cookies, and similar text.
 
+### Model Radar
+
+- Leads with Overall leader and Value recommendation decision cards, followed by Overall / Backend / Frontend / Knowledge Top 5 reference lists.
+- Data comes from [ModelDial Radar](https://modeldial.com/radar) public evaluations ([CC BY 4.0](https://modeldial.com/data-license)). Value recommendation uses only the publisher's official `value` tag; UniDesk does not recompute scores or costs.
+- Disabled by default and makes no network requests while disabled. When enabled, it loads local cache first and refreshes only through `https://modeldial.com/api/v1/radar/latest.json`.
+- This is a read-only decision reference: UniDesk does not call models, run local evaluations, or change model-tool configuration. Public evaluation data does not imply partnership or endorsement; actual performance may vary by account, route, and endpoint.
+
 ### Module Management
 
 - Show or hide modules.
@@ -82,6 +89,14 @@ Collapsed mode keeps the time, weather, hardware status, and next todo visible w
 ### Core Features
 
 ![UniDesk feature overview](images/unidesk-features.png)
+
+### Model Radar
+
+Two decision cards identify the current overall leader and ModelDial's official value recommendation before the task-specific Top 5 lists.
+
+![UniDesk Model Radar showcase](images/unidesk-model-radar.png)
+
+The showcase uses the public batch from August 30, 2026; in-app results update with ModelDial Radar data.
 
 ### Personalization
 
@@ -177,6 +192,7 @@ Free code signing provided by SignPath.io, certificate by SignPath Foundation.
 
 Recent versions include:
 
+- Model Radar with the overall leader, official value recommendation, and Overall / Backend / Frontend / Knowledge Top 5 lists.
 - Module management with show / hide and ordering.
 - Shortcut drag-to-add and free ordering.
 - Quick Notes with multiple notes, auto save, pinning, and copy.
