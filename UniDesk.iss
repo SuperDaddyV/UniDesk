@@ -19,6 +19,12 @@
 #ifndef MyOutputDir
   #define MyOutputDir "installer"
 #endif
+#ifndef MyPayloadManifestSha256Part1
+  #define MyPayloadManifestSha256Part1 "unbound-local-build-part-1"
+#endif
+#ifndef MyPayloadManifestSha256Part2
+  #define MyPayloadManifestSha256Part2 "unbound-local-build-part-2"
+#endif
 #define MyAppIconSourceDir "UniDesk\icon"
 #define MyAppIconName "unidesk1-removebg-preview.ico"
 #define MyAppMutex "UniDesk_SingleInstance_Mutex_6B9BD6F1-8E3A-4C5D-9F2B-1A7C8D3E5F9A"
@@ -33,6 +39,8 @@ AppPublisher={#MyAppPublisher}
 AppPublisherURL={#MyAppURL}
 AppSupportURL={#MyAppURL}
 AppUpdatesURL={#MyAppURL}
+VersionInfoDescription=UniDesk payload 1 {#MyPayloadManifestSha256Part1}
+VersionInfoCopyright=UniDesk payload 2 {#MyPayloadManifestSha256Part2}
 DefaultDirName={autopf}\{#MyAppName}
 DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes
@@ -180,6 +188,9 @@ const
   InvalidHandleValue = -1;
   DriveFixed = 3;
   FilePersistentAcls = $00000008;
+  ErrorFileNotFound = 2;
+  ErrorPathNotFound = 3;
+  ErrorNoMoreFiles = 18;
   HardwareCompatibilityExitCode = 31;
   CurrentApplicationMarkerName = '.unidesk-application-path';
   LegacyStartupMigrationMarkerName = '.unidesk-legacy-startup-path';
@@ -210,6 +221,8 @@ function CreateFile(
   external 'CreateFileW@kernel32.dll stdcall';
 function WindowsCloseHandle(Handle: THandle): Boolean;
   external 'CloseHandle@kernel32.dll stdcall';
+function WindowsGetLastError(): Cardinal;
+  external 'GetLastError@kernel32.dll stdcall';
 function GetDriveType(RootPathName: String): Cardinal;
   external 'GetDriveTypeW@kernel32.dll stdcall';
 function GetVolumeInformation(
@@ -479,22 +492,95 @@ begin
     IsSameDirectory(NormalizedPath, ExpandConstant('{userappdata}'));
 end;
 
+function IsMissingDirectoryPath(const DirectoryPath: String): Boolean;
+var
+  CurrentPath: String;
+  ParentPath: String;
+  ErrorCode: Cardinal;
+  FindRec: TFindRec;
+  IsTargetPath: Boolean;
+begin
+  Result := False;
+  CurrentPath := NormalizeDirectoryPath(DirectoryPath);
+  IsTargetPath := True;
+
+  while CurrentPath <> '' do
+  begin
+    if FindFirst(CurrentPath, FindRec) then
+    begin
+      try
+        if IsTargetPath then
+          Result := False
+        else
+          Result := (FindRec.Attributes and FileAttributeDirectory) <> 0;
+      finally
+        FindClose(FindRec);
+      end;
+      Exit;
+    end;
+
+    ErrorCode := WindowsGetLastError();
+    if (ErrorCode <> ErrorFileNotFound) and
+      (ErrorCode <> ErrorPathNotFound) then
+      Exit;
+
+    IsTargetPath := False;
+    ParentPath := NormalizeDirectoryPath(ExtractFileDir(CurrentPath));
+    if (ParentPath = '') or IsSameDirectory(CurrentPath, ParentPath) then
+      Exit;
+    CurrentPath := ParentPath;
+  end;
+end;
+
 function IsDirectoryEmpty(const DirectoryPath: String): Boolean;
 var
+  ErrorCode: Cardinal;
   FindRec: TFindRec;
 begin
-  Result := True;
-  if not FindFirst(AddBackslash(DirectoryPath) + '*', FindRec) then
+  Result := False;
+  if not FindFirst(DirectoryPath, FindRec) then
+  begin
+    Log('Could not inspect the directory before checking whether it is empty: ' +
+      DirectoryPath);
     Exit;
+  end;
+
+  try
+    if (FindRec.Attributes and FileAttributeDirectory) = 0 then
+    begin
+      Log('The path is not a directory: ' + DirectoryPath);
+      Exit;
+    end;
+  finally
+    FindClose(FindRec);
+  end;
+
+  if not FindFirst(AddBackslash(DirectoryPath) + '*', FindRec) then
+  begin
+    ErrorCode := WindowsGetLastError();
+    if ErrorCode <> ErrorFileNotFound then
+      Log('Could not enumerate the directory while checking whether it is empty: ' +
+        DirectoryPath);
+    Result := ErrorCode = ErrorFileNotFound;
+    Exit;
+  end;
 
   try
     repeat
       if (FindRec.Name <> '.') and (FindRec.Name <> '..') then
-      begin
-        Result := False;
         Exit;
-      end;
-    until not FindNext(FindRec);
+
+      if FindNext(FindRec) then
+        Continue;
+
+      ErrorCode := WindowsGetLastError();
+      if ErrorCode = ErrorNoMoreFiles then
+        Result := True
+      else
+        Log('Could not finish enumerating the directory while checking whether it is empty: ' +
+          DirectoryPath);
+      Exit;
+    until False;
   finally
     FindClose(FindRec);
   end;
@@ -503,24 +589,43 @@ end;
 function ContainsReparsePoint(const DirectoryPath: String): Boolean;
 var
   ChildPath: String;
+  ErrorCode: Cardinal;
   FindRec: TFindRec;
 begin
   Result := False;
-  if FindFirst(DirectoryPath, FindRec) then
+  if not FindFirst(DirectoryPath, FindRec) then
   begin
-    try
-      if (FindRec.Attributes and FileAttributeReparsePoint) <> 0 then
-      begin
-        Result := True;
-        Exit;
-      end;
-    finally
-      FindClose(FindRec);
+    Log('Could not inspect a directory for reparse points: ' + DirectoryPath);
+    Result := True;
+    Exit;
+  end;
+
+  try
+    if (FindRec.Attributes and FileAttributeReparsePoint) <> 0 then
+    begin
+      Result := True;
+      Exit;
     end;
+    if (FindRec.Attributes and FileAttributeDirectory) = 0 then
+    begin
+      Result := True;
+      Exit;
+    end;
+  finally
+    FindClose(FindRec);
   end;
 
   if not FindFirst(AddBackslash(DirectoryPath) + '*', FindRec) then
+  begin
+    ErrorCode := WindowsGetLastError();
+    if ErrorCode <> ErrorFileNotFound then
+    begin
+      Log('Could not enumerate a directory for reparse points: ' + DirectoryPath);
+      Result := True;
+    end;
     Exit;
+  end;
+
   try
     repeat
       if (FindRec.Name <> '.') and (FindRec.Name <> '..') then
@@ -538,7 +643,19 @@ begin
           Exit;
         end;
       end;
-    until not FindNext(FindRec);
+
+      if FindNext(FindRec) then
+        Continue;
+
+      ErrorCode := WindowsGetLastError();
+      if ErrorCode <> ErrorNoMoreFiles then
+      begin
+        Log('Could not finish enumerating a directory for reparse points: ' +
+          DirectoryPath);
+        Result := True;
+      end;
+      Exit;
+    until False;
   finally
     FindClose(FindRec);
   end;
@@ -556,6 +673,14 @@ begin
 
   while (CurrentPath <> '') and (not DirExists(CurrentPath)) do
   begin
+    if not IsMissingDirectoryPath(CurrentPath) then
+    begin
+      Log('Could not inspect an existing ancestor directory for reparse points: ' +
+        CurrentPath);
+      Result := True;
+      Exit;
+    end;
+
     ParentPath := NormalizeDirectoryPath(ExtractFileDir(CurrentPath));
     if (ParentPath = '') or IsSameDirectory(CurrentPath, ParentPath) then
       Exit;
@@ -564,17 +689,22 @@ begin
 
   while CurrentPath <> '' do
   begin
-    if FindFirst(CurrentPath, FindRec) then
+    if not FindFirst(CurrentPath, FindRec) then
     begin
-      try
-        if (FindRec.Attributes and FileAttributeReparsePoint) <> 0 then
-        begin
-          Result := True;
-          Exit;
-        end;
-      finally
-        FindClose(FindRec);
+      Log('Could not inspect an existing ancestor directory for reparse points: ' +
+        CurrentPath);
+      Result := True;
+      Exit;
+    end;
+
+    try
+      if (FindRec.Attributes and FileAttributeReparsePoint) <> 0 then
+      begin
+        Result := True;
+        Exit;
       end;
+    finally
+      FindClose(FindRec);
     end;
 
     ParentPath := NormalizeDirectoryPath(ExtractFileDir(CurrentPath));
@@ -764,6 +894,7 @@ end;
 function RemoveLegacyRegisteredUninstallerFiles(
   const RegisteredPath: String): Boolean;
 var
+  ErrorCode: Cardinal;
   FindRec: TFindRec;
   RegisteredUninstallerDirectory: String;
   UninstallerPath: String;
@@ -794,7 +925,10 @@ begin
 
   if not FindFirst(AddBackslash(RegisteredPath) + 'unins*.*', FindRec) then
   begin
-    Result := True;
+    ErrorCode := WindowsGetLastError();
+    Result := ErrorCode = ErrorFileNotFound;
+    if not Result then
+      Log('Could not enumerate legacy uninstaller files in: ' + RegisteredPath);
     Exit;
   end;
 
@@ -811,7 +945,17 @@ begin
         end;
         Log('Deleted verified legacy uninstaller file: ' + UninstallerPath);
       end;
-    until not FindNext(FindRec);
+      if FindNext(FindRec) then
+        Continue;
+
+      ErrorCode := WindowsGetLastError();
+      if ErrorCode <> ErrorNoMoreFiles then
+      begin
+        Log('Could not finish enumerating legacy uninstaller files in: ' + RegisteredPath);
+        Exit;
+      end;
+      Break;
+    until False;
   finally
     FindClose(FindRec);
   end;
@@ -930,6 +1074,13 @@ begin
 
   if not DirExists(NormalizedPath) then
   begin
+    if not IsMissingDirectoryPath(NormalizedPath) then
+    begin
+      Log('Could not inspect the selected application directory: ' +
+        NormalizedPath);
+      Result := False;
+      Exit;
+    end;
     Result := True;
     Exit;
   end;
@@ -956,8 +1107,16 @@ begin
     Exit;
   end;
 
-  Result := (not DirExists(NormalizedPath)) or
-    (not ContainsReparsePoint(NormalizedPath));
+  if not DirExists(NormalizedPath) then
+  begin
+    Result := IsMissingDirectoryPath(NormalizedPath);
+    if not Result then
+      Log('Could not inspect the protected component directory: ' +
+        NormalizedPath);
+    Exit;
+  end;
+
+  Result := not ContainsReparsePoint(NormalizedPath);
 end;
 
 function GetLegacyAppHostedOwnedServicePath(
@@ -1104,20 +1263,39 @@ end;
 
 function ResetDirectoryChildrenAcl(const DirectoryPath: String): Boolean;
 var
+  ErrorCode: Cardinal;
   FindRec: TFindRec;
 begin
   if not FindFirst(AddBackslash(DirectoryPath) + '*', FindRec) then
   begin
-    Result := True;
+    ErrorCode := WindowsGetLastError();
+    Result := ErrorCode = ErrorFileNotFound;
+    if not Result then
+      Log('Could not enumerate protected component ACL children: ' + DirectoryPath);
     Exit;
   end;
 
   try
-    Result := RunIcacls(
-      '"' + AddBackslash(DirectoryPath) + '*" /reset /T /C /L /Q');
+    repeat
+      if FindNext(FindRec) then
+        Continue;
+
+      ErrorCode := WindowsGetLastError();
+      if ErrorCode <> ErrorNoMoreFiles then
+      begin
+        Log('Could not finish enumerating protected component ACL children: ' +
+          DirectoryPath);
+        Result := False;
+        Exit;
+      end;
+      Break;
+    until False;
   finally
     FindClose(FindRec);
   end;
+
+  Result := RunIcacls(
+    '"' + AddBackslash(DirectoryPath) + '*" /reset /T /C /L /Q');
 end;
 
 function HardenDirectoryAcl(const DirectoryPath: String): Boolean;
@@ -1284,7 +1462,8 @@ begin
     Exit;
   end;
 
-  if PreviousInstallationExists and DirExists(LegacyInstallPath) then
+  if PreviousInstallationExists and
+    (not IsMissingDirectoryPath(LegacyInstallPath)) then
   begin
     if (not IsSafeApplicationInstallTarget(LegacyInstallPath)) or
       (not AcquireApplicationPathLocks(LegacyInstallPath)) or
@@ -1504,7 +1683,7 @@ end;
 
 function InitializeUninstall: Boolean;
 begin
-  if not DirExists(ExpandConstant('{app}')) then
+  if IsMissingDirectoryPath(ExpandConstant('{app}')) then
   begin
     Log('The application directory is already absent; protected component cleanup will continue.');
     Result := True;
@@ -1601,7 +1780,7 @@ begin
   begin
     ApplicationPath := NormalizeDirectoryPath(ExpandConstant('{app}'));
     ReleaseApplicationPathLocks;
-    if DirExists(ApplicationPath) and
+    if (not IsMissingDirectoryPath(ApplicationPath)) and
       IsDirectoryEmpty(ApplicationPath) and
       (not ContainsReparsePoint(ApplicationPath)) and
       (not ContainsReparsePointInExistingAncestorChain(ApplicationPath)) then

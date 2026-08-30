@@ -288,6 +288,45 @@ public class InstallerHardwareComponentTests
     }
 
     [Fact]
+    public void Installer_DirectoryEnumerationMustFailClosedButAllowVerifiedEmptyDirectories()
+    {
+        var script = File.ReadAllText(Path.Combine(ProjectRoot, "UniDesk.iss"));
+
+        Assert.Contains("function IsMissingDirectoryPath", script, StringComparison.Ordinal);
+        Assert.Contains("ErrorFileNotFound = 2", script, StringComparison.Ordinal);
+        Assert.Contains("ErrorPathNotFound = 3", script, StringComparison.Ordinal);
+        Assert.Contains("ErrorNoMoreFiles = 18", script, StringComparison.Ordinal);
+        Assert.Contains("WindowsGetLastError", script, StringComparison.Ordinal);
+        Assert.Contains("IsTargetPath := True", script, StringComparison.Ordinal);
+        Assert.Contains("if IsTargetPath then", script, StringComparison.Ordinal);
+        Assert.Contains("IsTargetPath := False", script, StringComparison.Ordinal);
+        Assert.Contains("ParentPath := NormalizeDirectoryPath(ExtractFileDir(CurrentPath))", script, StringComparison.Ordinal);
+        Assert.Contains("if (ErrorCode <> ErrorFileNotFound) and", script, StringComparison.Ordinal);
+        Assert.Contains("if not IsMissingDirectoryPath(NormalizedPath) then", script, StringComparison.Ordinal);
+        Assert.Contains("if not IsMissingDirectoryPath(CurrentPath) then", script, StringComparison.Ordinal);
+
+        var emptyStart = script.IndexOf("function IsDirectoryEmpty", StringComparison.Ordinal);
+        var reparseStart = script.IndexOf("function ContainsReparsePoint", emptyStart, StringComparison.Ordinal);
+        var emptyBody = script[emptyStart..reparseStart];
+        Assert.Contains("Result := False", emptyBody, StringComparison.Ordinal);
+        Assert.Contains("ErrorCode = ErrorFileNotFound", emptyBody, StringComparison.Ordinal);
+        Assert.Contains("ErrorCode = ErrorNoMoreFiles", emptyBody, StringComparison.Ordinal);
+
+        var resetStart = script.IndexOf("function ResetDirectoryChildrenAcl", StringComparison.Ordinal);
+        var hardenStart = script.IndexOf("function HardenDirectoryAcl", resetStart, StringComparison.Ordinal);
+        var resetBody = script[resetStart..hardenStart];
+        Assert.Contains("ErrorCode = ErrorFileNotFound", resetBody, StringComparison.Ordinal);
+        Assert.Contains("ErrorCode <> ErrorNoMoreFiles", resetBody, StringComparison.Ordinal);
+
+        var reparseBody = script[reparseStart..script.IndexOf(
+            "function ContainsReparsePointInExistingAncestorChain",
+            reparseStart,
+            StringComparison.Ordinal)];
+        Assert.Contains("Result := True", reparseBody, StringComparison.Ordinal);
+        Assert.Contains("ErrorCode <> ErrorFileNotFound", reparseBody, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Installer_ShouldAllowSelectableAppDirectoryAndProtectSystemComponents()
     {
         var script = File.ReadAllText(Path.Combine(ProjectRoot, "UniDesk.iss"));
@@ -473,7 +512,10 @@ public class InstallerHardwareComponentTests
         var initializeBody = script[initializeIndex..removeServiceIndex];
 
         Assert.DoesNotContain("ForceDirectories(ExpandConstant('{app}'))", initializeBody, StringComparison.Ordinal);
-        Assert.Contains("if not DirExists(ExpandConstant('{app}')) then", initializeBody, StringComparison.Ordinal);
+        Assert.Contains(
+            "if IsMissingDirectoryPath(ExpandConstant('{app}')) then",
+            initializeBody,
+            StringComparison.Ordinal);
         Assert.Contains("CurUninstallStep = usPostUninstall", script, StringComparison.Ordinal);
         Assert.Contains("ReleaseApplicationPathLocks", script, StringComparison.Ordinal);
         Assert.Contains("IsDirectoryEmpty", script, StringComparison.Ordinal);

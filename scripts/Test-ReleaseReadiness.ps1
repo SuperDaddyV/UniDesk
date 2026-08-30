@@ -90,7 +90,7 @@ $expectedPackageLocks = @(Get-ChildItem -LiteralPath $projectRoot -Filter '*.csp
         if (-not (Test-Path -LiteralPath $lockPath -PathType Leaf)) {
             throw "Package lock file is missing for $($_.FullName)."
         }
-        [ordered]@{
+        [pscustomobject][ordered]@{
             path = [IO.Path]::GetRelativePath($projectRoot, $lockPath).Replace('\', '/')
             sha256 = (Get-FileHash -LiteralPath $lockPath -Algorithm SHA256).Hash.ToLowerInvariant()
         }

@@ -63,6 +63,9 @@ if ($RequireSignedPayload) {
     }
 }
 $sourceManifest = Get-Content -LiteralPath $sourceManifestPath -Raw | ConvertFrom-Json
+$sourceManifestSha256 = (Get-FileHash -LiteralPath $sourceManifestPath -Algorithm SHA256).Hash.ToLowerInvariant()
+$sourceManifestSha256Part1 = $sourceManifestSha256.Substring(0, 32)
+$sourceManifestSha256Part2 = $sourceManifestSha256.Substring(32, 32)
 if ($sourceManifest.schema -ne 3) {
     throw "Unsupported release source manifest schema '$($sourceManifest.schema)'."
 }
@@ -133,6 +136,8 @@ $definitions = @(
     "/DMyHardwareServiceSourceDir=$serviceDirectory",
     "/DMyHardwareRepairSourceDir=$repairDirectory",
     "/DMyOutputDir=$outputPath",
+    "/DMyPayloadManifestSha256Part1=$sourceManifestSha256Part1",
+    "/DMyPayloadManifestSha256Part2=$sourceManifestSha256Part2",
     (Join-Path $projectRoot 'UniDesk.iss')
 )
 & $IsccPath @definitions
@@ -143,6 +148,10 @@ if ($LASTEXITCODE -ne 0) {
 $installerPath = Join-Path $outputPath "UniDesk_Setup_$Version.exe"
 if (-not (Test-Path -LiteralPath $installerPath -PathType Leaf)) {
     throw "Expected installer was not created: $installerPath"
+}
+$finalSourceManifestSha256 = (Get-FileHash -LiteralPath $sourceManifestPath -Algorithm SHA256).Hash.ToLowerInvariant()
+if ($finalSourceManifestSha256 -ne $sourceManifestSha256) {
+    throw 'The release source manifest changed while the installer was being compiled.'
 }
 
 Write-Host "Installer created at $installerPath"

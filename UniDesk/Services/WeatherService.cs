@@ -222,7 +222,8 @@ public class WeatherService : IWeatherService, IDisposable
         CancellationToken cancellationToken = default,
         bool notifyUser = true)
     {
-        var token = CreateRefreshToken(cancellationToken);
+        var refreshCts = CreateRefreshToken(cancellationToken);
+        var token = refreshCts.Token;
 
         try
         {
@@ -255,7 +256,7 @@ public class WeatherService : IWeatherService, IDisposable
         }
         finally
         {
-            ClearRefreshToken();
+            ClearRefreshToken(refreshCts);
         }
     }
 
@@ -290,24 +291,28 @@ public class WeatherService : IWeatherService, IDisposable
 
     public string GetEffectiveApiKey() => _apiClient.GetApiKey();
 
-    private CancellationToken CreateRefreshToken(CancellationToken external)
+    private CancellationTokenSource CreateRefreshToken(CancellationToken external)
     {
         lock (_refreshLock)
         {
             _refreshCts?.Cancel();
-            _refreshCts?.Dispose();
-            _refreshCts = CancellationTokenSource.CreateLinkedTokenSource(external);
-            return _refreshCts.Token;
+            var refreshCts = CancellationTokenSource.CreateLinkedTokenSource(external);
+            _refreshCts = refreshCts;
+            return refreshCts;
         }
     }
 
-    private void ClearRefreshToken()
+    private void ClearRefreshToken(CancellationTokenSource refreshCts)
     {
         lock (_refreshLock)
         {
-            _refreshCts?.Dispose();
-            _refreshCts = null;
+            if (ReferenceEquals(_refreshCts, refreshCts))
+            {
+                _refreshCts = null;
+            }
         }
+
+        refreshCts.Dispose();
     }
 
     private async Task<(string Id, string Lat, string Lon)?> GetCityLocationAsync(string city, CancellationToken cancellationToken)
@@ -436,8 +441,15 @@ public class WeatherService : IWeatherService, IDisposable
 
     public void Dispose()
     {
-        CancelRefresh();
-        ClearRefreshToken();
+        CancellationTokenSource? refreshCts;
+        lock (_refreshLock)
+        {
+            refreshCts = _refreshCts;
+            _refreshCts = null;
+            refreshCts?.Cancel();
+        }
+
+        refreshCts?.Dispose();
     }
 
     private string L(string key, string fallback) =>

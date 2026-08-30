@@ -9,10 +9,13 @@ public class SettingsService : ISettingsService, IDisposable
     private readonly IUserDataProtector _userDataProtector;
     private readonly Dictionary<string, string?> _cache = new();
     private readonly SemaphoreSlim _saveLock = new(1, 1);
-    private readonly Dictionary<string, string?> _pendingWrites = new();
+    private readonly Dictionary<string, PendingWrite> _pendingWrites = new();
+    private readonly Dictionary<string, long> _latestWriteVersions = new(StringComparer.Ordinal);
     private readonly object _stateLock = new();
     private CancellationTokenSource? _flushCts;
     private Task? _flushTask;
+    private long _writeVersion;
+    private int _cacheRefreshVersion;
     private bool _disposed;
 
     public SettingsService(IDatabaseService databaseService)
@@ -30,7 +33,8 @@ public class SettingsService : ISettingsService, IDisposable
 
     public async Task InitializeAsync()
     {
-        await _databaseService.InitializeAsync();
+        await Task.Run(() => _databaseService.InitializeAsync()).ConfigureAwait(false);
+        await ReloadCacheAsync().ConfigureAwait(false);
     }
 
     public async Task<string?> GetSettingAsync(string key)
@@ -65,33 +69,38 @@ public class SettingsService : ISettingsService, IDisposable
             {
                 return cachedValue;
             }
+
         }
 
-        var value = GetSettingFromDatabaseAsync(key).GetAwaiter().GetResult();
-        lock (_stateLock)
-        {
-            if (_cache.TryGetValue(key, out var cachedValue))
-            {
-                return cachedValue;
-            }
-
-            _cache[key] = value;
-        }
-
-        return value;
+        return null;
     }
 
     public async Task SetSettingAsync(string key, string? value)
     {
+        long version;
         lock (_stateLock)
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
+            version = ++_writeVersion;
+            _latestWriteVersions[key] = version;
+            _pendingWrites.Remove(key);
         }
 
-        await SaveSettingToDatabaseAsync(key, value);
-        lock (_stateLock)
+        await _saveLock.WaitAsync();
+        try
         {
-            _cache[key] = value;
+            await SaveSettingToDatabaseAsync(key, value);
+            lock (_stateLock)
+            {
+                if (IsLatestWrite(key, version))
+                {
+                    _cache[key] = value;
+                }
+            }
+        }
+        finally
+        {
+            _saveLock.Release();
         }
     }
 
@@ -128,8 +137,26 @@ public class SettingsService : ISettingsService, IDisposable
     {
         lock (_stateLock)
         {
+            if (_disposed)
+            {
+                return;
+            }
+
+            ++_cacheRefreshVersion;
             _cache.Clear();
         }
+    }
+
+    public async Task ReloadCacheAsync()
+    {
+        int refreshVersion;
+        lock (_stateLock)
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+            refreshVersion = ++_cacheRefreshVersion;
+        }
+
+        await Task.Run(() => RefreshCacheAsync(refreshVersion)).ConfigureAwait(false);
     }
 
     public void FlushPendingSaves()
@@ -156,8 +183,10 @@ public class SettingsService : ISettingsService, IDisposable
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
             currentCts = new CancellationTokenSource();
+            var version = ++_writeVersion;
+            _latestWriteVersions[key] = version;
             _cache[key] = value;
-            _pendingWrites[key] = value;
+            _pendingWrites[key] = new PendingWrite(value, version);
             previousCts = _flushCts;
             _flushCts = currentCts;
             _flushTask = Task.Run(() => FlushAfterDelayAsync(currentCts));
@@ -202,27 +231,33 @@ public class SettingsService : ISettingsService, IDisposable
         await _saveLock.WaitAsync();
         try
         {
-            Dictionary<string, string?> batch;
+            Dictionary<string, PendingWrite> batch;
             lock (_stateLock)
             {
                 if (_pendingWrites.Count == 0) return;
-                batch = new Dictionary<string, string?>(_pendingWrites);
+                batch = new Dictionary<string, PendingWrite>(_pendingWrites);
                 _pendingWrites.Clear();
             }
 
             try
             {
-                await SaveSettingsBatchToDatabaseAsync(batch);
+                var values = GetLatestValues(batch);
+                if (values.Count > 0)
+                {
+                    await SaveSettingsBatchToDatabaseAsync(values);
+                    UpdateCacheFromSuccessfulWrites(batch);
+                }
             }
             catch
             {
                 lock (_stateLock)
                 {
-                    foreach (var (key, value) in batch)
+                    foreach (var (key, pendingWrite) in batch)
                     {
-                        if (!_pendingWrites.ContainsKey(key))
+                        if (IsLatestWrite(key, pendingWrite.Version) &&
+                            !_pendingWrites.ContainsKey(key))
                         {
-                            _pendingWrites[key] = value;
+                            _pendingWrites[key] = pendingWrite;
                         }
                     }
                 }
@@ -242,16 +277,18 @@ public class SettingsService : ISettingsService, IDisposable
         await _saveLock.WaitAsync();
         try
         {
-            Dictionary<string, string?> pendingBeforeSave;
-            Dictionary<string, string?> batch;
+            Dictionary<string, PendingWrite> pendingBeforeSave;
+            Dictionary<string, PendingWrite> batch;
             lock (_stateLock)
             {
                 ObjectDisposedException.ThrowIf(_disposed, this);
-                pendingBeforeSave = new Dictionary<string, string?>(_pendingWrites);
-                batch = new Dictionary<string, string?>(pendingBeforeSave);
+                pendingBeforeSave = new Dictionary<string, PendingWrite>(_pendingWrites);
+                batch = new Dictionary<string, PendingWrite>(pendingBeforeSave);
                 foreach (var (key, value) in values)
                 {
-                    batch[key] = value;
+                    var version = ++_writeVersion;
+                    _latestWriteVersions[key] = version;
+                    batch[key] = new PendingWrite(value, version);
                 }
 
                 _pendingWrites.Clear();
@@ -259,27 +296,23 @@ public class SettingsService : ISettingsService, IDisposable
 
             try
             {
-                await SaveSettingsBatchToDatabaseAsync(batch);
-                lock (_stateLock)
+                var latestValues = GetLatestValues(batch);
+                if (latestValues.Count > 0)
                 {
-                    foreach (var (key, value) in batch)
-                    {
-                        if (!_pendingWrites.ContainsKey(key))
-                        {
-                            _cache[key] = value;
-                        }
-                    }
+                    await SaveSettingsBatchToDatabaseAsync(latestValues);
+                    UpdateCacheFromSuccessfulWrites(batch);
                 }
             }
             catch
             {
                 lock (_stateLock)
                 {
-                    foreach (var (key, value) in pendingBeforeSave)
+                    foreach (var (key, pendingWrite) in pendingBeforeSave)
                     {
-                        if (!_pendingWrites.ContainsKey(key))
+                        if (IsLatestWrite(key, pendingWrite.Version) &&
+                            !_pendingWrites.ContainsKey(key))
                         {
-                            _pendingWrites[key] = value;
+                            _pendingWrites[key] = pendingWrite;
                         }
                     }
                 }
@@ -333,6 +366,101 @@ public class SettingsService : ISettingsService, IDisposable
         }
     }
 
+    private async Task<Dictionary<string, string?>> LoadAllSettingsAsync()
+    {
+        var settings = await _databaseService.QueryAsync(
+            "SELECT Key, Value FROM Settings ORDER BY Key",
+            reader => new KeyValuePair<string, string?>(
+                reader.GetString(0),
+                reader.IsDBNull(1) ? null : reader.GetString(1)));
+
+        return settings.ToDictionary(
+            setting => setting.Key,
+            setting => DecodeFromStorage(setting.Key, setting.Value),
+            StringComparer.Ordinal);
+    }
+
+    private async Task RefreshCacheAsync(int refreshVersion)
+    {
+        await _saveLock.WaitAsync().ConfigureAwait(false);
+        try
+        {
+            long writeVersion;
+            lock (_stateLock)
+            {
+                writeVersion = _writeVersion;
+            }
+
+            var values = await LoadAllSettingsAsync().ConfigureAwait(false);
+            lock (_stateLock)
+            {
+                if (_disposed || refreshVersion != _cacheRefreshVersion)
+                {
+                    return;
+                }
+
+                foreach (var key in _cache.Keys.ToList())
+                {
+                    if (!_pendingWrites.ContainsKey(key) &&
+                        (!_latestWriteVersions.TryGetValue(key, out var version) ||
+                         version <= writeVersion) &&
+                        !values.ContainsKey(key))
+                    {
+                        _cache.Remove(key);
+                    }
+                }
+
+                foreach (var (key, value) in values)
+                {
+                    if (!_latestWriteVersions.TryGetValue(key, out var version) ||
+                        version <= writeVersion)
+                    {
+                        _cache[key] = value;
+                    }
+                }
+
+                foreach (var (key, pendingWrite) in _pendingWrites)
+                {
+                    _cache[key] = pendingWrite.Value;
+                }
+            }
+        }
+        finally
+        {
+            _saveLock.Release();
+        }
+    }
+
+    private Dictionary<string, string?> GetLatestValues(
+        IReadOnlyDictionary<string, PendingWrite> batch)
+    {
+        lock (_stateLock)
+        {
+            return batch
+                .Where(item => IsLatestWrite(item.Key, item.Value.Version))
+                .ToDictionary(item => item.Key, item => item.Value.Value, StringComparer.Ordinal);
+        }
+    }
+
+    private void UpdateCacheFromSuccessfulWrites(
+        IReadOnlyDictionary<string, PendingWrite> batch)
+    {
+        lock (_stateLock)
+        {
+            foreach (var (key, pendingWrite) in batch)
+            {
+                if (IsLatestWrite(key, pendingWrite.Version))
+                {
+                    _cache[key] = pendingWrite.Value;
+                }
+            }
+        }
+    }
+
+    private bool IsLatestWrite(string key, long version) =>
+        _latestWriteVersions.TryGetValue(key, out var latestVersion) &&
+        latestVersion == version;
+
     private async Task SaveSettingToDatabaseAsync(string key, string? value)
     {
         try
@@ -382,6 +510,8 @@ public class SettingsService : ISettingsService, IDisposable
             "SettingsService.Get");
         return null;
     }
+
+    private sealed record PendingWrite(string? Value, long Version);
 
     public void Dispose()
     {

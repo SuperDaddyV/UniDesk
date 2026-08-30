@@ -53,6 +53,7 @@ public class TodoBackupServiceTests
         await db.ExecuteNonQueryAsync("DELETE FROM TextSnippets");
 
         var result = await ImportAsync(backupService, _backupFile);
+        await settingsService.ReloadCacheAsync();
 
         Assert.True(result.SettingCount > 0);
         Assert.Equal(1, result.ShortcutCount);
@@ -146,6 +147,7 @@ public class TodoBackupServiceTests
         try
         {
             var result = await ImportAsync(backupService, _backupFile);
+            await settingsService.ReloadCacheAsync();
 
             Assert.Equal(1, result.SettingCount);
             using var document = JsonDocument.Parse(
@@ -379,6 +381,190 @@ public class TodoBackupServiceTests
     }
 
     [Fact]
+    public async Task PrepareImportAsync_InvalidShortcutEnum_ShouldRejectBeforeAnyWrite()
+    {
+        await AssertInvalidPayloadPreservesExistingTodoAsync(
+            """
+            {
+              "version": 5,
+              "exportedAt": "2026-07-10T00:00:00Z",
+              "shortcuts": [
+                {
+                  "name": "非法类型",
+                  "path": "C:\\Tools\\runner.exe",
+                  "type": 99,
+                  "sortOrder": 0,
+                  "createdAt": "2026-07-10T00:00:00Z"
+                }
+              ]
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task PrepareImportAsync_InvalidTodoPriority_ShouldRejectBeforeAnyWrite()
+    {
+        await AssertInvalidPayloadPreservesExistingTodoAsync(
+            """
+            {
+              "version": 5,
+              "exportedAt": "2026-07-10T00:00:00Z",
+              "todos": [
+                {
+                  "title": "非法优先级",
+                  "isCompleted": false,
+                  "priority": 99,
+                  "createdAt": "2026-07-10T00:00:00Z"
+                }
+              ]
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task PrepareImportAsync_NegativeUseCount_ShouldRejectBeforeAnyWrite()
+    {
+        await AssertInvalidPayloadPreservesExistingTodoAsync(
+            """
+            {
+              "version": 5,
+              "exportedAt": "2026-07-10T00:00:00Z",
+              "textSnippets": [
+                {
+                  "title": "短语",
+                  "content": "正文",
+                  "category": "默认",
+                  "sortOrder": 0,
+                  "useCount": -1,
+                  "createdAt": "2026-07-10T00:00:00Z",
+                  "updatedAt": "2026-07-10T00:00:00Z"
+                }
+              ]
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task PrepareImportAsync_ZeroClipboardUseCount_ShouldRejectBeforeAnyWrite()
+    {
+        await AssertInvalidPayloadPreservesExistingTodoAsync(
+            """
+            {
+              "version": 5,
+              "exportedAt": "2026-07-10T00:00:00Z",
+              "clipboardHistory": [
+                {
+                  "content": "clipboard entry",
+                  "contentHash": "hash",
+                  "useCount": 0,
+                  "createdAt": "2026-07-10T00:00:00Z",
+                  "lastUsedAt": "2026-07-10T00:00:00Z"
+                }
+              ]
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task PrepareImportAsync_WhitespaceTextSnippetCategory_ShouldRejectBeforeAnyWrite()
+    {
+        await AssertInvalidPayloadPreservesExistingTodoAsync(
+            """
+            {
+              "version": 5,
+              "exportedAt": "2026-07-10T00:00:00Z",
+              "textSnippets": [
+                {
+                  "title": "短语",
+                  "content": "正文",
+                  "category": "   ",
+                  "sortOrder": 0,
+                  "useCount": 0,
+                  "createdAt": "2026-07-10T00:00:00Z",
+                  "updatedAt": "2026-07-10T00:00:00Z"
+                }
+              ]
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task PrepareImportAsync_NegativeSortOrder_ShouldRejectBeforeAnyWrite()
+    {
+        await AssertInvalidPayloadPreservesExistingTodoAsync(
+            """
+            {
+              "version": 5,
+              "exportedAt": "2026-07-10T00:00:00Z",
+              "shortcuts": [
+                {
+                  "name": "非法排序",
+                  "path": "C:\\Tools\\runner.exe",
+                  "type": 0,
+                  "sortOrder": -1,
+                  "createdAt": "2026-07-10T00:00:00Z"
+                }
+              ]
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task PrepareImportAsync_DefaultDate_ShouldRejectBeforeAnyWrite()
+    {
+        await AssertInvalidPayloadPreservesExistingTodoAsync(
+            """
+            {
+              "version": 5,
+              "exportedAt": "2026-07-10T00:00:00Z",
+              "quickNotes": [
+                {
+                  "title": "便签",
+                  "content": "正文",
+                  "isPinned": false,
+                  "sortOrder": 0,
+                  "createdAt": "0001-01-01T00:00:00",
+                  "updatedAt": "2026-07-10T00:00:00Z"
+                }
+              ]
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task PrepareImportAsync_MissingRequiredDate_ShouldRejectBeforeAnyWrite()
+    {
+        await AssertInvalidPayloadPreservesExistingTodoAsync(
+            """
+            {
+              "version": 5,
+              "exportedAt": "2026-07-10T00:00:00Z",
+              "quickNotes": [
+                {
+                  "title": "缺少日期",
+                  "content": "正文",
+                  "isPinned": false,
+                  "sortOrder": 0
+                }
+              ]
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task PrepareImportAsync_NullSectionEntry_ShouldRejectBeforeAnyWrite()
+    {
+        await AssertInvalidPayloadPreservesExistingTodoAsync(
+            """
+            {
+              "version": 5,
+              "exportedAt": "2026-07-10T00:00:00Z",
+              "todos": [null]
+            }
+            """);
+    }
+
+    [Fact]
     public async Task PrepareImportAsync_OversizedFile_ShouldRejectBeforeReading()
     {
         var (_, todoService, _, _, _, _, backupService) = await InitAsync();
@@ -519,14 +705,16 @@ public class TodoBackupServiceTests
                   "name": "安全文件夹",
                   "path": "C:\\Users\\Public",
                   "type": 1,
-                  "sortOrder": 0
+                  "sortOrder": 0,
+                  "createdAt": "2026-07-10T00:00:00Z"
                 },
                 {
                   "name": "带参数程序",
                   "path": "C:\\Tools\\runner.exe",
                   "launchArguments": "--danger",
                   "type": 0,
-                  "sortOrder": 1
+                  "sortOrder": 1,
+                  "createdAt": "2026-07-10T00:00:00Z"
                 }
               ],
               "todos": [
@@ -623,6 +811,21 @@ public class TodoBackupServiceTests
         return await backupService.ApplyImportAsync(plan);
     }
 
+    private async Task AssertInvalidPayloadPreservesExistingTodoAsync(string payload)
+    {
+        var (_, todoService, _, _, _, _, backupService) = await InitAsync();
+        await todoService.CreateTodoAsync(new TodoItem { Title = "保留的待办" });
+        await File.WriteAllTextAsync(_backupFile, payload);
+
+        await Assert.ThrowsAsync<InvalidDataException>(
+            () => backupService.PrepareImportAsync(_backupFile));
+
+        var todos = await todoService.GetAllTodosAsync();
+        Assert.Single(todos);
+        Assert.Equal("保留的待办", todos[0].Title);
+        Cleanup();
+    }
+
     private async Task<(DatabaseService Db, TodoService TodoService, QuickNoteService QuickNoteService, QuickTextService QuickTextService, ShortcutService ShortcutService, SettingsService SettingsService, TodoBackupService BackupService)> InitAsync()
     {
         Cleanup();
@@ -631,6 +834,7 @@ public class TodoBackupServiceTests
         var todoService = new TodoService(db);
         var quickNoteService = new QuickNoteService(db);
         var settingsService = new SettingsService(db);
+        await settingsService.InitializeAsync();
         var quickTextService = new QuickTextService(db, settingsService);
         var shortcutService = new ShortcutService(db);
         var backupService = new TodoBackupService(

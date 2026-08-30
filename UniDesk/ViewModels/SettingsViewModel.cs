@@ -889,6 +889,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
 
         try
         {
+            await _settingsService.ReloadCacheAsync();
             if (result.SettingCount > 0)
             {
                 var startupText = _settingsService.GetValue("Startup", StartupEnabled.ToString());

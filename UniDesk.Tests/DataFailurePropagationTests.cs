@@ -92,6 +92,7 @@ public class DataFailurePropagationTests
         public string GetValue(string key, string defaultValue) => defaultValue;
         public void SetValue(string key, string value) { }
         public void InvalidateCache() { }
+        public Task ReloadCacheAsync() => Task.CompletedTask;
         public Task FlushPendingSavesAsync() => Task.CompletedTask;
         public Task SaveBatchAsync(IReadOnlyDictionary<string, string?> values) => Task.CompletedTask;
     }

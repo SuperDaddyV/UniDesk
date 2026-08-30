@@ -76,6 +76,152 @@ public class ReleasePipelineTests
     }
 
     [Fact]
+    public void UnsignedReleaseReadinessGate_ShouldFailClosedAndProducePublicManifest()
+    {
+        var script = File.ReadAllText(Path.Combine(
+            ProjectRoot,
+            "scripts",
+            "Test-UnsignedReleaseReadiness.ps1"));
+
+        Assert.Contains("[string]$ExpectedSourceRevision", script, StringComparison.Ordinal);
+        Assert.Contains("[string]$ExpectedVersion = '2.1.0'", script, StringComparison.Ordinal);
+        Assert.Contains("$ExpectedVersion -cne '2.1.0'", script, StringComparison.Ordinal);
+        Assert.Contains("Test-ReleasePayloadIntegrity.ps1", script, StringComparison.Ordinal);
+        Assert.Contains("-isnot [bool]", script, StringComparison.Ordinal);
+        Assert.Contains("rev-parse HEAD", script, StringComparison.Ordinal);
+        Assert.Contains("status --porcelain --untracked-files=all", script, StringComparison.Ordinal);
+        Assert.Contains("sourceRevision -ne $ExpectedSourceRevision", script, StringComparison.Ordinal);
+        Assert.Contains("globalJsonSha256", script, StringComparison.Ordinal);
+        Assert.Contains("packageLocks", script, StringComparison.Ordinal);
+        Assert.Contains("[pscustomobject][ordered]@{", script, StringComparison.Ordinal);
+        Assert.Contains("Get-AuthenticodeSignature", script, StringComparison.Ordinal);
+        Assert.Contains("Status -ne 'NotSigned'", script, StringComparison.Ordinal);
+        Assert.Contains(".VersionInfo.ProductVersion.Trim()", script, StringComparison.Ordinal);
+        Assert.Contains(".VersionInfo.FileDescription.Trim()", script, StringComparison.Ordinal);
+        Assert.Contains(".VersionInfo.LegalCopyright.Trim()", script, StringComparison.Ordinal);
+        Assert.Contains("sourceManifestSha256", script, StringComparison.Ordinal);
+        Assert.Contains("*.pdb", script, StringComparison.Ordinal);
+        Assert.Contains("ExpectedPawnIoSignerSubject", script, StringComparison.Ordinal);
+        Assert.Contains("a3a46226c5e2824f4cdd42be0eecbabfc672c86f7889710f5ab1e6ad385b47a0", script, StringComparison.Ordinal);
+        Assert.Contains("ManifestOutputPath", script, StringComparison.Ordinal);
+        Assert.Contains("ChecksumOutputPath", script, StringComparison.Ordinal);
+        Assert.Contains("authenticode = 'NotSigned'", script, StringComparison.Ordinal);
+
+        var buildScript = File.ReadAllText(Path.Combine(ProjectRoot, "scripts", "Build-Release.ps1"));
+        Assert.Contains("Test-UnsignedReleaseReadiness.ps1", buildScript, StringComparison.Ordinal);
+        Assert.Contains("release-manifest.json", buildScript, StringComparison.Ordinal);
+
+        var installerBuildScript = File.ReadAllText(Path.Combine(
+            ProjectRoot,
+            "scripts",
+            "Build-ReleaseInstaller.ps1"));
+        var installerScript = File.ReadAllText(Path.Combine(ProjectRoot, "UniDesk.iss"));
+        Assert.Contains("MyPayloadManifestSha256Part1", installerBuildScript, StringComparison.Ordinal);
+        Assert.Contains("MyPayloadManifestSha256Part2", installerBuildScript, StringComparison.Ordinal);
+        Assert.Contains(
+            "VersionInfoDescription=UniDesk payload 1 {#MyPayloadManifestSha256Part1}",
+            installerScript,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "VersionInfoCopyright=UniDesk payload 2 {#MyPayloadManifestSha256Part2}",
+            installerScript,
+            StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void UnsignedReleaseReadinessGate_ShouldRejectNonBooleanCleanFlag()
+    {
+        var sourceRevision = GetCurrentSourceRevision();
+        var testRoot = Path.Combine(Path.GetTempPath(), "UniDeskTests", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(testRoot);
+
+        try
+        {
+            var result = RunUnsignedReleaseReadinessGate(
+                testRoot,
+                sourceRevision,
+                JsonSerializer.Serialize(new
+                {
+                    schema = 3,
+                    version = "2.1.0",
+                    isDirty = 0,
+                    sourceRevision,
+                    runtime = "win-x64"
+                }));
+
+            Assert.NotEqual(0, result.ExitCode);
+            Assert.Contains("Boolean false", result.Output, StringComparison.Ordinal);
+        }
+        finally
+        {
+            Directory.Delete(testRoot, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void UnsignedReleaseReadinessGate_ShouldRejectExpectedRevisionThatIsNotCurrentHead()
+    {
+        var expectedRevision = new string('0', 40);
+        var testRoot = Path.Combine(Path.GetTempPath(), "UniDeskTests", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(testRoot);
+
+        try
+        {
+            var result = RunUnsignedReleaseReadinessGate(
+                testRoot,
+                expectedRevision,
+                JsonSerializer.Serialize(new
+                {
+                    schema = 3,
+                    version = "2.1.0",
+                    isDirty = false,
+                    sourceRevision = expectedRevision,
+                    runtime = "win-x64"
+                }));
+
+            Assert.NotEqual(0, result.ExitCode);
+            Assert.Contains("current repository HEAD", result.Output, StringComparison.OrdinalIgnoreCase);
+        }
+        finally
+        {
+            Directory.Delete(testRoot, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void UnsignedReleaseReadinessGate_ShouldRejectDirtyOrUntrackedWorktree()
+    {
+        var sourceRevision = GetCurrentSourceRevision();
+        var testRoot = Path.Combine(Path.GetTempPath(), "UniDeskTests", Guid.NewGuid().ToString("N"));
+        var markerPath = Path.Combine(ProjectRoot, $"release-gate-dirty-{Guid.NewGuid():N}.tmp");
+        Directory.CreateDirectory(testRoot);
+        File.WriteAllText(markerPath, "untracked gate fixture");
+
+        try
+        {
+            var result = RunUnsignedReleaseReadinessGate(
+                testRoot,
+                sourceRevision,
+                JsonSerializer.Serialize(new
+                {
+                    schema = 3,
+                    version = "2.1.0",
+                    isDirty = false,
+                    sourceRevision,
+                    runtime = "win-x64"
+                }));
+
+            Assert.NotEqual(0, result.ExitCode);
+            Assert.Contains("worktree", result.Output, StringComparison.OrdinalIgnoreCase);
+        }
+        finally
+        {
+            File.Delete(markerPath);
+            Directory.Delete(testRoot, recursive: true);
+        }
+    }
+
+    [Fact]
     public void ReleaseSigningWorkflow_ShouldBeManualAndSignPayloadBeforeInstaller()
     {
         var workflow = File.ReadAllText(Path.Combine(
@@ -123,6 +269,7 @@ public class ReleasePipelineTests
         Assert.Contains("$productVersion.Equals", readinessScript, StringComparison.Ordinal);
         Assert.Contains("Get-AuthenticodeContentSha256 -Path $InstallerPath", readinessScript, StringComparison.Ordinal);
         Assert.Contains("[string]$UnsignedSourceManifestPath", readinessScript, StringComparison.Ordinal);
+        Assert.Contains("[pscustomobject][ordered]@{", readinessScript, StringComparison.Ordinal);
         var signPathSetup = File.ReadAllText(Path.Combine(
             ProjectRoot,
             "docs",
@@ -388,6 +535,66 @@ public class ReleasePipelineTests
         return process.ExitCode;
     }
 
+    private static (int ExitCode, string Output) RunUnsignedReleaseReadinessGate(
+        string testRoot,
+        string expectedSourceRevision,
+        string sourceManifestJson)
+    {
+        var installerPath = Path.Combine(testRoot, "installer.exe");
+        var manifestPath = Path.Combine(testRoot, "release-source.json");
+        File.WriteAllBytes(installerPath, []);
+        File.WriteAllText(manifestPath, sourceManifestJson);
+
+        var startInfo = new ProcessStartInfo
+        {
+            FileName = "pwsh",
+            UseShellExecute = false,
+            RedirectStandardError = true,
+            RedirectStandardOutput = true
+        };
+        startInfo.ArgumentList.Add("-NoProfile");
+        startInfo.ArgumentList.Add("-File");
+        startInfo.ArgumentList.Add(Path.Combine(
+            ProjectRoot,
+            "scripts",
+            "Test-UnsignedReleaseReadiness.ps1"));
+        startInfo.ArgumentList.Add("-InstallerPath");
+        startInfo.ArgumentList.Add(installerPath);
+        startInfo.ArgumentList.Add("-SourceManifestPath");
+        startInfo.ArgumentList.Add(manifestPath);
+        startInfo.ArgumentList.Add("-ExpectedSourceRevision");
+        startInfo.ArgumentList.Add(expectedSourceRevision);
+
+        using var process = Process.Start(startInfo);
+        Assert.NotNull(process);
+        var standardOutput = process.StandardOutput.ReadToEnd();
+        var standardError = process.StandardError.ReadToEnd();
+        Assert.True(process.WaitForExit(30_000));
+        return (process.ExitCode, standardOutput + standardError);
+    }
+
+    private static string GetCurrentSourceRevision()
+    {
+        var startInfo = new ProcessStartInfo
+        {
+            FileName = "git",
+            UseShellExecute = false,
+            RedirectStandardError = true,
+            RedirectStandardOutput = true,
+            WorkingDirectory = ProjectRoot
+        };
+        startInfo.ArgumentList.Add("rev-parse");
+        startInfo.ArgumentList.Add("HEAD");
+
+        using var process = Process.Start(startInfo);
+        Assert.NotNull(process);
+        var standardOutput = process.StandardOutput.ReadToEnd();
+        var standardError = process.StandardError.ReadToEnd();
+        Assert.True(process.WaitForExit(30_000));
+        Assert.True(process.ExitCode == 0, standardError);
+        return standardOutput.Trim();
+    }
+
     private static byte[] CreateMinimalUnsignedPe()
     {
         var image = new byte[512];
@@ -508,7 +715,14 @@ public class ReleasePipelineTests
             Assert.Contains(sponsorship, content, StringComparison.Ordinal);
             Assert.Contains("CODE_SIGNING_POLICY.md", content, StringComparison.Ordinal);
             Assert.Contains("PRIVACY.md", content, StringComparison.Ordinal);
+            Assert.Contains("Authenticode: NotSigned", content, StringComparison.Ordinal);
         }
+
+        Assert.Contains("v2.1.0 unsigned release exception", codeSigningPolicy, StringComparison.Ordinal);
+        Assert.Contains("Test-UnsignedReleaseReadiness.ps1", File.ReadAllText(Path.Combine(
+            ProjectRoot,
+            "docs",
+            "release-test-matrix-2.1.0.md")), StringComparison.Ordinal);
     }
 
     [Fact]

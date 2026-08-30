@@ -117,7 +117,7 @@ Casos de uso habituales:
 
 ## 📦 Instalación
 
-Descarga el instalador de la vista previa de funciones más reciente desde [v2.1.0-rc.2](https://github.com/SuperDaddyV/UniDesk/releases/tag/v2.1.0-rc.2). Esta vista previa sin firmar incluye Model Radar y los valores predeterminados más recientes de los módulos; Windows SmartScreen puede mostrar una advertencia en el primer inicio. Para la versión estable actual, usa [v2.0.0 estable (Latest)](https://github.com/SuperDaddyV/UniDesk/releases/latest). El nombre del instalador RC2 es:
+El punto oficial de distribución del instalador estable `v2.1.0` es la [GitHub Release v2.1.0](https://github.com/SuperDaddyV/UniDesk/releases/tag/v2.1.0). Esta versión usa una excepción estable sin firma aprobada explícitamente e incluye Model Radar y los valores predeterminados más recientes de los módulos. Verifica antes de instalar el SHA-256 publicado en la página de la Release; Windows SmartScreen o las políticas empresariales pueden advertir o bloquear la instalación. El nombre del instalador es:
 
 ```powershell
 UniDesk_Setup_2.1.0.exe
@@ -162,7 +162,7 @@ Crear un candidato local sin firmar desde un árbol de trabajo limpio:
 .\scripts\Build-Release.ps1 -Version 2.1.0
 ```
 
-El script publica la aplicación, el servicio de hardware y la herramienta de reparación en un directorio nuevo con versión, y compila el instalador únicamente desde esas entradas. Los artefactos públicos deben firmarse con SignPath mediante el flujo manual `Build and sign release candidate` de GitHub Actions y superar `Test-ReleaseReadiness.ps1`; el flujo no crea una GitHub Release automáticamente.
+El script publica la aplicación, el servicio de hardware y la herramienta de reparación en un directorio nuevo con versión, y compila el instalador únicamente desde esas entradas. Un artefacto `v2.1.0` sin firmar creado desde un árbol limpio debe superar `Test-UnsignedReleaseReadiness.ps1`, la matriz manual completa y la aprobación final del propietario del proyecto antes de publicarse. El flujo de SignPath se conserva para futuras versiones firmadas y nunca crea una GitHub Release automáticamente.
 
 ## 🧰 Tecnología
 
@@ -184,7 +184,7 @@ El historial del portapapeles incluye filtrado de contenido sensible para reduci
 
 ## Code signing policy
 
-Los paquetes públicos siguen la [política de firma de código](CODE_SIGNING_POLICY.md) y la [política de privacidad](PRIVACY.md). Cada candidato firmado debe proceder de una revisión pública, recibir aprobación manual y superar las comprobaciones de versión de origen, Authenticode y SHA-256.
+Los paquetes públicos siguen la [política de firma de código](CODE_SIGNING_POLICY.md) y la [política de privacidad](PRIVACY.md). `v2.1.0` usa una excepción estable sin firma aprobada explícitamente: debe proceder de la revisión pública exacta, recibir aprobación manual, superar las comprobaciones completas de carga y SHA-256, y mostrar de forma destacada `Authenticode: NotSigned` junto con el riesgo de Windows SmartScreen o de las políticas empresariales.
 
 Free code signing provided by SignPath.io, certificate by SignPath Foundation.
 

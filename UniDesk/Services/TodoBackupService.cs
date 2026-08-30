@@ -252,8 +252,16 @@ public class TodoBackupService : ITodoBackupService
         }
 
         var json = await File.ReadAllTextAsync(filePath, Utf8NoBom);
-        var payload = JsonSerializer.Deserialize<TodoBackupFile>(json, JsonOptions)
+        TodoBackupFile payload;
+        try
+        {
+            payload = JsonSerializer.Deserialize<TodoBackupFile>(json, JsonOptions)
                       ?? throw new InvalidDataException("备份文件格式无效。");
+        }
+        catch (JsonException exception)
+        {
+            throw new InvalidDataException("备份文件格式无效。", exception);
+        }
 
         ValidatePayload(payload);
         return new BackupImportPlan(payload, BuildPreview(payload));
@@ -420,15 +428,13 @@ public class TodoBackupService : ITodoBackupService
             foreach (var entry in payload.ClipboardHistory)
             {
                 var content = QuickTextService.NormalizeClipboardText(entry.Content);
-                var createdAt = entry.CreatedAt == default ? DateTime.UtcNow : entry.CreatedAt;
-                var lastUsedAt = entry.LastUsedAt == default ? createdAt : entry.LastUsedAt;
                 result.ClipboardHistoryCount += await session.ExecuteNonQueryAsync(
                     "INSERT OR IGNORE INTO ClipboardHistory (Content, ContentHash, CreatedAt, LastUsedAt, UseCount) VALUES (@p0, @p1, @p2, @p3, @p4)",
                     _userDataProtector.Protect(content),
                     QuickTextService.ComputeHash(content),
-                    createdAt.ToString("o", CultureInfo.InvariantCulture),
-                    lastUsedAt.ToString("o", CultureInfo.InvariantCulture),
-                    Math.Max(1, entry.UseCount));
+                    entry.CreatedAt.ToString("o", CultureInfo.InvariantCulture),
+                    entry.LastUsedAt.ToString("o", CultureInfo.InvariantCulture),
+                    entry.UseCount);
             }
         }
 
@@ -493,13 +499,18 @@ public class TodoBackupService : ITodoBackupService
             throw new InvalidDataException("备份文件中没有可还原的数据。");
         }
 
+        ValidateDate(payload.ExportedAt, "ExportedAt");
+
         ValidateEntryCount(payload.IncludedSections, "IncludedSections", MaxIncludedSectionsCount);
         if (payload.IncludedSections != null)
         {
             for (var index = 0; index < payload.IncludedSections.Count; index++)
             {
-                ValidateFieldLength(
+                var section = RequireEntry(
                     payload.IncludedSections[index],
+                    $"IncludedSections[{index}]");
+                ValidateFieldLength(
+                    section,
                     $"IncludedSections[{index}]",
                     MaxShortFieldLength);
             }
@@ -535,7 +546,12 @@ public class TodoBackupService : ITodoBackupService
         {
             for (var index = 0; index < payload.Shortcuts.Count; index++)
             {
-                var entry = payload.Shortcuts[index];
+                var entry = RequireEntry(payload.Shortcuts[index], $"Shortcuts[{index}]");
+                ValidateEnum(entry.Type, $"Shortcuts[{index}].Type");
+                ValidateNonNegative(entry.SortOrder, $"Shortcuts[{index}].SortOrder");
+                ValidateDate(entry.CreatedAt, $"Shortcuts[{index}].CreatedAt");
+                ValidateRequiredField(entry.Name, $"Shortcuts[{index}].Name");
+                ValidateRequiredField(entry.Path, $"Shortcuts[{index}].Path");
                 ValidateFieldLength(entry.Name, $"Shortcuts[{index}].Name", MaxShortFieldLength);
                 ValidateFieldLength(entry.Path, $"Shortcuts[{index}].Path", MaxPathFieldLength);
                 ValidateFieldLength(
@@ -549,7 +565,25 @@ public class TodoBackupService : ITodoBackupService
         {
             for (var index = 0; index < payload.Todos.Count; index++)
             {
-                ValidateFieldLength(payload.Todos[index].Title, $"Todos[{index}].Title", MaxShortFieldLength);
+                var entry = RequireEntry(payload.Todos[index], $"Todos[{index}]");
+                ValidateEnum(entry.Priority, $"Todos[{index}].Priority");
+                ValidateDate(entry.CreatedAt, $"Todos[{index}].CreatedAt");
+                ValidateOptionalDate(entry.DueDate, $"Todos[{index}].DueDate");
+                ValidateOptionalDate(entry.CompletedAt, $"Todos[{index}].CompletedAt");
+                if (entry.IsCompleted != entry.CompletedAt.HasValue)
+                {
+                    throw new InvalidDataException(
+                        $"Todos[{index}] 的 IsCompleted 与 CompletedAt 不一致。");
+                }
+
+                if (entry.CompletedAt < entry.CreatedAt)
+                {
+                    throw new InvalidDataException(
+                        $"Todos[{index}].CompletedAt 不能早于 CreatedAt。");
+                }
+
+                ValidateRequiredField(entry.Title, $"Todos[{index}].Title");
+                ValidateFieldLength(entry.Title, $"Todos[{index}].Title", MaxShortFieldLength);
             }
         }
 
@@ -557,7 +591,18 @@ public class TodoBackupService : ITodoBackupService
         {
             for (var index = 0; index < payload.QuickNotes.Count; index++)
             {
-                var entry = payload.QuickNotes[index];
+                var entry = RequireEntry(payload.QuickNotes[index], $"QuickNotes[{index}]");
+                ValidateDate(entry.CreatedAt, $"QuickNotes[{index}].CreatedAt");
+                ValidateDate(entry.UpdatedAt, $"QuickNotes[{index}].UpdatedAt");
+                if (entry.UpdatedAt < entry.CreatedAt)
+                {
+                    throw new InvalidDataException(
+                        $"QuickNotes[{index}].UpdatedAt 不能早于 CreatedAt。");
+                }
+
+                ValidateRequiredField(entry.Title, $"QuickNotes[{index}].Title");
+                ValidateRequiredField(entry.Content, $"QuickNotes[{index}].Content");
+                ValidateNonNegative(entry.SortOrder, $"QuickNotes[{index}].SortOrder");
                 ValidateFieldLength(entry.Title, $"QuickNotes[{index}].Title", MaxShortFieldLength);
                 ValidateFieldLength(entry.Content, $"QuickNotes[{index}].Content", MaxContentFieldLength);
             }
@@ -567,8 +612,21 @@ public class TodoBackupService : ITodoBackupService
         {
             for (var index = 0; index < payload.ClipboardHistory.Count; index++)
             {
+                var entry = RequireEntry(
+                    payload.ClipboardHistory[index],
+                    $"ClipboardHistory[{index}]");
+                ValidateDate(entry.CreatedAt, $"ClipboardHistory[{index}].CreatedAt");
+                ValidateDate(entry.LastUsedAt, $"ClipboardHistory[{index}].LastUsedAt");
+                if (entry.LastUsedAt < entry.CreatedAt)
+                {
+                    throw new InvalidDataException(
+                        $"ClipboardHistory[{index}].LastUsedAt 不能早于 CreatedAt。");
+                }
+
+                ValidatePositive(entry.UseCount, $"ClipboardHistory[{index}].UseCount");
+                ValidateRequiredField(entry.Content, $"ClipboardHistory[{index}].Content");
                 ValidateFieldLength(
-                    payload.ClipboardHistory[index].Content,
+                    entry.Content,
                     $"ClipboardHistory[{index}].Content",
                     MaxContentFieldLength);
             }
@@ -578,7 +636,24 @@ public class TodoBackupService : ITodoBackupService
         {
             for (var index = 0; index < payload.TextSnippets.Count; index++)
             {
-                var entry = payload.TextSnippets[index];
+                var entry = RequireEntry(
+                    payload.TextSnippets[index],
+                    $"TextSnippets[{index}]");
+                ValidateDate(entry.CreatedAt, $"TextSnippets[{index}].CreatedAt");
+                ValidateDate(entry.UpdatedAt, $"TextSnippets[{index}].UpdatedAt");
+                ValidateOptionalDate(entry.LastUsedAt, $"TextSnippets[{index}].LastUsedAt");
+                if (entry.UpdatedAt < entry.CreatedAt ||
+                    entry.LastUsedAt.HasValue && entry.LastUsedAt < entry.CreatedAt)
+                {
+                    throw new InvalidDataException(
+                        $"TextSnippets[{index}] 的日期字段顺序无效。");
+                }
+
+                ValidateNonNegative(entry.SortOrder, $"TextSnippets[{index}].SortOrder");
+                ValidateNonNegative(entry.UseCount, $"TextSnippets[{index}].UseCount");
+                ValidateRequiredField(entry.Title, $"TextSnippets[{index}].Title");
+                ValidateRequiredField(entry.Content, $"TextSnippets[{index}].Content");
+                ValidateRequiredNonWhitespace(entry.Category, $"TextSnippets[{index}].Category");
                 ValidateFieldLength(entry.Title, $"TextSnippets[{index}].Title", MaxShortFieldLength);
                 ValidateFieldLength(entry.Content, $"TextSnippets[{index}].Content", MaxContentFieldLength);
                 ValidateFieldLength(entry.Category, $"TextSnippets[{index}].Category", MaxShortFieldLength);
@@ -624,6 +699,74 @@ public class TodoBackupService : ITodoBackupService
         }
     }
 
+    private static void ValidateRequiredField(string? value, string field)
+    {
+        if (value == null)
+        {
+            throw new InvalidDataException($"{field} 不能为 null。");
+        }
+    }
+
+    private static T RequireEntry<T>(T? value, string field)
+        where T : class
+    {
+        if (value == null)
+        {
+            throw new InvalidDataException($"{field} 不能为 null。");
+        }
+
+        return value;
+    }
+
+    private static void ValidateDate(DateTime value, string field)
+    {
+        if (value == default)
+        {
+            throw new InvalidDataException($"{field} 包含无效日期。");
+        }
+    }
+
+    private static void ValidateOptionalDate(DateTime? value, string field)
+    {
+        if (value.HasValue)
+        {
+            ValidateDate(value.Value, field);
+        }
+    }
+
+    private static void ValidateNonNegative(int value, string field)
+    {
+        if (value < 0)
+        {
+            throw new InvalidDataException($"{field} 不能为负数。");
+        }
+    }
+
+    private static void ValidatePositive(int value, string field)
+    {
+        if (value <= 0)
+        {
+            throw new InvalidDataException($"{field} 必须大于零。");
+        }
+    }
+
+    private static void ValidateRequiredNonWhitespace(string? value, string field)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            throw new InvalidDataException($"{field} 不能为 null、空字符串或纯空白。");
+        }
+    }
+
+    private static void ValidateEnum<TEnum>(TEnum? value, string field)
+        where TEnum : struct, Enum
+    {
+        if (!value.HasValue || !Enum.IsDefined(value.Value))
+        {
+            throw new InvalidDataException($"{field} 包含未定义的枚举值。");
+        }
+    }
+
     private static void ValidateEntries<T>(
         IReadOnlyList<T>? entries,
         string section,
@@ -662,7 +805,7 @@ public class TodoBackupService : ITodoBackupService
         public string Name { get; set; } = string.Empty;
         public string Path { get; set; } = string.Empty;
         public string? LaunchArguments { get; set; }
-        public ShortcutType Type { get; set; } = ShortcutType.Application;
+        public ShortcutType? Type { get; set; }
         public int SortOrder { get; set; }
         public DateTime CreatedAt { get; set; }
 
@@ -678,15 +821,14 @@ public class TodoBackupService : ITodoBackupService
 
         public ShortcutItem ToShortcut()
         {
-            var now = DateTime.UtcNow;
             return new ShortcutItem
             {
-                Name = Name ?? string.Empty,
-                Path = Path ?? string.Empty,
+                Name = Name,
+                Path = Path,
                 LaunchArguments = LaunchArguments,
-                Type = Type,
-                SortOrder = Math.Max(0, SortOrder),
-                CreatedAt = CreatedAt == default ? now : CreatedAt,
+                Type = Type!.Value,
+                SortOrder = SortOrder,
+                CreatedAt = CreatedAt,
                 IconLookupPath = Path
             };
         }
@@ -697,7 +839,7 @@ public class TodoBackupService : ITodoBackupService
         public string Title { get; set; } = string.Empty;
         public bool IsCompleted { get; set; }
         public DateTime? DueDate { get; set; }
-        public TodoPriority Priority { get; set; } = TodoPriority.Medium;
+        public TodoPriority? Priority { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? CompletedAt { get; set; }
 
@@ -716,8 +858,8 @@ public class TodoBackupService : ITodoBackupService
             Title = Title,
             IsCompleted = IsCompleted,
             DueDate = DueDate,
-            Priority = Priority,
-            CreatedAt = CreatedAt == default ? DateTime.UtcNow : CreatedAt,
+            Priority = Priority!.Value,
+            CreatedAt = CreatedAt,
             CompletedAt = CompletedAt
         };
     }
@@ -743,15 +885,14 @@ public class TodoBackupService : ITodoBackupService
 
         public QuickNote ToQuickNote()
         {
-            var now = DateTime.UtcNow;
             return new QuickNote
             {
-                Title = Title ?? string.Empty,
-                Content = Content ?? string.Empty,
+                Title = Title,
+                Content = Content,
                 IsPinned = IsPinned,
                 SortOrder = SortOrder,
-                CreatedAt = CreatedAt == default ? now : CreatedAt,
-                UpdatedAt = UpdatedAt == default ? now : UpdatedAt
+                CreatedAt = CreatedAt,
+                UpdatedAt = UpdatedAt
             };
         }
     }
@@ -801,17 +942,16 @@ public class TodoBackupService : ITodoBackupService
 
         public TextSnippet ToSnippet()
         {
-            var now = DateTime.UtcNow;
             return new TextSnippet
             {
-                Title = Title ?? string.Empty,
-                Content = Content ?? string.Empty,
-                Category = string.IsNullOrWhiteSpace(Category) ? "默认" : Category,
+                Title = Title,
+                Content = Content,
+                Category = Category,
                 IsPinned = IsPinned,
                 SortOrder = SortOrder,
-                UseCount = Math.Max(0, UseCount),
-                CreatedAt = CreatedAt == default ? now : CreatedAt,
-                UpdatedAt = UpdatedAt == default ? now : UpdatedAt,
+                UseCount = UseCount,
+                CreatedAt = CreatedAt,
+                UpdatedAt = UpdatedAt,
                 LastUsedAt = LastUsedAt
             };
         }

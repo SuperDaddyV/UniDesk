@@ -41,6 +41,12 @@ Third-party runtimes, libraries, drivers, and installers are not re-signed as Un
 
 The SignPath API token is stored only as a GitHub Actions secret. The repository does not contain a certificate private key, signing token, or other signing identity material.
 
+## v2.1.0 unsigned release exception
+
+The project owner may explicitly approve one unsigned stable release for `v2.1.0`, matching the unsigned trust baseline of the existing stable release. This exception does not claim SignPath approval or a valid Authenticode signature, and it does not apply automatically to later versions.
+
+An unsigned `v2.1.0` release must still be rebuilt from the exact clean public `main` revision, pass locked restore, zero-warning Release build, the full automated test suite, dependency-vulnerability and version checks, payload inventory and SHA-256 verification, and the complete applicable manual release matrix. The installer and every first-party PE file must be verified as `NotSigned`. The README and GitHub Release must disclose `Authenticode: NotSigned` and the resulting Windows SmartScreen or enterprise-policy risk. A Git tag or GitHub Release remains a separate manual action requiring the project owner's final confirmation.
+
 ## Reporting concerns
 
 Report suspected misuse of the signing certificate, an unexpected signed file, or a release-integrity issue through [GitHub private vulnerability reporting](https://github.com/SuperDaddyV/UniDesk/security/advisories/new). Include the affected file name, release URL, SHA-256 value, and signature details when possible. Do not publish unpatched exploit details in a public issue.

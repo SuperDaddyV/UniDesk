@@ -5,7 +5,7 @@
 - 安装包：`UniDesk_Setup_2.1.0.exe`
 - 支持架构：Windows x64
 - 不支持：Windows ARM64、Windows x86
-- 测试版允许未签名；公开发布制品必须通过 `scripts/Test-ReleaseReadiness.ps1` 的全部 Authenticode 和哈希检查
+- `v2.1.0` 采用项目所有者明确批准的未签名正式发布例外；公开制品必须通过 `scripts/Test-UnsignedReleaseReadiness.ps1`，并明确披露 `Authenticode: NotSigned` 与 SmartScreen／企业策略风险。签名门禁保留给未来签名候选，不作为本版本硬门槛
 
 2026-08-30 起，模型雷达和模块默认状态已进入 `2.1.0` 范围。先前 RC1／`97913bc` 的人工结果不覆盖新增范围；`release-source.json` 为 `isDirty=true` 的本地包只用于预验收，不能作为公开 RC2。
 
@@ -41,6 +41,7 @@
 | U-07 | 使用已自定义模块开关和顺序的旧用户数据覆盖升级 | 所有已有模块的开关和顺序保持不变；仅在旧布局缺少 `ModelRadar` 时于列表末尾追加关闭项，不产生模型雷达网络请求 |
 | R-01 | 普通权限主程序中点击「修复硬件监控组件」并批准 UAC | 只从系统 `Common Program Files\UniDesk\HardwareRepair` 启动本地维护工具，修复完成后状态刷新；不从可选主程序目录加载提权程序，也不要求寻找旧安装包 |
 | R-02 | 修复时取消 UAC | 显示已取消，不崩溃、不改变主程序权限 |
+| R-03 | 修复助手已成功启动后立即关闭设置页或触发调用方取消 | 当前修复调用继续等待助手到达真实终态并按退出码刷新状态，不把仍在执行的系统修改误报为“已取消” |
 | X-01 | 卸载 UniDesk，选择保留 PawnIO | `UniDeskHardwareService` 被删除，PawnIO 保留，用户 `%LOCALAPPDATA%\UniDesk` 数据保留 |
 | X-02 | 卸载 UniDesk，并明确选择移除 PawnIO | UniDesk 服务先删除；PawnIO 移除失败时给出明确警告，不误删用户数据 |
 | X-03 | 模拟 `sc stop` 已接受但服务进程持续运行后卸载或覆盖安装 | 安装器／维护工具按服务名过滤终止进程并轮询真实停止状态；未确认停止时不得报告删除成功或覆盖文件，必须返回稳定失败码并显示警告 |
@@ -69,18 +70,22 @@
 | L-03 | 在英文、日文和西班牙文界面填写错误的 QWeather Key／Host 并保存 | 只显示当前界面的本地化验证提示，不直接出现网络层内部中文错误 |
 | LIC-01 | 安装候选包后检查 `{app}\licenses` 并与 NuGet 锁定版本／自包含 publish 清单核对 | 包含 UniDesk MIT、.NET／WindowsDesktop Runtime、全部直接 NuGet 依赖、LibreHardwareMonitor 传递依赖、QWeather Icons、PawnIO GPL 与上游例外文本；notices 中版本和来源准确 |
 | D-01 | 导入超过 25 MiB、任一分区超过 10000 条或字段超长的备份 | 在生成预览和写入数据库前明确拒绝；原设置和业务数据保持不变 |
+| D-02 | 分别导入非法待办优先级、剪贴板 `UseCount<=0`、负快捷文本计数、空白文本片段分类、不可解析或字段间矛盾日期的合法 JSON | 全部在生成导入计划和任何写入前明确拒绝；不得 clamp、回退默认枚举或改变现有数据 |
+| IPC-01 | 四个客户端依次发送超长帧或非法 UTF-8，再由正常客户端请求健康状态 | 每个非法请求只终止自身连接；四个接收循环不被耗尽，随后正常请求仍收到有效响应 |
+| I-18 | 让已存在目标目录、祖先链或 ACL 子项枚举返回失败 | 安装器 fail-closed，在复制、删除或递归 ACL 修改前停止；不得把枚举失败当作空目录、无重解析点或加固成功 |
+| H-01 | 在发生过 AMD GPU `AccessViolationException` 的设备上安装精确候选，连续运行硬件服务至少 10 分钟，并核对诊断、GPU 指标和 Windows 事件日志 | 服务至少完成 300 次两秒采集且进程持续存活；诊断将 AMD GPU 标记为 `LibreHardwareMonitor AMD update isolated`，不再进入该原生更新路径；AMD ADL 可用时继续显示 AMD GPU 使用率和温度，ADL 不可用时允许 Windows GPU Engine 提供使用率且温度显示 `--`；不得出现新的硬件服务崩溃、伪造 `0℃` 或用主程序回退掩盖服务退出 |
 
 ## 发布前门禁
 
-- [x] `dotnet test UniDesk.sln -c Release --no-restore`：`550/550` 通过。
+- [x] `dotnet test UniDesk.sln -c Release --no-restore`：`588/588` 通过，`0` 跳过。
 - [x] Release 构建零警告、零错误。
 - [x] 主程序清单为 `asInvoker`，修复工具清单为 `requireAdministrator`。
-- [ ] 安装包、所有 UniDesk 自有 EXE、承载一方托管代码的 DLL 和 PawnIO 的 Authenticode 状态均为 `Valid`。
+- [ ] 安装包及所有 UniDesk 自有 EXE／承载一方托管代码的 DLL 均确认 `NotSigned`；PawnIO 保持上游有效签名和固定哈希；发布说明明确披露未签名风险。
 - [x] `scripts/Test-VersionConsistency.ps1 -ExpectedVersion 2.1.0` 通过。
-- [ ] `scripts/Test-PackageVulnerabilities.ps1` 使用仓库钉住的 SDK `10.0.302` 通过；当前本机缺少该 SDK，使用 `10.0.303` 执行相同查询未发现漏洞，但不能替代正式门禁。
-- [ ] `scripts/Test-ReleaseReadiness.ps1` 通过并记录全部 SHA-256。
-- [ ] `release-source.json` 显示干净工作区、目标版本和准备发布的精确 Git 提交；`release-manifest.json` 与签名工作流制品一致。
-- [ ] SignPath Foundation 项目、GitHub App、签名策略、两个 Artifact Configuration、Secret 和 Variables 已完成配置；仓库与日志中不存在令牌或私钥。
+- [x] `scripts/Test-PackageVulnerabilities.ps1` 使用仓库钉住的 SDK `10.0.302` 通过，未发现 NuGet 直接或传递依赖已知漏洞。
+- [ ] `scripts/Test-UnsignedReleaseReadiness.ps1` 通过并记录全部 SHA-256。
+- [ ] `release-source.json` 显示干净工作区、目标版本和准备发布的精确 Git 提交；公开校验清单与该候选一致。
+- [x] `v2.1.0` 未签名正式版例外已由项目所有者明确批准；SignPath 配置不作为本版本发布前提，且仓库与日志中不存在令牌或私钥。
 - [x] 五份 README 和发布说明均公开链接代码签名政策与隐私政策，并包含 SignPath Foundation 资助声明。
 - [x] 自动回归验证展开态与收缩态共用的天气视图始终保留 QWeather 来源链接，四种界面语言均提供署名文本。
 - [x] 自动回归验证 `AutoLocation` 缺失时按关闭处理，不请求 Windows 位置权限。
@@ -91,6 +96,15 @@
 - [x] 自动回归验证模型雷达的固定端点、schema 校验、官方 `value` 选择、四类稳定排序、缓存、取消、迟到结果抑制、固定链接、本地化、备份排除，以及新安装／升级模块默认规则。
 - [ ] `MR-01` 至 `MR-06` 和 `U-07` 已在准备发布的精确候选上完成人工记录。
 - [ ] 上表适用场景全部记录实际结果；未执行的场景不得标记通过。
+
+## 2026-08-31 本地工程验收记录
+
+- 锁定还原通过；Release 构建 `0` 警告、`0` 错误；全量测试 `588/588` 通过，`0` 跳过。
+- IPC、设置同 key 写入顺序、天气取消源、待办原子更新五个关键并发／竞态用例连续执行 `10/10` 轮，每轮 `5/5` 通过。
+- 版本一致性、仓库 SDK `10.0.302` 依赖漏洞查询、PowerShell AST 与 `git diff --check` 通过。
+- 在受历史 AMD 原生访问冲突影响的 RX 9060 XT 设备上，修订源码完成 `300/300` 次、`608` 秒连续采样；AMD ADL 使用率和温度可读，非 AMD LibreHardwareMonitor 传感器持续输出 `64` 项，对应时间窗无新增 `AccessViolationException`。该结果不替代最终精确安装候选的 `H-01`。
+- 脏工作区端到端预验证包位于 `artifacts\prevalidation\v2.1.0-final-fingerprint-20260831-014010\installer-split\UniDesk_Setup_2.1.0.exe`，SHA-256 为 `F4B7791F94A54CA55F16AEB1345C856938E4C489659514D20104550C72CB6BE5`，产品版本 `2.1.0`、安装包及八个一方 PE 均为 `NotSigned`、载荷无 PDB；安装包两个版本字段可精确重组为源清单 SHA-256，`release-source.json` 明确为 `isDirty=true`，正式未签名门禁已按预期拒绝，不能用于勾选候选制品或人工矩阵。
+- 本地代码工程验收为 PASS；公开发布保持 NO-GO，直到修复形成干净提交并取得精确提交 CI、重新生成候选、通过未签名门禁、完成适用人工矩阵与 `H-01` 风险决定，并取得项目所有者最终发布确认。
 
 ## 2026-08-11 安装兼容修订记录
 

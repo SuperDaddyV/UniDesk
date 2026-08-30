@@ -41,5 +41,18 @@ if (-not [string]::IsNullOrWhiteSpace($IsccPath)) {
 }
 & (Join-Path $PSScriptRoot 'Build-ReleaseInstaller.ps1') @installerParameters
 
-Write-Host "Unsigned release candidate created at $releaseRoot"
-Write-Host 'Public release still requires SignPath signing and Test-ReleaseReadiness.ps1.'
+$installerPath = Join-Path $installerOutput "UniDesk_Setup_$Version.exe"
+if ($AllowDirtyWorktree) {
+    Write-Warning 'Dirty-worktree output is for local prevalidation only; unsigned release readiness was not granted.'
+} else {
+    & (Join-Path $PSScriptRoot 'Test-UnsignedReleaseReadiness.ps1') `
+        -InstallerPath $installerPath `
+        -SourceManifestPath (Join-Path $payloadRoot 'release-source.json') `
+        -ExpectedSourceRevision $sourceRevision `
+        -ExpectedVersion $Version `
+        -ManifestOutputPath (Join-Path $installerOutput 'release-manifest.json') `
+        -ChecksumOutputPath (Join-Path $installerOutput 'SHA256SUMS.txt')
+}
+
+Write-Host "Unsigned release artifact created at $releaseRoot"
+Write-Host 'Public release still requires the complete manual matrix and the project owner final approval.'

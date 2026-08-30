@@ -19,4 +19,4 @@ Ordinary bugs without security or privacy impact can continue to use [GitHub Iss
 
 ## Release integrity
 
-Official installers are published only through [GitHub Releases](https://github.com/SuperDaddyV/UniDesk/releases). Release candidates must pass the repository CI, controlled SignPath workflow, expected-signer checks, source-revision verification, and release test matrix before publication.
+Official installers are published only through [GitHub Releases](https://github.com/SuperDaddyV/UniDesk/releases). Signed candidates must pass the controlled SignPath and expected-signer checks. The explicitly approved unsigned `v2.1.0` exception must instead pass the unsigned-readiness gate, exact source-revision and SHA-256 verification, repository CI, and the complete applicable release matrix, and must disclose `Authenticode: NotSigned` plus Windows SmartScreen or enterprise-policy risk.
