@@ -102,9 +102,7 @@ Casos de uso habituales:
 
 ## 📦 Instalación
 
-Descarga el instalador más reciente desde [GitHub Releases](https://github.com/SuperDaddyV/UniDesk/releases/latest).
-
-El repositorio está preparando `2.1.0`. Hasta completar la firma de confianza y las puertas de publicación, usa la marca `Latest` de la página Releases. El nombre del candidato aún no publicado es:
+Descarga el instalador de la vista previa de funciones más reciente desde [v2.1.0-rc.2](https://github.com/SuperDaddyV/UniDesk/releases/tag/v2.1.0-rc.2). Esta vista previa sin firmar incluye Model Radar y los valores predeterminados más recientes de los módulos; Windows SmartScreen puede mostrar una advertencia en el primer inicio. Para la versión estable actual, usa [v2.0.0 estable (Latest)](https://github.com/SuperDaddyV/UniDesk/releases/latest). El nombre del instalador RC2 es:
 
 ```powershell
 UniDesk_Setup_2.1.0.exe

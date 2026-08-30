@@ -102,9 +102,7 @@ UniDesk は、デスクトップをすっきり保ちながら、情報確認、
 
 ## 📦 インストール
 
-最新のインストーラーは [GitHub Releases](https://github.com/SuperDaddyV/UniDesk/releases/latest) からダウンロードできます。
-
-リポジトリでは `2.1.0` を準備中です。信頼された署名とリリースゲートが完了するまでは、Releases ページの `Latest` 表示を基準にしてください。未公開の候補ファイル名：
+最新機能プレビュー版のインストーラーは [v2.1.0-rc.2](https://github.com/SuperDaddyV/UniDesk/releases/tag/v2.1.0-rc.2) からダウンロードできます。この未署名プレビュー版には「モデルレーダー」と最新のモジュール既定状態が含まれ、初回起動時に Windows SmartScreen の警告が表示される場合があります。現在の安定版は [v2.0.0 安定版（Latest）](https://github.com/SuperDaddyV/UniDesk/releases/latest) です。RC2 のインストーラー ファイル名：
 
 ```powershell
 UniDesk_Setup_2.1.0.exe
