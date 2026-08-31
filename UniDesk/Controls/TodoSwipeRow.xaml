@@ -8,10 +8,10 @@
                 HorizontalAlignment="Right"
                 Width="72"
                 CornerRadius="8"
-                Background="#E53935"
+                Background="{DynamicResource DangerBrush}"
                 Visibility="Collapsed">
             <Button Content="{DynamicResource Common.Delete}"
-                    Foreground="White"
+                    Foreground="{DynamicResource DangerForegroundBrush}"
                     FontSize="12"
                     Background="Transparent"
                     BorderThickness="0"

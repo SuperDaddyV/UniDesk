@@ -1,6 +1,6 @@
 # UniDesk 设计文档
 
-**版本**: 2.1.0
+**版本**: 2.2.0
 **最后更新**: 2026年8月31日
 **项目**: UniDesk - Windows 桌面侧边助手应用
 
@@ -34,7 +34,7 @@ UniDesk 是运行于 Windows 11 的桌面侧边助手应用，以悬浮右侧面
 - **易用友好**：托盘、热键、开机自启、主题跟随系统等桌面助手体验特性齐全
 
 ### 支持平台
-- **正式支持平台**：仍在 Microsoft 支持周期内的 Windows 11 x64，以及 Windows 10 Enterprise／IoT Enterprise LTSC 2021 或更新版本 x64；LTSC 2019 虽仍处于 Microsoft 与 .NET 支持周期，但低于本项目 10.0.18362.0 API 基线，2.1.0 不得笼统宣称支持全部 LTSC
+- **正式支持平台**：仍在 Microsoft 支持周期内的 Windows 11 x64，以及 Windows 10 Enterprise／IoT Enterprise LTSC 2021 或更新版本 x64；LTSC 2019 虽仍处于 Microsoft 与 .NET 支持周期，但低于本项目 10.0.18362.0 API 基线，2.2.0 不得笼统宣称支持全部 LTSC
 - **兼容基线**：Windows API 目标版本仍为 10.0.18362.0；已停止支持的普通 Windows 10 版本只提供尽力兼容，不作为正式发布承诺
 - **目标框架**：.NET 10 LTS
 - **UI 框架**：WPF + 自定义样式资源
@@ -158,7 +158,7 @@ UniDesk 是运行于 Windows 11 的桌面侧边助手应用，以悬浮右侧面
 - 配置 SignPath 令牌前，默认分支必须启用禁止强推和删除的保护规则并要求 CI，通过仅允许 `main` 的专用 GitHub Environment 限制签名 Secret；仓库必须启用私密漏洞报告并提供 `SECURITY.md`。
 - 仓库首页和发布说明必须公开链接 `CODE_SIGNING_POLICY.md` 与 `PRIVACY.md`，并保留 SignPath Foundation 要求的资助声明；代码签名政策必须列出作者／审查者／批准者、签名范围和人工批准边界，隐私政策必须如实列出天气、定位、更新检查和本地存储的数据流。
 - 签名顺序固定为：先签主程序、硬件服务、修复工具及其承载一方托管代码的 DLL，再用已签名文件编译安装包，最后签安装包。不得只签 `.exe` 应用宿主而遗漏实际承载业务代码的 `.dll`。签名发布必须继续通过版本一致性、依赖漏洞、源提交一致性、发布清单哈希和全部一方 PE 文件的 Authenticode 门禁。
-- `v2.1.0` 允许一次由项目所有者明确批准的未签名正式发布例外，以延续当前未签名稳定版的信任基线；该例外不构成签名通过，也不适用于后续版本。未签名正式包必须从最终公开 `main` 的精确干净提交重新构建，通过锁定还原、零警告 Release 构建、全量测试、依赖漏洞、版本一致性、完整载荷清单和 SHA-256 门禁；`Test-UnsignedReleaseReadiness.ps1` 必须验证安装包与全部 UniDesk 一方 PE 均为 `NotSigned`、源清单与当前提交一致、载荷无 PDB，并生成可公开核对的校验清单。门禁不得只信任调用方提供的清单状态：`isDirty` 必须存在且严格为布尔 `false`，门禁必须重新读取当前 `HEAD` 和包含未跟踪文件的工作区状态，并核对安装包版本资源中绑定的源清单 SHA-256；项目／锁文件枚举排除 `artifacts`、`bin`、`obj` 和 `publish` 时必须同时识别 Windows 反斜杠与规范化斜杠，忽略目录中的诊断工程不得改变正式门禁清单。只有当前源码、源清单、递归载荷哈希和安装包载荷指纹一致时才允许生成公开清单。README、发布说明和 GitHub Release 必须醒目标注 `Authenticode: NotSigned` 及 SmartScreen／企业策略风险，绝不得把未签名制品描述为已签名或通过 SignPath。未经用户最终确认仍不得创建 Git tag 或 GitHub Release。
+- `v2.1.0` 与 `v2.2.0` 分别拥有一次由项目所有者明确批准、且只适用于该精确版本的未签名正式发布例外；两个例外均不构成签名通过，也不自动授权任何后续版本。未签名正式包必须从最终公开 `main` 的精确干净提交重新构建，通过锁定还原、零警告 Release 构建、全量测试、依赖漏洞、版本一致性、完整载荷清单和 SHA-256 门禁；`Test-UnsignedReleaseReadiness.ps1` 的允许列表只能精确包含已书面批准的版本，并必须验证安装包与全部 UniDesk 一方 PE 均为 `NotSigned`、源清单与当前提交一致、载荷无 PDB，并生成可公开核对的校验清单。门禁不得只信任调用方提供的清单状态：`isDirty` 必须存在且严格为布尔 `false`，门禁必须重新读取当前 `HEAD` 和包含未跟踪文件的工作区状态，并核对安装包版本资源中绑定的源清单 SHA-256；项目／锁文件枚举排除 `artifacts`、`bin`、`obj` 和 `publish` 时必须同时识别 Windows 反斜杠与规范化斜杠，忽略目录中的诊断工程不得改变正式门禁清单。只有当前源码、源清单、递归载荷哈希和安装包载荷指纹一致时才允许生成公开清单。README、发布说明和 GitHub Release 必须醒目标注 `Authenticode: NotSigned` 及 SmartScreen／企业策略风险，绝不得把未签名制品描述为已签名或通过 SignPath。只有项目所有者对精确版本的最终确认才允许创建对应 Git tag 或 GitHub Release。
 - 签名前的发布源清单必须记录 `App`、`HardwareService` 和 `HardwareRepair` 三个安装载荷目录中每个目录的规范化相对路径，以及每个文件的规范化相对路径与 SHA-256，并明确唯一允许被 SignPath 改写的签名目标。三个载荷树中的任意文件或目录均不得是重解析点。签名工作流必须在签名前于独立路径保留该清单；签名返回的清单必须与签名前保留副本逐字节哈希一致，不能信任签名制品内部可被同步篡改的清单。签名返回后及编译安装包前，门禁必须验证递归文件与目录集合均与清单完全一致：新增、删除或重命名任一文件或目录均失败；只有清单中且同时属于固定签名目标集合的一方 PE 允许因 Authenticode 产生哈希变化，其余托管 DLL、原生库、配置、许可与资源文件必须逐文件保持原哈希。每个签名目标还必须比较排除 PE Checksum、Certificate Table 目录项与附加证书表后的规范化 SHA-256，证明签名过程没有改动代码或其它映像内容；并继续通过预期签名者、有效签名、版本和源提交绑定校验，不能用“允许签名变化”绕过内容来源验证。
 - 发布门禁必须验证全部一方文件由预期且一致的 SignPath Foundation 身份签署，而不只检查 `Status=Valid`；PawnIO 继续单独验证固定哈希和上游签名者。
 - 自包含安装包必须随附实际分发依赖所要求的许可证文本、版权声明和第三方 notices，至少覆盖 .NET Runtime、所有直接 NuGet 依赖、LibreHardwareMonitor、PawnIO 与图标资源；许可清单必须与发布载荷核对，不能仅维护两项手工摘要。
@@ -275,10 +275,11 @@ UniDesk 是运行于 Windows 11 的桌面侧边助手应用，以悬浮右侧面
 - 新安装默认顺序仍为时间天气、硬件监视、快捷方式、待办事项、快速便签、快捷文本、模型雷达；首次展开只显示默认启用的时间天气、硬件监视、待办事项和快速便签，关闭项保留其模块管理顺序，启用后显示在用户选择的位置。
 
 #### UI 样式
-- **背景**：WPF 分层透明窗口与半透明主题画刷，透明度可调并真实透出桌面；不在分层窗口上叠加 DWM Mica/Acrylic 矩形底板
-- **圆角**：窗口 16px、卡片 12px、控件 8px
-- **阴影**：柔和投影（Elevation 4）
-- **分隔符**：浅色分割线
+- **背景**：WPF 分层透明窗口使用可着色的半透明玻璃画刷，透明度可调并真实透出桌面；窗口、模块、控件和边框随用户选择的色彩方案联动，不得退化为不受色盘影响的浅色实体底面。当前正式实现不宣称 DWM Mica/Acrylic 背景模糊；真正的实时毛玻璃作为独立兼容性原型验证。
+- **圆角**：窗口 16px、卡片 12px、控件 8px、小状态块 6px。
+- **阴影**：透明主窗口的普通卡片不使用 `DropShadowEffect`；仅窗口壳层、独立弹窗等真正抬升层允许使用克制投影。
+- **分隔符**：使用 1 DIP 语义边框；Hover、Pressed、KeyboardFocus 和 Disabled 必须分别定义，键盘焦点不得依赖系统默认虚线框。
+- **文字渲染**：分层透明窗口继续使用稳定的 Grayscale 文本渲染；不得为了字体观感切换为可能产生残影的 ClearType。
 - **显示适配**：设置窗口和主窗口必须在 `1366×768`、150% 缩放的可用工作区内保持标题栏、主要内容和底部操作区可达；窗口不得以固定最小高度把保存／取消按钮推到屏幕外。混合 DPI、多屏移动、显示器断开和系统文字缩放必须进入人工发布矩阵；分层透明窗口的 DPI awareness 变更必须经过真实多屏回归，不能只改清单。
 - **多显示器边界**：窗口尺寸和位置必须按目标窗口或 owner 所在显示器的工作区计算，不得用主屏 `SystemParameters.WorkArea` 或 `VirtualScreen` 联合矩形代替单块显示器工作区。显示器选择必须先通过 `MonitorFromWindow`／`MonitorFromRect`／`MonitorFromPoint` 在统一的 Win32 物理像素坐标系完成，禁止把各屏绝对像素原点分别按自身 DPI 缩放后再跨屏比较；选定显示器后才将其 `rcWork` 和目标位置按该显示器 DPI 转换为 WPF DIP。主窗口保存位置时同时记录物理像素坐标，恢复时优先使用该坐标；旧版仅有 DIP 位置时采用兼容回退，并在下次保存后补齐物理坐标。显示器已断开时由 Win32 最近显示器规则回退并夹紧到真实工作区；非矩形排列中的空洞不得被视为可见区域。设置窗口始终在 owner 所在显示器内居中并保持底部操作区可达。
 
@@ -400,7 +401,7 @@ public class LocationProvider
   - 3 日天气：当日最高温/最低温
   - 空气质量：AQI
 - **聚合方式**：WeatherService 在后台并发请求多个端点并合并为单个 `WeatherInfo`，仅在全部完成或部分可降级完成后更新 UI
-- **来源署名**：凡主面板展示和风天气数据，必须同时显示可见的 `QWeather` 来源链接并指向 `https://www.qweather.com`；展开态和收缩态均不得隐藏该署名
+- **来源署名**：凡主面板展示和风天气数据，必须同时显示可见的 `和风天气`／`QWeather` 来源链接并指向 `https://www.qweather.com`；展开态和收缩态均不得隐藏该署名。主面板使用 `Segoe MDL2 Assets` `E707` 图标替代“天气服务”等文字前缀，图标字号与 8px 提供方名称一致，二者共同构成可点击链接；天气位置行不再重复显示该图标，直接呈现城市与温度区间。完整的数据来源、API 项目关系和官网入口说明放在「常规 → 天气 API 设置」中
 
 #### 天气图标策略
 - 使用和风天气返回的天气代码（IconCode）映射本地 QWeather Icons 字体图标
@@ -583,13 +584,17 @@ public class ShortcutItem
 | 自动定位 | Toggle | true（仅全新安装） | 调用 Windows 定位并将坐标发送给和风天气进行城市反查；升级保留既有值，缺失或无效值按 false 处理 |
 | 开机自启 | Toggle | true（仅全新安装） | 随 Windows 启动；升级保留既有值 |
 | 窗口置顶 | Toggle | true | MainWindow 始终置顶 |
-| 面板透明度 | Slider | 85% | 范围：30%-100% |
-| 面板宽度 | Slider | 360px | 范围：320px-520px |
+| 面板透明度 | Slider | 70% | 范围：60%-100%；只预览主面板，设置窗口使用同色系、略高不透明度的玻璃底面，仍须明显透出桌面 |
+| 面板宽度 | Slider | 全新安装推荐 340 DIP | 范围：320-520 DIP；升级保留用户原值 |
+| 面板高度 | Slider | 全新安装按当前工作区计算 | 常规下限 560 DIP；上限为当前显示器工作区高度减 16 DIP |
+| 字体大小 | Slider | 标准（1.0） | 范围：0.90-1.18；字号与行高、最小控件高度同步缩放 |
+| 自定义标题 | TextBox | UniDesk | 只改变主面板显示标题，不改变产品名和应用身份 |
+| 适配当前屏幕 | Button | - | 将首选宽高重新计算为当前显示器的推荐值并立即预览 |
 | 模块启用与顺序 | ModuleSettings | 时间天气、硬件监视、待办事项、快速便签启用 | 全新安装默认关闭快捷方式、快捷文本和模型雷达；升级保留既有开关与顺序，缺失的 `ModelRadar` 以关闭状态追加到列表末尾 |
 | 全局热键 | HotkeyBox | Ctrl+Alt+Space | 呼出/隐藏 MainWindow（可配置并持久化） |
 | 天气 API Key | TextBox | 空 | 和风天气 API Key |
 | 天气 API Host | TextBox | 空 | 与 API Key 配套的 `*.qweatherapi.com` 专属主机 |
-| 恢复默认布局 | Button | - | 重置 WidgetLayout 与 PanelWidth 并立即应用 |
+| 恢复默认设置 | Button | - | 恢复主题、透明度、字体和模块等默认值；面板宽高按当前显示器重新计算推荐值 |
 | 导出数据 | Button | - | 导出版本化 JSON 备份 |
 | 导入数据 | Button | - | 预检并导入 JSON 备份 |
 
@@ -601,8 +606,11 @@ Key: "City" → Value: "北京"（可选；为空表示未设置）
 Key: "AutoLocation" → Value: "true" | "false"
 Key: "Startup" → Value: "true" | "false"
 Key: "TopMost" → Value: "true" | "false"
-Key: "WindowOpacity" → Value: "0.85"
-Key: "PanelWidth" → Value: "360"
+Key: "WindowOpacity" → Value: "0.70"
+Key: "PanelWidth" → Value: "340"（示例；保存的是用户首选 DIP，不是工作区夹紧后的实际宽度）
+Key: "PanelHeight" → Value: "720"（示例；保存的是用户首选 DIP，不是工作区夹紧后的实际高度）
+Key: "FontScale" → Value: "1.0"
+Key: "DisplayTitle" → Value: "UniDesk"
 Key: "WidgetLayout" → Value: "{...json...}"
 Key: "ModuleSettings" → Value: "{...json...}"（包含模块 ID、启用状态和顺序；备份包含此设置，不包含模型雷达缓存）
 Key: "Hotkey" → Value: "Ctrl+Alt+Space"
@@ -624,6 +632,8 @@ Key: "WeatherApiHost" → Value: "abc.example.qweatherapi.com"（仅允许官方
 用户手动切换：
   └─ 立即应用新主题 + 保存到 Settings
 ```
+
+当前外观页以“跟随系统深浅色”开关和八套强调色方案实现上述行为：开启时，窗口底面随 Windows 在 `Light.xaml`／`Dark.xaml` 间切换，并分别使用用户选择的浅色模式／深色模式强调色；关闭时使用单一手动强调色，`DarkGrey` 与 `Black` 采用深色中性底面，其余方案采用浅色中性底面。该映射只决定中性明暗底面，不恢复整窗染色。
 
 #### 开机自启动实现
 使用 Windows 注册表：
@@ -679,7 +689,10 @@ Value: "C:\Path\To\UniDesk.exe"
 - 取消：关闭窗口且不保存修改
 - 保存失败：提示错误并保持窗口打开
 - 天气凭据发生变化时：先使用候选 Host／Key 验证；仅验证成功后持久化并关闭窗口，失败时保留原有效值和编辑状态
-- 恢复默认布局：重置 WidgetLayout 与 PanelWidth 为默认值并立即应用到 MainWindow
+- 全新数据库不预填固定 `PanelWidth`／`PanelHeight`；主窗口首次获得目标显示器工作区后计算推荐值、持久化，并立即应用。既有数据库中的宽高值必须原样保留。
+- 主窗口区分用户首选尺寸与当前实际尺寸：跨屏或工作区不足时只夹紧实际尺寸，不覆盖已保存首选值；返回较大工作区后恢复首选值。
+- 用户手动调整宽高后保持该偏好，不得在每次启动时重新按比例放大或缩小。
+- 适配当前屏幕：显式重新计算并保存当前显示器推荐宽高；恢复默认设置也使用同一推荐算法。
 
 ---
 
@@ -883,75 +896,114 @@ CREATE TABLE Settings (
 
 ## UI/UX 设计
 
-### 设计系统
+### UniDesk Tinted Glass 设计系统
 
-#### 颜色方案
+该设计系统以“着色透明玻璃、白色信息层级、统一中文模块标题、低噪声交互”为准则。参考站点的字体分工、宽松行距和细边框只作为设计输入，不复制其绿色品牌、网页英雄区、终端装饰或卡片上浮效果；UniDesk 原有的壁纸透出感和色盘定制能力优先于网页式浅色卡片观感。
 
-**浅色主题**
+#### 字体角色
+
+| Token | 字体与回退 | 基准字号／行高 | 用途 |
+|------|------------|---------------|------|
+| `DisplayFontFamily` | 内嵌 Inter；中文回退内嵌 Source Han Sans SC | 窗口标题 18/26，Semibold | 品牌、窗口标题、设置页标题 |
+| `ModuleTitleFontFamily` | 内嵌 Inter → 内嵌 Source Han Sans SC | 13/18，Medium | 六个主面板模块标题；中文字形、字号、字重和基线必须一致 |
+| `BodyFontFamily` | 内嵌 Inter → 内嵌 Source Han Sans SC | 正文 13/20，Regular | 菜单、设置、待办、说明文字 |
+| `DataFontFamily` | 内嵌 JetBrains Mono；中文回退内嵌 Source Han Sans SC | 12-13/18，Medium | 仅用于模型雷达等确需等宽对齐的数据 |
+| `CaptionFontFamily` | `BodyFontFamily` | 11-12/17-18，Regular | 时间戳、状态、辅助说明 |
+
+- B 版字体方案使用 Inter 统一拉丁文字、Source Han Sans SC 统一简体中文，JetBrains Mono 仅用于等宽数据；不得打包或调用仅授权 Apple 平台使用的 SF Pro、PingFang 字体。
+- 内嵌字体必须覆盖用户可编辑的待办、便签和快捷方式名称，不得只按内置界面文案裁剪中文字形；仅打包 WPF 实测可稳定映射所需字重，并随安装包提供对应 SIL OFL 1.1 许可证，不引入字体 NuGet 包。
+- 正式 B 版固定使用 Inter Regular／Medium／SemiBold 和 Source Han Sans SC Regular／Medium 静态 OTF。Source Han 可变字体虽可减少安装包体积，但在 WPF 中会把 600 映射为 700，且会改变字体家族名；在 Windows 支持基线完成完整视觉回归前不得替换静态字重。
+- `FontScale` 只缩放文字 Token；模块标题统一以 13 DIP 为缩放基准，禁止各模块自行覆盖字号。图标字体不随文字比例失真。所有固定高度控件必须在 1.18 倍字号下仍无裁剪。
+- 模块标题统一使用 18×18 DIP 图标容器、约 14-15 DIP 有效图形和 6 DIP 图文间距；标题行最小高度与标题行高均为 18 DIP。图标容器统一使用 `0,1,6,-1` Margin 向下做 1 DIP 光学校准，标题文字使用固定块行高并垂直居中，不允许各模块添加互相冲突的基线偏移。
+- 快捷方式模块的编辑入口使用 28×28 DIP 透明图标按钮：常态为约 15 DIP 的细线矢量铅笔，编辑态为同规格细线对勾；图形直接由 XAML `Path` 绘制，使用圆角端点和连接，不依赖系统图标字体或私有码位。两种状态都必须提供本地化 ToolTip 和无障碍名称，不能只靠图形传达状态。
+- 待办正文使用 12 DIP 基准字号，到期信息保持 11 DIP；完成圆圈的可见直径为 16 DIP、描边为 1.5 DIP，同时保留至少 28×28 DIP 的透明点击热区，不得为了视觉缩小而降低可操作性。标题与到期信息应和圆圈共享 46 DIP 行框的视觉中心；Source Han Sans SC／Inter 文本统一向下光学校准 3 DIP，但不得移动圆圈、优先级圆点或改变行高。
+- 硬件监视网络行继续使用灰阶文字渲染和 78 DIP 固定数值盒，避免透明窗口中的数值刷新残影；左右分组各使用 140×14 DIP 固定布局，由 56 DIP 右对齐标签列、6 DIP 固定间距和 78 DIP 左对齐数值列组成。B 版 Inter 数值与 Source Han Sans SC 标签共享 14 DIP 块行高并垂直居中，数值不得再使用独立的上下 Margin 光学校准，避免不同 DPI 下因取整出现反向偏移；不得取消数值盒固定宽度或灰阶渲染。
+- 由于左对齐数值盒右侧保留了稳定刷新空间，网络行外层统一使用 `12,0,-12,0` Margin 向右做光学校准；容器在可用宽度内拉伸、最大宽度为 340 DIP，超出后保持水平居中，避免宽面板把 RX／TX 过度拉散。该偏移只修正整行视觉重心，不改变左右分组内部几何与数据刷新区域。
+- 硬件监视中的使用率、温度和 RX／TX 实时值统一使用 `BodyFontFamily`（Inter），以匹配其他界面数字；固定宽度由布局承担，不以 JetBrains Mono 的等宽字形换取对齐。
+
+#### 语义颜色
+
+明暗主题都保持可着色玻璃和白色文字层级：主文字 `#FFFFFFFF`，辅助文字使用不低于 `#E6FFFFFF` 的白色，弱化文字使用不低于 `#B8FFFFFF` 的白色。Light／Dark 字典负责系统跟随下的默认方案和状态色差异，不能把 Light 主题替换成不透明白色表面。
+
+每套色彩方案以同一色相生成完整玻璃层级：主窗口约 `0xE5` Alpha 后再叠加用户窗口透明度，设置窗口约 `0xD9` Alpha，次级表面约 `0xA5` Alpha，模块约 `0x66` Alpha；Hover 和控件表面在同一色相内提高可见度。实际值可因对比度微调，但必须保持壁纸可见。
+
+所有色彩方案必须完整提供下列语义资源，而不是只修改窗口背景：
+
+```text
+WindowSurfaceBrush
+SettingsSurfaceBrush
+SecondarySurfaceBrush
+CardSurfaceBrush
+CardHoverBrush
+ControlSurfaceBrush
+PrimaryTextBrush
+SecondaryTextBrush
+MutedTextBrush
+AccentBrush
+AccentForegroundBrush
+AccentSoftBrush
+FocusRingBrush
+DividerBrush
+SuccessBrush
+WarningBrush
+DangerBrush
+DangerForegroundBrush
 ```
-主背景: #FFFFFF (或 #F7F7F7 毛玻璃)
-文本: #1A1A1A
-次文本: #5A5A5A
-分隔线: #E0E0E0
-强调: #0078D4 (Win11 蓝)
-成功: #107C10 (Win11 绿)
-警告: #FFB900 (Win11 黄)
-错误: #E74C3C (Win11 红)
+
+- 用户已有八套色彩方案及保存值保持兼容；每套方案必须同时映射窗口、设置、次级表面、模块、Hover、控件、分隔线、Accent、AccentSoft 和 FocusRing。点击色盘后，已打开的主窗口和设置窗口必须立即出现可见的整体色相变化。
+- 跟随系统时必须真实切换 Light／Dark 资源字典，不能只更换 Accent；全新安装默认开启跟随系统，升级保留既有开关值。
+- 强调色与危险色按钮必须使用对应前景 Token，不得假定同一个白色或深色前景能覆盖明暗主题。
+- 日历、完成态、逾期、优先级、删除区和弹窗不得保留与主题无关的直接颜色。
+- `SettingsSurfaceBrush` 使用与当前色盘相同色相、略高于主面板实际显示不透明度的专用玻璃底面；它不继承主面板透明度滑块，但不得使用 `0xFA` 或不透明白色遮罩。表单内容通过卡片、边框和文字层级保证可读性。
+- 当前版本的“玻璃”指分层透明窗口的着色透出效果，不等同于实时背景模糊。DWM／Backdrop 真毛玻璃必须在独立原型中验证受支持系统、透明窗口渲染、拖动、命中测试、混合 DPI 和抗残影后，才可进入正式主题。
+
+#### 几何与间距
+
+| 元素 | 规格 |
+|------|------|
+| 窗口圆角 | 16 DIP |
+| 模块卡片圆角 | 12 DIP |
+| 输入框、按钮、导航项圆角 | 8 DIP |
+| 小状态块圆角 | 6 DIP；胶囊仅用于标签和状态 |
+| 主面板外边距／模块间距 | 12／10 DIP |
+| 模块／设置卡片内边距 | 14／20 DIP |
+| 导航项／按钮／输入控件基准高度 | 44／36／34 DIP |
+
+#### 交互状态
+
+- Hover：轻微提高背景对比度并显示强调边框。
+- Pressed：降低内容层透明度，不做整体缩放。
+- KeyboardFocus：使用 2 DIP `FocusRingBrush`；任何 `FocusVisualStyle={x:Null}` 都必须有等价替代。
+- Disabled：文字、图标和边框同时降级，仍可辨识控件边界。
+- 只允许 120-160ms 的颜色或透明度过渡；透明窗口上的模块不得使用位移、缩放、卡片上浮或逐卡片重阴影。
+
+### 自适应布局
+
+尺寸计算使用目标显示器工作区的 WPF DIP，不直接使用物理分辨率：
+
+```text
+RecommendedWidth  = min(340, WorkAreaWidth - 32)
+RecommendedHeight = min(roundTo20(clamp(WorkAreaHeight * 0.70, 560, 840)),
+                        WorkAreaHeight - 16)
+ActualWidth        = clamp(PreferredWidth, min(320, WorkAreaWidth - 32),
+                           min(520, WorkAreaWidth - 32))
+ActualHeight       = clamp(PreferredHeight, min(560, WorkAreaHeight - 16),
+                           min(1040, WorkAreaHeight - 16))
 ```
 
-**深色主题**
-```
-主背景: #1E1E1E (或 #272727 毛玻璃)
-文本: #FFFFFF
-次文本: #A0A0A0
-分隔线: #3A3A3A
-强调: #40E0D0
-成功: #6BCF7F
-警告: #FFD56F
-错误: #F7630C
-```
-
-#### 排版
-- **标题**：16px, 600 weight (Semibold)
-- **卡片标题**：14px, 600 weight
-- **正文**：12px, 400 weight (Regular)
-- **小文本**：11px, 400 weight
-- **字体**：Segoe UI (系统默认)
-
-#### 间距
-- **卡片内边距**：12px
-- **卡片间距**：8px
-- **列表项间距**：4px
-- **按钮内边距**：8px 12px
-
-#### 圆角
-- **窗口**：8px
-- **卡片**：4px
-- **按钮/输入框**：4px
-- **小组件**：2px
-
-#### 阴影
-- **窗口**：Elevation 16 (半径 16px, 模糊 20px, Y 偏移 8px)
-- **卡片**：Elevation 4 (半径 8px, 模糊 8px, Y 偏移 2px)
-- **悬停效果**：Elevation 8
-
-### 响应式布局
-
-| 屏幕宽度 | 面板宽度 | 备注 |
-|---------|--------|------|
-| 1920px+ | 360px | 标准 |
-| 1440px | 320px | 平衡 |
-| < 1440px | 依然 360px | 可能覆盖任务栏 |
+- 模块行继续使用 `Auto`，统一由主面板滚动承接；不引入模块独立尺寸滑块或嵌套滚动。
+- 宽度上限维持 520 DIP；在模块没有响应式双列布局前不得仅为“自由度”扩大上限。
+- 高度上限维持 1040 DIP；高分屏滑块不得显示超过可保存首选值的虚假区间。
+- 跨显示器时重新计算实际边界并夹紧，但不得静默覆盖首选宽高。
 
 ### 动画设计
 
 | 动画 | 时长 | 效果 |
 |------|------|------|
-| 窗口出现 | 200ms | 从下方滑入 + 淡入 |
-| 折叠/展开 | 350ms | 宽度过渡 + 内容淡入/淡出 |
-| 悬停按钮 | 150ms | 背景色过渡 + 微微放大 |
-| 列表项删除 | 200ms | 滑出 + 淡出 |
-| 加载中 | 循环 | 旋转加载圆 |
+| 窗口出现 | 160ms | 淡入；不使用会改变窗口边界的位移 |
+| 折叠/展开 | 现有时序 | 保留宽度过渡与内容淡入/淡出，必须通过透明渲染回归 |
+| Hover／Pressed | 120-160ms | 仅颜色或透明度变化 |
+| 加载中 | 循环 | 保留旋转加载圆，并遵循现有取消与可见性逻辑 |
 
 ---
 

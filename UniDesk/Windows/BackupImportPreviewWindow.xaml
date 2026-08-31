@@ -7,6 +7,8 @@
         MinWidth="520"
         MinHeight="420"
         WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource WindowSurfaceBrush}"
+        Foreground="{DynamicResource PrimaryTextBrush}"
         ShowInTaskbar="False">
     <Grid Margin="20">
         <Grid.RowDefinitions>
@@ -27,8 +29,8 @@
                    Padding="10"
                    Text="{DynamicResource Settings.ImportPreviewSensitiveWarning}"
                    TextWrapping="Wrap"
-                   Foreground="#B91C1C"
-                   Background="#FEF2F2">
+                   Foreground="{DynamicResource DangerForegroundBrush}"
+                   Background="{DynamicResource DangerBrush}">
             <TextBlock.Style>
                 <Style TargetType="TextBlock">
                     <Setter Property="Visibility" Value="Collapsed"/>
@@ -46,18 +48,19 @@
                    FontWeight="SemiBold"
                    Text="{DynamicResource Settings.ImportPreviewShortcuts}"/>
 
-        <Border Grid.Row="3" BorderBrush="#D1D5DB" BorderThickness="1" CornerRadius="6">
+        <Border Grid.Row="3" BorderBrush="{DynamicResource DividerBrush}" BorderThickness="1" CornerRadius="6">
             <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                 <ItemsControl ItemsSource="{Binding Shortcuts}">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
-                            <Border Padding="10" BorderBrush="#E5E7EB" BorderThickness="0,0,0,1">
+                            <Border Padding="10" BorderBrush="{DynamicResource DividerBrush}" BorderThickness="0,0,0,1">
                                 <Border.Style>
                                     <Style TargetType="Border">
                                         <Setter Property="Background" Value="Transparent"/>
                                         <Style.Triggers>
                                             <DataTrigger Binding="{Binding IsRisky}" Value="True">
-                                                <Setter Property="Background" Value="#FFF7ED"/>
+                                                <Setter Property="Background" Value="{DynamicResource CardSurfaceBrush}"/>
+                                                <Setter Property="BorderBrush" Value="{DynamicResource WarningBrush}"/>
                                             </DataTrigger>
                                         </Style.Triggers>
                                     </Style>
@@ -66,7 +69,7 @@
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="{Binding Name}" FontWeight="SemiBold"/>
                                         <TextBlock Margin="8,0,0,0"
-                                                   Foreground="#C2410C"
+                                                   Foreground="{DynamicResource WarningBrush}"
                                                    Text="{DynamicResource Settings.ImportPreviewRisk}">
                                             <TextBlock.Style>
                                                 <Style TargetType="TextBlock">
@@ -82,7 +85,7 @@
                                     </StackPanel>
                                     <TextBlock Margin="0,4,0,0" Text="{Binding Path}" TextWrapping="Wrap"/>
                                     <TextBlock Margin="0,3,0,0"
-                                               Foreground="#6B7280"
+                                               Foreground="{DynamicResource SecondaryTextBrush}"
                                                Text="{Binding LaunchArguments, StringFormat={}{0}}"
                                                TextWrapping="Wrap"/>
                                 </StackPanel>

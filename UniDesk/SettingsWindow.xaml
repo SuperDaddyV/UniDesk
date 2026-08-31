@@ -11,6 +11,8 @@
         WindowStyle="None"
         AllowsTransparency="True"
         Background="Transparent"
+        FontFamily="{DynamicResource BodyFontFamily}"
+        TextOptions.TextRenderingMode="Grayscale"
         ResizeMode="NoResize"
         ShowInTaskbar="False"
         Closed="SettingsWindow_OnClosed"
@@ -31,9 +33,11 @@
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
-            <Border Grid.RowSpan="3"
+            <Border x:Name="SettingsGlassBackground"
+                    Grid.RowSpan="3"
                     Style="{StaticResource GlassBackgroundLayerStyle}"
-                    Opacity="{Binding WindowOpacity}"/>
+                    Background="{DynamicResource SettingsSurfaceBrush}"
+                    Opacity="1"/>
 
             <Border x:Name="TitleDragArea"
                     Grid.Row="0"
@@ -54,16 +58,17 @@
                             <TextBlock Text="&#xE713;"
                                        FontFamily="Segoe MDL2 Assets"
                                        FontSize="13"
-                                       Foreground="#0D2744"
+                                       Foreground="{DynamicResource AccentForegroundBrush}"
                                        HorizontalAlignment="Center"
                                        VerticalAlignment="Center"/>
                         </Border>
                         <StackPanel>
                             <TextBlock Text="{DynamicResource Settings.Title}"
+                                       FontFamily="{DynamicResource DisplayFontFamily}"
                                        FontSize="16"
                                        FontWeight="SemiBold"
                                        Foreground="{DynamicResource PrimaryTextBrush}"/>
-                            <TextBlock Text="UniDesk Glass 2.0"
+                            <TextBlock Text="UniDesk Glass"
                                        FontSize="10"
                                        Foreground="{DynamicResource SecondaryTextBrush}"/>
                         </StackPanel>

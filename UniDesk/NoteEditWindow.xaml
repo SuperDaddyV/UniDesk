@@ -16,8 +16,8 @@
         KeyDown="NoteEditWindow_OnKeyDown">
 
     <Border CornerRadius="8"
-            Background="#EAFBE8"
-            BorderBrush="#CFE7CA"
+            Background="{DynamicResource NoteBackgroundBrush}"
+            BorderBrush="{DynamicResource DividerBrush}"
             BorderThickness="1">
         <Grid>
             <Grid.RowDefinitions>
@@ -33,30 +33,30 @@
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                         <TextBlock Text="{DynamicResource Common.Source}"
                                    FontSize="15"
-                                   Foreground="#69756F"
+                                   Foreground="{DynamicResource NoteTextBrush}"
                                    VerticalAlignment="Center"
                                    Margin="0,0,8,0"/>
-                        <Border Background="#CFEBC8"
+                        <Border Background="{DynamicResource AccentSoftBrush}"
                                 CornerRadius="18"
                                 Padding="9,5">
                             <StackPanel Orientation="Horizontal">
                                 <Border Width="22" Height="22"
                                         CornerRadius="11"
-                                        Background="#7668FF"
+                                        Background="{DynamicResource AccentBrush}"
                                         Margin="0,0,7,0">
                                     <TextBlock Text="✦"
-                                               Foreground="White"
+                                               Foreground="{DynamicResource AccentForegroundBrush}"
                                                FontSize="13"
                                                HorizontalAlignment="Center"
                                                VerticalAlignment="Center"/>
                                 </Border>
                                 <TextBlock Text="UniDesk"
                                            FontSize="15"
-                                           Foreground="#69756F"
+                                            Foreground="{DynamicResource NoteTextBrush}"
                                            VerticalAlignment="Center"/>
                                 <TextBlock Text="×"
                                            FontSize="18"
-                                           Foreground="#69756F"
+                                            Foreground="{DynamicResource NoteTextBrush}"
                                            Margin="10,-1,0,0"
                                            VerticalAlignment="Center"/>
                             </StackPanel>
@@ -65,13 +65,13 @@
 
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                         <Button Style="{StaticResource HeaderIconButtonStyle}"
-                                Foreground="#59645E"
+                                Foreground="{DynamicResource NoteTextBrush}"
                                 Click="MinimizeButton_OnClick"
                                 ToolTip="{DynamicResource Common.Minimize}">
                             <TextBlock Text="&#xE921;" FontFamily="Segoe MDL2 Assets" FontSize="16"/>
                         </Button>
                         <Button Style="{StaticResource HeaderIconButtonStyle}"
-                                Foreground="#59645E"
+                                Foreground="{DynamicResource NoteTextBrush}"
                                 Click="CloseButton_OnClick"
                                 ToolTip="{DynamicResource Common.Close}">
                             <TextBlock Text="&#xE8BB;" FontFamily="Segoe MDL2 Assets" FontSize="16"/>
@@ -90,7 +90,7 @@
                          Text="{Binding Title, UpdateSourceTrigger=PropertyChanged}"
                          FontSize="20"
                          FontWeight="SemiBold"
-                         Foreground="#4B5852"
+                         Foreground="{DynamicResource NoteTextBrush}"
                          Background="Transparent"
                          BorderThickness="0"
                          Padding="0"
@@ -102,22 +102,22 @@
                          TextWrapping="Wrap"
                          VerticalScrollBarVisibility="Auto"
                          FontSize="20"
-                         Foreground="#7B8781"
+                         Foreground="{DynamicResource NoteTextBrush}"
                          Background="Transparent"
                          BorderThickness="0"
                          Padding="0"
-                         CaretBrush="#5E6B64"/>
+                         CaretBrush="{DynamicResource NoteTextBrush}"/>
             </Grid>
 
             <Grid Grid.Row="2" Margin="22,16,22,18">
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
                     <Button Style="{StaticResource HeaderIconButtonStyle}"
-                            Foreground="#59645E"
+                            Foreground="{DynamicResource NoteTextBrush}"
                             ToolTip="{DynamicResource Common.More}">
                         <TextBlock Text="&#xE712;" FontFamily="Segoe MDL2 Assets" FontSize="18"/>
                     </Button>
                     <Button Style="{StaticResource HeaderIconButtonStyle}"
-                            Foreground="#59645E"
+                            Foreground="{DynamicResource NoteTextBrush}"
                             ToolTip="{DynamicResource Common.PopOut}">
                         <TextBlock Text="&#xE8A7;" FontFamily="Segoe MDL2 Assets" FontSize="18"/>
                     </Button>
@@ -128,16 +128,16 @@
                             Width="72"
                             Height="34"
                             Margin="0,0,8,0"
-                            Background="#DCEBDA"
-                            Foreground="#4F5C55"
+                            Background="{DynamicResource ControlSurfaceBrush}"
+                            Foreground="{DynamicResource NoteTextBrush}"
                             BorderThickness="0"
                             Click="CancelButton_OnClick"/>
                     <Button Content="{DynamicResource Common.Save}"
                             Width="72"
                             Height="34"
                             IsDefault="True"
-                            Background="#B7E1AE"
-                            Foreground="#33443A"
+                            Background="{DynamicResource AccentBrush}"
+                            Foreground="{DynamicResource AccentForegroundBrush}"
                             BorderThickness="0"
                             Click="SaveButton_OnClick"/>
                 </StackPanel>

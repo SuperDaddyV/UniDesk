@@ -30,21 +30,21 @@ UniDesk 是一款面向 Windows 的桌面侧边栏工具。展开时，它把信
 
 ## 下载与安装
 
-**[下载 UniDesk v2.1.0（Windows x64）](https://github.com/SuperDaddyV/UniDesk/releases/download/v2.1.0/UniDesk_Setup_2.1.0.exe)**
+**[下载 UniDesk v2.2.0（Windows x64）](https://github.com/SuperDaddyV/UniDesk/releases/download/v2.2.0/UniDesk_Setup_2.2.0.exe)**
 
-[查看 v2.1.0 Release](https://github.com/SuperDaddyV/UniDesk/releases/tag/v2.1.0) ·
-[SHA256SUMS.txt](https://github.com/SuperDaddyV/UniDesk/releases/download/v2.1.0/SHA256SUMS.txt) ·
-[release-manifest.json](https://github.com/SuperDaddyV/UniDesk/releases/download/v2.1.0/release-manifest.json)
+[查看 v2.2.0 Release](https://github.com/SuperDaddyV/UniDesk/releases/tag/v2.2.0) ·
+[SHA256SUMS.txt](https://github.com/SuperDaddyV/UniDesk/releases/download/v2.2.0/SHA256SUMS.txt) ·
+[release-manifest.json](https://github.com/SuperDaddyV/UniDesk/releases/download/v2.2.0/release-manifest.json)
 
 > [!WARNING]
-> `v2.1.0` 是经项目所有者明确批准的未签名正式版，安装包和 UniDesk 一方二进制文件均为 `Authenticode: NotSigned`。Windows SmartScreen 或企业策略可能警告或阻止安装，请仅从本仓库 Release 下载并核对 SHA-256。
+> `v2.2.0` 是经项目所有者单独明确批准、仅适用于本版本的未签名正式版，安装包和 UniDesk 一方二进制文件均为 `Authenticode: NotSigned`。Windows SmartScreen 或企业策略可能警告或阻止安装，请仅从本仓库 Release 下载并核对 SHA-256。
 
 | 项目 | 支持范围 |
 | --- | --- |
 | 系统 | 仍在 Microsoft 支持周期内的 Windows 11 x64 |
 | 长期服务版本 | Windows 10 Enterprise／IoT Enterprise LTSC 2021 或更新版本 x64 |
-| 安装包 | `UniDesk_Setup_2.1.0.exe` |
-| SHA-256 | `F601FEDB596957E9FC3BF0587C533A4E97647CDAADA4B5884F3AE1C3E0537388` |
+| 安装包 | `UniDesk_Setup_2.2.0.exe` |
+| SHA-256 | 以 Release 同页的 `SHA256SUMS.txt` 为准 |
 
 <details>
 <summary><strong>安装路径、UAC 与硬件组件说明</strong></summary>
@@ -98,7 +98,7 @@ UniDesk 是一款面向 Windows 的桌面侧边栏工具。展开时，它把信
 
 ## Code signing policy
 
-公开发布包遵循[代码签名政策](CODE_SIGNING_POLICY.md)。当前 `v2.1.0` 使用明确批准的未签名正式版例外，安装包状态为 `Authenticode: NotSigned`；SignPath 签名流程保留给未来版本。
+公开发布包遵循[代码签名政策](CODE_SIGNING_POLICY.md)。当前 `v2.2.0` 使用单独明确批准、仅适用于本版本的未签名正式版例外，安装包状态为 `Authenticode: NotSigned`；SignPath 签名流程保留给未来版本。
 
 Free code signing provided by SignPath.io, certificate by SignPath Foundation.
 
@@ -123,7 +123,7 @@ dotnet run --project UniDesk\UniDesk.csproj
 制作安装包还需要 Inno Setup 6。请从干净工作区运行：
 
 ```powershell
-.\scripts\Build-Release.ps1 -Version 2.1.0
+.\scripts\Build-Release.ps1 -Version 2.2.0
 ```
 
 公开发布前必须通过未签名发布就绪门禁、人工矩阵和项目所有者批准；构建脚本不会自动创建 GitHub Release。完整规则见[发布说明](docs/release-unidesk.md)。

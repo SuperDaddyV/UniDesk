@@ -27,9 +27,41 @@ public class WpfInteractionRegressionTests
         var viewXaml = ReadProjectFile("UniDesk", "Controls", "TodosModuleView.xaml");
         var viewCode = ReadProjectFile("UniDesk", "Controls", "TodosModuleView.xaml.cs");
 
+        Assert.Matches("Tag=\"TodoCheck\"[\\s\\S]{0,120}Width=\"28\" Height=\"28\"", viewXaml);
+        Assert.Matches("Tag=\"TodoCheck\"[\\s\\S]{0,260}Background=\"Transparent\"", viewXaml);
+        Assert.Matches("Tag=\"TodoCheck\"[\\s\\S]{0,460}<Ellipse[\\s\\S]{0,160}Width=\"16\" Height=\"16\"", viewXaml);
+        Assert.Matches("Tag=\"TodoCheck\"[\\s\\S]{0,620}StrokeThickness=\"1.5\"", viewXaml);
+        Assert.Matches("<TextBlock Text=\"{Binding Title}\"[\\s\\S]{0,300}ConverterParameter=12", viewXaml);
+        Assert.Contains("<Grid Grid.Column=\"2\" VerticalAlignment=\"Center\" Margin=\"0,3,0,-3\">", viewXaml, StringComparison.Ordinal);
+        Assert.Matches("<TextBlock Grid.Column=\"3\"[\\s\\S]{0,700}Margin=\"8,3,4,-3\"", viewXaml);
         Assert.Contains("MouseLeftButtonUp=\"TodoCheck_OnMouseLeftButtonUp\"", viewXaml, StringComparison.Ordinal);
         Assert.DoesNotContain("<Ellipse.InputBindings>", viewXaml, StringComparison.Ordinal);
         Assert.Contains("ToggleTodoCommand.Execute", viewCode, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ShortcutEditToggle_ShouldUseCompactAccessibleStateIcons()
+    {
+        var shortcutsXaml = ReadProjectFile("UniDesk", "Controls", "ShortcutsModuleView.xaml");
+        var editButtonStart = shortcutsXaml.IndexOf("<Button Width=\"28\" Height=\"28\"", StringComparison.Ordinal);
+        Assert.True(editButtonStart >= 0);
+        var editButtonEnd = shortcutsXaml.IndexOf("</Button>", editButtonStart, StringComparison.Ordinal);
+        Assert.True(editButtonEnd > editButtonStart);
+        var editButton = shortcutsXaml[editButtonStart..(editButtonEnd + "</Button>".Length)];
+
+        Assert.Contains("x:Name=\"ShortcutEditPencilIcon\"", editButton, StringComparison.Ordinal);
+        Assert.Contains("x:Name=\"ShortcutEditDoneIcon\"", editButton, StringComparison.Ordinal);
+        Assert.Equal(2, Regex.Matches(editButton, "StrokeThickness=\"1.2\"").Count);
+        Assert.Equal(2, Regex.Matches(editButton, "StrokeStartLineCap=\"Round\"").Count);
+        Assert.Equal(2, Regex.Matches(editButton, "StrokeEndLineCap=\"Round\"").Count);
+        Assert.Equal(2, Regex.Matches(editButton, "StrokeLineJoin=\"Round\"").Count);
+        Assert.Contains("<Setter Property=\"ToolTip\" Value=\"{DynamicResource Common.Edit}\"/>", editButton, StringComparison.Ordinal);
+        Assert.Contains("<Setter Property=\"ToolTip\" Value=\"{DynamicResource Common.Done}\"/>", editButton, StringComparison.Ordinal);
+        Assert.Contains("<Setter Property=\"AutomationProperties.Name\" Value=\"{DynamicResource Common.Edit}\"/>", editButton, StringComparison.Ordinal);
+        Assert.Contains("<Setter Property=\"AutomationProperties.Name\" Value=\"{DynamicResource Common.Done}\"/>", editButton, StringComparison.Ordinal);
+        Assert.DoesNotContain("FontFamily=", editButton, StringComparison.Ordinal);
+        Assert.DoesNotContain("&#xE70F;", editButton, StringComparison.Ordinal);
+        Assert.DoesNotContain("&#xE73E;", editButton, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -98,8 +130,17 @@ public class WpfInteractionRegressionTests
         Assert.Contains("TextOptions.TextRenderingMode=\"Grayscale\"", hardwareXaml, StringComparison.Ordinal);
         Assert.Contains("x:Name=\"NetworkReceivedValueText\"", hardwareXaml, StringComparison.Ordinal);
         Assert.Contains("x:Name=\"NetworkSentValueText\"", hardwareXaml, StringComparison.Ordinal);
-        Assert.Equal(2, Regex.Matches(hardwareXaml, "Width=\"78\"").Count);
-        Assert.Equal(2, Regex.Matches(hardwareXaml, "Width=\"78\"[\\s\\S]{0,160}TextAlignment=\"Center\"").Count);
+        Assert.Matches("<Border Grid.Row=\"2\"[\\s\\S]{0,460}<Grid Margin=\"12,0,-12,0\"[\\s\\S]{0,100}MaxWidth=\"340\"[\\s\\S]{0,100}HorizontalAlignment=\"Stretch\">", hardwareXaml);
+        Assert.Equal(2, Regex.Matches(hardwareXaml, "x:Name=\"Network(?:Received|Sent)ValueText\"[\\s\\S]{0,400}Width=\"78\"").Count);
+        Assert.Equal(2, Regex.Matches(hardwareXaml, "Width=\"78\"[\\s\\S]{0,180}TextAlignment=\"Left\"").Count);
+        Assert.Equal(2, Regex.Matches(hardwareXaml, "x:Name=\"Network(?:Received|Sent)Group\"[\\s\\S]{0,180}Width=\"140\" Height=\"14\"").Count);
+        Assert.Equal(2, Regex.Matches(hardwareXaml, "<ColumnDefinition Width=\"56\"/>").Count);
+        Assert.Equal(2, Regex.Matches(hardwareXaml, "<ColumnDefinition Width=\"6\"/>").Count);
+        Assert.Equal(2, Regex.Matches(hardwareXaml, "x:Name=\"Network(?:Received|Sent)ValueText\"[\\s\\S]{0,850}Margin=\"0\"").Count);
+        Assert.DoesNotContain("Margin=\"0,-1,0,1\"", hardwareXaml, StringComparison.Ordinal);
+        Assert.DoesNotContain("Margin=\"0,1,0,-1\"", hardwareXaml, StringComparison.Ordinal);
+        Assert.Equal(4, Regex.Matches(hardwareXaml, "LineHeight=\"14\"").Count);
+        Assert.DoesNotContain("Margin=\"-5,0,0,0\"", hardwareXaml, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -181,15 +222,17 @@ public class WpfInteractionRegressionTests
     }
 
     [Fact]
-    public void HardwareNetworkRow_ShouldCenterEachLabelValuePair()
+    public void HardwareNetworkRow_ShouldUseFixedCompactLabelValuePairs()
     {
         var hardwareXaml = ReadProjectFile("UniDesk", "Controls", "HardwareMonitorModuleView.xaml");
 
         Assert.Contains("x:Name=\"NetworkReceivedGroup\"", hardwareXaml, StringComparison.Ordinal);
         Assert.Contains("x:Name=\"NetworkSentGroup\"", hardwareXaml, StringComparison.Ordinal);
-        Assert.Equal(2, Regex.Matches(hardwareXaml, "SharedSizeGroup=\"NetworkLabel\"").Count);
-        Assert.Equal(2, Regex.Matches(hardwareXaml, "SharedSizeGroup=\"NetworkValue\"").Count);
-        Assert.Equal(2, Regex.Matches(hardwareXaml, "Width=\"78\"").Count);
+        Assert.Equal(2, Regex.Matches(hardwareXaml, "Width=\"140\" Height=\"14\"").Count);
+        Assert.Equal(2, Regex.Matches(hardwareXaml, "<ColumnDefinition Width=\"56\"/>").Count);
+        Assert.Equal(2, Regex.Matches(hardwareXaml, "<ColumnDefinition Width=\"6\"/>").Count);
+        Assert.Equal(2, Regex.Matches(hardwareXaml, "x:Name=\"Network(?:Received|Sent)ValueText\"[\\s\\S]{0,400}Width=\"78\"").Count);
+        Assert.DoesNotContain("SharedSizeGroup=\"Network", hardwareXaml, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -285,7 +328,14 @@ public class WpfInteractionRegressionTests
             "Style=\"{StaticResource ModuleHeaderTextStyle}\"",
             radarXaml,
             StringComparison.Ordinal);
-        Assert.Contains("ConverterParameter=12", radarXaml, StringComparison.Ordinal);
+        Assert.Contains(
+            "Style=\"{StaticResource ModuleHeaderRowStyle}\"",
+            radarXaml,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "Style=\"{StaticResource ModuleHeaderIconContainerStyle}\"",
+            radarXaml,
+            StringComparison.Ordinal);
         Assert.DoesNotContain("Text=\"{Binding BatchText}\"", radarXaml, StringComparison.Ordinal);
         Assert.Equal(
             1,
@@ -500,6 +550,52 @@ public class WpfInteractionRegressionTests
     }
 
     [Fact]
+    public void MainWindow_MonitorTransition_ShouldNotClampOrPersistDuringDrag()
+    {
+        var mainCode = ReadProjectFile("UniDesk", "MainWindow.xaml.cs");
+        var handler = Regex.Match(
+            mainCode,
+            "private void MainWindow_OnLocationChanged[\\s\\S]*?(?=private void SearchButton_OnClick)");
+
+        Assert.True(handler.Success);
+        Assert.Contains("_currentMonitor", handler.Value, StringComparison.Ordinal);
+        Assert.Contains("_isDragging", handler.Value, StringComparison.Ordinal);
+        Assert.Contains("clampPosition: !_isDragging", handler.Value, StringComparison.Ordinal);
+        Assert.DoesNotContain("ClampToVisibleWorkArea", handler.Value, StringComparison.Ordinal);
+        Assert.DoesNotContain("SaveWindowPosition", handler.Value, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void MainWindow_ActualSize_ShouldNotBindDirectlyToPreferredSize()
+    {
+        var mainXaml = ReadProjectFile("UniDesk", "MainWindow.xaml");
+        var mainCode = ReadProjectFile("UniDesk", "MainWindow.xaml.cs");
+
+        Assert.DoesNotContain("Height=\"{Binding PanelHeight", mainXaml, StringComparison.Ordinal);
+        Assert.DoesNotContain("Width=\"{Binding PanelWidth", mainXaml, StringComparison.Ordinal);
+        Assert.Contains("PanelSizePolicy.ClampActualSize", mainCode, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void SettingsSizeActions_ShouldUseCurrentMonitorRecommendation()
+    {
+        var settingsCode = ReadProjectFile("UniDesk", "ViewModels", "SettingsViewModel.cs");
+        var fitAction = Regex.Match(
+            settingsCode,
+            "private void FitCurrentScreen\\(\\)[\\s\\S]*?(?=\\s*\\[RelayCommand\\])");
+        var resetAction = Regex.Match(
+            settingsCode,
+            "private void ResetToDefaults\\(\\)[\\s\\S]*?(?=\\s*\\[RelayCommand\\])");
+
+        Assert.True(fitAction.Success);
+        Assert.True(resetAction.Success);
+        Assert.Contains("PanelSizePolicy.GetRecommendedSize", fitAction.Value, StringComparison.Ordinal);
+        Assert.Contains("PanelSizePolicy.GetRecommendedSize", resetAction.Value, StringComparison.Ordinal);
+        Assert.DoesNotContain("PanelWidth = 320", resetAction.Value, StringComparison.Ordinal);
+        Assert.DoesNotContain("PanelHeight = 702", resetAction.Value, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void MainApplicationManifest_ShouldDeclarePerMonitorV2DpiAwareness()
     {
         var manifest = ReadProjectFile("UniDesk", "app.manifest");
@@ -652,16 +748,36 @@ public class WpfInteractionRegressionTests
             StringComparison.Ordinal);
         Assert.Contains("{DynamicResource Weather.QWeatherAttribution}", timeWeatherXaml, StringComparison.Ordinal);
 
-        foreach (var languageFile in new[]
+        var attributionLink = Regex.Match(
+            timeWeatherXaml,
+            "<Hyperlink x:Name=\"QWeatherAttributionLink\"[\\s\\S]*?</Hyperlink>");
+        Assert.True(attributionLink.Success);
+        Assert.Contains(
+            "<Run Text=\"&#xE707;\" FontFamily=\"Segoe MDL2 Assets\" FontSize=\"8\"/>",
+            attributionLink.Value,
+            StringComparison.Ordinal);
+
+        var weatherLocationStrip = Regex.Match(
+            timeWeatherXaml,
+            "<Grid x:Name=\"WeatherLocationStrip\"[\\s\\S]*?</Grid>");
+        Assert.True(weatherLocationStrip.Success);
+        Assert.DoesNotContain("Text=\"&#xE707;\"", weatherLocationStrip.Value, StringComparison.Ordinal);
+
+        foreach (var (languageFile, attribution, providerHint) in new[]
                  {
-                     "Strings.zh-CN.xaml",
-                     "Strings.en-US.xaml",
-                     "Strings.ja-JP.xaml",
-                     "Strings.es-ES.xaml"
+                     ("Strings.zh-CN.xaml", "和风天气", "天气数据由和风天气提供。"),
+                     ("Strings.en-US.xaml", "QWeather", "Weather data is provided by QWeather."),
+                     ("Strings.ja-JP.xaml", "QWeather", "天気データは QWeather から提供されます。"),
+                     ("Strings.es-ES.xaml", "QWeather", "Los datos meteorológicos son proporcionados por QWeather.")
                  })
         {
             var resources = ReadProjectFile("UniDesk", "Resources", languageFile);
-            Assert.Contains("x:Key=\"Weather.QWeatherAttribution\"", resources, StringComparison.Ordinal);
+            Assert.Contains(
+                $"<sys:String x:Key=\"Weather.QWeatherAttribution\">{attribution}</sys:String>",
+                resources,
+                StringComparison.Ordinal);
+            Assert.Contains("x:Key=\"Settings.WeatherApiHint\"", resources, StringComparison.Ordinal);
+            Assert.Contains(providerHint, resources, StringComparison.Ordinal);
         }
     }
 

@@ -1,7 +1,7 @@
 # Third-party notices
 
 This file describes the third-party components distributed in the UniDesk
-2.1.0 self-contained Windows installer. The complete license texts and notices
+2.2.0 self-contained Windows installer. The complete license texts and notices
 listed below are installed in the `licenses` directory.
 
 ## .NET 10 Runtime and Microsoft libraries
@@ -78,6 +78,23 @@ provided by `HidSharp-Apache-2.0.txt` and
 
 UniDesk uses the unmodified icons and provides visible QWeather attribution in
 the expanded and collapsed weather displays.
+
+## Inter, Source Han Sans SC and JetBrains Mono
+
+- Inter 4.1 is distributed under the SIL Open Font License 1.1.
+  Upstream: https://github.com/rsms/inter/releases/tag/v4.1
+  License: `installer-assets/licenses/Inter-OFL-1.1.txt`.
+- Source Han Sans SC 2.005R is distributed under the SIL Open Font License 1.1.
+  Upstream: https://github.com/adobe-fonts/source-han-sans/releases/tag/2.005R
+  License: `installer-assets/licenses/SourceHanSans-OFL-1.1.txt`.
+- JetBrains Mono is distributed under the SIL Open Font License 1.1.
+  Upstream: https://github.com/JetBrains/JetBrainsMono
+  License: `installer-assets/licenses/JetBrainsMono-OFL-1.1.txt`.
+
+UniDesk embeds only the WPF resources needed for the approved B typography
+scheme and does not install these fonts system-wide. Inter renders Latin UI
+text, Source Han Sans SC covers Chinese UI and arbitrary user-entered Chinese,
+and JetBrains Mono remains limited to data-dense values.
 
 ## PawnIO 2.1.0.0
 

@@ -48,15 +48,15 @@ public partial class ToastWindow : Window
 
     private void ApplyKindStyle(ToastKind kind)
     {
-        var accent = kind switch
+        var (resourceKey, fallback) = kind switch
         {
-            ToastKind.Success => Color.FromRgb(0x22, 0xC5, 0x5E),
-            ToastKind.Warning => Color.FromRgb(0xF5, 0x9E, 0x0B),
-            ToastKind.Error => Color.FromRgb(0xEF, 0x44, 0x44),
-            _ => Color.FromRgb(0x3B, 0x82, 0xF6)
+            ToastKind.Success => ("SuccessBrush", Brushes.ForestGreen),
+            ToastKind.Warning => ("WarningBrush", Brushes.DarkGoldenrod),
+            ToastKind.Error => ("DangerBrush", Brushes.Crimson),
+            _ => ("AccentBrush", Brushes.DodgerBlue)
         };
 
-        AccentBar.Background = new SolidColorBrush(accent);
+        AccentBar.Background = Application.Current?.TryFindResource(resourceKey) as Brush ?? fallback;
     }
 
     private void CloseWithFade()

@@ -14,9 +14,12 @@
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
     
-            <StackPanel Grid.Row="0" Orientation="Horizontal" VerticalAlignment="Center">
-                <Grid Width="18" Height="18" Margin="0,0,6,0">
-                    <Border CornerRadius="2.5"
+            <StackPanel Grid.Row="0" Orientation="Horizontal" Style="{StaticResource ModuleHeaderRowStyle}">
+                <Grid Style="{StaticResource ModuleHeaderIconContainerStyle}">
+                    <Border Width="15" Height="15"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            CornerRadius="2.5"
                             BorderThickness="1.3"
                             Style="{StaticResource ModuleTitleIconBorderStyle}"/>
                     <Viewbox Margin="3.2">
@@ -31,8 +34,7 @@
                     </Viewbox>
                 </Grid>
                 <TextBlock Text="{DynamicResource Module.HardwareMonitor}"
-                           Style="{StaticResource ModuleHeaderTextStyle}"
-                           FontSize="{Binding DataContext.FontScale, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource ScaledFontSizeConverter}, ConverterParameter=12}"/>
+                           Style="{StaticResource ModuleHeaderTextStyle}"/>
             </StackPanel>
     
             <Grid Grid.Row="1" Margin="0,6,0,0">
@@ -48,6 +50,7 @@
                             HorizontalAlignment="Center">
                     <TextBlock Text="{Binding SystemCpuUsageText}"
                                ToolTip="{Binding SystemCpuUsageToolTip}"
+                               FontFamily="{DynamicResource BodyFontFamily}"
                                FontSize="{Binding DataContext.FontScale, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource ScaledFontSizeConverter}, ConverterParameter=13}"
                                FontWeight="SemiBold"
                                LineHeight="16"
@@ -56,6 +59,7 @@
                                Foreground="{DynamicResource PrimaryTextBrush}"/>
                     <TextBlock Text="{Binding SystemCpuTemperatureText}"
                                ToolTip="{Binding SystemCpuTemperatureToolTip}"
+                               FontFamily="{DynamicResource BodyFontFamily}"
                                FontSize="{Binding DataContext.FontScale, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource ScaledFontSizeConverter}, ConverterParameter=10}"
                                LineHeight="12"
                                Margin="0,2,0,0"
@@ -69,6 +73,7 @@
                             VerticalAlignment="Top"
                             HorizontalAlignment="Center">
                     <TextBlock Text="{Binding SystemMemoryUsageText}"
+                               FontFamily="{DynamicResource BodyFontFamily}"
                                FontSize="{Binding DataContext.FontScale, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource ScaledFontSizeConverter}, ConverterParameter=13}"
                                FontWeight="SemiBold"
                                LineHeight="16"
@@ -90,6 +95,7 @@
                             HorizontalAlignment="Center">
                     <TextBlock Text="{Binding SystemGpuUsageText}"
                                ToolTip="{Binding SystemGpuUsageToolTip}"
+                               FontFamily="{DynamicResource BodyFontFamily}"
                                FontSize="{Binding DataContext.FontScale, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource ScaledFontSizeConverter}, ConverterParameter=13}"
                                FontWeight="SemiBold"
                                LineHeight="16"
@@ -98,6 +104,7 @@
                                Foreground="{DynamicResource PrimaryTextBrush}"/>
                     <TextBlock Text="{Binding SystemGpuTemperatureText}"
                                ToolTip="{Binding SystemGpuTemperatureToolTip}"
+                               FontFamily="{DynamicResource BodyFontFamily}"
                                FontSize="{Binding DataContext.FontScale, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource ScaledFontSizeConverter}, ConverterParameter=10}"
                                LineHeight="12"
                                Margin="0,2,0,0"
@@ -114,7 +121,9 @@
                     TextOptions.TextRenderingMode="Grayscale"
                     BorderThickness="0,1,0,0"
                     BorderBrush="{DynamicResource GlassHighlightBrush}">
-                <Grid>
+                <Grid Margin="12,0,-12,0"
+                      MaxWidth="340"
+                      HorizontalAlignment="Stretch">
                     <Grid.IsSharedSizeScope>True</Grid.IsSharedSizeScope>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
@@ -123,55 +132,71 @@
     
                     <Grid x:Name="NetworkReceivedGroup"
                           Grid.Column="0"
+                          Width="140" Height="14"
                           HorizontalAlignment="Center"
                           VerticalAlignment="Center">
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto" SharedSizeGroup="NetworkLabel"/>
-                            <ColumnDefinition Width="Auto" SharedSizeGroup="NetworkValue"/>
+                            <ColumnDefinition Width="56"/>
+                            <ColumnDefinition Width="6"/>
+                            <ColumnDefinition Width="78"/>
                         </Grid.ColumnDefinitions>
                         <TextBlock Grid.Column="0"
                                    Text="{DynamicResource Hardware.Receive}"
                                    FontSize="{Binding DataContext.FontScale, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource ScaledFontSizeConverter}, ConverterParameter=10}"
                                    FontWeight="SemiBold"
-                                   LineHeight="12"
+                                   LineHeight="14"
+                                   LineStackingStrategy="BlockLineHeight"
                                    TextAlignment="Right"
+                                   VerticalAlignment="Center"
                                    Foreground="{DynamicResource SecondaryTextBrush}"/>
                         <TextBlock x:Name="NetworkReceivedValueText"
-                                   Grid.Column="1"
+                                   Grid.Column="2"
                                    Text="{Binding SystemNetworkReceivedText}"
+                                   FontFamily="{DynamicResource BodyFontFamily}"
                                    Width="78"
-                                   TextAlignment="Center"
+                                   TextAlignment="Left"
                                    FontSize="{Binding DataContext.FontScale, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource ScaledFontSizeConverter}, ConverterParameter=10.5}"
                                    FontWeight="SemiBold"
-                                   LineHeight="12"
-                                   Margin="6,0,0,0"
+                                   LineHeight="14"
+                                   LineStackingStrategy="BlockLineHeight"
+                                   Margin="0"
+                                   HorizontalAlignment="Left"
+                                   VerticalAlignment="Center"
                                    Foreground="{DynamicResource PrimaryTextBrush}"/>
                     </Grid>
 
                     <Grid x:Name="NetworkSentGroup"
                           Grid.Column="1"
+                          Width="140" Height="14"
                           HorizontalAlignment="Center"
                           VerticalAlignment="Center">
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto" SharedSizeGroup="NetworkLabel"/>
-                            <ColumnDefinition Width="Auto" SharedSizeGroup="NetworkValue"/>
+                            <ColumnDefinition Width="56"/>
+                            <ColumnDefinition Width="6"/>
+                            <ColumnDefinition Width="78"/>
                         </Grid.ColumnDefinitions>
                         <TextBlock Grid.Column="0"
                                    Text="{DynamicResource Hardware.Send}"
                                    FontSize="{Binding DataContext.FontScale, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource ScaledFontSizeConverter}, ConverterParameter=10}"
                                    FontWeight="SemiBold"
-                                   LineHeight="12"
+                                   LineHeight="14"
+                                   LineStackingStrategy="BlockLineHeight"
                                    TextAlignment="Right"
+                                   VerticalAlignment="Center"
                                    Foreground="{DynamicResource SecondaryTextBrush}"/>
                         <TextBlock x:Name="NetworkSentValueText"
-                                   Grid.Column="1"
+                                   Grid.Column="2"
                                    Text="{Binding SystemNetworkSentText}"
+                                   FontFamily="{DynamicResource BodyFontFamily}"
                                    Width="78"
-                                   TextAlignment="Center"
+                                   TextAlignment="Left"
                                    FontSize="{Binding DataContext.FontScale, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource ScaledFontSizeConverter}, ConverterParameter=10.5}"
                                    FontWeight="SemiBold"
-                                   LineHeight="12"
-                                   Margin="6,0,0,0"
+                                   LineHeight="14"
+                                   LineStackingStrategy="BlockLineHeight"
+                                   Margin="0"
+                                   HorizontalAlignment="Left"
+                                   VerticalAlignment="Center"
                                    Foreground="{DynamicResource PrimaryTextBrush}"/>
                     </Grid>
                 </Grid>

@@ -11,22 +11,14 @@
         KeyDown="QuickTextManagerWindow_OnKeyDown">
 
     <Window.Resources>
-        <SolidColorBrush x:Key="DlgBackground" Color="#E6FFFFFF"/>
-        <SolidColorBrush x:Key="DlgTextPrimary" Color="#1E293B"/>
-        <SolidColorBrush x:Key="DlgTextSecondary" Color="#64748B"/>
-        <SolidColorBrush x:Key="DlgBorder" Color="#E2E8F0"/>
-        <SolidColorBrush x:Key="DlgInputBackground" Color="#F8FAFC"/>
-        <SolidColorBrush x:Key="DlgAccent" Color="#3B82F6"/>
-        <SolidColorBrush x:Key="DlgAccentSoft" Color="#1A3B82F6"/>
-
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
 
         <Style x:Key="DlgButton" TargetType="Button">
             <Setter Property="Height" Value="30"/>
             <Setter Property="MinWidth" Value="70"/>
-            <Setter Property="Background" Value="{StaticResource DlgInputBackground}"/>
-            <Setter Property="Foreground" Value="{StaticResource DlgTextSecondary}"/>
-            <Setter Property="BorderBrush" Value="{StaticResource DlgBorder}"/>
+            <Setter Property="Background" Value="{DynamicResource ControlSurfaceBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource DividerBrush}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="FontSize" Value="12"/>
             <Setter Property="Cursor" Value="Hand"/>
@@ -47,8 +39,8 @@
     </Window.Resources>
 
     <Border x:Name="DialogRoot"
-            Background="{StaticResource DlgBackground}"
-            BorderBrush="{StaticResource DlgBorder}"
+            Background="{DynamicResource WindowSurfaceBrush}"
+            BorderBrush="{DynamicResource DividerBrush}"
             BorderThickness="1"
             CornerRadius="12"
             Margin="4"
@@ -63,10 +55,10 @@
 
             <Grid Grid.Row="0" Margin="14,12,12,8">
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                    <Border Width="24" Height="24" CornerRadius="6" Background="{StaticResource DlgAccent}" Margin="0,0,8,0">
+                    <Border Width="24" Height="24" CornerRadius="6" Background="{DynamicResource AccentBrush}" Margin="0,0,8,0">
                         <TextBlock Text="&#xE8C8;"
                                    FontFamily="Segoe MDL2 Assets"
-                                   Foreground="#0D2744"
+                                   Foreground="{DynamicResource AccentForegroundBrush}"
                                    FontSize="13"
                                    HorizontalAlignment="Center"
                                    VerticalAlignment="Center"/>
@@ -74,7 +66,7 @@
                     <TextBlock Text="{DynamicResource QuickText.Manager}"
                                FontSize="14"
                                FontWeight="SemiBold"
-                               Foreground="{StaticResource DlgTextPrimary}"
+                               Foreground="{DynamicResource PrimaryTextBrush}"
                                VerticalAlignment="Center"/>
                 </StackPanel>
                 <Button HorizontalAlignment="Right"
@@ -87,7 +79,7 @@
                     <TextBlock Text="&#xE711;"
                                FontFamily="Segoe MDL2 Assets"
                                FontSize="11"
-                               Foreground="{StaticResource DlgTextSecondary}"/>
+                               Foreground="{DynamicResource SecondaryTextBrush}"/>
                 </Button>
             </Grid>
 
@@ -110,9 +102,9 @@
                             <Style TargetType="Button" BasedOn="{StaticResource DlgButton}">
                                 <Style.Triggers>
                                     <DataTrigger Binding="{Binding IsHistorySelected}" Value="True">
-                                        <Setter Property="Background" Value="{StaticResource DlgAccentSoft}"/>
-                                        <Setter Property="Foreground" Value="{StaticResource DlgAccent}"/>
-                                        <Setter Property="BorderBrush" Value="{StaticResource DlgAccent}"/>
+                                        <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}"/>
+                                        <Setter Property="Foreground" Value="{DynamicResource AccentBrush}"/>
+                                        <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
                                     </DataTrigger>
                                 </Style.Triggers>
                             </Style>
@@ -127,9 +119,9 @@
                             <Style TargetType="Button" BasedOn="{StaticResource DlgButton}">
                                 <Style.Triggers>
                                     <DataTrigger Binding="{Binding IsSnippetsSelected}" Value="True">
-                                        <Setter Property="Background" Value="{StaticResource DlgAccentSoft}"/>
-                                        <Setter Property="Foreground" Value="{StaticResource DlgAccent}"/>
-                                        <Setter Property="BorderBrush" Value="{StaticResource DlgAccent}"/>
+                                        <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}"/>
+                                        <Setter Property="Foreground" Value="{DynamicResource AccentBrush}"/>
+                                        <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
                                     </DataTrigger>
                                 </Style.Triggers>
                             </Style>
@@ -144,9 +136,9 @@
                     <TextBox Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
                              Height="30"
                              FontSize="12"
-                             Foreground="{StaticResource DlgTextPrimary}"
-                             Background="{StaticResource DlgInputBackground}"
-                             BorderBrush="{StaticResource DlgBorder}"
+                             Foreground="{DynamicResource PrimaryTextBrush}"
+                             Background="{DynamicResource ControlSurfaceBrush}"
+                             BorderBrush="{DynamicResource DividerBrush}"
                              BorderThickness="1"
                              Padding="9,5"/>
                     <ComboBox Grid.Column="1"
@@ -165,8 +157,8 @@
                     <ItemsControl ItemsSource="{Binding ClipboardHistory}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Border Background="{StaticResource DlgInputBackground}"
-                                        BorderBrush="{StaticResource DlgBorder}"
+                                <Border Background="{DynamicResource ControlSurfaceBrush}"
+                                        BorderBrush="{DynamicResource DividerBrush}"
                                         BorderThickness="1"
                                         CornerRadius="8"
                                         Padding="9,7"
@@ -178,7 +170,7 @@
                                         </Grid.ColumnDefinitions>
                                         <TextBlock Text="{Binding Summary}"
                                                    FontSize="12"
-                                                   Foreground="{StaticResource DlgTextPrimary}"
+                                                   Foreground="{DynamicResource PrimaryTextBrush}"
                                                    TextWrapping="Wrap"/>
                                         <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="8,0,0,0">
                                             <Button Style="{StaticResource DlgButton}" Content="{DynamicResource Common.Copy}" Command="{Binding DataContext.CopyHistoryCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
@@ -197,8 +189,8 @@
                     <ItemsControl ItemsSource="{Binding TextSnippets}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Border Background="{StaticResource DlgInputBackground}"
-                                        BorderBrush="{StaticResource DlgBorder}"
+                                <Border Background="{DynamicResource ControlSurfaceBrush}"
+                                        BorderBrush="{DynamicResource DividerBrush}"
                                         BorderThickness="1"
                                         CornerRadius="8"
                                         Padding="9,7"
@@ -209,8 +201,8 @@
                                             <ColumnDefinition Width="Auto"/>
                                         </Grid.ColumnDefinitions>
                                         <StackPanel>
-                                            <TextBlock Text="{Binding DisplayTitle}" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource DlgTextPrimary}" TextTrimming="CharacterEllipsis"/>
-                                            <TextBlock Text="{Binding Summary}" FontSize="11" Foreground="{StaticResource DlgTextSecondary}" TextWrapping="Wrap" Margin="0,2,0,0"/>
+                                            <TextBlock Text="{Binding DisplayTitle}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource PrimaryTextBrush}" TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock Text="{Binding Summary}" FontSize="11" Foreground="{DynamicResource SecondaryTextBrush}" TextWrapping="Wrap" Margin="0,2,0,0"/>
                                         </StackPanel>
                                         <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="8,0,0,0">
                                             <Button Style="{StaticResource DlgButton}" Content="{DynamicResource Common.Copy}" Command="{Binding DataContext.CopySnippetCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
@@ -226,7 +218,7 @@
             </Grid>
 
             <Border Grid.Row="3"
-                    BorderBrush="{StaticResource DlgBorder}"
+                    BorderBrush="{DynamicResource DividerBrush}"
                     BorderThickness="0,1,0,0"
                     Padding="14,10">
                 <Grid>

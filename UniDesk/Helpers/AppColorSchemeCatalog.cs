@@ -15,6 +15,8 @@ public sealed class AppColorScheme
     public required Color SecondaryBackground { get; init; }
     public required Color ModuleBackground { get; init; }
     public required Color Accent { get; init; }
+    public required Color AccentSoft { get; init; }
+    public required Color FocusRing { get; init; }
     public required Color Divider { get; init; }
 }
 
@@ -94,10 +96,22 @@ public static class AppColorSchemeCatalog
             return;
         }
 
+        var settingsSurface = WithAlpha(scheme.PrimaryBackground, 0xD9);
+        var cardHover = Shift(scheme.ModuleBackground, 12, 0x80);
+        var controlSurface = Shift(scheme.SecondaryBackground, 8, 0x80);
+
+        SetColor(dictionary, "WindowSurfaceColor", scheme.PrimaryBackground);
+        SetColor(dictionary, "SettingsSurfaceColor", settingsSurface);
+        SetColor(dictionary, "SecondarySurfaceColor", scheme.SecondaryBackground);
+        SetColor(dictionary, "CardSurfaceColor", scheme.ModuleBackground);
+        SetColor(dictionary, "CardHoverColor", cardHover);
+        SetColor(dictionary, "ControlSurfaceColor", controlSurface);
         SetColor(dictionary, "PrimaryBackgroundColor", scheme.PrimaryBackground);
         SetColor(dictionary, "SecondaryBackgroundColor", scheme.SecondaryBackground);
         SetColor(dictionary, "ModuleBackgroundColor", scheme.ModuleBackground);
         SetColor(dictionary, "AccentColor", scheme.Accent);
+        SetColor(dictionary, "AccentSoftColor", scheme.AccentSoft);
+        SetColor(dictionary, "FocusRingColor", scheme.FocusRing);
         SetColor(dictionary, "DividerColor", scheme.Divider);
     }
 
@@ -109,8 +123,10 @@ public static class AppColorSchemeCatalog
         string secondaryHex,
         string moduleHex,
         string accentHex,
-        string dividerHex) =>
-        new()
+        string dividerHex)
+    {
+        var accent = ColorFromHex(accentHex);
+        return new()
         {
             Id = id,
             DisplayName = displayName,
@@ -118,14 +134,18 @@ public static class AppColorSchemeCatalog
             PrimaryBackground = ColorFromHex(primaryHex),
             SecondaryBackground = ColorFromHex(secondaryHex),
             ModuleBackground = ColorFromHex(moduleHex),
-            Accent = ColorFromHex(accentHex),
+            Accent = accent,
+            AccentSoft = WithAlpha(accent, 0x3D),
+            FocusRing = WithAlpha(accent, 0xCC),
             Divider = ColorFromHex(dividerHex)
         };
+    }
 
     private static AppColorScheme FromSwatch(string id, string displayName, string swatchHex, double glassFactor = 0.44)
     {
         var swatch = ColorFromHex(swatchHex);
         var glass = BuildGlassPalette(swatch, glassFactor);
+        var accent = glass.Accent;
         return new AppColorScheme
         {
             Id = id,
@@ -134,7 +154,9 @@ public static class AppColorSchemeCatalog
             PrimaryBackground = glass.Primary,
             SecondaryBackground = glass.Secondary,
             ModuleBackground = glass.Module,
-            Accent = glass.Accent,
+            Accent = accent,
+            AccentSoft = WithAlpha(accent, 0x3D),
+            FocusRing = WithAlpha(accent, 0xCC),
             Divider = glass.Divider
         };
     }
@@ -217,4 +239,14 @@ public static class AppColorSchemeCatalog
     }
 
     private static Color ColorFromHex(string hex) => (Color)ColorConverter.ConvertFromString(hex)!;
+
+    private static Color WithAlpha(Color color, byte alpha) =>
+        Color.FromArgb(alpha, color.R, color.G, color.B);
+
+    private static Color Shift(Color color, byte amount, byte alpha) =>
+        Color.FromArgb(
+            alpha,
+            (byte)Math.Min(byte.MaxValue, color.R + amount),
+            (byte)Math.Min(byte.MaxValue, color.G + amount),
+            (byte)Math.Min(byte.MaxValue, color.B + amount));
 }

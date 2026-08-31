@@ -13,8 +13,8 @@
         ShowActivated="False">
 
     <Border x:Name="RootBorder"
-            Background="#F2FFFFFF"
-            BorderBrush="#E2E8F0"
+            Background="{DynamicResource SecondarySurfaceBrush}"
+            BorderBrush="{DynamicResource DividerBrush}"
             BorderThickness="1"
             CornerRadius="10"
             Padding="12,10"
@@ -28,12 +28,12 @@
             <Border x:Name="AccentBar"
                     Grid.Column="0"
                     CornerRadius="2"
-                    Background="#3B82F6"/>
+                    Background="{DynamicResource AccentBrush}"/>
             <TextBlock x:Name="MessageText"
                        Grid.Column="2"
                        TextWrapping="Wrap"
                        FontSize="12"
-                       Foreground="#1E293B"
+                       Foreground="{DynamicResource PrimaryTextBrush}"
                        VerticalAlignment="Center"/>
         </Grid>
     </Border>

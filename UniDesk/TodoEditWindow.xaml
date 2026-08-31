@@ -22,25 +22,16 @@
         <helpers:TodoPriorityToBrushConverter x:Key="PriorityBrush"/>
         <helpers:TimeOptionIsSelectedConverter x:Key="TimeSlotSelectedConverter"/>
 
-        <SolidColorBrush x:Key="DlgBackground" Color="#E6FFFFFF"/>
-        <SolidColorBrush x:Key="DlgTextPrimary" Color="#1E293B"/>
-        <SolidColorBrush x:Key="DlgTextSecondary" Color="#64748B"/>
-        <SolidColorBrush x:Key="DlgBorder" Color="#E2E8F0"/>
-        <SolidColorBrush x:Key="DlgInputBackground" Color="#F8FAFC"/>
-        <SolidColorBrush x:Key="DlgAccent" Color="#3B82F6"/>
-        <SolidColorBrush x:Key="DlgAccentSoft" Color="#1A3B82F6"/>
-        <SolidColorBrush x:Key="DlgPopupBackground" Color="#FFFFFF"/>
-
         <Style x:Key="DlgLabel" TargetType="TextBlock">
             <Setter Property="FontSize" Value="11"/>
-            <Setter Property="Foreground" Value="{StaticResource DlgTextSecondary}"/>
+            <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}"/>
             <Setter Property="Margin" Value="0,0,0,4"/>
         </Style>
 
         <Style x:Key="DlgPickerButton" TargetType="Button">
             <Setter Property="Height" Value="34"/>
-            <Setter Property="Background" Value="{StaticResource DlgInputBackground}"/>
-            <Setter Property="BorderBrush" Value="{StaticResource DlgBorder}"/>
+            <Setter Property="Background" Value="{DynamicResource ControlSurfaceBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource DividerBrush}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="Template">
@@ -64,9 +55,9 @@
             <Setter Property="Margin" Value="0,0,5,0"/>
             <Setter Property="Padding" Value="8,0"/>
             <Setter Property="FontSize" Value="11"/>
-            <Setter Property="Foreground" Value="{StaticResource DlgTextSecondary}"/>
-            <Setter Property="Background" Value="{StaticResource DlgInputBackground}"/>
-            <Setter Property="BorderBrush" Value="{StaticResource DlgBorder}"/>
+            <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}"/>
+            <Setter Property="Background" Value="{DynamicResource ControlSurfaceBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource DividerBrush}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="Template">
@@ -82,7 +73,7 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource DlgAccent}"/>
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -91,15 +82,15 @@
         </Style>
 
         <Style x:Key="DlgPresetButtonActive" TargetType="Button" BasedOn="{StaticResource DlgPresetButton}">
-            <Setter Property="Foreground" Value="{StaticResource DlgAccent}"/>
-            <Setter Property="Background" Value="{StaticResource DlgAccentSoft}"/>
-            <Setter Property="BorderBrush" Value="{StaticResource DlgAccent}"/>
+            <Setter Property="Foreground" Value="{DynamicResource AccentBrush}"/>
+            <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
         </Style>
 
         <Style x:Key="DlgPriorityButton" TargetType="Button">
             <Setter Property="Height" Value="32"/>
-            <Setter Property="Background" Value="{StaticResource DlgInputBackground}"/>
-            <Setter Property="BorderBrush" Value="{StaticResource DlgBorder}"/>
+            <Setter Property="Background" Value="{DynamicResource ControlSurfaceBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource DividerBrush}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="Template">
@@ -115,7 +106,7 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource DlgAccent}"/>
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -124,16 +115,16 @@
         </Style>
 
         <Style x:Key="DlgPriorityButtonActive" TargetType="Button" BasedOn="{StaticResource DlgPriorityButton}">
-            <Setter Property="Background" Value="{StaticResource DlgAccentSoft}"/>
-            <Setter Property="BorderBrush" Value="{StaticResource DlgAccent}"/>
+            <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
         </Style>
 
         <Style x:Key="DlgGhostButton" TargetType="Button">
             <Setter Property="Height" Value="32"/>
             <Setter Property="MinWidth" Value="80"/>
-            <Setter Property="Background" Value="{StaticResource DlgInputBackground}"/>
-            <Setter Property="Foreground" Value="{StaticResource DlgTextSecondary}"/>
-            <Setter Property="BorderBrush" Value="{StaticResource DlgBorder}"/>
+            <Setter Property="Background" Value="{DynamicResource ControlSurfaceBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource DividerBrush}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="FontSize" Value="13"/>
             <Setter Property="Cursor" Value="Hand"/>
@@ -154,8 +145,8 @@
         <Style x:Key="DlgPrimaryButton" TargetType="Button">
             <Setter Property="Height" Value="32"/>
             <Setter Property="MinWidth" Value="80"/>
-            <Setter Property="Background" Value="{StaticResource DlgAccent}"/>
-            <Setter Property="Foreground" Value="#0D2744"/>
+            <Setter Property="Background" Value="{DynamicResource AccentBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource AccentForegroundBrush}"/>
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="FontSize" Value="13"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
@@ -172,8 +163,8 @@
         </Style>
 
         <Style x:Key="DlgPopupCard" TargetType="Border">
-            <Setter Property="Background" Value="{StaticResource DlgPopupBackground}"/>
-            <Setter Property="BorderBrush" Value="{StaticResource DlgBorder}"/>
+            <Setter Property="Background" Value="{DynamicResource CardSurfaceBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource DividerBrush}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="CornerRadius" Value="10"/>
             <Setter Property="Padding" Value="8"/>
@@ -189,7 +180,7 @@
             <Setter Property="Height" Value="28"/>
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Foreground" Value="{StaticResource DlgTextSecondary}"/>
+            <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}"/>
             <Setter Property="FontFamily" Value="Segoe MDL2 Assets"/>
             <Setter Property="FontSize" Value="11"/>
             <Setter Property="Cursor" Value="Hand"/>
@@ -201,8 +192,8 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Bd" Property="Background" Value="{StaticResource DlgAccentSoft}"/>
-                                <Setter Property="Foreground" Value="{StaticResource DlgAccent}"/>
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource AccentSoftBrush}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource AccentBrush}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -212,7 +203,7 @@
 
         <Style x:Key="DlgWeekdayLabel" TargetType="TextBlock">
             <Setter Property="FontSize" Value="11"/>
-            <Setter Property="Foreground" Value="{StaticResource DlgTextSecondary}"/>
+            <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}"/>
             <Setter Property="HorizontalAlignment" Value="Center"/>
             <Setter Property="Margin" Value="0,0,0,4"/>
         </Style>
@@ -222,7 +213,7 @@
             <Setter Property="Height" Value="32"/>
             <Setter Property="Margin" Value="1"/>
             <Setter Property="FontSize" Value="12"/>
-            <Setter Property="Foreground" Value="{StaticResource DlgTextPrimary}"/>
+            <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="BorderBrush" Value="Transparent"/>
             <Setter Property="BorderThickness" Value="1"/>
@@ -239,10 +230,10 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Bd" Property="Background" Value="{StaticResource DlgAccentSoft}"/>
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource AccentSoftBrush}"/>
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="Bd" Property="Background" Value="{StaticResource DlgAccentSoft}"/>
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource AccentSoftBrush}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -257,9 +248,9 @@
             <Setter Property="HorizontalAlignment" Value="Stretch"/>
             <Setter Property="Padding" Value="8,0"/>
             <Setter Property="FontSize" Value="12"/>
-            <Setter Property="Foreground" Value="{StaticResource DlgTextPrimary}"/>
-            <Setter Property="Background" Value="{StaticResource DlgInputBackground}"/>
-            <Setter Property="BorderBrush" Value="{StaticResource DlgBorder}"/>
+            <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
+            <Setter Property="Background" Value="{DynamicResource ControlSurfaceBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource DividerBrush}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="Template">
@@ -275,7 +266,7 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource DlgAccent}"/>
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -291,15 +282,15 @@
                     <Style TargetType="Button" BasedOn="{StaticResource DlgDayButton}">
                         <Style.Triggers>
                             <DataTrigger Binding="{Binding IsCurrentMonth}" Value="False">
-                                <Setter Property="Foreground" Value="#CBD5E1"/>
+                                <Setter Property="Foreground" Value="{DynamicResource MutedTextBrush}"/>
                             </DataTrigger>
                             <DataTrigger Binding="{Binding IsToday}" Value="True">
-                                <Setter Property="BorderBrush" Value="{StaticResource DlgAccent}"/>
+                                <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
                             </DataTrigger>
                             <DataTrigger Binding="{Binding IsSelected}" Value="True">
-                                <Setter Property="Background" Value="{StaticResource DlgAccent}"/>
-                                <Setter Property="Foreground" Value="White"/>
-                                <Setter Property="BorderBrush" Value="{StaticResource DlgAccent}"/>
+                                <Setter Property="Background" Value="{DynamicResource AccentBrush}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource AccentForegroundBrush}"/>
+                                <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
                             </DataTrigger>
                         </Style.Triggers>
                     </Style>
@@ -309,8 +300,8 @@
     </Window.Resources>
 
     <Border x:Name="DialogRoot"
-            Background="{StaticResource DlgBackground}"
-            BorderBrush="{StaticResource DlgBorder}"
+            Background="{DynamicResource WindowSurfaceBrush}"
+            BorderBrush="{DynamicResource DividerBrush}"
             BorderThickness="1"
             CornerRadius="12"
             Margin="4"
@@ -324,9 +315,9 @@
 
             <Grid Grid.Row="0" Margin="14,12,12,8">
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                    <Border Width="24" Height="24" CornerRadius="6" Background="{StaticResource DlgAccent}" Margin="0,0,8,0">
+                    <Border Width="24" Height="24" CornerRadius="6" Background="{DynamicResource AccentBrush}" Margin="0,0,8,0">
                         <TextBlock Text="+"
-                                   Foreground="#0D2744"
+                                   Foreground="{DynamicResource AccentForegroundBrush}"
                                    FontSize="16"
                                    FontWeight="Bold"
                                    HorizontalAlignment="Center"
@@ -336,7 +327,7 @@
                     <TextBlock Text="{Binding WindowTitle}"
                                FontSize="14"
                                FontWeight="SemiBold"
-                               Foreground="{StaticResource DlgTextPrimary}"
+                               Foreground="{DynamicResource PrimaryTextBrush}"
                                VerticalAlignment="Center"/>
                 </StackPanel>
                 <Button HorizontalAlignment="Right"
@@ -348,7 +339,7 @@
                     <TextBlock Text="&#xE711;"
                                FontFamily="Segoe MDL2 Assets"
                                FontSize="11"
-                               Foreground="{StaticResource DlgTextSecondary}"/>
+                               Foreground="{DynamicResource SecondaryTextBrush}"/>
                 </Button>
             </Grid>
 
@@ -362,9 +353,9 @@
                                  Height="76"
                                  MaxLength="50"
                                  FontSize="12"
-                                 Foreground="{StaticResource DlgTextPrimary}"
-                                 Background="{StaticResource DlgInputBackground}"
-                                 BorderBrush="{StaticResource DlgBorder}"
+                                 Foreground="{DynamicResource PrimaryTextBrush}"
+                                 Background="{DynamicResource ControlSurfaceBrush}"
+                                 BorderBrush="{DynamicResource DividerBrush}"
                                  BorderThickness="1"
                                  Padding="10,6"
                                  VerticalScrollBarVisibility="Disabled"/>
@@ -372,7 +363,7 @@
                                    IsHitTestVisible="False"
                                    Margin="12,8,0,0"
                                    FontSize="12"
-                                   Foreground="{StaticResource DlgTextSecondary}">
+                                   Foreground="{DynamicResource SecondaryTextBrush}">
                             <TextBlock.Style>
                                 <Style TargetType="TextBlock">
                                     <Setter Property="Visibility" Value="Collapsed"/>
@@ -393,7 +384,7 @@
                                    VerticalAlignment="Bottom"
                                    Margin="0,0,8,6"
                                    FontSize="10"
-                                   Foreground="{StaticResource DlgTextSecondary}"/>
+                                   Foreground="{DynamicResource SecondaryTextBrush}"/>
                     </Grid>
 
                     <TextBlock Text="{DynamicResource Todo.Time}" Style="{StaticResource DlgLabel}"/>
@@ -418,20 +409,20 @@
                                            Text="&#xE787;"
                                            FontFamily="Segoe MDL2 Assets"
                                            FontSize="13"
-                                           Foreground="{StaticResource DlgAccent}"
+                                           Foreground="{DynamicResource AccentBrush}"
                                            VerticalAlignment="Center"
                                            Margin="0,0,8,0"/>
                                 <TextBlock Grid.Column="1"
                                            Text="{Binding DateDisplayText}"
                                            FontSize="12"
-                                           Foreground="{StaticResource DlgTextPrimary}"
+                                           Foreground="{DynamicResource PrimaryTextBrush}"
                                            VerticalAlignment="Center"
                                            TextTrimming="CharacterEllipsis"/>
                                 <TextBlock Grid.Column="2"
                                            Text="&#xE70D;"
                                            FontFamily="Segoe MDL2 Assets"
                                            FontSize="10"
-                                           Foreground="{StaticResource DlgTextSecondary}"
+                                           Foreground="{DynamicResource SecondaryTextBrush}"
                                            VerticalAlignment="Center"/>
                             </Grid>
                         </Button>
@@ -450,19 +441,19 @@
                                            Text="&#xE823;"
                                            FontFamily="Segoe MDL2 Assets"
                                            FontSize="13"
-                                           Foreground="{StaticResource DlgAccent}"
+                                           Foreground="{DynamicResource AccentBrush}"
                                            VerticalAlignment="Center"
                                            Margin="0,0,8,0"/>
                                 <TextBlock Grid.Column="1"
                                            Text="{Binding TimeDisplayText}"
                                            FontSize="12"
-                                           Foreground="{StaticResource DlgTextPrimary}"
+                                           Foreground="{DynamicResource PrimaryTextBrush}"
                                            VerticalAlignment="Center"/>
                                 <TextBlock Grid.Column="2"
                                            Text="&#xE70D;"
                                            FontFamily="Segoe MDL2 Assets"
                                            FontSize="10"
-                                           Foreground="{StaticResource DlgTextSecondary}"
+                                           Foreground="{DynamicResource SecondaryTextBrush}"
                                            VerticalAlignment="Center"/>
                             </Grid>
                         </Button>
@@ -484,8 +475,8 @@
                                 CommandParameter="Low"
                                 Tag="Low">
                             <StackPanel Orientation="Horizontal">
-                                <Ellipse Width="8" Height="8" Fill="#94A3B8" Margin="0,0,6,0"/>
-                                <TextBlock Text="{DynamicResource Todo.PriorityLow}" FontSize="12" Foreground="{StaticResource DlgTextPrimary}"/>
+                                <Ellipse Width="8" Height="8" Fill="{DynamicResource MutedTextBrush}" Margin="0,0,6,0"/>
+                                <TextBlock Text="{DynamicResource Todo.PriorityLow}" FontSize="12" Foreground="{DynamicResource PrimaryTextBrush}"/>
                             </StackPanel>
                         </Button>
                         <Button Margin="0,0,6,0"
@@ -494,8 +485,8 @@
                                 CommandParameter="Medium"
                                 Tag="Medium">
                             <StackPanel Orientation="Horizontal">
-                                <Ellipse Width="8" Height="8" Fill="#F59E0B" Margin="0,0,6,0"/>
-                                <TextBlock Text="{DynamicResource Todo.PriorityMedium}" FontSize="12" Foreground="{StaticResource DlgTextPrimary}"/>
+                                <Ellipse Width="8" Height="8" Fill="{DynamicResource WarningBrush}" Margin="0,0,6,0"/>
+                                <TextBlock Text="{DynamicResource Todo.PriorityMedium}" FontSize="12" Foreground="{DynamicResource PrimaryTextBrush}"/>
                             </StackPanel>
                         </Button>
                         <Button Style="{StaticResource DlgPriorityButton}"
@@ -503,15 +494,15 @@
                                 CommandParameter="High"
                                 Tag="High">
                             <StackPanel Orientation="Horizontal">
-                                <Ellipse Width="8" Height="8" Fill="#EF4444" Margin="0,0,6,0"/>
-                                <TextBlock Text="{DynamicResource Todo.PriorityHigh}" FontSize="12" Foreground="{StaticResource DlgTextPrimary}"/>
+                                <Ellipse Width="8" Height="8" Fill="{DynamicResource DangerBrush}" Margin="0,0,6,0"/>
+                                <TextBlock Text="{DynamicResource Todo.PriorityHigh}" FontSize="12" Foreground="{DynamicResource PrimaryTextBrush}"/>
                             </StackPanel>
                         </Button>
                     </UniformGrid>
             </StackPanel>
 
             <Border Grid.Row="2"
-                    BorderBrush="{StaticResource DlgBorder}"
+                    BorderBrush="{DynamicResource DividerBrush}"
                     BorderThickness="0,1,0,0"
                     Padding="14,10">
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
@@ -547,7 +538,7 @@
                                        VerticalAlignment="Center"
                                        FontSize="13"
                                        FontWeight="SemiBold"
-                                       Foreground="{StaticResource DlgTextPrimary}"/>
+                                       Foreground="{DynamicResource PrimaryTextBrush}"/>
                             <Button Style="{StaticResource DlgNavIconButton}"
                                     HorizontalAlignment="Right"
                                     Content="&#xE76C;"
@@ -615,9 +606,9 @@
                                                                 <Binding Path="DueDateTime" RelativeSource="{RelativeSource AncestorType=Window}"/>
                                                             </MultiBinding>
                                                         </DataTrigger.Binding>
-                                                        <Setter Property="Background" Value="{StaticResource DlgAccentSoft}"/>
-                                                        <Setter Property="BorderBrush" Value="{StaticResource DlgAccent}"/>
-                                                        <Setter Property="Foreground" Value="{StaticResource DlgAccent}"/>
+                                                        <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}"/>
+                                                        <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
+                                                        <Setter Property="Foreground" Value="{DynamicResource AccentBrush}"/>
                                                         <Setter Property="FontWeight" Value="SemiBold"/>
                                                     </DataTrigger>
                                                 </Style.Triggers>

@@ -31,4 +31,25 @@ public class SystemThemeSelectionTests
             expected,
             SystemThemeSelection.GetEffectiveScheme(followSystem, systemLight, manual, light, dark));
     }
+
+    [Theory]
+    [InlineData(true, true, "Black", true)]
+    [InlineData(true, false, "Taro", false)]
+    [InlineData(false, true, "Taro", true)]
+    [InlineData(false, false, "LightGrey", true)]
+    [InlineData(false, true, "DarkGrey", false)]
+    [InlineData(false, true, "Black", false)]
+    public void ShouldUseLightSurface_ShouldRespectSystemModeAndManualDarkSchemes(
+        bool followSystem,
+        bool systemLight,
+        string manualScheme,
+        bool expected)
+    {
+        Assert.Equal(
+            expected,
+            SystemThemeSelection.ShouldUseLightSurface(
+                followSystem,
+                systemLight,
+                manualScheme));
+    }
 }

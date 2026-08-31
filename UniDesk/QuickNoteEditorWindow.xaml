@@ -15,17 +15,9 @@
         KeyDown="QuickNoteEditorWindow_OnKeyDown">
 
     <Window.Resources>
-        <SolidColorBrush x:Key="DlgBackground" Color="#E6FFFFFF"/>
-        <SolidColorBrush x:Key="DlgTextPrimary" Color="#1E293B"/>
-        <SolidColorBrush x:Key="DlgTextSecondary" Color="#64748B"/>
-        <SolidColorBrush x:Key="DlgBorder" Color="#E2E8F0"/>
-        <SolidColorBrush x:Key="DlgInputBackground" Color="#F8FAFC"/>
-        <SolidColorBrush x:Key="DlgAccent" Color="#3B82F6"/>
-        <SolidColorBrush x:Key="DlgAccentSoft" Color="#1A3B82F6"/>
-
         <Style x:Key="DlgLabel" TargetType="TextBlock">
             <Setter Property="FontSize" Value="11"/>
-            <Setter Property="Foreground" Value="{StaticResource DlgTextSecondary}"/>
+            <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}"/>
             <Setter Property="Margin" Value="0,0,0,4"/>
         </Style>
 
@@ -34,7 +26,7 @@
             <Setter Property="Height" Value="30"/>
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Foreground" Value="{StaticResource DlgTextSecondary}"/>
+            <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}"/>
             <Setter Property="FontFamily" Value="Segoe MDL2 Assets"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="Template">
@@ -45,8 +37,8 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Bd" Property="Background" Value="{StaticResource DlgAccentSoft}"/>
-                                <Setter Property="Foreground" Value="{StaticResource DlgAccent}"/>
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource AccentSoftBrush}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource AccentBrush}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -57,9 +49,9 @@
         <Style x:Key="DlgGhostButton" TargetType="Button">
             <Setter Property="Height" Value="32"/>
             <Setter Property="MinWidth" Value="72"/>
-            <Setter Property="Background" Value="{StaticResource DlgInputBackground}"/>
-            <Setter Property="Foreground" Value="{StaticResource DlgTextSecondary}"/>
-            <Setter Property="BorderBrush" Value="{StaticResource DlgBorder}"/>
+            <Setter Property="Background" Value="{DynamicResource ControlSurfaceBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource DividerBrush}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="FontSize" Value="12"/>
             <Setter Property="Cursor" Value="Hand"/>
@@ -79,13 +71,13 @@
         </Style>
 
         <Style x:Key="DlgDangerButton" TargetType="Button" BasedOn="{StaticResource DlgGhostButton}">
-            <Setter Property="Foreground" Value="#DC2626"/>
+            <Setter Property="Foreground" Value="{DynamicResource DangerBrush}"/>
         </Style>
     </Window.Resources>
 
     <Border x:Name="DialogRoot"
-            Background="{StaticResource DlgBackground}"
-            BorderBrush="{StaticResource DlgBorder}"
+            Background="{DynamicResource WindowSurfaceBrush}"
+            BorderBrush="{DynamicResource DividerBrush}"
             BorderThickness="1"
             CornerRadius="12"
             Margin="4"
@@ -99,10 +91,10 @@
 
             <Grid Grid.Row="0" Margin="14,12,12,8">
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                    <Border Width="24" Height="24" CornerRadius="6" Background="{StaticResource DlgAccent}" Margin="0,0,8,0">
+                    <Border Width="24" Height="24" CornerRadius="6" Background="{DynamicResource AccentBrush}" Margin="0,0,8,0">
                         <TextBlock Text="&#xE70B;"
                                    FontFamily="Segoe MDL2 Assets"
-                                   Foreground="#0D2744"
+                                   Foreground="{DynamicResource AccentForegroundBrush}"
                                    FontSize="13"
                                    HorizontalAlignment="Center"
                                    VerticalAlignment="Center"/>
@@ -110,7 +102,7 @@
                     <TextBlock Text="{Binding WindowTitle}"
                                FontSize="14"
                                FontWeight="SemiBold"
-                               Foreground="{StaticResource DlgTextPrimary}"
+                               Foreground="{DynamicResource PrimaryTextBrush}"
                                VerticalAlignment="Center"/>
                 </StackPanel>
                 <Button Style="{StaticResource DlgIconButton}"
@@ -134,9 +126,9 @@
                          Height="34"
                          MaxLength="80"
                          FontSize="13"
-                         Foreground="{StaticResource DlgTextPrimary}"
-                         Background="{StaticResource DlgInputBackground}"
-                         BorderBrush="{StaticResource DlgBorder}"
+                         Foreground="{DynamicResource PrimaryTextBrush}"
+                         Background="{DynamicResource ControlSurfaceBrush}"
+                         BorderBrush="{DynamicResource DividerBrush}"
                          BorderThickness="1"
                          Padding="10,6"
                          Margin="0,0,0,10"/>
@@ -155,31 +147,31 @@
                              TextWrapping="Wrap"
                              VerticalScrollBarVisibility="Auto"
                              FontSize="13"
-                             Foreground="{StaticResource DlgTextPrimary}"
-                             Background="{StaticResource DlgInputBackground}"
-                             BorderBrush="{StaticResource DlgBorder}"
+                             Foreground="{DynamicResource PrimaryTextBrush}"
+                             Background="{DynamicResource ControlSurfaceBrush}"
+                             BorderBrush="{DynamicResource DividerBrush}"
                              BorderThickness="1"
                              Padding="10,8"
                              Margin="0,0,0,10"
-                             CaretBrush="{StaticResource DlgTextPrimary}"/>
+                             CaretBrush="{DynamicResource PrimaryTextBrush}"/>
                 </Grid>
 
                 <Grid Grid.Row="3">
                     <CheckBox Content="{DynamicResource Common.Pin}"
                               IsChecked="{Binding IsPinned}"
-                              Foreground="{StaticResource DlgTextSecondary}"
+                                Foreground="{DynamicResource SecondaryTextBrush}"
                               FontSize="12"
                               VerticalAlignment="Center"/>
                     <TextBlock Text="{Binding SaveStatus}"
                                HorizontalAlignment="Right"
-                               Foreground="{StaticResource DlgTextSecondary}"
+                                Foreground="{DynamicResource SecondaryTextBrush}"
                                FontSize="11"
                                VerticalAlignment="Center"/>
                 </Grid>
             </Grid>
 
             <Border Grid.Row="2"
-                    BorderBrush="{StaticResource DlgBorder}"
+                    BorderBrush="{DynamicResource DividerBrush}"
                     BorderThickness="0,1,0,0"
                     Padding="14,10">
                 <Grid>

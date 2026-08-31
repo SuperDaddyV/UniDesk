@@ -47,6 +47,12 @@ The project owner may explicitly approve one unsigned stable release for `v2.1.0
 
 An unsigned `v2.1.0` release must still be rebuilt from the exact clean public `main` revision, pass locked restore, zero-warning Release build, the full automated test suite, dependency-vulnerability and version checks, payload inventory and SHA-256 verification, and the complete applicable manual release matrix. The installer and every first-party PE file must be verified as `NotSigned`. The README and GitHub Release must disclose `Authenticode: NotSigned` and the resulting Windows SmartScreen or enterprise-policy risk. A Git tag or GitHub Release remains a separate manual action requiring the project owner's final confirmation.
 
+## v2.2.0 unsigned release exception
+
+On 2026-08-31, the project owner separately approved one unsigned stable release for `v2.2.0` because the SignPath application remains pending. This is a version-specific exception only: it does not claim SignPath approval or a valid Authenticode signature, does not alter the historical `v2.1.0` exception, and does not apply automatically to any later version.
+
+An unsigned `v2.2.0` release must be rebuilt from the exact clean public `main` revision and satisfy the same locked restore, zero-warning Release build, full automated test suite, dependency-vulnerability and version checks, payload inventory, SHA-256 verification, and applicable manual release-matrix requirements as `v2.1.0`. The installer and every first-party PE file must be verified as `NotSigned`. The README and GitHub Release must disclose `Authenticode: NotSigned` and the resulting Windows SmartScreen or enterprise-policy risk. The owner's instruction to publish `v2.2.0` is the final release authorization for this exact version only.
+
 ## Reporting concerns
 
 Report suspected misuse of the signing certificate, an unexpected signed file, or a release-integrity issue through [GitHub private vulnerability reporting](https://github.com/SuperDaddyV/UniDesk/security/advisories/new). Include the affected file name, release URL, SHA-256 value, and signature details when possible. Do not publish unpatched exploit details in a public issue.

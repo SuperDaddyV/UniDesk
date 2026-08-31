@@ -2,9 +2,51 @@
 
 ## Code signing policy
 
-Public packages follow the [UniDesk code signing policy](../CODE_SIGNING_POLICY.md) and [privacy policy](../PRIVACY.md). `v2.1.0` uses the explicitly approved unsigned-stable exception; it must be rebuilt from the documented public source revision, pass the unsigned readiness gate and manual matrix, and disclose `Authenticode: NotSigned` plus Windows SmartScreen or enterprise-policy risk.
+Public packages follow the [UniDesk code signing policy](../CODE_SIGNING_POLICY.md) and [privacy policy](../PRIVACY.md). `v2.1.0` and `v2.2.0` each use a separately approved, version-specific unsigned-stable exception; each must be rebuilt from its documented public source revision, pass the unsigned readiness gate and applicable manual matrix, and disclose `Authenticode: NotSigned` plus Windows SmartScreen or enterprise-policy risk. No later version inherits either exception.
 
 Free code signing provided by SignPath.io, certificate by SignPath Foundation.
+
+## v2.2.0
+
+This release introduces the Calm Glass adaptive visual system while preserving UniDesk's tinted transparent-glass identity, user-selected color schemes, and white information hierarchy.
+
+Distribution notice: the `v2.2.0` installer and first-party binaries are unsigned under the separately approved version-specific exception. Verify the published SHA-256 before use; Windows SmartScreen or enterprise policy may warn or block installation.
+
+### Changes
+
+- Added the B typography scheme with bundled Inter for Latin text and Source Han Sans SC for Simplified Chinese, plus JetBrains Mono only where fixed-width data is required. The package includes the corresponding OFL license texts.
+- Unified all main-panel module title sizes, weights, line heights, icon boxes, optical alignment, and spacing so Hardware Monitor, Shortcuts, Todos, Quick Notes, Quick Text, and Model Radar share one visual hierarchy.
+- Preserved the original wallpaper-through tinted glass treatment and restored live color-scheme changes instead of replacing the main panel with opaque light cards.
+- Added monitor-aware panel sizing: fresh installs receive a recommended size derived from the current work area, users retain their preferred width and height, and the live window is clamped safely when moved between monitors or DPI work areas. The configurable preference range is 320–520 DIP wide and 560–1040 DIP high.
+- Refined the settings window and supporting dialogs with the same Calm Glass typography, controls, focus treatment, and translucent color family while keeping the settings layout distinct from the main panel.
+- Rebuilt the Hardware Monitor network row as two centered, stable label/value groups using the shared typography and fixed refresh boxes, retaining alignment across supported panel widths and live RX／TX value changes.
+- Aligned todo text and due dates to the visual center of the completion circle while preserving a larger transparent click target; unified body and date typography.
+- Replaced the Shortcuts text edit action with a transparent thin-line pencil／check icon button, including localized tooltip and accessibility text.
+- Simplified QWeather attribution to a small provider icon and name link, removed the duplicate location-line icon, and retained the full provider explanation in Settings.
+- Added regression coverage for theme contracts, dialogs, module geometry, responsive panel sizing, system-theme selection, settings persistence, font packaging, and WPF interactions.
+
+### 中文说明
+
+本版本引入 Calm Glass 自适应视觉系统，同时保留 UniDesk 原有的着色透明毛玻璃、用户色盘切换和白色信息层级。
+
+分发提示：`v2.2.0` 根据单独批准、仅适用于本版本的例外，以未签名正式版发布。安装包和一方二进制文件均为 `Authenticode: NotSigned`；使用前请核对公开 SHA-256，Windows SmartScreen 或企业策略可能警告或阻止安装。
+
+- 采用 B 版字体方案：拉丁文字使用内嵌 Inter，简体中文使用内嵌 Source Han Sans SC，只有固定宽度数据使用 JetBrains Mono；安装包同时分发对应 OFL 许可证。
+- 统一主面板全部模块的标题字号、字重、行高、图标容器、光学校准和图文间距，使硬件监视、快捷方式、待办事项、快速便签、快捷文本和模型雷达保持同一视觉层级。
+- 保留原有壁纸透出的着色玻璃效果，并恢复色盘选择的即时变化，不再把主面板替换成不透明浅色卡片。
+- 新增按显示器工作区自适应的面板尺寸：全新安装按当前分辨率生成推荐宽高，用户手动设置的偏好继续保留，跨显示器或 DPI 工作区移动时只对实际窗口做安全限制。可配置偏好范围为宽 320–520 DIP、高 560–1040 DIP。
+- 设置窗口与辅助对话框统一使用 Calm Glass 字体、控件、焦点状态和同色系透明表面，同时保持设置页与主面板的层级区别。
+- 将硬件监视网络行重做为两组居中的稳定标签／数值布局，使用统一数字字体和固定刷新区域，在支持的面板宽度及 RX／TX 实时变化下保持对齐。
+- 将待办正文和到期时间校准到勾选圆圈的视觉中心，同时保留更大的透明点击热区，并统一正文与日期字号。
+- 将快捷方式右上角文字编辑入口替换为透明细线铅笔／对勾图标，并保留本地化提示和无障碍名称。
+- 将和风天气署名精简为小尺寸提供方图标与名称链接，移除位置行重复图标，完整服务说明保留在设置页。
+- 补充主题契约、对话框、模块几何、自适应面板尺寸、系统主题选择、设置持久化、字体打包和 WPF 交互回归测试。
+
+### Installer integrity / 安装包校验
+
+- `UniDesk_Setup_2.2.0.exe`
+- SHA-256：以 GitHub Release 同页发布的 `SHA256SUMS.txt` 为准
+- Authenticode：`NotSigned`；公开发布说明必须披露 SmartScreen／企业策略风险
 
 ## v2.1.0
 

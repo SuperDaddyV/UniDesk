@@ -11,6 +11,11 @@
                 <ResourceDictionary Source="Resources/Themes/Dark.xaml"/>
                 <ResourceDictionary Source="Resources/Strings.zh-CN.xaml"/>
             </ResourceDictionary.MergedDictionaries>
+            <FontFamily x:Key="DisplayFontFamily">pack://application:,,,/UniDesk;component/Resources/Fonts/#Inter, pack://application:,,,/UniDesk;component/Resources/Fonts/#Source Han Sans SC, Microsoft YaHei UI</FontFamily>
+            <FontFamily x:Key="ModuleTitleFontFamily">pack://application:,,,/UniDesk;component/Resources/Fonts/#Inter, pack://application:,,,/UniDesk;component/Resources/Fonts/#Source Han Sans SC, Microsoft YaHei UI</FontFamily>
+            <FontFamily x:Key="BodyFontFamily">pack://application:,,,/UniDesk;component/Resources/Fonts/#Inter, pack://application:,,,/UniDesk;component/Resources/Fonts/#Source Han Sans SC, Microsoft YaHei UI</FontFamily>
+            <FontFamily x:Key="DataFontFamily">pack://application:,,,/UniDesk;component/Resources/Fonts/#JetBrains Mono, pack://application:,,,/UniDesk;component/Resources/Fonts/#Source Han Sans SC, Microsoft YaHei UI</FontFamily>
+            <FontFamily x:Key="CaptionFontFamily">pack://application:,,,/UniDesk;component/Resources/Fonts/#Inter, pack://application:,,,/UniDesk;component/Resources/Fonts/#Source Han Sans SC, Microsoft YaHei UI</FontFamily>
             <FontFamily x:Key="QWeatherIconsFont">pack://application:,,,/icon/QWeather-Icons-1.8.0/font/fonts/#qweather-icons</FontFamily>
             <helpers:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
             <helpers:StringNotEmptyToVisibilityConverter x:Key="StringNotEmptyToVisibilityConverter"/>
@@ -20,7 +25,6 @@
             <helpers:BundledIconPathConverter x:Key="BundledIconPathConverter"/>
             <helpers:TodoPriorityToBrushConverter x:Key="TodoPriorityBrush"/>
             <helpers:InverseBooleanToVisibilityConverter x:Key="InverseBooleanToVisibilityConverter"/>
-            <helpers:ScaledFontSizeConverter x:Key="ScaledFontSizeConverter"/>
             <helpers:InverseBooleanConverter x:Key="InverseBooleanConverter"/>
             <helpers:StringEqualsConverter x:Key="StringEqualsConverter"/>
             <helpers:IntEqualsConverter x:Key="IntEqualsConverter"/>

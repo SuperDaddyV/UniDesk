@@ -99,7 +99,7 @@
     <sys:String x:Key="Weather.RefreshFailed">No se pudo actualizar el clima. Revisa la red y la API.</sys:String>
     <sys:String x:Key="Weather.Expired">Los datos pueden estar desactualizados</sys:String>
     <sys:String x:Key="Weather.ApiKeyMissing">Configura primero la API Key de QWeather en Ajustes.</sys:String>
-    <sys:String x:Key="Weather.QWeatherAttribution">Tiempo por QWeather</sys:String>
+    <sys:String x:Key="Weather.QWeatherAttribution">QWeather</sys:String>
     <sys:String x:Key="Weather.CityNotFoundFormat">Ciudad no encontrada: {0}</sys:String>
     <sys:String x:Key="Weather.NetworkRequestFailedFormat">Falló la solicitud de red: {0}</sys:String>
     <sys:String x:Key="Weather.GetWeatherFailedFormat">No se pudo obtener el clima: {0}</sys:String>
@@ -230,6 +230,7 @@
     <sys:String x:Key="Settings.WindowOpacity">Opacidad de ventana</sys:String>
     <sys:String x:Key="Settings.PanelWidth">Ancho del panel</sys:String>
     <sys:String x:Key="Settings.PanelHeight">Alto del panel</sys:String>
+    <sys:String x:Key="Settings.FitCurrentScreen">Ajustar a la pantalla actual</sys:String>
     <sys:String x:Key="Settings.FontSize">Tamaño de fuente</sys:String>
     <sys:String x:Key="Settings.FontSmall">Pequeño</sys:String>
     <sys:String x:Key="Settings.FontNormal">Normal</sys:String>
@@ -289,7 +290,7 @@
     <sys:String x:Key="Settings.OpenLocationSettings">Abrir la configuración de ubicación de Windows</sys:String>
     <sys:String x:Key="Settings.OpenLocationSettingsFailed">No se pudo abrir la configuración de ubicación de Windows. Ajusta manualmente el acceso a la ubicación en Configuración de Windows.</sys:String>
     <sys:String x:Key="Settings.WeatherApi">API del clima</sys:String>
-    <sys:String x:Key="Settings.WeatherApiHint">API Host y API Key deben pertenecer al mismo proyecto de QWeather</sys:String>
+    <sys:String x:Key="Settings.WeatherApiHint">Los datos meteorológicos son proporcionados por QWeather. API Host y API Key deben pertenecer al mismo proyecto de QWeather; usa el enlace QWeather del panel para abrir el sitio del proveedor.</sys:String>
     <sys:String x:Key="Settings.WeatherCredentialsRequired">API Host y API Key deben completarse ambos o dejarse ambos vacíos.</sys:String>
     <sys:String x:Key="Settings.WeatherApiHostInvalid">API Host no válido. Solo se permite un subdominio HTTPS dedicado de qweatherapi.com proporcionado por QWeather.</sys:String>
     <sys:String x:Key="Settings.About">Acerca de</sys:String>

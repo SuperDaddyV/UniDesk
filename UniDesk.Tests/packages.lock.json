@@ -634,7 +634,7 @@
           "Microsoft.Extensions.DependencyInjection": "[10.0.10, )",
           "SQLitePCLRaw.bundle_e_sqlite3": "[2.1.12, )",
           "System.Management": "[10.0.10, )",
-          "UniDesk.Hardware.Contracts": "[2.1.0, )"
+          "UniDesk.Hardware.Contracts": "[2.2.0, )"
         }
       },
       "unidesk.hardware.contracts": {
@@ -649,7 +649,7 @@
           "LibreHardwareMonitorLib": "[0.9.6, )",
           "Microsoft.Extensions.Hosting": "[10.0.10, )",
           "Microsoft.Extensions.Hosting.WindowsServices": "[10.0.10, )",
-          "UniDesk.Hardware.Contracts": "[2.1.0, )"
+          "UniDesk.Hardware.Contracts": "[2.2.0, )"
         }
       }
     },

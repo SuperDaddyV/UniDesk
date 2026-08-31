@@ -209,13 +209,17 @@ public partial class App : Application
         var manual = settings.GetValue(
             "ColorScheme",
             settings.GetValue("Theme", AppColorSchemeCatalog.DefaultSchemeId));
+        var followSystem = settings.GetSetting("FollowSystemTheme", true);
+        var isSystemLight = _systemThemeService?.IsLightTheme ?? true;
         var effective = SystemThemeSelection.GetEffectiveScheme(
-            settings.GetSetting("FollowSystemTheme", false),
-            _systemThemeService?.IsLightTheme ?? true,
+            followSystem,
+            isSystemLight,
             manual,
             settings.GetValue("ColorSchemeLight", AppColorSchemeCatalog.DefaultSchemeId),
             settings.GetValue("ColorSchemeDark", "DarkGrey"));
-        AppColorSchemeCatalog.Apply(effective);
+        AppThemeManager.Apply(
+            SystemThemeSelection.ShouldUseLightSurface(followSystem, isSystemLight, manual),
+            effective);
     }
 
     private void OnTrayToggleWindow()

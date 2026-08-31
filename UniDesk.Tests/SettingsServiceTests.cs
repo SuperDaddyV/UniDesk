@@ -15,7 +15,9 @@ public class SettingsServiceTests
 
     private DatabaseService GetDb()
     {
-        return new DatabaseService($"Data Source={_testDbFile}");
+        return new DatabaseService(
+            $"Data Source={_testDbFile}",
+            monitorWorkAreas: new FixedMonitorWorkAreaProvider(1366, 768));
     }
 
     private void Cleanup()
@@ -33,6 +35,25 @@ public class SettingsServiceTests
         }
     }
 
+    private sealed class FixedMonitorWorkAreaProvider(double width, double height) : IMonitorWorkAreaProvider
+    {
+        private readonly MonitorWorkArea _monitor = new(
+            Handle: 1,
+            PixelWorkArea: new PixelRect(0, 0, width, height),
+            WorkArea: new LogicalRect(0, 0, width, height),
+            DpiX: 96,
+            DpiY: 96,
+            IsPrimary: true);
+
+        public IReadOnlyList<MonitorWorkArea> GetAll() => [_monitor];
+
+        public MonitorWorkArea GetForWindow(nint windowHandle) => _monitor;
+
+        public MonitorWorkArea GetForPixelRect(PixelRect pixelBounds) => _monitor;
+
+        public MonitorWorkArea GetForPixelPoint(PixelPoint pixelPoint) => _monitor;
+    }
+
     [Fact]
     public async Task GetSetting_ShouldReturnDefaultTheme()
     {
@@ -45,6 +66,21 @@ public class SettingsServiceTests
         
         Assert.Equal("System", theme);
         
+        Cleanup();
+    }
+
+    [Fact]
+    public async Task GetSetting_ShouldFollowSystemThemeByDefault()
+    {
+        var databaseService = GetDb();
+        var settingsService = new SettingsService(databaseService);
+
+        await settingsService.InitializeAsync();
+
+        var followSystemTheme = await settingsService.GetSettingAsync("FollowSystemTheme");
+
+        Assert.Equal("True", followSystemTheme);
+
         Cleanup();
     }
 
@@ -88,7 +124,7 @@ public class SettingsServiceTests
         
         var panelWidth = await settingsService.GetSettingAsync("PanelWidth");
         
-        Assert.Equal("320", panelWidth);
+        Assert.Equal("340", panelWidth);
         
         Cleanup();
     }
@@ -255,7 +291,7 @@ public class SettingsServiceTests
         
         var panelWidth = settingsService.GetSetting<int>("PanelWidth", 0);
         
-        Assert.Equal(320, panelWidth);
+        Assert.Equal(340, panelWidth);
         
         Cleanup();
     }

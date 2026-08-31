@@ -11,25 +11,18 @@
         KeyDown="TextSnippetEditWindow_OnKeyDown">
 
     <Window.Resources>
-        <SolidColorBrush x:Key="DlgBackground" Color="#E6FFFFFF"/>
-        <SolidColorBrush x:Key="DlgTextPrimary" Color="#1E293B"/>
-        <SolidColorBrush x:Key="DlgTextSecondary" Color="#64748B"/>
-        <SolidColorBrush x:Key="DlgBorder" Color="#E2E8F0"/>
-        <SolidColorBrush x:Key="DlgInputBackground" Color="#F8FAFC"/>
-        <SolidColorBrush x:Key="DlgAccent" Color="#3B82F6"/>
-
         <Style x:Key="DlgLabel" TargetType="TextBlock">
             <Setter Property="FontSize" Value="11"/>
-            <Setter Property="Foreground" Value="{StaticResource DlgTextSecondary}"/>
+            <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}"/>
             <Setter Property="Margin" Value="0,0,0,4"/>
         </Style>
 
         <Style x:Key="DlgButton" TargetType="Button">
             <Setter Property="Height" Value="32"/>
             <Setter Property="MinWidth" Value="78"/>
-            <Setter Property="Background" Value="{StaticResource DlgInputBackground}"/>
-            <Setter Property="Foreground" Value="{StaticResource DlgTextSecondary}"/>
-            <Setter Property="BorderBrush" Value="{StaticResource DlgBorder}"/>
+            <Setter Property="Background" Value="{DynamicResource ControlSurfaceBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource DividerBrush}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="FontSize" Value="12"/>
             <Setter Property="Cursor" Value="Hand"/>
@@ -48,16 +41,16 @@
         </Style>
 
         <Style x:Key="DlgPrimaryButton" TargetType="Button" BasedOn="{StaticResource DlgButton}">
-            <Setter Property="Background" Value="{StaticResource DlgAccent}"/>
-            <Setter Property="Foreground" Value="#0D2744"/>
+            <Setter Property="Background" Value="{DynamicResource AccentBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource AccentForegroundBrush}"/>
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
         </Style>
     </Window.Resources>
 
     <Border x:Name="DialogRoot"
-            Background="{StaticResource DlgBackground}"
-            BorderBrush="{StaticResource DlgBorder}"
+            Background="{DynamicResource WindowSurfaceBrush}"
+            BorderBrush="{DynamicResource DividerBrush}"
             BorderThickness="1"
             CornerRadius="12"
             Margin="4"
@@ -71,10 +64,10 @@
 
             <Grid Grid.Row="0" Margin="14,12,12,8">
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                    <Border Width="24" Height="24" CornerRadius="6" Background="{StaticResource DlgAccent}" Margin="0,0,8,0">
+                    <Border Width="24" Height="24" CornerRadius="6" Background="{DynamicResource AccentBrush}" Margin="0,0,8,0">
                         <TextBlock Text="&#xE8C8;"
                                    FontFamily="Segoe MDL2 Assets"
-                                   Foreground="#0D2744"
+                                   Foreground="{DynamicResource AccentForegroundBrush}"
                                    FontSize="13"
                                    HorizontalAlignment="Center"
                                    VerticalAlignment="Center"/>
@@ -82,7 +75,7 @@
                     <TextBlock Text="{Binding WindowTitle}"
                                FontSize="14"
                                FontWeight="SemiBold"
-                               Foreground="{StaticResource DlgTextPrimary}"
+                                Foreground="{DynamicResource PrimaryTextBrush}"
                                VerticalAlignment="Center"/>
                 </StackPanel>
                 <Button HorizontalAlignment="Right"
@@ -95,7 +88,7 @@
                     <TextBlock Text="&#xE711;"
                                FontFamily="Segoe MDL2 Assets"
                                FontSize="11"
-                               Foreground="{StaticResource DlgTextSecondary}"/>
+                                Foreground="{DynamicResource SecondaryTextBrush}"/>
                 </Button>
             </Grid>
 
@@ -115,9 +108,9 @@
                          Height="32"
                          MaxLength="80"
                          FontSize="12"
-                         Foreground="{StaticResource DlgTextPrimary}"
-                         Background="{StaticResource DlgInputBackground}"
-                         BorderBrush="{StaticResource DlgBorder}"
+                         Foreground="{DynamicResource PrimaryTextBrush}"
+                         Background="{DynamicResource ControlSurfaceBrush}"
+                         BorderBrush="{DynamicResource DividerBrush}"
                          BorderThickness="1"
                          Padding="9,5"
                          Margin="0,0,0,8"/>
@@ -133,14 +126,14 @@
                                   SelectedItem="{Binding Category}"
                                   Height="30"
                                   FontSize="12"
-                                  Foreground="{StaticResource DlgTextPrimary}"
-                                  Background="{StaticResource DlgInputBackground}"/>
+                                  Foreground="{DynamicResource PrimaryTextBrush}"
+                                  Background="{DynamicResource ControlSurfaceBrush}"/>
                     </StackPanel>
                     <CheckBox Grid.Column="1"
                               Content="{DynamicResource Common.Pin}"
                               IsChecked="{Binding IsPinned}"
                               FontSize="12"
-                              Foreground="{StaticResource DlgTextSecondary}"
+                              Foreground="{DynamicResource SecondaryTextBrush}"
                               VerticalAlignment="Bottom"
                               Margin="12,0,0,6"/>
                 </Grid>
@@ -152,16 +145,16 @@
                          TextWrapping="Wrap"
                          VerticalScrollBarVisibility="Auto"
                          FontSize="12"
-                         Foreground="{StaticResource DlgTextPrimary}"
-                         Background="{StaticResource DlgInputBackground}"
-                         BorderBrush="{StaticResource DlgBorder}"
+                         Foreground="{DynamicResource PrimaryTextBrush}"
+                         Background="{DynamicResource ControlSurfaceBrush}"
+                         BorderBrush="{DynamicResource DividerBrush}"
                          BorderThickness="1"
                          Padding="10,8"
                          Margin="0,0,0,8"/>
             </Grid>
 
             <Border Grid.Row="2"
-                    BorderBrush="{StaticResource DlgBorder}"
+                    BorderBrush="{DynamicResource DividerBrush}"
                     BorderThickness="0,1,0,0"
                     Padding="14,10">
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">

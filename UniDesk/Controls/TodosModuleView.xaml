@@ -14,8 +14,8 @@
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
             <Grid Grid.Row="0" Margin="0,0,0,8">
-                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                    <Viewbox Width="19" Height="19" Margin="0,0,6,0">
+                <StackPanel Orientation="Horizontal" Style="{StaticResource ModuleHeaderRowStyle}">
+                    <Viewbox Style="{StaticResource ModuleHeaderIconContainerStyle}">
                         <Canvas Width="20" Height="20">
                             <Path Data="M3,3.5 L17,3.5 L17,16.5 L3,16.5 Z"
                                   Style="{StaticResource ModuleTitleIconPathStyle}"
@@ -30,7 +30,7 @@
                                   StrokeLineJoin="Round"/>
                         </Canvas>
                     </Viewbox>
-                    <TextBlock Text="{DynamicResource Module.Todos}" Style="{StaticResource ModuleHeaderTextStyle}" FontSize="{Binding DataContext.FontScale, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource ScaledFontSizeConverter}, ConverterParameter=13}"/>
+                    <TextBlock Text="{DynamicResource Module.Todos}" Style="{StaticResource ModuleHeaderTextStyle}"/>
                 </StackPanel>
                 <Button Style="{StaticResource GhostButtonStyle}"
                         HorizontalAlignment="Right"
@@ -73,41 +73,46 @@
                                          Fill="{Binding Priority, Converter={StaticResource TodoPriorityBrush}}"
                                          VerticalAlignment="Center"
                                          Margin="5,0,7,0"/>
-                                <Ellipse Grid.Column="1"
-                                         Tag="TodoCheck"
-                                         Width="17" Height="17"
-                                         Stroke="{DynamicResource PrimaryTextBrush}"
-                                         StrokeThickness="2"
-                                         Margin="0,0,8,0"
-                                         VerticalAlignment="Center"
-                                         Cursor="Hand"
-                                         MouseLeftButtonUp="TodoCheck_OnMouseLeftButtonUp">
-                                    <Ellipse.Style>
-                                        <Style TargetType="Ellipse">
-                                            <Setter Property="Fill" Value="Transparent"/>
-                                            <Setter Property="Stroke" Value="{DynamicResource PrimaryTextBrush}"/>
-                                            <Setter Property="StrokeThickness" Value="2"/>
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding IsCompleted}" Value="True">
-                                                    <Setter Property="Fill" Value="{DynamicResource SuccessBrush}"/>
-                                                    <Setter Property="Stroke" Value="{DynamicResource SuccessBrush}"/>
-                                                    <Setter Property="StrokeThickness" Value="1.5"/>
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </Ellipse.Style>
-                                </Ellipse>
-                                <Grid Grid.Column="2" VerticalAlignment="Center">
+                                <Grid Grid.Column="1"
+                                      Tag="TodoCheck"
+                                      Width="28" Height="28"
+                                      Margin="-5,0,2,0"
+                                      Background="Transparent"
+                                      VerticalAlignment="Center"
+                                      Cursor="Hand"
+                                      MouseLeftButtonUp="TodoCheck_OnMouseLeftButtonUp">
+                                    <Ellipse Width="16" Height="16"
+                                             Stroke="{DynamicResource PrimaryTextBrush}"
+                                             StrokeThickness="1.5"
+                                             HorizontalAlignment="Center"
+                                             VerticalAlignment="Center">
+                                        <Ellipse.Style>
+                                            <Style TargetType="Ellipse">
+                                                <Setter Property="Fill" Value="Transparent"/>
+                                                <Setter Property="Stroke" Value="{DynamicResource PrimaryTextBrush}"/>
+                                                <Setter Property="StrokeThickness" Value="1.5"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsCompleted}" Value="True">
+                                                        <Setter Property="Fill" Value="{DynamicResource SuccessBrush}"/>
+                                                        <Setter Property="Stroke" Value="{DynamicResource SuccessBrush}"/>
+                                                        <Setter Property="StrokeThickness" Value="1.5"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Ellipse.Style>
+                                    </Ellipse>
+                                </Grid>
+                                <Grid Grid.Column="2" VerticalAlignment="Center" Margin="0,3,0,-3">
                                     <TextBlock Text="{Binding Title}"
                                                VerticalAlignment="Center"
-                                               FontSize="{Binding DataContext.FontScale, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource ScaledFontSizeConverter}, ConverterParameter=11}"
+                                               FontSize="{Binding DataContext.FontScale, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource ScaledFontSizeConverter}, ConverterParameter=12}"
                                                TextTrimming="CharacterEllipsis">
                                         <TextBlock.Style>
                                             <Style TargetType="TextBlock" BasedOn="{StaticResource BodyTextStyle}">
-                                                <Setter Property="FontSize" Value="{Binding DataContext.FontScale, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource ScaledFontSizeConverter}, ConverterParameter=11}"/>
+                                                <Setter Property="FontSize" Value="{Binding DataContext.FontScale, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource ScaledFontSizeConverter}, ConverterParameter=12}"/>
                                                 <Style.Triggers>
                                                     <DataTrigger Binding="{Binding IsCompleted}" Value="True">
-                                                        <Setter Property="Foreground" Value="#D5CCEA"/>
+                                                        <Setter Property="Foreground" Value="{DynamicResource MutedTextBrush}"/>
                                                     </DataTrigger>
                                                 </Style.Triggers>
                                             </Style>
@@ -116,7 +121,7 @@
                                     <Rectangle Height="2"
                                                RadiusX="1"
                                                RadiusY="1"
-                                               Fill="#BFAFE0"
+                                               Fill="{DynamicResource DividerBrush}"
                                                Opacity="0.9"
                                                VerticalAlignment="Center"
                                                HorizontalAlignment="Stretch"
@@ -125,19 +130,19 @@
                                 <TextBlock Grid.Column="3"
                                            VerticalAlignment="Center"
                                            FontSize="{Binding DataContext.FontScale, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource ScaledFontSizeConverter}, ConverterParameter=11}"
-                                           Margin="8,0,4,0">
+                                           Margin="8,3,4,-3">
                                     <TextBlock.Text>
                                         <Binding Path="." Converter="{StaticResource TodoDueTextConverter}"/>
                                     </TextBlock.Text>
                                     <TextBlock.Style>
                                         <Style TargetType="TextBlock">
-                                            <Setter Property="Foreground" Value="#5DB7FF"/>
+                                            <Setter Property="Foreground" Value="{DynamicResource AccentBrush}"/>
                                             <Style.Triggers>
                                                 <DataTrigger Value="True">
                                                     <DataTrigger.Binding>
                                                         <Binding Path="." Converter="{StaticResource TodoDueIsTodayConverter}"/>
                                                     </DataTrigger.Binding>
-                                                    <Setter Property="Foreground" Value="#FF7E45"/>
+                                                    <Setter Property="Foreground" Value="{DynamicResource WarningBrush}"/>
                                                 </DataTrigger>
                                             </Style.Triggers>
                                         </Style>

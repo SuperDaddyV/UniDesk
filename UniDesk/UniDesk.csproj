@@ -8,9 +8,9 @@
     <UseWPF>true</UseWPF>
     <ApplicationIcon>icon\unidesk1-removebg-preview.ico</ApplicationIcon>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <Version>2.1.0</Version>
-    <AssemblyVersion>2.1.0.0</AssemblyVersion>
-    <FileVersion>2.1.0.0</FileVersion>
+    <Version>2.2.0</Version>
+    <AssemblyVersion>2.2.0.0</AssemblyVersion>
+    <FileVersion>2.2.0.0</FileVersion>
   </PropertyGroup>
 
   <ItemGroup>
@@ -43,6 +43,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Resource Include="icon\QWeather-Icons-1.8.0\font\fonts\qweather-icons.ttf" />
+    <Resource Include="Resources\Fonts\JetBrainsMono-*.ttf" />
+    <Resource Include="Resources\Fonts\Inter-*.otf" />
+    <Resource Include="Resources\Fonts\SourceHanSansSC-*.otf" />
     <Content Include="icon\QWeather-Icons-1.8.0\font\qweather-icons.css">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>

@@ -86,26 +86,30 @@
 
                 <Grid Margin="0,0,0,4">
                     <TextBlock Text="{DynamicResource Settings.PanelWidth}" Style="{StaticResource GlassSettingLabelStyle}"/>
-                    <TextBlock Text="{Binding PanelWidth, StringFormat={}{0:F0}px}" HorizontalAlignment="Right"
+                    <TextBlock Text="{Binding PanelWidthSliderValue, StringFormat={}{0:F0}px}" HorizontalAlignment="Right"
                                Foreground="{DynamicResource SecondaryTextBrush}"/>
                 </Grid>
-                <Slider Style="{StaticResource GlassSliderStyle}" Minimum="320" Maximum="520"
-                        Value="{Binding PanelWidth, Mode=TwoWay}" TickFrequency="20" Margin="0,0,0,14"/>
+                <Slider Style="{StaticResource GlassSliderStyle}" Minimum="{Binding PanelWidthMinimum}" Maximum="{Binding PanelWidthMaximum}"
+                        Value="{Binding PanelWidthSliderValue, Mode=TwoWay}" TickFrequency="20" Margin="0,0,0,14"/>
 
                 <Grid Margin="0,0,0,4">
                     <TextBlock Text="{DynamicResource Settings.PanelHeight}" Style="{StaticResource GlassSettingLabelStyle}"/>
-                    <TextBlock Text="{Binding PanelHeight, StringFormat={}{0:F0}px}" HorizontalAlignment="Right"
+                    <TextBlock Text="{Binding PanelHeightSliderValue, StringFormat={}{0:F0}px}" HorizontalAlignment="Right"
                                Foreground="{DynamicResource SecondaryTextBrush}"/>
                 </Grid>
-                <Slider Style="{StaticResource GlassSliderStyle}" Minimum="560" Maximum="1040"
-                        Value="{Binding PanelHeight, Mode=TwoWay}" TickFrequency="20" Margin="0,0,0,14"/>
+                <Slider Style="{StaticResource GlassSliderStyle}" Minimum="{Binding PanelHeightMinimum}" Maximum="{Binding PanelHeightMaximum}"
+                        Value="{Binding PanelHeightSliderValue, Mode=TwoWay}" TickFrequency="20" Margin="0,0,0,8"/>
+                <Button Style="{StaticResource GlassSecondaryButtonStyle}"
+                        Content="{DynamicResource Settings.FitCurrentScreen}"
+                        Command="{Binding FitCurrentScreenCommand}"
+                        HorizontalAlignment="Left" Margin="0,0,0,14"/>
 
                 <Grid Margin="0,0,0,4">
                     <TextBlock Text="{DynamicResource Settings.FontSize}" Style="{StaticResource GlassSettingLabelStyle}"/>
                     <TextBlock Text="{Binding FontScaleLabel}" HorizontalAlignment="Right"
                                Foreground="{DynamicResource SecondaryTextBrush}"/>
                 </Grid>
-                <Slider Style="{StaticResource GlassSliderStyle}" Minimum="0.9" Maximum="1.15"
+                <Slider Style="{StaticResource GlassSliderStyle}" Minimum="0.9" Maximum="1.18"
                         Value="{Binding FontScale, Mode=TwoWay}" TickFrequency="0.125"/>
             </StackPanel>
         </Border>
