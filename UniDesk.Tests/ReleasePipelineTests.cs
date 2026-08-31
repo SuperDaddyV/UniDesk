@@ -84,8 +84,9 @@ public class ReleasePipelineTests
             "Test-UnsignedReleaseReadiness.ps1"));
 
         Assert.Contains("[string]$ExpectedSourceRevision", script, StringComparison.Ordinal);
-        Assert.Contains("[string]$ExpectedVersion = '2.1.0'", script, StringComparison.Ordinal);
-        Assert.Contains("$ExpectedVersion -cne '2.1.0'", script, StringComparison.Ordinal);
+        Assert.Contains("[string]$ExpectedVersion = '2.2.0'", script, StringComparison.Ordinal);
+        Assert.Contains("@('2.1.0', '2.2.0')", script, StringComparison.Ordinal);
+        Assert.Contains("-cnotcontains $ExpectedVersion", script, StringComparison.Ordinal);
         Assert.Contains("Test-ReleasePayloadIntegrity.ps1", script, StringComparison.Ordinal);
         Assert.Contains("-isnot [bool]", script, StringComparison.Ordinal);
         Assert.Contains("rev-parse HEAD", script, StringComparison.Ordinal);
@@ -110,6 +111,7 @@ public class ReleasePipelineTests
         Assert.Contains("ManifestOutputPath", script, StringComparison.Ordinal);
         Assert.Contains("ChecksumOutputPath", script, StringComparison.Ordinal);
         Assert.Contains("authenticode = 'NotSigned'", script, StringComparison.Ordinal);
+        Assert.Contains("releaseMode = \"unsigned-v$ExpectedVersion-exception\"", script, StringComparison.Ordinal);
 
         var buildScript = File.ReadAllText(Path.Combine(ProjectRoot, "scripts", "Build-Release.ps1"));
         Assert.Contains("Test-UnsignedReleaseReadiness.ps1", buildScript, StringComparison.Ordinal);
@@ -147,7 +149,7 @@ public class ReleasePipelineTests
                 JsonSerializer.Serialize(new
                 {
                     schema = 3,
-                    version = "2.1.0",
+                    version = "2.2.0",
                     isDirty = 0,
                     sourceRevision,
                     runtime = "win-x64"
@@ -177,7 +179,7 @@ public class ReleasePipelineTests
                 JsonSerializer.Serialize(new
                 {
                     schema = 3,
-                    version = "2.1.0",
+                    version = "2.2.0",
                     isDirty = false,
                     sourceRevision = expectedRevision,
                     runtime = "win-x64"
@@ -209,7 +211,7 @@ public class ReleasePipelineTests
                 JsonSerializer.Serialize(new
                 {
                     schema = 3,
-                    version = "2.1.0",
+                    version = "2.2.0",
                     isDirty = false,
                     sourceRevision,
                     runtime = "win-x64"
@@ -221,6 +223,76 @@ public class ReleasePipelineTests
         finally
         {
             File.Delete(markerPath);
+            Directory.Delete(testRoot, recursive: true);
+        }
+    }
+
+    [Theory]
+    [InlineData("2.1.1")]
+    [InlineData("2.2.1")]
+    [InlineData("2.3.0")]
+    [InlineData("2.2.0-rc.1")]
+    public void UnsignedReleaseReadinessGate_ShouldRejectVersionsWithoutExplicitException(
+        string version)
+    {
+        var sourceRevision = GetCurrentSourceRevision();
+        var testRoot = Path.Combine(Path.GetTempPath(), "UniDeskTests", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(testRoot);
+
+        try
+        {
+            var result = RunUnsignedReleaseReadinessGate(
+                testRoot,
+                sourceRevision,
+                JsonSerializer.Serialize(new
+                {
+                    schema = 3,
+                    version,
+                    isDirty = false,
+                    sourceRevision,
+                    runtime = "win-x64"
+                }),
+                expectedVersion: version);
+
+            Assert.NotEqual(0, result.ExitCode);
+            Assert.Contains("not an approved unsigned stable-release exception", result.Output, StringComparison.OrdinalIgnoreCase);
+        }
+        finally
+        {
+            Directory.Delete(testRoot, recursive: true);
+        }
+    }
+
+    [Theory]
+    [InlineData("2.1.0")]
+    [InlineData("2.2.0")]
+    public void UnsignedReleaseReadinessGate_ShouldRecognizeOnlyTheTwoApprovedStableVersions(
+        string version)
+    {
+        var sourceRevision = GetCurrentSourceRevision();
+        var testRoot = Path.Combine(Path.GetTempPath(), "UniDeskTests", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(testRoot);
+
+        try
+        {
+            var result = RunUnsignedReleaseReadinessGate(
+                testRoot,
+                sourceRevision,
+                JsonSerializer.Serialize(new
+                {
+                    schema = 3,
+                    version,
+                    isDirty = false,
+                    sourceRevision,
+                    runtime = "win-x64"
+                }),
+                expectedVersion: version);
+
+            Assert.NotEqual(0, result.ExitCode);
+            Assert.DoesNotContain("not an approved unsigned stable-release exception", result.Output, StringComparison.OrdinalIgnoreCase);
+        }
+        finally
+        {
             Directory.Delete(testRoot, recursive: true);
         }
     }
@@ -542,7 +614,8 @@ public class ReleasePipelineTests
     private static (int ExitCode, string Output) RunUnsignedReleaseReadinessGate(
         string testRoot,
         string expectedSourceRevision,
-        string sourceManifestJson)
+        string sourceManifestJson,
+        string? expectedVersion = null)
     {
         var installerPath = Path.Combine(testRoot, "installer.exe");
         var manifestPath = Path.Combine(testRoot, "release-source.json");
@@ -568,6 +641,11 @@ public class ReleasePipelineTests
         startInfo.ArgumentList.Add(manifestPath);
         startInfo.ArgumentList.Add("-ExpectedSourceRevision");
         startInfo.ArgumentList.Add(expectedSourceRevision);
+        if (expectedVersion is not null)
+        {
+            startInfo.ArgumentList.Add("-ExpectedVersion");
+            startInfo.ArgumentList.Add(expectedVersion);
+        }
 
         using var process = Process.Start(startInfo);
         Assert.NotNull(process);
@@ -723,10 +801,15 @@ public class ReleasePipelineTests
         }
 
         Assert.Contains("v2.1.0 unsigned release exception", codeSigningPolicy, StringComparison.Ordinal);
+        Assert.Contains("v2.2.0 unsigned release exception", codeSigningPolicy, StringComparison.Ordinal);
         Assert.Contains("Test-UnsignedReleaseReadiness.ps1", File.ReadAllText(Path.Combine(
             ProjectRoot,
             "docs",
             "release-test-matrix-2.1.0.md")), StringComparison.Ordinal);
+        Assert.Contains("Test-UnsignedReleaseReadiness.ps1", File.ReadAllText(Path.Combine(
+            ProjectRoot,
+            "docs",
+            "release-test-matrix-2.2.0.md")), StringComparison.Ordinal);
     }
 
     [Fact]
@@ -744,5 +827,22 @@ public class ReleasePipelineTests
         Assert.Contains("MR-01", testMatrix, StringComparison.Ordinal);
         Assert.Contains("MR-06", testMatrix, StringComparison.Ordinal);
         Assert.Contains("全新安装默认启用时间天气、硬件监视、待办事项和快速便签", testMatrix, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void V220ReleaseDocumentation_ShouldCoverCalmGlassAndUnsignedDistribution()
+    {
+        var releaseNotes = File.ReadAllText(Path.Combine(ProjectRoot, "docs", "release-unidesk.md"));
+        var testMatrix = File.ReadAllText(Path.Combine(ProjectRoot, "docs", "release-test-matrix-2.2.0.md"));
+
+        Assert.Contains("## v2.2.0", releaseNotes, StringComparison.Ordinal);
+        Assert.Contains("Calm Glass", releaseNotes, StringComparison.Ordinal);
+        Assert.Contains("Inter", releaseNotes, StringComparison.Ordinal);
+        Assert.Contains("Source Han Sans SC", releaseNotes, StringComparison.Ordinal);
+        Assert.Contains("320–520 DIP", releaseNotes, StringComparison.Ordinal);
+        Assert.Contains("Authenticode: NotSigned", releaseNotes, StringComparison.Ordinal);
+        Assert.Contains("CG-01", testMatrix, StringComparison.Ordinal);
+        Assert.Contains("RS-04", testMatrix, StringComparison.Ordinal);
+        Assert.Contains("v2.2.0", testMatrix, StringComparison.Ordinal);
     }
 }

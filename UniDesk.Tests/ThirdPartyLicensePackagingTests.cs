@@ -114,7 +114,7 @@ public class ThirdPartyLicensePackagingTests
         var readme = File.ReadAllText(Path.Combine(ProjectRoot, fileName));
 
         Assert.DoesNotContain(prohibitedText, readme, StringComparison.Ordinal);
-        Assert.Contains("2.1.0", readme, StringComparison.Ordinal);
+        Assert.Contains("2.2.0", readme, StringComparison.Ordinal);
     }
 
     private static string FindProjectRoot()

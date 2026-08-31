@@ -117,10 +117,10 @@ Common use cases:
 
 ## 📦 Installation
 
-The official distribution point for the `v2.1.0` stable installer is the [v2.1.0 GitHub Release](https://github.com/SuperDaddyV/UniDesk/releases/tag/v2.1.0). This release uses an explicitly approved unsigned-stable exception and includes Model Radar plus the latest module defaults. Verify the SHA-256 published on the Release page before installation; Windows SmartScreen or enterprise policy may warn or block it. The installer filename is:
+The official distribution point for the `v2.2.0` stable installer is the [v2.2.0 GitHub Release](https://github.com/SuperDaddyV/UniDesk/releases/tag/v2.2.0). This release uses a separately approved, version-specific unsigned-stable exception and includes the Calm Glass adaptive visual system. Verify the SHA-256 published on the Release page before installation; Windows SmartScreen or enterprise policy may warn or block it. The installer filename is:
 
 ```powershell
-UniDesk_Setup_2.1.0.exe
+UniDesk_Setup_2.2.0.exe
 ```
 
 It is recommended to exit any running UniDesk instance before installing or upgrading.
@@ -159,10 +159,10 @@ dotnet run --project UniDesk\UniDesk.csproj
 Build an unsigned local release candidate from a clean worktree:
 
 ```powershell
-.\scripts\Build-Release.ps1 -Version 2.1.0
+.\scripts\Build-Release.ps1 -Version 2.2.0
 ```
 
-The script publishes the application, hardware service, and repair helper into a fresh versioned directory before compiling the installer from those exact inputs. An unsigned `v2.1.0` artifact built from a clean worktree must pass `Test-UnsignedReleaseReadiness.ps1`, the complete manual matrix, and final project-owner approval before publication. The SignPath workflow remains available for future signed releases and never creates a GitHub Release automatically.
+The script publishes the application, hardware service, and repair helper into a fresh versioned directory before compiling the installer from those exact inputs. An unsigned `v2.2.0` artifact built from a clean worktree must pass `Test-UnsignedReleaseReadiness.ps1`, the applicable manual matrix, and final project-owner approval before publication. The SignPath workflow remains available for future signed releases and never creates a GitHub Release automatically.
 
 ## 🧰 Tech Stack
 
@@ -184,7 +184,7 @@ Clipboard history includes sensitive-content filtering to reduce accidental stor
 
 ## Code signing policy
 
-Public packages follow the [code signing policy](CODE_SIGNING_POLICY.md) and [privacy policy](PRIVACY.md). `v2.1.0` uses an explicitly approved unsigned-stable exception: it must come from the exact public revision, receive manual approval, pass complete payload and SHA-256 checks, and prominently disclose `Authenticode: NotSigned` plus Windows SmartScreen or enterprise-policy risk.
+Public packages follow the [code signing policy](CODE_SIGNING_POLICY.md) and [privacy policy](PRIVACY.md). `v2.2.0` uses a separately approved, version-specific unsigned-stable exception: it must come from the exact public revision, receive manual approval, pass complete payload and SHA-256 checks, and prominently disclose `Authenticode: NotSigned` plus Windows SmartScreen or enterprise-policy risk.
 
 Free code signing provided by SignPath.io, certificate by SignPath Foundation.
 
