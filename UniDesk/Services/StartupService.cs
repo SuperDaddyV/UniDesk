@@ -143,14 +143,24 @@ public class StartupService : IStartupService
                 return false;
             }
 
-            if (key.GetValue(RegistryValueName) is string existingValue &&
-                !string.IsNullOrWhiteSpace(existingValue) &&
-                !IsOwnedRunKeyValue(RegistryValueName, existingValue, exePath))
+            ReadRunKeyValue(key, out var valueExists, out var existingValue);
+            if (!CanWriteRunKeyValue(valueExists, existingValue, exePath))
             {
                 return false;
             }
 
-            key.SetValue(RegistryValueName, $"\"{exePath}\"");
+            ReadRunKeyValue(key, out var verifiedValueExists, out var verifiedValue);
+            if (!RunKeyValueMatchesSnapshot(
+                    valueExists,
+                    existingValue,
+                    verifiedValueExists,
+                    verifiedValue) ||
+                !CanWriteRunKeyValue(verifiedValueExists, verifiedValue, exePath))
+            {
+                return false;
+            }
+
+            key.SetValue(RegistryValueName, $"\"{exePath}\"", RegistryValueKind.String);
             return true;
         }
         catch
@@ -258,13 +268,162 @@ public class StartupService : IStartupService
         string command,
         string currentExecutablePath)
     {
+        return TryGetStartupExecutablePath(command, out var executablePath) &&
+               IsOwnedStartupExecutable(valueName, executablePath, currentExecutablePath);
+    }
+
+    internal static bool CanWriteRunKeyValue(
+        bool valueExists,
+        object? existingValue,
+        string currentExecutablePath)
+    {
+        if (!valueExists)
+        {
+            return true;
+        }
+
+        return existingValue is string existingCommand &&
+               !string.IsNullOrWhiteSpace(existingCommand) &&
+               (IsOwnedRunKeyValue(
+                    RegistryValueName,
+                    existingCommand,
+                    currentExecutablePath) ||
+                CanReplaceMissingRunKeyValue(RegistryValueName, existingCommand));
+    }
+
+    internal static bool CanReplaceMissingRunKeyValue(string valueName, string command)
+    {
+        if (!TryGetStartupExecutablePath(command, out var executablePath) ||
+            !string.Equals(
+                Path.GetFileName(executablePath),
+                GetExpectedStartupExecutableName(valueName),
+                StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        var root = Path.GetPathRoot(executablePath);
+        if (string.IsNullOrWhiteSpace(root) ||
+            root.StartsWith(@"\\", StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        try
+        {
+            var drive = new DriveInfo(root);
+            if (!drive.IsReady || drive.DriveType != DriveType.Fixed ||
+                (File.GetAttributes(root) & FileAttributes.Directory) == 0)
+            {
+                return false;
+            }
+        }
+        catch
+        {
+            return false;
+        }
+
+        if (!HasSafeExistingAncestorChain(executablePath))
+        {
+            return false;
+        }
+
+        try
+        {
+            _ = File.GetAttributes(executablePath);
+            return false;
+        }
+        catch (FileNotFoundException)
+        {
+            return true;
+        }
+        catch (DirectoryNotFoundException)
+        {
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    internal static bool RunKeyValueMatchesSnapshot(
+        bool valueExists,
+        object? existingValue,
+        bool verifiedValueExists,
+        object? verifiedValue) =>
+        valueExists == verifiedValueExists &&
+        (!valueExists || Equals(existingValue, verifiedValue));
+
+    private static bool HasSafeExistingAncestorChain(string executablePath) =>
+        HasSafeExistingAncestorChain(executablePath, File.GetAttributes);
+
+    internal static bool HasSafeExistingAncestorChain(
+        string executablePath,
+        Func<string, FileAttributes> getAttributes)
+    {
+        try
+        {
+            var currentPath = Path.GetDirectoryName(executablePath);
+            while (!string.IsNullOrWhiteSpace(currentPath))
+            {
+                try
+                {
+                    var attributes = getAttributes(currentPath);
+                    if ((attributes & FileAttributes.Directory) == 0 ||
+                        (attributes & FileAttributes.ReparsePoint) != 0)
+                    {
+                        return false;
+                    }
+                }
+                catch (FileNotFoundException)
+                {
+                }
+                catch (DirectoryNotFoundException)
+                {
+                }
+                catch
+                {
+                    return false;
+                }
+
+                currentPath = Path.GetDirectoryName(currentPath);
+            }
+
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static void ReadRunKeyValue(
+        RegistryKey key,
+        out bool valueExists,
+        out object? value)
+    {
+        valueExists = Array.Exists(
+            key.GetValueNames(),
+            name => string.Equals(name, RegistryValueName, StringComparison.OrdinalIgnoreCase));
+        value = valueExists
+            ? key.GetValue(
+                RegistryValueName,
+                defaultValue: null,
+                RegistryValueOptions.DoNotExpandEnvironmentNames)
+            : null;
+    }
+
+    private static bool TryGetStartupExecutablePath(string command, out string executablePath)
+    {
+        executablePath = string.Empty;
         if (string.IsNullOrWhiteSpace(command))
         {
             return false;
         }
 
         var trimmedCommand = command.Trim();
-        string executablePath;
+        string parsedExecutablePath;
         if (trimmedCommand.StartsWith('"'))
         {
             var closingQuote = trimmedCommand.IndexOf('"', 1);
@@ -277,7 +436,7 @@ public class StartupService : IStartupService
             {
                 return false;
             }
-            executablePath = trimmedCommand[1..closingQuote];
+            parsedExecutablePath = trimmedCommand[1..closingQuote];
         }
         else
         {
@@ -292,10 +451,24 @@ public class StartupService : IStartupService
             {
                 return false;
             }
-            executablePath = trimmedCommand[..executableBoundary];
+            parsedExecutablePath = trimmedCommand[..executableBoundary];
         }
 
-        return IsOwnedStartupExecutable(valueName, executablePath, currentExecutablePath);
+        try
+        {
+            var expandedPath = Environment.ExpandEnvironmentVariables(parsedExecutablePath.Trim());
+            if (!Path.IsPathFullyQualified(expandedPath))
+            {
+                return false;
+            }
+
+            executablePath = Path.GetFullPath(expandedPath);
+            return true;
+        }
+        catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException)
+        {
+            return false;
+        }
     }
 
     private static bool IsOwnedStartupExecutable(
@@ -303,13 +476,7 @@ public class StartupService : IStartupService
         string actionPath,
         string currentExecutablePath)
     {
-        var expectedExecutableName = entryName switch
-        {
-            "UniDesk" => "UniDesk.exe",
-            "LumiDesk" => "LumiDesk.exe",
-            "VsirDesk" => "VsirDesk.exe",
-            _ => null
-        };
+        var expectedExecutableName = GetExpectedStartupExecutableName(entryName);
         if (expectedExecutableName == null)
         {
             return false;
@@ -319,7 +486,7 @@ public class StartupService : IStartupService
         {
             var normalizedActionPath = Environment.ExpandEnvironmentVariables(
                 actionPath.Trim().Trim('"'));
-            if (!Path.IsPathRooted(normalizedActionPath))
+            if (!Path.IsPathFullyQualified(normalizedActionPath))
             {
                 return false;
             }
@@ -339,6 +506,14 @@ public class StartupService : IStartupService
             return false;
         }
     }
+
+    private static string? GetExpectedStartupExecutableName(string entryName) => entryName switch
+    {
+        "UniDesk" => "UniDesk.exe",
+        "LumiDesk" => "LumiDesk.exe",
+        "VsirDesk" => "VsirDesk.exe",
+        _ => null
+    };
 
     private static string? GetScheduledTaskActionPath(string taskName)
     {

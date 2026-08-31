@@ -415,6 +415,18 @@ begin
     NormalizeDirectoryPath(RightPath)) = 0;
 end;
 
+function IsDriveRoot(const DirectoryPath: String): Boolean;
+var
+  DrivePath: String;
+  NormalizedPath: String;
+begin
+  NormalizedPath := NormalizeDirectoryPath(DirectoryPath);
+  DrivePath := ExtractFileDrive(NormalizedPath);
+  Result := (Length(DrivePath) = 2) and
+    (DrivePath[2] = ':') and
+    IsSameDirectory(NormalizedPath, DrivePath + '\');
+end;
+
 function VerifyProtectedComponentRootAcl: Boolean;
 var
   Parameters: String;
@@ -506,13 +518,19 @@ begin
 
   while CurrentPath <> '' do
   begin
+    if DirExists(CurrentPath) then
+    begin
+      if IsTargetPath then
+        Result := False
+      else
+        Result := True;
+      Exit;
+    end;
+
     if FindFirst(CurrentPath, FindRec) then
     begin
       try
-        if IsTargetPath then
-          Result := False
-        else
-          Result := (FindRec.Attributes and FileAttributeDirectory) <> 0;
+        Result := False;
       finally
         FindClose(FindRec);
       end;
@@ -689,6 +707,9 @@ begin
 
   while CurrentPath <> '' do
   begin
+    if IsDriveRoot(CurrentPath) then
+      Exit;
+
     if not FindFirst(CurrentPath, FindRec) then
     begin
       Log('Could not inspect an existing ancestor directory for reparse points: ' +
@@ -1578,7 +1599,7 @@ function NextButtonClick(CurPageID: Integer): Boolean;
 begin
   Result := True;
   if (CurPageID = wpSelectDir) and
-    not IsSafeApplicationInstallTarget(ExpandConstant('{app}')) then
+    not IsSafeApplicationInstallTarget(WizardDirValue) then
   begin
     Log('Selected application directory was rejected on the location page.');
     MsgBox(LastApplicationLocationError, mbError, MB_OK);

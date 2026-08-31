@@ -73,11 +73,13 @@
 | D-02 | 分别导入非法待办优先级、剪贴板 `UseCount<=0`、负快捷文本计数、空白文本片段分类、不可解析或字段间矛盾日期的合法 JSON | 全部在生成导入计划和任何写入前明确拒绝；不得 clamp、回退默认枚举或改变现有数据 |
 | IPC-01 | 四个客户端依次发送超长帧或非法 UTF-8，再由正常客户端请求健康状态 | 每个非法请求只终止自身连接；四个接收循环不被耗尽，随后正常请求仍收到有效响应 |
 | I-18 | 让已存在目标目录、祖先链或 ACL 子项枚举返回失败 | 安装器 fail-closed，在复制、删除或递归 ACL 修改前停止；不得把枚举失败当作空目录、无重解析点或加固成功 |
+| I-19 | 同 AppId 已登记于 `D:\Program Files\UniDesk`，目标和根以下祖先均可访问且无重解析点；在目录页直接继续覆盖 | 目录页按 `WizardDirValue` 校验当前路径；祖先检查在已验证固定 NTFS／ReFS 卷的盘符根前终止，不把 `FindFirst('D:\')` 的 `ERROR_FILE_NOT_FOUND` 误判为不可访问；允许进入后续安装页 |
+| I-20 | `Startup=true`，HKCU Run 中存在 `UniDesk` 旧值：分别指向明确不存在的完全限定本地路径 `UniDesk.exe`、仍存在的其它目录 `UniDesk.exe`、`C:UniDesk.exe`、UNC、祖先重解析点、空白／非字符串值、畸形命令和名称不匹配目标 | 只替换目标明确不存在、命令及文件名严格合法、现有祖先无重解析点且写入前未发生变化的失效旧值；其余场景全部拒绝覆盖并保留原值；升级首次启动不再因已删除的旧安装目录弹出写入失败 |
 | H-01 | 在发生过 AMD GPU `AccessViolationException` 的设备上安装精确候选，连续运行硬件服务至少 10 分钟，并核对诊断、GPU 指标和 Windows 事件日志 | 服务至少完成 300 次两秒采集且进程持续存活；诊断将 AMD GPU 标记为 `LibreHardwareMonitor AMD update isolated`，不再进入该原生更新路径；AMD ADL 可用时继续显示 AMD GPU 使用率和温度，ADL 不可用时允许 Windows GPU Engine 提供使用率且温度显示 `--`；不得出现新的硬件服务崩溃、伪造 `0℃` 或用主程序回退掩盖服务退出 |
 
 ## 发布前门禁
 
-- [x] `dotnet test UniDesk.sln -c Release --no-restore`：`588/588` 通过，`0` 跳过。
+- [x] 使用仓库钉住的 SDK `10.0.302` 运行 `dotnet test UniDesk.sln -c Release --no-restore`：`595/595` 通过，`0` 跳过；正式提交仍须由 GitHub CI 复核。
 - [x] Release 构建零警告、零错误。
 - [x] 主程序清单为 `asInvoker`，修复工具清单为 `requireAdministrator`。
 - [ ] 安装包及所有 UniDesk 自有 EXE／承载一方托管代码的 DLL 均确认 `NotSigned`；PawnIO 保持上游有效签名和固定哈希；发布说明明确披露未签名风险。
@@ -99,6 +101,7 @@
 
 ## 2026-08-31 本地工程验收记录
 
+- 覆盖目录盘符根与失效开机启动项修复及独立复核加固加入后，当前工作区使用仓库钉住的 SDK `10.0.302` 完成全量测试 `595/595` 通过，`0` 跳过；正式提交仍须由 GitHub CI 复核。
 - 锁定还原通过；Release 构建 `0` 警告、`0` 错误；全量测试 `588/588` 通过，`0` 跳过。
 - IPC、设置同 key 写入顺序、天气取消源、待办原子更新五个关键并发／竞态用例连续执行 `10/10` 轮，每轮 `5/5` 通过。
 - 版本一致性、仓库 SDK `10.0.302` 依赖漏洞查询、PowerShell AST 与 `git diff --check` 通过。
