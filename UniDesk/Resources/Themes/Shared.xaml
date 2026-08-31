@@ -365,21 +365,22 @@
     </Style>
 
     <Style x:Key="ModuleHeaderRowStyle" TargetType="FrameworkElement">
-        <Setter Property="MinHeight" Value="20"/>
+        <Setter Property="MinHeight" Value="18"/>
         <Setter Property="VerticalAlignment" Value="Center"/>
     </Style>
 
     <Style x:Key="ModuleHeaderIconContainerStyle" TargetType="FrameworkElement">
-        <Setter Property="Width" Value="20"/>
-        <Setter Property="Height" Value="20"/>
-        <Setter Property="Margin" Value="0,0,8,0"/>
+        <Setter Property="Width" Value="18"/>
+        <Setter Property="Height" Value="18"/>
+        <Setter Property="Margin" Value="0,1,6,-1"/>
         <Setter Property="VerticalAlignment" Value="Center"/>
     </Style>
 
     <Style x:Key="ModuleHeaderTextStyle" TargetType="TextBlock">
         <Setter Property="FontFamily" Value="{DynamicResource ModuleTitleFontFamily}"/>
-        <Setter Property="FontSize" Value="{Binding DataContext.FontScale, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource ScaledFontSizeConverter}, ConverterParameter=14}"/>
-        <Setter Property="LineHeight" Value="20"/>
+        <Setter Property="FontSize" Value="{Binding DataContext.FontScale, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource ScaledFontSizeConverter}, ConverterParameter=13}"/>
+        <Setter Property="LineHeight" Value="18"/>
+        <Setter Property="LineStackingStrategy" Value="BlockLineHeight"/>
         <Setter Property="FontWeight" Value="Medium"/>
         <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
         <Setter Property="VerticalAlignment" Value="Center"/>

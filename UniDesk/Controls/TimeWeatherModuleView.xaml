@@ -332,19 +332,11 @@
                         </Style>
                     </Grid.Style>
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     <TextBlock Grid.Column="0"
-                               Text="&#xE707;"
-                               FontFamily="Segoe MDL2 Assets"
-                               FontSize="11"
-                               Foreground="{DynamicResource SecondaryTextBrush}"
-                               VerticalAlignment="Center"
-                               Margin="0,0,5,0"/>
-                    <TextBlock Grid.Column="1"
                                Text="{Binding WeatherCity}"
                                TextWrapping="NoWrap"
                                TextTrimming="CharacterEllipsis"
@@ -360,14 +352,14 @@
                             </Style>
                         </TextBlock.Style>
                     </TextBlock>
-                    <TextBlock Grid.Column="2"
+                    <TextBlock Grid.Column="1"
                                Text=" | "
                                Style="{StaticResource SecondaryTextStyle}"
                                FontSize="11"
                                Margin="4,0"
                                VerticalAlignment="Center"
                                Visibility="{Binding WeatherRangeLine, Converter={StaticResource StringNotEmptyToVisibilityConverter}}"/>
-                    <TextBlock Grid.Column="3"
+                    <TextBlock Grid.Column="2"
                                Text="{Binding WeatherRangeLine}"
                                VerticalAlignment="Center"
                                TextAlignment="Right"
@@ -398,6 +390,8 @@
                                RequestNavigate="QWeatherAttributionLink_OnRequestNavigate"
                                Foreground="{DynamicResource SecondaryTextBrush}"
                                TextDecorations="{x:Null}">
+                        <Run Text="&#xE707;" FontFamily="Segoe MDL2 Assets" FontSize="8"/>
+                        <Run Text=" "/>
                         <Run Text="{DynamicResource Weather.QWeatherAttribution}"/>
                     </Hyperlink>
                 </TextBlock>

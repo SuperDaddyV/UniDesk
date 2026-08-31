@@ -11,11 +11,11 @@
                 <ResourceDictionary Source="Resources/Themes/Dark.xaml"/>
                 <ResourceDictionary Source="Resources/Strings.zh-CN.xaml"/>
             </ResourceDictionary.MergedDictionaries>
-            <FontFamily x:Key="DisplayFontFamily">pack://application:,,,/UniDesk;component/Resources/Fonts/#Space Grotesk, Microsoft YaHei UI</FontFamily>
-            <FontFamily x:Key="ModuleTitleFontFamily">Microsoft YaHei UI, Segoe UI Variable Text, Segoe UI</FontFamily>
-            <FontFamily x:Key="BodyFontFamily">Segoe UI Variable Text, Segoe UI, Microsoft YaHei UI</FontFamily>
-            <FontFamily x:Key="DataFontFamily">pack://application:,,,/UniDesk;component/Resources/Fonts/#JetBrains Mono, Microsoft YaHei UI</FontFamily>
-            <FontFamily x:Key="CaptionFontFamily">Segoe UI Variable Text, Segoe UI, Microsoft YaHei UI</FontFamily>
+            <FontFamily x:Key="DisplayFontFamily">pack://application:,,,/UniDesk;component/Resources/Fonts/#Inter, pack://application:,,,/UniDesk;component/Resources/Fonts/#Source Han Sans SC, Microsoft YaHei UI</FontFamily>
+            <FontFamily x:Key="ModuleTitleFontFamily">pack://application:,,,/UniDesk;component/Resources/Fonts/#Inter, pack://application:,,,/UniDesk;component/Resources/Fonts/#Source Han Sans SC, Microsoft YaHei UI</FontFamily>
+            <FontFamily x:Key="BodyFontFamily">pack://application:,,,/UniDesk;component/Resources/Fonts/#Inter, pack://application:,,,/UniDesk;component/Resources/Fonts/#Source Han Sans SC, Microsoft YaHei UI</FontFamily>
+            <FontFamily x:Key="DataFontFamily">pack://application:,,,/UniDesk;component/Resources/Fonts/#JetBrains Mono, pack://application:,,,/UniDesk;component/Resources/Fonts/#Source Han Sans SC, Microsoft YaHei UI</FontFamily>
+            <FontFamily x:Key="CaptionFontFamily">pack://application:,,,/UniDesk;component/Resources/Fonts/#Inter, pack://application:,,,/UniDesk;component/Resources/Fonts/#Source Han Sans SC, Microsoft YaHei UI</FontFamily>
             <FontFamily x:Key="QWeatherIconsFont">pack://application:,,,/icon/QWeather-Icons-1.8.0/font/fonts/#qweather-icons</FontFamily>
             <helpers:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
             <helpers:StringNotEmptyToVisibilityConverter x:Key="StringNotEmptyToVisibilityConverter"/>

@@ -36,18 +36,67 @@
                                VerticalAlignment="Center"
                                Margin="0,0,8,0"
                                Visibility="{Binding IsEditingShortcuts, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-                    <Button FontSize="10"
+                    <Button Width="28" Height="28"
+                            Padding="0"
                             Command="{Binding ToggleShortcutEditCommand}">
                         <Button.Style>
                             <Style TargetType="Button" BasedOn="{StaticResource GhostButtonStyle}">
-                                <Setter Property="Content" Value="{DynamicResource Common.Edit}"/>
+                                <Setter Property="ToolTip" Value="{DynamicResource Common.Edit}"/>
+                                <Setter Property="AutomationProperties.Name" Value="{DynamicResource Common.Edit}"/>
                                 <Style.Triggers>
                                     <DataTrigger Binding="{Binding IsEditingShortcuts}" Value="True">
-                                        <Setter Property="Content" Value="{DynamicResource Common.Done}"/>
+                                        <Setter Property="ToolTip" Value="{DynamicResource Common.Done}"/>
+                                        <Setter Property="AutomationProperties.Name" Value="{DynamicResource Common.Done}"/>
+                                        <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}"/>
+                                        <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
+                                        <Setter Property="BorderThickness" Value="1"/>
+                                        <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
                                     </DataTrigger>
                                 </Style.Triggers>
                             </Style>
                         </Button.Style>
+                        <Grid Width="16" Height="16">
+                            <Path x:Name="ShortcutEditPencilIcon"
+                                  Data="M3.1,12.9 L3.9,9.8 L10.8,2.9 C11.2,2.5 11.8,2.5 12.2,2.9 L13.1,3.8 C13.5,4.2 13.5,4.8 13.1,5.2 L6.2,12.1 Z M9.8,4 L12,6.2 M3.9,9.8 L6.2,12.1"
+                                  Fill="Transparent"
+                                  Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                  StrokeThickness="1.2"
+                                  StrokeStartLineCap="Round"
+                                  StrokeEndLineCap="Round"
+                                  StrokeLineJoin="Round"
+                                  Opacity="0.9">
+                                <Path.Style>
+                                    <Style TargetType="Path">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsEditingShortcuts}" Value="True">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Path.Style>
+                            </Path>
+                            <Path x:Name="ShortcutEditDoneIcon"
+                                  Data="M3.2,8.2 L6.5,11.2 L12.9,4.8"
+                                  Fill="Transparent"
+                                  Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                  StrokeThickness="1.2"
+                                  StrokeStartLineCap="Round"
+                                  StrokeEndLineCap="Round"
+                                  StrokeLineJoin="Round"
+                                  Opacity="0.9">
+                                <Path.Style>
+                                    <Style TargetType="Path">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsEditingShortcuts}" Value="True">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Path.Style>
+                            </Path>
+                        </Grid>
                     </Button>
                 </StackPanel>
             </Grid>

@@ -43,9 +43,11 @@ public class CalmGlassThemeContractTests
         Assert.Contains("x:Key=\"BodyFontFamily\"", app, StringComparison.Ordinal);
         Assert.Contains("x:Key=\"DataFontFamily\"", app, StringComparison.Ordinal);
         Assert.Contains("x:Key=\"CaptionFontFamily\"", app, StringComparison.Ordinal);
-        Assert.Contains("Space Grotesk", app, StringComparison.Ordinal);
+        Assert.Contains("#Inter", app, StringComparison.Ordinal);
+        Assert.Contains("#Source Han Sans SC", app, StringComparison.Ordinal);
         Assert.Contains("JetBrains Mono", app, StringComparison.Ordinal);
         Assert.Contains("Microsoft YaHei UI", app, StringComparison.Ordinal);
+        Assert.DoesNotContain("Space Grotesk", app, StringComparison.Ordinal);
     }
 
     [Theory]
@@ -109,12 +111,20 @@ public class CalmGlassThemeContractTests
         var project = ReadProjectFile("UniDesk", "UniDesk.csproj");
         var fontDirectory = Path.Combine(ProjectRoot, "UniDesk", "Resources", "Fonts");
 
-        Assert.Contains("<Resource Include=\"Resources\\Fonts\\*.ttf\"", project, StringComparison.Ordinal);
+        Assert.Contains("<Resource Include=\"Resources\\Fonts\\Inter-*.otf\"", project, StringComparison.Ordinal);
+        Assert.Contains("<Resource Include=\"Resources\\Fonts\\SourceHanSansSC-*.otf\"", project, StringComparison.Ordinal);
+        Assert.Contains("<Resource Include=\"Resources\\Fonts\\JetBrainsMono-*.ttf\"", project, StringComparison.Ordinal);
+        Assert.DoesNotContain("<Resource Include=\"Resources\\Fonts\\*.ttf\"", project, StringComparison.Ordinal);
 
-        var fonts = Directory.GetFiles(fontDirectory, "*.ttf");
+        var fonts = Directory.GetFiles(fontDirectory)
+            .Where(path => path.EndsWith(".ttf", StringComparison.OrdinalIgnoreCase) ||
+                           path.EndsWith(".otf", StringComparison.OrdinalIgnoreCase))
+            .ToArray();
         Assert.NotEmpty(fonts);
-        Assert.Contains(fonts, path => Path.GetFileName(path).Contains("SpaceGrotesk", StringComparison.OrdinalIgnoreCase));
-        Assert.Contains(fonts, path => Path.GetFileName(path).Contains("SpaceGrotesk-SemiBold", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(fonts, path => Path.GetFileName(path).Contains("Inter-Regular", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(fonts, path => Path.GetFileName(path).Contains("Inter-Medium", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(fonts, path => Path.GetFileName(path).Contains("Inter-SemiBold", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(fonts, path => Path.GetFileName(path).Contains("SourceHanSansSC-", StringComparison.OrdinalIgnoreCase));
         Assert.Contains(fonts, path => Path.GetFileName(path).Contains("JetBrainsMono", StringComparison.OrdinalIgnoreCase));
 
         using var resourceStream = typeof(App).Assembly.GetManifestResourceStream("UniDesk.g.resources");
@@ -124,9 +134,12 @@ public class CalmGlassThemeContractTests
             .Select(entry => entry.Key.ToString())
             .Where(name => name != null)
             .ToArray();
-        Assert.Contains("resources/fonts/spacegrotesk-regular.ttf", embeddedNames, StringComparer.OrdinalIgnoreCase);
-        Assert.Contains("resources/fonts/spacegrotesk-semibold.ttf", embeddedNames, StringComparer.OrdinalIgnoreCase);
+        Assert.Contains(embeddedNames, name => name!.Contains("resources/fonts/inter-regular.otf", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(embeddedNames, name => name!.Contains("resources/fonts/inter-medium.otf", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(embeddedNames, name => name!.Contains("resources/fonts/inter-semibold.otf", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(embeddedNames, name => name!.Contains("resources/fonts/sourcehansanssc-", StringComparison.OrdinalIgnoreCase));
         Assert.Contains("resources/fonts/jetbrainsmono-regular.ttf", embeddedNames, StringComparer.OrdinalIgnoreCase);
+        Assert.DoesNotContain(embeddedNames, name => name!.Contains("spacegrotesk", StringComparison.OrdinalIgnoreCase));
 
         var notices = Directory.GetFiles(
             Path.Combine(ProjectRoot, "installer-assets", "licenses"),
@@ -182,18 +195,19 @@ public class CalmGlassThemeContractTests
 
         var moduleHeaderStyle = ExtractStyle(shared, "ModuleHeaderTextStyle");
         Assert.Contains("ModuleTitleFontFamily", moduleHeaderStyle, StringComparison.Ordinal);
-        Assert.Contains("ConverterParameter=14", moduleHeaderStyle, StringComparison.Ordinal);
-        Assert.Contains("Property=\"LineHeight\" Value=\"20\"", moduleHeaderStyle, StringComparison.Ordinal);
+        Assert.Contains("ConverterParameter=13", moduleHeaderStyle, StringComparison.Ordinal);
+        Assert.Contains("Property=\"LineHeight\" Value=\"18\"", moduleHeaderStyle, StringComparison.Ordinal);
+        Assert.Contains("Property=\"LineStackingStrategy\" Value=\"BlockLineHeight\"", moduleHeaderStyle, StringComparison.Ordinal);
         Assert.Contains("Property=\"FontWeight\" Value=\"Medium\"", moduleHeaderStyle, StringComparison.Ordinal);
 
         var moduleHeaderRowStyle = ExtractStyle(shared, "ModuleHeaderRowStyle");
-        Assert.Contains("Property=\"MinHeight\" Value=\"20\"", moduleHeaderRowStyle, StringComparison.Ordinal);
+        Assert.Contains("Property=\"MinHeight\" Value=\"18\"", moduleHeaderRowStyle, StringComparison.Ordinal);
         Assert.Contains("Property=\"VerticalAlignment\" Value=\"Center\"", moduleHeaderRowStyle, StringComparison.Ordinal);
 
         var moduleIconStyle = ExtractStyle(shared, "ModuleHeaderIconContainerStyle");
-        Assert.Contains("Property=\"Width\" Value=\"20\"", moduleIconStyle, StringComparison.Ordinal);
-        Assert.Contains("Property=\"Height\" Value=\"20\"", moduleIconStyle, StringComparison.Ordinal);
-        Assert.Contains("Property=\"Margin\" Value=\"0,0,8,0\"", moduleIconStyle, StringComparison.Ordinal);
+        Assert.Contains("Property=\"Width\" Value=\"18\"", moduleIconStyle, StringComparison.Ordinal);
+        Assert.Contains("Property=\"Height\" Value=\"18\"", moduleIconStyle, StringComparison.Ordinal);
+        Assert.Contains("Property=\"Margin\" Value=\"0,1,6,-1\"", moduleIconStyle, StringComparison.Ordinal);
     }
 
     [Fact]

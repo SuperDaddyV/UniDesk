@@ -17,6 +17,8 @@ public class ThirdPartyLicensePackagingTests
     [InlineData("Mono.Posix.NETStandard-LICENSE.txt")]
     [InlineData("QWeather-Icons-LICENSE.txt")]
     [InlineData("PawnIO-LICENSE-EXCEPTION.txt")]
+    [InlineData("Inter-OFL-1.1.txt")]
+    [InlineData("SourceHanSans-OFL-1.1.txt")]
     public void RequiredLicensePayload_IsPresentAndNonEmpty(string fileName)
     {
         var path = Path.Combine(ProjectRoot, "installer-assets", "licenses", fileName);
@@ -47,6 +49,8 @@ public class ThirdPartyLicensePackagingTests
         Assert.Contains("Hardcodet.NotifyIcon.Wpf", notices, StringComparison.Ordinal);
         Assert.Contains("SQLitePCLRaw", notices, StringComparison.Ordinal);
         Assert.Contains("QWeather Icons", notices, StringComparison.Ordinal);
+        Assert.Contains("Inter", notices, StringComparison.Ordinal);
+        Assert.Contains("Source Han Sans SC", notices, StringComparison.Ordinal);
     }
 
     [Fact]

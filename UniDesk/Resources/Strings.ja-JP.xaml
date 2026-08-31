@@ -99,7 +99,7 @@
     <sys:String x:Key="Weather.RefreshFailed">天気の更新に失敗しました。ネットワークと API 設定を確認してください。</sys:String>
     <sys:String x:Key="Weather.Expired">データが古い可能性があります</sys:String>
     <sys:String x:Key="Weather.ApiKeyMissing">先に設定で QWeather API Key を設定してください。</sys:String>
-    <sys:String x:Key="Weather.QWeatherAttribution">天気：QWeather</sys:String>
+    <sys:String x:Key="Weather.QWeatherAttribution">QWeather</sys:String>
     <sys:String x:Key="Weather.CityNotFoundFormat">都市が見つかりません: {0}</sys:String>
     <sys:String x:Key="Weather.NetworkRequestFailedFormat">ネットワーク要求に失敗しました: {0}</sys:String>
     <sys:String x:Key="Weather.GetWeatherFailedFormat">天気の取得に失敗しました: {0}</sys:String>
@@ -290,7 +290,7 @@
     <sys:String x:Key="Settings.OpenLocationSettings">Windows の位置情報設定を開く</sys:String>
     <sys:String x:Key="Settings.OpenLocationSettingsFailed">Windows の位置情報設定を開けませんでした。Windows 設定から位置情報へのアクセスを手動で変更してください。</sys:String>
     <sys:String x:Key="Settings.WeatherApi">天気 API</sys:String>
-    <sys:String x:Key="Settings.WeatherApiHint">API Host と API Key は同じ QWeather プロジェクトのものを使用してください</sys:String>
+    <sys:String x:Key="Settings.WeatherApiHint">天気データは QWeather から提供されます。API Host と API Key は同じ QWeather プロジェクトのものを使用し、パネルの QWeather リンクから公式サイトを開けます。</sys:String>
     <sys:String x:Key="Settings.WeatherCredentialsRequired">API Host と API Key は両方入力するか、両方空欄にしてください。</sys:String>
     <sys:String x:Key="Settings.WeatherApiHostInvalid">API Host が無効です。QWeather コンソールが提供する HTTPS の専用 qweatherapi.com サブドメインのみ使用できます。</sys:String>
     <sys:String x:Key="Settings.About">情報</sys:String>

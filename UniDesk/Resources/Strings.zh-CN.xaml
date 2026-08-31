@@ -99,7 +99,7 @@
     <sys:String x:Key="Weather.RefreshFailed">天气刷新失败，请检查网络与 API 配置。</sys:String>
     <sys:String x:Key="Weather.Expired">数据可能已过期</sys:String>
     <sys:String x:Key="Weather.ApiKeyMissing">请先在设置中配置和风天气 API Key</sys:String>
-    <sys:String x:Key="Weather.QWeatherAttribution">天气服务：和风天气</sys:String>
+    <sys:String x:Key="Weather.QWeatherAttribution">和风天气</sys:String>
     <sys:String x:Key="Weather.CityNotFoundFormat">未找到城市: {0}</sys:String>
     <sys:String x:Key="Weather.NetworkRequestFailedFormat">网络请求失败: {0}</sys:String>
     <sys:String x:Key="Weather.GetWeatherFailedFormat">获取天气失败: {0}</sys:String>
@@ -290,7 +290,7 @@
     <sys:String x:Key="Settings.OpenLocationSettings">打开 Windows 位置设置</sys:String>
     <sys:String x:Key="Settings.OpenLocationSettingsFailed">无法打开 Windows 位置设置，请手动前往系统设置调整定位权限。</sys:String>
     <sys:String x:Key="Settings.WeatherApi">天气 API 设置</sys:String>
-    <sys:String x:Key="Settings.WeatherApiHint">API Host 与 API Key 需与和风控制台同一项目</sys:String>
+    <sys:String x:Key="Settings.WeatherApiHint">天气数据由和风天气提供。API Host 与 API Key 需来自同一和风天气项目；主面板中的“和风天气”可点击查看官网。</sys:String>
     <sys:String x:Key="Settings.WeatherCredentialsRequired">API Host 与 API Key 必须同时填写或同时留空。</sys:String>
     <sys:String x:Key="Settings.WeatherApiHostInvalid">API Host 无效，仅允许和风控制台提供的 HTTPS 专属 qweatherapi.com 子域名。</sys:String>
     <sys:String x:Key="Settings.About">关于</sys:String>

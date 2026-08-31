@@ -401,7 +401,7 @@ public class LocationProvider
   - 3 日天气：当日最高温/最低温
   - 空气质量：AQI
 - **聚合方式**：WeatherService 在后台并发请求多个端点并合并为单个 `WeatherInfo`，仅在全部完成或部分可降级完成后更新 UI
-- **来源署名**：凡主面板展示和风天气数据，必须同时显示可见的 `QWeather` 来源链接并指向 `https://www.qweather.com`；展开态和收缩态均不得隐藏该署名
+- **来源署名**：凡主面板展示和风天气数据，必须同时显示可见的 `和风天气`／`QWeather` 来源链接并指向 `https://www.qweather.com`；展开态和收缩态均不得隐藏该署名。主面板使用 `Segoe MDL2 Assets` `E707` 图标替代“天气服务”等文字前缀，图标字号与 8px 提供方名称一致，二者共同构成可点击链接；天气位置行不再重复显示该图标，直接呈现城市与温度区间。完整的数据来源、API 项目关系和官网入口说明放在「常规 → 天气 API 设置」中
 
 #### 天气图标策略
 - 使用和风天气返回的天气代码（IconCode）映射本地 QWeather Icons 字体图标
@@ -904,15 +904,22 @@ CREATE TABLE Settings (
 
 | Token | 字体与回退 | 基准字号／行高 | 用途 |
 |------|------------|---------------|------|
-| `DisplayFontFamily` | 内嵌 Space Grotesk；中文回退 Microsoft YaHei UI | 窗口标题 18/26，Semibold | 品牌、窗口标题、设置页标题 |
-| `ModuleTitleFontFamily` | Microsoft YaHei UI → Segoe UI Variable Text → Segoe UI | 14/20，Medium | 六个主面板模块标题；中文字形、字号、字重和基线必须一致 |
-| `BodyFontFamily` | Segoe UI Variable Text → Segoe UI → Microsoft YaHei UI | 正文 13/20，Regular | 菜单、设置、待办、说明文字 |
-| `DataFontFamily` | 内嵌 JetBrains Mono；中文回退 Microsoft YaHei UI | 12-13/18，Medium | 时间、温度、百分比、网络值、快捷键 |
+| `DisplayFontFamily` | 内嵌 Inter；中文回退内嵌 Source Han Sans SC | 窗口标题 18/26，Semibold | 品牌、窗口标题、设置页标题 |
+| `ModuleTitleFontFamily` | 内嵌 Inter → 内嵌 Source Han Sans SC | 13/18，Medium | 六个主面板模块标题；中文字形、字号、字重和基线必须一致 |
+| `BodyFontFamily` | 内嵌 Inter → 内嵌 Source Han Sans SC | 正文 13/20，Regular | 菜单、设置、待办、说明文字 |
+| `DataFontFamily` | 内嵌 JetBrains Mono；中文回退内嵌 Source Han Sans SC | 12-13/18，Medium | 仅用于模型雷达等确需等宽对齐的数据 |
 | `CaptionFontFamily` | `BodyFontFamily` | 11-12/17-18，Regular | 时间戳、状态、辅助说明 |
 
-- 仅打包必要的静态 TTF 字重和对应 SIL OFL 1.1 许可证，不引入字体 NuGet 包，也不打包完整中文字体。
-- `FontScale` 只缩放文字 Token；模块标题统一以 14 DIP 为缩放基准，禁止各模块自行覆盖为 12 或 13 DIP。图标字体不随文字比例失真。所有固定高度控件必须在 1.18 倍字号下仍无裁剪。
-- 模块标题统一使用 20×20 DIP 图标容器、16 DIP 有效图形和 8 DIP 图文间距；标题行最小高度 20 DIP 并垂直居中，不使用固定高度裁剪放大后的文字。
+- B 版字体方案使用 Inter 统一拉丁文字、Source Han Sans SC 统一简体中文，JetBrains Mono 仅用于等宽数据；不得打包或调用仅授权 Apple 平台使用的 SF Pro、PingFang 字体。
+- 内嵌字体必须覆盖用户可编辑的待办、便签和快捷方式名称，不得只按内置界面文案裁剪中文字形；仅打包 WPF 实测可稳定映射所需字重，并随安装包提供对应 SIL OFL 1.1 许可证，不引入字体 NuGet 包。
+- 正式 B 版固定使用 Inter Regular／Medium／SemiBold 和 Source Han Sans SC Regular／Medium 静态 OTF。Source Han 可变字体虽可减少安装包体积，但在 WPF 中会把 600 映射为 700，且会改变字体家族名；在 Windows 支持基线完成完整视觉回归前不得替换静态字重。
+- `FontScale` 只缩放文字 Token；模块标题统一以 13 DIP 为缩放基准，禁止各模块自行覆盖字号。图标字体不随文字比例失真。所有固定高度控件必须在 1.18 倍字号下仍无裁剪。
+- 模块标题统一使用 18×18 DIP 图标容器、约 14-15 DIP 有效图形和 6 DIP 图文间距；标题行最小高度与标题行高均为 18 DIP。图标容器统一使用 `0,1,6,-1` Margin 向下做 1 DIP 光学校准，标题文字使用固定块行高并垂直居中，不允许各模块添加互相冲突的基线偏移。
+- 快捷方式模块的编辑入口使用 28×28 DIP 透明图标按钮：常态为约 15 DIP 的细线矢量铅笔，编辑态为同规格细线对勾；图形直接由 XAML `Path` 绘制，使用圆角端点和连接，不依赖系统图标字体或私有码位。两种状态都必须提供本地化 ToolTip 和无障碍名称，不能只靠图形传达状态。
+- 待办正文使用 12 DIP 基准字号，到期信息保持 11 DIP；完成圆圈的可见直径为 16 DIP、描边为 1.5 DIP，同时保留至少 28×28 DIP 的透明点击热区，不得为了视觉缩小而降低可操作性。标题与到期信息应和圆圈共享 46 DIP 行框的视觉中心；Source Han Sans SC／Inter 文本统一向下光学校准 3 DIP，但不得移动圆圈、优先级圆点或改变行高。
+- 硬件监视网络行继续使用灰阶文字渲染和 78 DIP 固定数值盒，避免透明窗口中的数值刷新残影；左右分组各使用 140×14 DIP 固定布局，由 56 DIP 右对齐标签列、6 DIP 固定间距和 78 DIP 左对齐数值列组成。B 版 Inter 数值与 Source Han Sans SC 标签共享 14 DIP 块行高并垂直居中，数值不得再使用独立的上下 Margin 光学校准，避免不同 DPI 下因取整出现反向偏移；不得取消数值盒固定宽度或灰阶渲染。
+- 由于左对齐数值盒右侧保留了稳定刷新空间，网络行外层统一使用 `12,0,-12,0` Margin 向右做光学校准；容器在可用宽度内拉伸、最大宽度为 340 DIP，超出后保持水平居中，避免宽面板把 RX／TX 过度拉散。该偏移只修正整行视觉重心，不改变左右分组内部几何与数据刷新区域。
+- 硬件监视中的使用率、温度和 RX／TX 实时值统一使用 `BodyFontFamily`（Inter），以匹配其他界面数字；固定宽度由布局承担，不以 JetBrains Mono 的等宽字形换取对齐。
 
 #### 语义颜色
 

@@ -65,16 +65,21 @@ public class CalmGlassShellAndModuleTests
     }
 
     [Fact]
-    public void DataDenseModules_ShouldUseTheSharedDataFont()
+    public void DataDenseModules_ShouldUseContextAppropriateNumberFonts()
     {
         var hardwareXaml = ReadProjectFile("UniDesk", "Controls", "HardwareMonitorModuleView.xaml");
         var modelRadarXaml = ReadProjectFile("UniDesk", "Controls", "ModelRadarModuleView.xaml");
 
-        Assert.Contains("FontFamily=\"{DynamicResource DataFontFamily}\"", hardwareXaml, StringComparison.Ordinal);
+        Assert.Equal(7, CountOccurrences(hardwareXaml, "FontFamily=\"{DynamicResource BodyFontFamily}\""));
+        Assert.DoesNotContain("FontFamily=\"{DynamicResource DataFontFamily}\"", hardwareXaml, StringComparison.Ordinal);
         Assert.Contains("FontFamily=\"{DynamicResource DataFontFamily}\"", modelRadarXaml, StringComparison.Ordinal);
 
         Assert.Contains("TextOptions.TextRenderingMode=\"Grayscale\"", hardwareXaml, StringComparison.Ordinal);
-        Assert.Equal(2, CountOccurrences(hardwareXaml, "Width=\"78\""));
+        Assert.Equal(
+            2,
+            Regex.Matches(
+                hardwareXaml,
+                "x:Name=\"Network(?:Received|Sent)ValueText\"[\\s\\S]{0,400}Width=\"78\"").Count);
     }
 
     [Theory]
@@ -100,6 +105,14 @@ public class CalmGlassShellAndModuleTests
         Assert.DoesNotContain("FontWeight=", titleTag, StringComparison.Ordinal);
         Assert.Contains("Style=\"{StaticResource ModuleHeaderRowStyle}\"", moduleXaml, StringComparison.Ordinal);
         Assert.Contains("Style=\"{StaticResource ModuleHeaderIconContainerStyle}\"", moduleXaml, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void HardwareHeaderIcon_ShouldFitTheCompactSharedContainer()
+    {
+        var hardwareXaml = ReadProjectFile("UniDesk", "Controls", "HardwareMonitorModuleView.xaml");
+
+        Assert.Contains("<Border Width=\"15\" Height=\"15\"", hardwareXaml, StringComparison.Ordinal);
     }
 
     private static int CountOccurrences(string value, string fragment) =>
