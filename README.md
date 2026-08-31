@@ -1,151 +1,112 @@
+<div align="center">
+
 # UniDesk
 
-UniDesk 是一个轻量、个性化、清爽好用的 Windows 桌面侧边栏工具，把时间天气、硬件监视、模型雷达、快捷方式、待办事项、快速便签和快捷文本整合进一个顺手的桌面工作台。
+<p><strong>把桌面常用信息与高频操作，收进一条轻量侧边栏</strong></p>
 
-<p align="center">
-  简体中文 ·
-  <a href="README.en-US.md">English</a> ·
-  <a href="README.ja-JP.md">日本語</a> ·
-  <a href="README.es-ES.md">Español</a>
-</p>
+时间天气 · 硬件监视 · 模型雷达 · 快捷启动 · 待办 · 便签 · 快捷文本
+
+[![Release](https://img.shields.io/github/v/release/SuperDaddyV/UniDesk?display_name=tag&sort=semver&label=release&color=9b7b87)](https://github.com/SuperDaddyV/UniDesk/releases/latest)
+[![CI](https://github.com/SuperDaddyV/UniDesk/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/SuperDaddyV/UniDesk/actions/workflows/ci.yml)
+![Windows x64](https://img.shields.io/badge/Windows-x64-0078D4?logo=windows11&logoColor=white)
+[![MIT License](https://img.shields.io/github/license/SuperDaddyV/UniDesk?color=6e7781)](LICENSE)
+
+**[下载最新版](https://github.com/SuperDaddyV/UniDesk/releases/latest)** ·
+[功能概览](#功能概览) ·
+[界面一览](#界面一览) ·
+[隐私政策](PRIVACY.md) ·
+[发布说明](docs/release-unidesk.md)
+
+简体中文 ·
+<a href="README.en-US.md">English</a> ·
+<a href="README.ja-JP.md">日本語</a> ·
+<a href="README.es-ES.md">Español</a>
+
+</div>
 
 ![UniDesk 产品展示图](images/unidesk-hero.png)
 
-## ✨ 主要特性
+UniDesk 是一款面向 Windows 的桌面侧边栏工具。展开时，它把信息查看、任务记录和快捷操作集中到一处；收缩后仍保留时间、天气、硬件状态和下一项待办，适合长期常驻桌面。
 
-### 时间天气
+## 下载与安装
 
-- 显示当前时间、日期和农历信息。
-- 显示天气、温度、空气质量、湿度和城市信息。
-- 内置桌面日历，方便快速查看公历和农历日期。
+**[下载 UniDesk v2.1.0（Windows x64）](https://github.com/SuperDaddyV/UniDesk/releases/download/v2.1.0/UniDesk_Setup_2.1.0.exe)**
 
-### 硬件监视
+[查看 v2.1.0 Release](https://github.com/SuperDaddyV/UniDesk/releases/tag/v2.1.0) ·
+[SHA256SUMS.txt](https://github.com/SuperDaddyV/UniDesk/releases/download/v2.1.0/SHA256SUMS.txt) ·
+[release-manifest.json](https://github.com/SuperDaddyV/UniDesk/releases/download/v2.1.0/release-manifest.json)
 
-- 实时查看 CPU、内存、GPU 使用率。
-- 显示 CPU / GPU 温度。
-- 显示整机网络上传 / 下载速度。
-- GPU 温度会尽量从可用驱动和硬件监视来源读取；无法读取时会安全显示为 `--`。
+> [!WARNING]
+> `v2.1.0` 是经项目所有者明确批准的未签名正式版，安装包和 UniDesk 一方二进制文件均为 `Authenticode: NotSigned`。Windows SmartScreen 或企业策略可能警告或阻止安装，请仅从本仓库 Release 下载并核对 SHA-256。
 
-### 快捷方式
+| 项目 | 支持范围 |
+| --- | --- |
+| 系统 | 仍在 Microsoft 支持周期内的 Windows 11 x64 |
+| 长期服务版本 | Windows 10 Enterprise／IoT Enterprise LTSC 2021 或更新版本 x64 |
+| 安装包 | `UniDesk_Setup_2.1.0.exe` |
+| SHA-256 | `F601FEDB596957E9FC3BF0587C533A4E97647CDAADA4B5884F3AE1C3E0537388` |
 
-- 支持添加常用应用、文件和文件夹。
-- 支持从桌面或资源管理器拖拽添加。
-- 支持快捷方式自由排序。
-- 支持自定义主面板快捷方式显示数量。
+<details>
+<summary><strong>安装路径、UAC 与硬件组件说明</strong></summary>
 
-### 待办事项
+- 安装或升级前建议先退出正在运行的 UniDesk，然后直接双击安装包并确认 UAC；标准用户需要输入管理员凭据，无需右键选择“以管理员身份运行”。
+- 主程序可以安装到本地固定 NTFS／ReFS 磁盘的安全目录；覆盖安装默认沿用上次位置。安装器会拒绝网络路径、可移动磁盘、磁盘根目录、重解析路径和无法确认归属的非空目录。
+- “完整硬件监控组件”默认勾选，会安装固定版本 PawnIO 和以 `LocalSystem` 运行的只读硬件服务；`UniDesk.exe` 始终按普通用户权限运行，受保护组件位于 `Common Program Files\UniDesk`。
+- 取消硬件组件或组件安装失败不会影响天气、待办、便签和快捷方式等基础功能，但部分底层温度可能显示为 `--`，可稍后在设置中导出诊断并重试修复。
+- 项目保留 Windows `10.0.18362` API 兼容基线；LTSC 2019 低于该基线，已停止支持的普通 Windows 10 版本也不属于正式支持范围。
 
-- 支持新增、编辑、完成和删除待办。
-- 支持任务时间和优先级显示。
-- 数据本地保存，适合日常事项记录。
+</details>
 
-### 快速便签
+## 功能概览
 
-- 支持多条便签。
-- 支持自动保存、置顶、复制和删除。
-- 适合临时记录灵感、草稿、会议记录和备忘内容。
+| 能力 | 主要内容 |
+| --- | --- |
+| 信息一览 | 时间、日期、农历、天气、空气质量、湿度和桌面日历 |
+| 硬件状态 | CPU／内存／GPU 使用率、CPU／GPU 温度、整机 RX／TX 网速；不可用数据安全显示为 `--` |
+| 任务记录 | 待办事项、优先级、时间提醒、多条自动保存便签、本地备份与还原 |
+| 快捷操作 | 拖拽添加应用、文件和文件夹，自由排序；剪贴板历史、常用短语和一键复制 |
+| 模型雷达 | 综合最高、官方 `value` 性价比推荐，以及综合／后端／前端／知识四类 Top 5 |
+| 自由组合 | 模块显示、隐藏与排序，主题配色、透明度、尺寸、字体、置顶、锁定、收缩和开机自启 |
 
-### 快捷文本
+全新安装默认启用时间天气、硬件监视、待办事项和快速便签；快捷方式、快捷文本和模型雷达默认关闭。升级会保留已有模块开关和排序。
 
-- 支持剪贴板历史。
-- 支持常用短语。
-- 支持一键复制。
-- 支持敏感内容过滤，尽量避免保存验证码、密码、Token、Cookie 等敏感文本。
+<details>
+<summary><strong>模型雷达的数据来源与边界</strong></summary>
 
-### 模型雷达
+- 数据来自 [ModelDial Radar](https://modeldial.com/zh-CN/radar) 公开评测，并遵循其 [CC BY 4.0 数据许可](https://modeldial.com/data-license)。
+- “性价比推荐”只采用发布方的官方 `value` 标签，UniDesk 不重新计算评分或费用。
+- 模块关闭时不发起网络请求；启用后优先读取本地缓存，每 6 小时最多自动检查一次，也可以手动刷新。
+- 该模块只提供决策参考，不调用模型、不执行本地评测、不修改模型工具配置，也不代表合作或背书。
 
-- 先用「综合最高」与「性价比推荐」给出决策结论，再提供综合、后端、前端、知识四类 Top 5 参考。
-- 数据来自 [ModelDial Radar](https://modeldial.com/zh-CN/radar) 公开评测（[CC BY 4.0](https://modeldial.com/data-license)）；「性价比推荐」只采用发布方的官方 `value` 标签，UniDesk 不重新计算评分或费用。
-- 模块默认关闭，关闭时不发起网络请求。UniDesk 运行且模块启用期间，优先读取本地缓存，每 6 小时最多自动检查一次，并只通过固定接口 `https://modeldial.com/api/v1/radar/latest.json` 刷新；也可随时手动刷新。
-- 这是只读决策参考，不调用模型、不执行本地评测，也不修改模型工具配置。公开评测不代表合作或背书，实际表现可能因账号、路由和端点而异。
+</details>
 
-### 模块管理
+## 界面一览
 
-- 支持模块显示 / 隐藏。
-- 支持模块自由排序。
-- 可以按自己的使用习惯组合桌面面板。
+| 收缩仪表盘 | 核心工作台 |
+| :---: | :---: |
+| [![UniDesk 收缩仪表盘](images/unidesk-compact-dashboard.png)](images/unidesk-compact-dashboard.png) | [![UniDesk 核心功能概览](images/unidesk-features.png)](images/unidesk-features.png) |
+| **模型雷达** | **个性化设置** |
+| [![UniDesk 模型雷达展示](images/unidesk-model-radar.png)](images/unidesk-model-radar.png) | [![UniDesk 个性化设置展示](images/unidesk-customization.png)](images/unidesk-customization.png) |
 
-### 个性化设置
+<sub>以上均为静态界面示意，日期、天气、硬件数值和模型榜单不代表当前实时状态；模型雷达截图使用 2026 年 8 月 30 日公开批次。点击图片可查看原图。</sub>
 
-- 支持主题配色、窗口透明度、面板宽度、面板高度和字体大小调节。
-- 支持自定义顶部显示名称。
-- 支持置顶、锁定、收起、开机自启和快捷方式数量设置。
-- 支持恢复默认布局和恢复默认设置。
+## 数据与隐私
 
-### 数据备份与还原
+- 设置、快捷方式、待办、便签、快捷文本和图标缓存等主要数据保存在本机。
+- 剪贴板历史提供敏感内容过滤，用于降低验证码、密码、Token、Cookie 等内容被误存的风险，但它不是绝对安全保证；处理高敏感内容时应关闭该功能或及时清理记录。
+- 天气与自动定位、模型雷达等联网行为及其关闭方式以[隐私政策](PRIVACY.md)为准。
 
-- 支持本地数据备份。
-- 支持待办事项、快速便签、剪贴板历史和常用短语还原。
-- 方便重装系统或迁移电脑后恢复常用数据。
+## Code signing policy
 
-## 🖼️ 界面预览
+公开发布包遵循[代码签名政策](CODE_SIGNING_POLICY.md)。当前 `v2.1.0` 使用明确批准的未签名正式版例外，安装包状态为 `Authenticode: NotSigned`；SignPath 签名流程保留给未来版本。
 
-### 收缩仪表盘
+Free code signing provided by SignPath.io, certificate by SignPath Foundation.
 
-收缩后仍保留时间、天气、硬件状态和下一项待办，适合长时间常驻桌面。
+## 本地构建
 
-![UniDesk 收缩仪表盘](images/unidesk-compact-dashboard.png)
+技术栈：`.NET 10 LTS` · `WPF` · `SQLite` · `CommunityToolkit.Mvvm` · `LibreHardwareMonitorLib` · `Inno Setup`
 
-### 核心功能
-
-![UniDesk 核心功能概览](images/unidesk-features.png)
-
-### 模型雷达
-
-两张决策卡先回答当前综合最高配置和 ModelDial 官方性价比推荐，再查看不同任务维度的 Top 5。
-
-![UniDesk 模型雷达展示](images/unidesk-model-radar.png)
-
-展示图使用 2026 年 8 月 30 日公开批次；应用内结果会随 ModelDial Radar 数据更新。
-
-### 个性化设置
-
-![UniDesk 个性化设置展示](images/unidesk-customization.png)
-
-## 🚀 适合谁使用
-
-UniDesk 适合希望桌面保持清爽，但又想快速查看信息、打开常用工具、记录待办和便签的 Windows 用户。
-
-适合场景：
-
-- 日常办公
-- 个人效率管理
-- 桌面快捷启动
-- 系统状态查看
-- 轻量待办与便签记录
-- 常用文本快速复制
-
-## 📦 安装与使用
-
-`v2.1.0` 正式安装包的官方分发入口是 [v2.1.0 GitHub Release](https://github.com/SuperDaddyV/UniDesk/releases/tag/v2.1.0)。该版本采用项目所有者明确批准的未签名正式发布例外，包含「模型雷达」和最新模块默认状态；安装前请核对 Release 页公布的 SHA-256，Windows SmartScreen 或企业策略可能警告或阻止安装。安装包文件名为：
-
-```powershell
-UniDesk_Setup_2.1.0.exe
-```
-
-建议安装或升级前先退出正在运行的 UniDesk。
-
-请直接双击安装包并在 Windows 提示时确认 UAC；标准用户需要输入管理员凭据，无需右键选择「以管理员身份运行」。主程序可以安装到 D／E 等任意本地磁盘的安全目录，覆盖安装会默认沿用上次位置；硬件服务、修复工具和卸载组件仍固定安装到 Windows 的 `Common Program Files\UniDesk` 受保护目录。安装器不接受网络路径、磁盘根目录、重解析路径或无法确认属于 UniDesk 的非空目录。
-
-安装器默认勾选桌面快捷方式和「完整硬件监控组件」，并明确说明它会安装共享的 PawnIO 驱动和以 `LocalSystem` 运行的只读 Windows 服务；`UniDesk.exe` 本身始终保持普通用户权限。安装完成页默认勾选启动 UniDesk，并以安装前的普通用户身份自动启动。取消该组件或组件安装失败不会影响天气、便签、快捷方式等基础功能，但 CPU 温度等底层指标可能不可用，可稍后在设置中导出诊断并重试修复。
-
-系统要求：
-
-- 仍在 Microsoft 支持周期内的 Windows 11 x64
-- Windows 10 Enterprise／IoT Enterprise LTSC 2021 或更新版本 x64
-
-项目保留 Windows 10 1903 API 兼容基线；LTSC 2019 低于该基线，已停止支持的普通 Windows 10 版本也不属于正式支持范围。
-
-## 🛠️ 本地构建
-
-环境要求：
-
-- .NET 10 SDK
-- 受支持的 Windows 11 或 Windows 10 LTSC 开发环境
-- Visual Studio 2022、JetBrains Rider，或其他支持 .NET / WPF 的开发环境
-- Inno Setup 6，仅制作安装包时需要
-
-构建并运行：
+环境要求：受支持的 Windows x64、.NET 10 SDK，以及 Visual Studio 2022、JetBrains Rider 或其它支持 .NET／WPF 的开发环境。
 
 ```powershell
 git clone https://github.com/SuperDaddyV/UniDesk.git
@@ -156,62 +117,29 @@ dotnet build UniDesk.sln -c Release
 dotnet run --project UniDesk\UniDesk.csproj
 ```
 
-从干净工作区构建本地未签名候选包：
+<details>
+<summary><strong>构建本地未签名候选包</strong></summary>
+
+制作安装包还需要 Inno Setup 6。请从干净工作区运行：
 
 ```powershell
 .\scripts\Build-Release.ps1 -Version 2.1.0
 ```
 
-脚本会将主程序、硬件服务和修复工具发布到全新的版本目录，再从这些确定输入编译安装包。干净工作区生成的未签名 `v2.1.0` 制品必须通过 `Test-UnsignedReleaseReadiness.ps1`，完成完整人工矩阵并由项目所有者最终批准后才能公开；SignPath 签名工作流继续保留给未来签名版本，且不会自动创建 GitHub Release。
+公开发布前必须通过未签名发布就绪门禁、人工矩阵和项目所有者批准；构建脚本不会自动创建 GitHub Release。完整规则见[发布说明](docs/release-unidesk.md)。
 
-## 🧰 技术栈
+</details>
 
-| 技术 | 用途 |
-| --- | --- |
-| .NET 10 LTS | 应用运行框架 |
-| WPF | Windows 桌面界面 |
-| SQLite | 本地数据存储 |
-| CommunityToolkit.Mvvm | 界面与数据绑定辅助 |
-| LibreHardwareMonitorLib | 硬件信息读取 |
-| Hardcodet.NotifyIcon.Wpf | 系统托盘 |
-| Inno Setup | Windows 安装包 |
+## 项目文档
 
-## 🔐 数据与隐私
+- [版本发布说明](docs/release-unidesk.md)
+- [隐私政策](PRIVACY.md)
+- [代码签名政策](CODE_SIGNING_POLICY.md)
+- [安全政策](SECURITY.md)
+- [第三方依赖与许可](THIRD-PARTY-NOTICES.md)
 
-UniDesk 优先使用本地存储，用户数据保存在本机。当前主要数据包括设置、快捷方式、待办事项、快速便签、快捷文本和图标缓存等。
+## 致谢与许可
 
-剪贴板历史功能带有敏感内容过滤，用于尽量避免保存验证码、密码、Token、Cookie 等敏感文本。该过滤用于降低误存风险，但不应被视为绝对安全保证；如果处理高敏感内容，建议关闭剪贴板历史或及时清理记录。
+UniDesk 基于 [Happyeveryweek/LumiDesk](https://github.com/Happyeveryweek/LumiDesk) 开发，感谢原作者提供的创意和基础代码。
 
-## Code signing policy
-
-公开发布包遵循[代码签名政策](CODE_SIGNING_POLICY.md)和[隐私政策](PRIVACY.md)。`v2.1.0` 采用明确批准的未签名正式版例外：必须来自精确公开提交、通过人工批准、完整载荷和 SHA-256 校验，并醒目标注 `Authenticode: NotSigned` 及 SmartScreen／企业策略风险。
-
-Free code signing provided by SignPath.io, certificate by SignPath Foundation.
-
-## 🆕 更新亮点
-
-当前版本已补充以下能力：
-
-- 新增模型雷达：展示综合最高、官方性价比推荐及综合、后端、前端、知识四类 Top 5。
-- 新增模块管理：支持模块显示 / 隐藏和排序。
-- 新增快捷方式拖拽添加与自由排序。
-- 新增快速便签：支持多条便签、自动保存、置顶和复制。
-- 新增快捷文本：支持剪贴板历史、常用短语和敏感内容过滤。
-- 优化硬件监视布局，完整显示 CPU、内存、GPU、温度和 RX / TX 网速。
-- 优化 GPU 温度读取，尽量兼容更多硬件与驱动环境。
-- 优化个性化设置和主面板滚动体验。
-
-## 📌 后续计划
-
-- 更多主题预设。
-- 更完善的硬件详情展示。
-- 更灵活的模块扩展能力。
-- 更好的安装与更新体验。
-
-## 🙏 致谢
-
-UniDesk 基于 [Happyeveryweek/LumiDesk](https://github.com/Happyeveryweek/LumiDesk) 开发。感谢原作者提供的创意、基础代码和桌面小工具体验。
-
-## 📄 License
-
-本项目遵循仓库中的 [MIT License](LICENSE)。自包含安装包实际分发的第三方依赖、许可文本和来源见 [Third-party notices](THIRD-PARTY-NOTICES.md)。
+项目采用 [MIT License](LICENSE)。自包含安装包实际分发的第三方依赖、许可文本和来源见 [Third-party notices](THIRD-PARTY-NOTICES.md)。
