@@ -275,10 +275,11 @@ UniDesk 是运行于 Windows 11 的桌面侧边助手应用，以悬浮右侧面
 - 新安装默认顺序仍为时间天气、硬件监视、快捷方式、待办事项、快速便签、快捷文本、模型雷达；首次展开只显示默认启用的时间天气、硬件监视、待办事项和快速便签，关闭项保留其模块管理顺序，启用后显示在用户选择的位置。
 
 #### UI 样式
-- **背景**：WPF 分层透明窗口与半透明主题画刷，透明度可调并真实透出桌面；不在分层窗口上叠加 DWM Mica/Acrylic 矩形底板
-- **圆角**：窗口 16px、卡片 12px、控件 8px
-- **阴影**：柔和投影（Elevation 4）
-- **分隔符**：浅色分割线
+- **背景**：WPF 分层透明窗口与半透明中性主题画刷，透明度可调并真实透出桌面；不在分层窗口上叠加 DWM Mica/Acrylic 矩形底板。用户选择的色彩方案只提供强调色，不再整体染色窗口底面。
+- **圆角**：窗口 16px、卡片 12px、控件 8px、小状态块 6px。
+- **阴影**：透明主窗口的普通卡片不使用 `DropShadowEffect`；仅窗口壳层、独立弹窗等真正抬升层允许使用克制投影。
+- **分隔符**：使用 1 DIP 语义边框；Hover、Pressed、KeyboardFocus 和 Disabled 必须分别定义，键盘焦点不得依赖系统默认虚线框。
+- **文字渲染**：分层透明窗口继续使用稳定的 Grayscale 文本渲染；不得为了字体观感切换为可能产生残影的 ClearType。
 - **显示适配**：设置窗口和主窗口必须在 `1366×768`、150% 缩放的可用工作区内保持标题栏、主要内容和底部操作区可达；窗口不得以固定最小高度把保存／取消按钮推到屏幕外。混合 DPI、多屏移动、显示器断开和系统文字缩放必须进入人工发布矩阵；分层透明窗口的 DPI awareness 变更必须经过真实多屏回归，不能只改清单。
 - **多显示器边界**：窗口尺寸和位置必须按目标窗口或 owner 所在显示器的工作区计算，不得用主屏 `SystemParameters.WorkArea` 或 `VirtualScreen` 联合矩形代替单块显示器工作区。显示器选择必须先通过 `MonitorFromWindow`／`MonitorFromRect`／`MonitorFromPoint` 在统一的 Win32 物理像素坐标系完成，禁止把各屏绝对像素原点分别按自身 DPI 缩放后再跨屏比较；选定显示器后才将其 `rcWork` 和目标位置按该显示器 DPI 转换为 WPF DIP。主窗口保存位置时同时记录物理像素坐标，恢复时优先使用该坐标；旧版仅有 DIP 位置时采用兼容回退，并在下次保存后补齐物理坐标。显示器已断开时由 Win32 最近显示器规则回退并夹紧到真实工作区；非矩形排列中的空洞不得被视为可见区域。设置窗口始终在 owner 所在显示器内居中并保持底部操作区可达。
 
@@ -583,13 +584,17 @@ public class ShortcutItem
 | 自动定位 | Toggle | true（仅全新安装） | 调用 Windows 定位并将坐标发送给和风天气进行城市反查；升级保留既有值，缺失或无效值按 false 处理 |
 | 开机自启 | Toggle | true（仅全新安装） | 随 Windows 启动；升级保留既有值 |
 | 窗口置顶 | Toggle | true | MainWindow 始终置顶 |
-| 面板透明度 | Slider | 85% | 范围：30%-100% |
-| 面板宽度 | Slider | 360px | 范围：320px-520px |
+| 面板透明度 | Slider | 70% | 范围：60%-100%；只预览主面板，设置窗口自身保持可读的中性遮罩 |
+| 面板宽度 | Slider | 全新安装推荐 340 DIP | 范围：320-520 DIP；升级保留用户原值 |
+| 面板高度 | Slider | 全新安装按当前工作区计算 | 常规下限 560 DIP；上限为当前显示器工作区高度减 16 DIP |
+| 字体大小 | Slider | 标准（1.0） | 范围：0.90-1.18；字号与行高、最小控件高度同步缩放 |
+| 自定义标题 | TextBox | UniDesk | 只改变主面板显示标题，不改变产品名和应用身份 |
+| 适配当前屏幕 | Button | - | 将首选宽高重新计算为当前显示器的推荐值并立即预览 |
 | 模块启用与顺序 | ModuleSettings | 时间天气、硬件监视、待办事项、快速便签启用 | 全新安装默认关闭快捷方式、快捷文本和模型雷达；升级保留既有开关与顺序，缺失的 `ModelRadar` 以关闭状态追加到列表末尾 |
 | 全局热键 | HotkeyBox | Ctrl+Alt+Space | 呼出/隐藏 MainWindow（可配置并持久化） |
 | 天气 API Key | TextBox | 空 | 和风天气 API Key |
 | 天气 API Host | TextBox | 空 | 与 API Key 配套的 `*.qweatherapi.com` 专属主机 |
-| 恢复默认布局 | Button | - | 重置 WidgetLayout 与 PanelWidth 并立即应用 |
+| 恢复默认设置 | Button | - | 恢复主题、透明度、字体和模块等默认值；面板宽高按当前显示器重新计算推荐值 |
 | 导出数据 | Button | - | 导出版本化 JSON 备份 |
 | 导入数据 | Button | - | 预检并导入 JSON 备份 |
 
@@ -601,8 +606,11 @@ Key: "City" → Value: "北京"（可选；为空表示未设置）
 Key: "AutoLocation" → Value: "true" | "false"
 Key: "Startup" → Value: "true" | "false"
 Key: "TopMost" → Value: "true" | "false"
-Key: "WindowOpacity" → Value: "0.85"
-Key: "PanelWidth" → Value: "360"
+Key: "WindowOpacity" → Value: "0.70"
+Key: "PanelWidth" → Value: "340"（示例；保存的是用户首选 DIP，不是工作区夹紧后的实际宽度）
+Key: "PanelHeight" → Value: "720"（示例；保存的是用户首选 DIP，不是工作区夹紧后的实际高度）
+Key: "FontScale" → Value: "1.0"
+Key: "DisplayTitle" → Value: "UniDesk"
 Key: "WidgetLayout" → Value: "{...json...}"
 Key: "ModuleSettings" → Value: "{...json...}"（包含模块 ID、启用状态和顺序；备份包含此设置，不包含模型雷达缓存）
 Key: "Hotkey" → Value: "Ctrl+Alt+Space"
@@ -679,7 +687,10 @@ Value: "C:\Path\To\UniDesk.exe"
 - 取消：关闭窗口且不保存修改
 - 保存失败：提示错误并保持窗口打开
 - 天气凭据发生变化时：先使用候选 Host／Key 验证；仅验证成功后持久化并关闭窗口，失败时保留原有效值和编辑状态
-- 恢复默认布局：重置 WidgetLayout 与 PanelWidth 为默认值并立即应用到 MainWindow
+- 全新数据库不预填固定 `PanelWidth`／`PanelHeight`；主窗口首次获得目标显示器工作区后计算推荐值、持久化，并立即应用。既有数据库中的宽高值必须原样保留。
+- 主窗口区分用户首选尺寸与当前实际尺寸：跨屏或工作区不足时只夹紧实际尺寸，不覆盖已保存首选值；返回较大工作区后恢复首选值。
+- 用户手动调整宽高后保持该偏好，不得在每次启动时重新按比例放大或缩小。
+- 适配当前屏幕：显式重新计算并保存当前显示器推荐宽高；恢复默认设置也使用同一推荐算法。
 
 ---
 
@@ -883,75 +894,96 @@ CREATE TABLE Settings (
 
 ## UI/UX 设计
 
-### 设计系统
+### Calm Glass 设计系统
 
-#### 颜色方案
+该设计系统以“中性玻璃底面、单一强调色、清晰字体角色、低噪声交互”为准则。参考站点的字体分工、宽松行距和细边框只作为设计输入，不复制其绿色品牌、网页英雄区、终端装饰或卡片上浮效果。
 
-**浅色主题**
+#### 字体角色
+
+| Token | 字体与回退 | 基准字号／行高 | 用途 |
+|------|------------|---------------|------|
+| `DisplayFontFamily` | 内嵌 Space Grotesk；中文回退 Microsoft YaHei UI | 窗口标题 18/26、模块标题 14/20，Semibold | 品牌、窗口标题、模块标题 |
+| `BodyFontFamily` | Segoe UI Variable Text → Segoe UI → Microsoft YaHei UI | 正文 13/20，Regular | 菜单、设置、待办、说明文字 |
+| `DataFontFamily` | 内嵌 JetBrains Mono；中文回退 Microsoft YaHei UI | 12-13/18，Medium | 时间、温度、百分比、网络值、快捷键 |
+| `CaptionFontFamily` | `BodyFontFamily` | 11-12/17-18，Regular | 时间戳、状态、辅助说明 |
+
+- 仅打包必要的静态 TTF 字重和对应 SIL OFL 1.1 许可证，不引入字体 NuGet 包，也不打包完整中文字体。
+- `FontScale` 只缩放文字 Token；图标字体不随文字比例失真。所有固定高度控件必须在 1.18 倍字号下仍无裁剪。
+
+#### 语义颜色
+
+浅色中性基线为 `#EFF1F5`，主文字 `#4C4F69`，辅助文字 `#6C6F85`；深色中性基线为 `#1E1E2E`，主文字 `#CDD6F4`，辅助文字 `#A6ADC8`。实际窗口和卡片通过 Alpha 保留玻璃效果。
+
+所有色彩方案必须完整提供下列语义资源，而不是只修改窗口背景：
+
+```text
+WindowSurfaceBrush
+SecondarySurfaceBrush
+CardSurfaceBrush
+CardHoverBrush
+ControlSurfaceBrush
+PrimaryTextBrush
+SecondaryTextBrush
+MutedTextBrush
+AccentBrush
+AccentSoftBrush
+FocusRingBrush
+DividerBrush
+SuccessBrush
+WarningBrush
+DangerBrush
 ```
-主背景: #FFFFFF (或 #F7F7F7 毛玻璃)
-文本: #1A1A1A
-次文本: #5A5A5A
-分隔线: #E0E0E0
-强调: #0078D4 (Win11 蓝)
-成功: #107C10 (Win11 绿)
-警告: #FFB900 (Win11 黄)
-错误: #E74C3C (Win11 红)
+
+- 用户已有八套色彩方案及保存值保持兼容；方案色只映射到 Accent 及其派生状态。
+- 日历、完成态、逾期、优先级、删除区和弹窗不得保留与主题无关的直接颜色。
+- 设置窗口表单内容层必须保持足够遮罩，不能因主面板透明度降低而让后方内容穿透到影响阅读。
+
+#### 几何与间距
+
+| 元素 | 规格 |
+|------|------|
+| 窗口圆角 | 16 DIP |
+| 模块卡片圆角 | 12 DIP |
+| 输入框、按钮、导航项圆角 | 8 DIP |
+| 小状态块圆角 | 6 DIP；胶囊仅用于标签和状态 |
+| 主面板外边距／模块间距 | 12／10 DIP |
+| 模块／设置卡片内边距 | 14／20 DIP |
+| 导航项／按钮／输入控件基准高度 | 44／36／34 DIP |
+
+#### 交互状态
+
+- Hover：轻微提高背景对比度并显示强调边框。
+- Pressed：降低内容层透明度，不做整体缩放。
+- KeyboardFocus：使用 2 DIP `FocusRingBrush`；任何 `FocusVisualStyle={x:Null}` 都必须有等价替代。
+- Disabled：文字、图标和边框同时降级，仍可辨识控件边界。
+- 只允许 120-160ms 的颜色或透明度过渡；透明窗口上的模块不得使用位移、缩放、卡片上浮或逐卡片重阴影。
+
+### 自适应布局
+
+尺寸计算使用目标显示器工作区的 WPF DIP，不直接使用物理分辨率：
+
+```text
+RecommendedWidth  = min(340, WorkAreaWidth - 32)
+RecommendedHeight = min(roundTo20(clamp(WorkAreaHeight * 0.70, 560, 840)),
+                        WorkAreaHeight - 16)
+ActualWidth        = clamp(PreferredWidth, min(320, WorkAreaWidth - 32),
+                           min(520, WorkAreaWidth - 32))
+ActualHeight       = clamp(PreferredHeight, min(560, WorkAreaHeight - 16),
+                           WorkAreaHeight - 16)
 ```
 
-**深色主题**
-```
-主背景: #1E1E1E (或 #272727 毛玻璃)
-文本: #FFFFFF
-次文本: #A0A0A0
-分隔线: #3A3A3A
-强调: #40E0D0
-成功: #6BCF7F
-警告: #FFD56F
-错误: #F7630C
-```
-
-#### 排版
-- **标题**：16px, 600 weight (Semibold)
-- **卡片标题**：14px, 600 weight
-- **正文**：12px, 400 weight (Regular)
-- **小文本**：11px, 400 weight
-- **字体**：Segoe UI (系统默认)
-
-#### 间距
-- **卡片内边距**：12px
-- **卡片间距**：8px
-- **列表项间距**：4px
-- **按钮内边距**：8px 12px
-
-#### 圆角
-- **窗口**：8px
-- **卡片**：4px
-- **按钮/输入框**：4px
-- **小组件**：2px
-
-#### 阴影
-- **窗口**：Elevation 16 (半径 16px, 模糊 20px, Y 偏移 8px)
-- **卡片**：Elevation 4 (半径 8px, 模糊 8px, Y 偏移 2px)
-- **悬停效果**：Elevation 8
-
-### 响应式布局
-
-| 屏幕宽度 | 面板宽度 | 备注 |
-|---------|--------|------|
-| 1920px+ | 360px | 标准 |
-| 1440px | 320px | 平衡 |
-| < 1440px | 依然 360px | 可能覆盖任务栏 |
+- 模块行继续使用 `Auto`，统一由主面板滚动承接；不引入模块独立尺寸滑块或嵌套滚动。
+- 宽度上限维持 520 DIP；在模块没有响应式双列布局前不得仅为“自由度”扩大上限。
+- 跨显示器时重新计算实际边界并夹紧，但不得静默覆盖首选宽高。
 
 ### 动画设计
 
 | 动画 | 时长 | 效果 |
 |------|------|------|
-| 窗口出现 | 200ms | 从下方滑入 + 淡入 |
-| 折叠/展开 | 350ms | 宽度过渡 + 内容淡入/淡出 |
-| 悬停按钮 | 150ms | 背景色过渡 + 微微放大 |
-| 列表项删除 | 200ms | 滑出 + 淡出 |
-| 加载中 | 循环 | 旋转加载圆 |
+| 窗口出现 | 160ms | 淡入；不使用会改变窗口边界的位移 |
+| 折叠/展开 | 现有时序 | 保留宽度过渡与内容淡入/淡出，必须通过透明渲染回归 |
+| Hover／Pressed | 120-160ms | 仅颜色或透明度变化 |
+| 加载中 | 循环 | 保留旋转加载圆，并遵循现有取消与可见性逻辑 |
 
 ---
 
