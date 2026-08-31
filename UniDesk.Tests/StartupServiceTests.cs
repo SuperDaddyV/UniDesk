@@ -57,6 +57,41 @@ public class StartupServiceTests
         Assert.Equal(expected, actual);
     }
 
+    [Fact]
+    public void CanReplaceMissingRunKeyValue_ShouldOnlyAcceptDefinitelyMissingOwnedExecutable()
+    {
+        var testDirectory = Path.Combine(
+            Path.GetTempPath(),
+            $"unidesk-startup-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(testDirectory);
+        var existingExecutable = Path.Combine(testDirectory, "UniDesk.exe");
+        File.WriteAllText(existingExecutable, string.Empty);
+        var missingExecutable = Path.Combine(testDirectory, "removed", "UniDesk.exe");
+
+        try
+        {
+            Assert.True(StartupService.CanReplaceMissingRunKeyValue(
+                "UniDesk",
+                $"\"{missingExecutable}\""));
+            Assert.False(StartupService.CanReplaceMissingRunKeyValue(
+                "UniDesk",
+                $"\"{existingExecutable}\""));
+            Assert.False(StartupService.CanReplaceMissingRunKeyValue(
+                "UniDesk",
+                $"\"{Path.Combine(testDirectory, "removed", "Other.exe")}\""));
+            Assert.False(StartupService.CanReplaceMissingRunKeyValue(
+                "UniDesk",
+                "powershell.exe -File UniDesk.exe"));
+            Assert.False(StartupService.CanReplaceMissingRunKeyValue(
+                "Other",
+                $"\"{missingExecutable}\""));
+        }
+        finally
+        {
+            Directory.Delete(testDirectory, recursive: true);
+        }
+    }
+
     private sealed class NoOpNotificationService : INotificationService
     {
         public void ShowInfoMessage(string message) { }

@@ -327,6 +327,49 @@ public class InstallerHardwareComponentTests
     }
 
     [Fact]
+    public void Installer_DriveRootMustTerminateAncestorTraversalWithoutBlockingRegisteredUpgrade()
+    {
+        var script = File.ReadAllText(Path.Combine(ProjectRoot, "UniDesk.iss"));
+
+        Assert.Contains("function IsDriveRoot", script, StringComparison.Ordinal);
+
+        var missingStart = script.IndexOf("function IsMissingDirectoryPath", StringComparison.Ordinal);
+        var emptyStart = script.IndexOf("function IsDirectoryEmpty", missingStart, StringComparison.Ordinal);
+        var missingBody = script[missingStart..emptyStart];
+        Assert.Contains("if DirExists(CurrentPath) then", missingBody, StringComparison.Ordinal);
+
+        var ancestorStart = script.IndexOf(
+            "function ContainsReparsePointInExistingAncestorChain",
+            StringComparison.Ordinal);
+        var lockStart = script.IndexOf(
+            "procedure ReleaseApplicationPathLocks",
+            ancestorStart,
+            StringComparison.Ordinal);
+        var ancestorBody = script[ancestorStart..lockStart];
+        var driveRootBoundary = ancestorBody.IndexOf(
+            "if IsDriveRoot(CurrentPath) then",
+            StringComparison.Ordinal);
+        var directFind = ancestorBody.IndexOf(
+            "if not FindFirst(CurrentPath, FindRec) then",
+            StringComparison.Ordinal);
+        Assert.True(
+            driveRootBoundary >= 0 && directFind > driveRootBoundary,
+            "The verified drive root must terminate traversal before FindFirst is called on D:\\\\. ");
+
+        var nextStart = script.IndexOf("function NextButtonClick", StringComparison.Ordinal);
+        var pageChangedStart = script.IndexOf("procedure CurPageChanged", nextStart, StringComparison.Ordinal);
+        var nextBody = script[nextStart..pageChangedStart];
+        Assert.Contains(
+            "not IsSafeApplicationInstallTarget(WizardDirValue)",
+            nextBody,
+            StringComparison.Ordinal);
+        Assert.DoesNotContain(
+            "not IsSafeApplicationInstallTarget(ExpandConstant('{app}'))",
+            nextBody,
+            StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Installer_ShouldAllowSelectableAppDirectoryAndProtectSystemComponents()
     {
         var script = File.ReadAllText(Path.Combine(ProjectRoot, "UniDesk.iss"));
