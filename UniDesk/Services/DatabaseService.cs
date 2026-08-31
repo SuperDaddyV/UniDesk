@@ -1,4 +1,5 @@
 using Microsoft.Data.Sqlite;
+using System.Globalization;
 using System.IO;
 using UniDesk.Helpers;
 using UniDesk.Models;
@@ -10,14 +11,17 @@ public class DatabaseService : IDatabaseService
     private const string DatabaseVersion = "1.5";
     private readonly string _connectionString;
     private readonly string _initialLanguage;
+    private readonly IMonitorWorkAreaProvider _monitorWorkAreas;
 
     public DatabaseService(
         string? connectionString = null,
-        string? initialLanguage = null)
+        string? initialLanguage = null,
+        IMonitorWorkAreaProvider? monitorWorkAreas = null)
     {
         DirectoryHelper.EnsureDirectoriesExist();
         _connectionString = connectionString ?? $"Data Source={DirectoryHelper.DatabaseFile}";
         _initialLanguage = initialLanguage ?? ILocalizationService.DefaultLanguage;
+        _monitorWorkAreas = monitorWorkAreas ?? Win32MonitorWorkAreaProvider.Instance;
     }
 
     public async Task InitializeAsync()
@@ -216,11 +220,13 @@ public class DatabaseService : IDatabaseService
 
     private async Task InitializeDefaultSettingsAsync(SqliteConnection connection)
     {
+        var recommendedSize = PanelSizePolicy.GetRecommendedSize(
+            _monitorWorkAreas.GetForWindow(0).WorkArea);
         var defaultSettings = new Dictionary<string, string>
         {
             { "Theme", "System" },
             { "ColorScheme", "Taro" },
-            { "FollowSystemTheme", "False" },
+            { "FollowSystemTheme", "True" },
             { "ColorSchemeLight", "Taro" },
             { "ColorSchemeDark", "DarkGrey" },
             { "WindowOpacity", "0.70" },
@@ -228,7 +234,8 @@ public class DatabaseService : IDatabaseService
             { "Startup", "true" },
             { "AutoLocation", "true" },
             { "City", "" },
-            { "PanelWidth", "320" },
+            { "PanelWidth", recommendedSize.Width.ToString(CultureInfo.InvariantCulture) },
+            { "PanelHeight", recommendedSize.Height.ToString(CultureInfo.InvariantCulture) },
             { "WindowLocked", "false" },
             { "PanelCollapsed", "false" },
             { "WindowLeft", "" },

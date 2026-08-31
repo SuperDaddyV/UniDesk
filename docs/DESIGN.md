@@ -633,6 +633,8 @@ Key: "WeatherApiHost" → Value: "abc.example.qweatherapi.com"（仅允许官方
   └─ 立即应用新主题 + 保存到 Settings
 ```
 
+当前外观页以“跟随系统深浅色”开关和八套强调色方案实现上述行为：开启时，窗口底面随 Windows 在 `Light.xaml`／`Dark.xaml` 间切换，并分别使用用户选择的浅色模式／深色模式强调色；关闭时使用单一手动强调色，`DarkGrey` 与 `Black` 采用深色中性底面，其余方案采用浅色中性底面。该映射只决定中性明暗底面，不恢复整窗染色。
+
 #### 开机自启动实现
 使用 Windows 注册表：
 ```
@@ -918,6 +920,7 @@ CREATE TABLE Settings (
 
 ```text
 WindowSurfaceBrush
+SettingsSurfaceBrush
 SecondarySurfaceBrush
 CardSurfaceBrush
 CardHoverBrush
@@ -926,17 +929,21 @@ PrimaryTextBrush
 SecondaryTextBrush
 MutedTextBrush
 AccentBrush
+AccentForegroundBrush
 AccentSoftBrush
 FocusRingBrush
 DividerBrush
 SuccessBrush
 WarningBrush
 DangerBrush
+DangerForegroundBrush
 ```
 
 - 用户已有八套色彩方案及保存值保持兼容；方案色只映射到 Accent 及其派生状态。
+- 跟随系统时必须真实切换 Light／Dark 资源字典，不能只更换 Accent；全新安装默认开启跟随系统，升级保留既有开关值。
+- 强调色与危险色按钮必须使用对应前景 Token，不得假定同一个白色或深色前景能覆盖明暗主题。
 - 日历、完成态、逾期、优先级、删除区和弹窗不得保留与主题无关的直接颜色。
-- 设置窗口表单内容层必须保持足够遮罩，不能因主面板透明度降低而让后方内容穿透到影响阅读。
+- `SettingsSurfaceBrush` 使用近乎不透明的专用底面；设置窗口表单内容层不得继承主面板透明度，也不能让后方内容穿透到影响阅读。
 
 #### 几何与间距
 
@@ -969,11 +976,12 @@ RecommendedHeight = min(roundTo20(clamp(WorkAreaHeight * 0.70, 560, 840)),
 ActualWidth        = clamp(PreferredWidth, min(320, WorkAreaWidth - 32),
                            min(520, WorkAreaWidth - 32))
 ActualHeight       = clamp(PreferredHeight, min(560, WorkAreaHeight - 16),
-                           WorkAreaHeight - 16)
+                           min(1040, WorkAreaHeight - 16))
 ```
 
 - 模块行继续使用 `Auto`，统一由主面板滚动承接；不引入模块独立尺寸滑块或嵌套滚动。
 - 宽度上限维持 520 DIP；在模块没有响应式双列布局前不得仅为“自由度”扩大上限。
+- 高度上限维持 1040 DIP；高分屏滑块不得显示超过可保存首选值的虚假区间。
 - 跨显示器时重新计算实际边界并夹紧，但不得静默覆盖首选宽高。
 
 ### 动画设计

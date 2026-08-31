@@ -19,7 +19,9 @@ public partial class MainWindow : Window
     private readonly IMonitorWorkAreaProvider _monitorWorkAreas;
     private bool _suppressPositionSave;
     private bool _initialBoundsApplied;
-    private const double DefaultExpandedPanelHeight = 702;
+    private bool _isApplyingMonitorBounds;
+    private bool _isDragging;
+    private MonitorWorkArea? _currentMonitor;
     private const double CollapsedPanelHeight = 178;
     private const double MinimumCompactHeight = CollapsedPanelHeight;
     private const double WorkAreaMargin = 16;
@@ -46,6 +48,7 @@ public partial class MainWindow : Window
         DesktopWidgetWindowHelper.Configure(this);
 
         SourceInitialized += MainWindow_OnSourceInitialized;
+        LocationChanged += MainWindow_OnLocationChanged;
         _viewModel.PropertyChanged += ViewModel_OnPropertyChanged;
         _viewModel.Search.FocusRequested += Search_OnFocusRequested;
         _viewModel.TodoSearchResultActivated += ViewModel_OnTodoSearchResultActivated;
@@ -64,7 +67,8 @@ public partial class MainWindow : Window
 
     private void ViewModel_OnPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(MainWindowViewModel.IsPanelCollapsed))
+        if (e.PropertyName == nameof(MainWindowViewModel.IsPanelCollapsed) ||
+            e.PropertyName == nameof(MainWindowViewModel.PanelWidth))
         {
             ApplyPanelCollapseState();
         }
@@ -80,44 +84,62 @@ public partial class MainWindow : Window
 
     private void ApplyPanelCollapseState()
     {
-        var usableWorkAreaHeight = GetUsableWorkAreaHeight();
-        var expandedMinimumHeight = Math.Min(IWindowService.MinPanelHeight, usableWorkAreaHeight);
-        var expandedMaximumHeight = Math.Max(
-            expandedMinimumHeight,
-            Math.Min(IWindowService.MaxPanelHeight, usableWorkAreaHeight));
-        var targetHeight = _viewModel.IsPanelCollapsed
-            ? CollapsedPanelHeight
-            : Math.Clamp(_viewModel.PanelHeight, expandedMinimumHeight, expandedMaximumHeight);
-        MaxHeight = double.PositiveInfinity;
-        MinHeight = _viewModel.IsPanelCollapsed ? CollapsedPanelHeight : expandedMinimumHeight;
-        MaxHeight = _viewModel.IsPanelCollapsed ? CollapsedPanelHeight : expandedMaximumHeight;
-        Height = targetHeight;
-        ClampToVisibleWorkArea();
-        if (MainModulesGrid.RowDefinitions.Count == 0)
+        ApplyPanelCollapseState(_monitorWorkAreas.GetForWindow(
+            new WindowInteropHelper(this).Handle));
+    }
+
+    private void ApplyPanelCollapseState(MonitorWorkArea monitor, bool clampPosition = true)
+    {
+        if (_isApplyingMonitorBounds)
         {
             return;
         }
 
-        if (_viewModel.IsPanelCollapsed)
+        _currentMonitor = monitor;
+        _isApplyingMonitorBounds = true;
+        try
         {
-            MainModulesScrollViewer.Margin = new Thickness(16, 0, 16, 8);
-            foreach (var row in MainModulesGrid.RowDefinitions)
+            var actualSize = PanelSizePolicy.ClampActualSize(
+                _viewModel.PanelWidth,
+                _viewModel.PanelHeight,
+                monitor.WorkArea);
+            ApplyPanelSizeConstraints(monitor);
+            Width = actualSize.Width;
+            Height = _viewModel.IsPanelCollapsed ? CollapsedPanelHeight : actualSize.Height;
+            if (clampPosition)
             {
-                row.Height = new GridLength(0);
+                ClampToVisibleWorkArea(monitor);
+            }
+            if (MainModulesGrid.RowDefinitions.Count == 0)
+            {
+                return;
             }
 
-            MainModulesGrid.RowDefinitions[0].Height = GridLength.Auto;
-        }
-        else
-        {
-            MainModulesScrollViewer.Margin = new Thickness(12, 0, 12, 10);
-        }
+            if (_viewModel.IsPanelCollapsed)
+            {
+                MainModulesScrollViewer.Margin = new Thickness(16, 0, 16, 8);
+                foreach (var row in MainModulesGrid.RowDefinitions)
+                {
+                    row.Height = new GridLength(0);
+                }
 
-        ApplyModuleLayout();
+                MainModulesGrid.RowDefinitions[0].Height = GridLength.Auto;
+            }
+            else
+            {
+                MainModulesScrollViewer.Margin = new Thickness(12, 0, 12, 10);
+            }
 
-        if (!_suppressPositionSave)
+            ApplyModuleLayout();
+
+            if (clampPosition && !_suppressPositionSave && !_isDragging)
+            {
+                SaveWindowPosition();
+            }
+        }
+        finally
         {
-            SaveWindowPosition();
+            _isApplyingMonitorBounds = false;
         }
     }
 
@@ -126,14 +148,11 @@ public partial class MainWindow : Window
         _suppressPositionSave = true;
         try
         {
-            Width = _viewModel.PanelWidth;
             var savedPosition = _viewModel.GetSavedWindowPosition();
             var savedPixelPosition = _viewModel.GetSavedWindowPixelPosition();
             var requestedHeight = _viewModel.IsPanelCollapsed
                 ? CollapsedPanelHeight
-                : _viewModel.PanelHeight <= 0
-                    ? DefaultExpandedPanelHeight
-                    : _viewModel.PanelHeight;
+                : _viewModel.PanelHeight;
             MonitorWorkArea targetMonitor;
             if (savedPixelPosition is { } pixelPosition)
             {
@@ -155,16 +174,20 @@ public partial class MainWindow : Window
                 Left = targetMonitor.WorkArea.Right - Width - 20;
             }
 
-            Height = _viewModel.IsPanelCollapsed
-                ? CollapsedPanelHeight
-                : Math.Min(requestedHeight, GetUsableWorkAreaHeight(targetMonitor));
+            ApplyPanelSizeConstraints(targetMonitor);
+            var actualSize = PanelSizePolicy.ClampActualSize(
+                _viewModel.PanelWidth,
+                requestedHeight,
+                targetMonitor.WorkArea);
+            Width = actualSize.Width;
+            Height = _viewModel.IsPanelCollapsed ? CollapsedPanelHeight : actualSize.Height;
             if (savedPosition == null && savedPixelPosition == null)
             {
                 Top = targetMonitor.WorkArea.Top + (targetMonitor.WorkArea.Height - Height) / 2;
             }
 
             ClampToVisibleWorkArea(targetMonitor);
-            ApplyPanelCollapseState();
+            ApplyPanelCollapseState(targetMonitor);
         }
         finally
         {
@@ -178,6 +201,22 @@ public partial class MainWindow : Window
         _viewModel.ApplyWindowSettings();
         _clipboardMonitorService.Start(this);
         ApplyModuleLayout();
+    }
+
+    private void MainWindow_OnLocationChanged(object? sender, EventArgs e)
+    {
+        if (!_initialBoundsApplied || _suppressPositionSave)
+        {
+            return;
+        }
+
+        var monitor = _monitorWorkAreas.GetForWindow(new WindowInteropHelper(this).Handle);
+        if (_currentMonitor is { } currentMonitor && currentMonitor == monitor)
+        {
+            return;
+        }
+
+        ApplyPanelCollapseState(monitor, clampPosition: !_isDragging);
     }
 
     private void SearchButton_OnClick(object sender, RoutedEventArgs e) => OpenSearch();
@@ -343,8 +382,7 @@ public partial class MainWindow : Window
             return;
         }
 
-        DragMove();
-        SaveWindowPosition();
+        DragMoveAndFinalize();
         e.Handled = true;
     }
 
@@ -364,11 +402,25 @@ public partial class MainWindow : Window
             return;
         }
 
-        DragMove();
-        SaveWindowPosition();
+        DragMoveAndFinalize();
     }
 
     private void MinimizeButton_OnClick(object sender, RoutedEventArgs e) => Hide();
+
+    private void DragMoveAndFinalize()
+    {
+        _isDragging = true;
+        try
+        {
+            DragMove();
+        }
+        finally
+        {
+            _isDragging = false;
+            var monitor = _monitorWorkAreas.GetForWindow(new WindowInteropHelper(this).Handle);
+            ApplyPanelCollapseState(monitor);
+        }
+    }
 
     private void OnScrollViewerPreviewMouseWheel(object sender, MouseWheelEventArgs e)
     {
@@ -443,6 +495,25 @@ public partial class MainWindow : Window
         Top = clamped.Top;
         Width = clamped.Width;
         Height = clamped.Height;
+    }
+
+    private void ApplyPanelSizeConstraints(MonitorWorkArea monitor)
+    {
+        var bounds = PanelSizePolicy.GetBounds(monitor.WorkArea);
+        MaxWidth = double.PositiveInfinity;
+        MinWidth = bounds.MinWidth;
+        MaxWidth = bounds.MaxWidth;
+
+        var usableWorkAreaHeight = GetUsableWorkAreaHeight(monitor);
+        var expandedMinimumHeight = Math.Min(
+            IWindowService.MinPanelHeight,
+            Math.Min(usableWorkAreaHeight, bounds.MaxHeight));
+        var expandedMaximumHeight = Math.Max(
+            expandedMinimumHeight,
+            Math.Min(IWindowService.MaxPanelHeight, bounds.MaxHeight));
+        MaxHeight = double.PositiveInfinity;
+        MinHeight = _viewModel.IsPanelCollapsed ? CollapsedPanelHeight : expandedMinimumHeight;
+        MaxHeight = _viewModel.IsPanelCollapsed ? CollapsedPanelHeight : expandedMaximumHeight;
     }
 
     private double GetUsableWorkAreaHeight() =>

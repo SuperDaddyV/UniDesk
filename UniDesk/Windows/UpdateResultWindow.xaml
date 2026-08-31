@@ -12,8 +12,8 @@
         MaxWidth="420"
         KeyDown="Window_OnKeyDown">
 
-    <Border Background="#F5FFFFFF"
-            BorderBrush="#E2E8F0"
+    <Border Background="{DynamicResource WindowSurfaceBrush}"
+            BorderBrush="{DynamicResource DividerBrush}"
             BorderThickness="1"
             CornerRadius="12"
             Padding="16,14">
@@ -21,7 +21,7 @@
             <TextBlock Text="{DynamicResource Update.AvailableTitle}"
                        FontSize="14"
                        FontWeight="SemiBold"
-                       Foreground="#1E293B"
+                       Foreground="{DynamicResource PrimaryTextBrush}"
                        Margin="0,0,0,10"/>
             <Grid Margin="0,0,0,8">
                 <Grid.ColumnDefinitions>
@@ -30,12 +30,12 @@
                 </Grid.ColumnDefinitions>
                 <TextBlock Text="{DynamicResource Update.CurrentVersionLabel}"
                            FontSize="12"
-                           Foreground="#64748B"
+                           Foreground="{DynamicResource SecondaryTextBrush}"
                            Margin="0,0,8,0"/>
                 <TextBlock x:Name="CurrentVersionText"
                            Grid.Column="1"
                            FontSize="12"
-                           Foreground="#1E293B"/>
+                           Foreground="{DynamicResource PrimaryTextBrush}"/>
             </Grid>
             <Grid Margin="0,0,0,8">
                 <Grid.ColumnDefinitions>
@@ -44,25 +44,25 @@
                 </Grid.ColumnDefinitions>
                 <TextBlock Text="{DynamicResource Update.LatestVersionLabel}"
                            FontSize="12"
-                           Foreground="#64748B"
+                           Foreground="{DynamicResource SecondaryTextBrush}"
                            Margin="0,0,8,0"/>
                 <TextBlock x:Name="LatestVersionText"
                            Grid.Column="1"
                            FontSize="12"
                            FontWeight="SemiBold"
-                           Foreground="#1E293B"/>
+                           Foreground="{DynamicResource PrimaryTextBrush}"/>
             </Grid>
             <TextBlock x:Name="PublishedAtText"
                        FontSize="11"
-                       Foreground="#64748B"
+                       Foreground="{DynamicResource SecondaryTextBrush}"
                        Margin="0,0,0,10"/>
             <TextBlock Text="{DynamicResource Update.ReleaseNotesLabel}"
                        FontSize="12"
                        FontWeight="SemiBold"
-                       Foreground="#1E293B"
+                       Foreground="{DynamicResource PrimaryTextBrush}"
                        Margin="0,0,0,6"/>
-            <Border Background="#F8FAFC"
-                    BorderBrush="#E2E8F0"
+            <Border Background="{DynamicResource CardSurfaceBrush}"
+                    BorderBrush="{DynamicResource DividerBrush}"
                     BorderThickness="1"
                     CornerRadius="8"
                     Padding="10"
@@ -73,7 +73,7 @@
                     <TextBlock x:Name="ReleaseNotesText"
                                TextWrapping="Wrap"
                                FontSize="12"
-                               Foreground="#334155"/>
+                               Foreground="{DynamicResource PrimaryTextBrush}"/>
                 </ScrollViewer>
             </Border>
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
@@ -83,9 +83,9 @@
                         Margin="0,0,8,0"
                         FontSize="12"
                         Cursor="Hand"
-                        Background="#F8FAFC"
-                        Foreground="#64748B"
-                        BorderBrush="#E2E8F0"
+                        Background="{DynamicResource ControlSurfaceBrush}"
+                        Foreground="{DynamicResource SecondaryTextBrush}"
+                        BorderBrush="{DynamicResource DividerBrush}"
                         BorderThickness="1"
                         Click="LaterButton_OnClick">
                     <Button.Template>
@@ -106,8 +106,8 @@
                         FontSize="12"
                         FontWeight="SemiBold"
                         Cursor="Hand"
-                        Foreground="White"
-                        Background="#3B82F6"
+                        Foreground="{DynamicResource AccentForegroundBrush}"
+                        Background="{DynamicResource AccentBrush}"
                         BorderThickness="0"
                         Click="OpenButton_OnClick">
                     <Button.Template>

@@ -1,4 +1,5 @@
 using System.Windows;
+using System.Windows.Interop;
 using UniDesk.Helpers;
 
 namespace UniDesk.Services;
@@ -6,6 +7,12 @@ namespace UniDesk.Services;
 public class WindowService : IWindowService
 {
     private MainWindow? _mainWindow;
+    private readonly IMonitorWorkAreaProvider _monitorWorkAreas;
+
+    public WindowService(IMonitorWorkAreaProvider? monitorWorkAreas = null)
+    {
+        _monitorWorkAreas = monitorWorkAreas ?? Win32MonitorWorkAreaProvider.Instance;
+    }
 
     public void Initialize(MainWindow mainWindow)
     {
@@ -60,13 +67,17 @@ public class WindowService : IWindowService
     public void SetWidth(double width)
     {
         if (_mainWindow == null) return;
-        _mainWindow.Width = ClampPanelWidth(width);
+        _mainWindow.Width = PanelSizePolicy.ClampActualWidth(
+            width,
+            GetCurrentMonitor().WorkArea);
     }
 
     public void SetHeight(double height)
     {
         if (_mainWindow == null) return;
-        _mainWindow.Height = ClampPanelHeight(height);
+        _mainWindow.Height = PanelSizePolicy.ClampActualHeight(
+            height,
+            GetCurrentMonitor().WorkArea);
     }
 
     public void AnimateWidth(double width, Action? onCompleted = null)
@@ -80,7 +91,7 @@ public class WindowService : IWindowService
         UiAnimationHelper.AnimateDouble(
             _mainWindow,
             Window.WidthProperty,
-            ClampPanelWidth(width),
+            PanelSizePolicy.ClampActualWidth(width, GetCurrentMonitor().WorkArea),
             onCompleted: onCompleted);
     }
 
@@ -103,7 +114,7 @@ public class WindowService : IWindowService
     {
         if (_mainWindow == null) return;
 
-        var workArea = SystemParameters.WorkArea;
+        var workArea = GetCurrentMonitor().WorkArea;
         const double snapThreshold = 20;
 
         if (_mainWindow.Left < workArea.Left + snapThreshold)
@@ -125,17 +136,7 @@ public class WindowService : IWindowService
         }
     }
 
-    private static double ClampPanelWidth(double width)
-    {
-        if (width < IWindowService.MinPanelWidth) return IWindowService.MinPanelWidth;
-        if (width > IWindowService.MaxPanelWidth) return IWindowService.MaxPanelWidth;
-        return width;
-    }
-
-    private static double ClampPanelHeight(double height)
-    {
-        if (height < IWindowService.MinPanelHeight) return IWindowService.MinPanelHeight;
-        if (height > IWindowService.MaxPanelHeight) return IWindowService.MaxPanelHeight;
-        return height;
-    }
+    private MonitorWorkArea GetCurrentMonitor() =>
+        _monitorWorkAreas.GetForWindow(
+            _mainWindow == null ? 0 : new WindowInteropHelper(_mainWindow).Handle);
 }

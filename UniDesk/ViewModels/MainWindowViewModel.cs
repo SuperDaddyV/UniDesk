@@ -30,6 +30,8 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
     private readonly ITodoBackupService _todoBackupService;
     private readonly ISensorDiagnosticsService _sensorDiagnosticsService;
     private readonly IHardwareMonitoringMaintenanceService _hardwareMonitoringMaintenanceService;
+    private readonly ISystemThemeService _systemThemeService;
+    private readonly IMonitorWorkAreaProvider _monitorWorkAreas;
     private bool _disposed;
     private bool _isLoadingModuleSettings;
 
@@ -117,7 +119,9 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         ISystemMetricsMonitor systemMetricsMonitor,
         IClipboardMonitorService clipboardMonitorService,
         IModelRadarService modelRadarService,
-        ISearchService searchService)
+        ISearchService searchService,
+        ISystemThemeService systemThemeService,
+        IMonitorWorkAreaProvider? monitorWorkAreas = null)
     {
         _notificationService = notificationService;
         _settingsService = settingsService;
@@ -132,6 +136,8 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         _todoBackupService = todoBackupService;
         _sensorDiagnosticsService = sensorDiagnosticsService;
         _hardwareMonitoringMaintenanceService = hardwareMonitoringMaintenanceService;
+        _systemThemeService = systemThemeService;
+        _monitorWorkAreas = monitorWorkAreas ?? Win32MonitorWorkAreaProvider.Instance;
         _localizationService.LanguageChanged += LocalizationService_OnLanguageChanged;
 
         HardwareMonitor = new HardwareMonitorViewModel(systemMetricsMonitor, localizationService);
@@ -188,15 +194,18 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         WindowOpacity = _settingsService.GetSetting("WindowOpacity", 0.70);
         IsWindowLocked = _settingsService.GetSetting("WindowLocked", false);
         IsPanelCollapsed = _settingsService.GetSetting("PanelCollapsed", false);
-        var savedPanelWidth = _settingsService.GetSetting("PanelWidth", 320.0);
-        if (savedPanelWidth < IWindowService.MinPanelWidth) savedPanelWidth = IWindowService.MinPanelWidth;
-        if (savedPanelWidth > IWindowService.MaxPanelWidth) savedPanelWidth = IWindowService.MaxPanelWidth;
-        PanelWidth = savedPanelWidth;
-
-        var savedPanelHeight = _settingsService.GetSetting("PanelHeight", 702.0);
-        if (savedPanelHeight < IWindowService.MinPanelHeight) savedPanelHeight = IWindowService.MinPanelHeight;
-        if (savedPanelHeight > IWindowService.MaxPanelHeight) savedPanelHeight = IWindowService.MaxPanelHeight;
-        PanelHeight = savedPanelHeight;
+        var recommendedSize = PanelSizePolicy.GetRecommendedSize(
+            _monitorWorkAreas.GetForWindow(0).WorkArea);
+        var savedPanelWidth = ReadPreferredPanelSize(
+            "PanelWidth",
+            recommendedSize.Width,
+            recommendedSize.Width);
+        var savedPanelHeight = ReadPreferredPanelSize(
+            "PanelHeight",
+            recommendedSize.Height,
+            recommendedSize.Height);
+        PanelWidth = PanelSizePolicy.ClampPreferredWidth(savedPanelWidth);
+        PanelHeight = PanelSizePolicy.ClampPreferredHeight(savedPanelHeight);
 
         var savedFontScale = _settingsService.GetSetting("FontScale", 1.0);
         if (savedFontScale < 0.9) savedFontScale = 0.9;
@@ -205,6 +214,22 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
 
         DisplayTitle = NormalizeDisplayTitle(_settingsService.GetValue("DisplayTitle", "UniDesk"));
         LoadModuleSettings();
+    }
+
+    private double ReadPreferredPanelSize(
+        string key,
+        double fallback,
+        double missingSettingValue)
+    {
+        var rawValue = _settingsService.GetSetting(key);
+        if (double.TryParse(rawValue, NumberStyles.Float, CultureInfo.InvariantCulture, out var value) &&
+            double.IsFinite(value))
+        {
+            return value;
+        }
+
+        _settingsService.SetValue(key, missingSettingValue.ToString(CultureInfo.InvariantCulture));
+        return fallback;
     }
 
     private void LoadModuleSettings()
@@ -320,8 +345,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
 
     public void UpdatePanelWidth(double width)
     {
-        if (width < IWindowService.MinPanelWidth) width = IWindowService.MinPanelWidth;
-        if (width > IWindowService.MaxPanelWidth) width = IWindowService.MaxPanelWidth;
+        width = PanelSizePolicy.ClampPreferredWidth(width);
         PanelWidth = width;
         _settingsService.SetValue("PanelWidth", width.ToString(CultureInfo.InvariantCulture));
         _windowService.SetWidth(width);
@@ -329,8 +353,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
 
     public void UpdatePanelHeight(double height)
     {
-        if (height < IWindowService.MinPanelHeight) height = IWindowService.MinPanelHeight;
-        if (height > IWindowService.MaxPanelHeight) height = IWindowService.MaxPanelHeight;
+        height = PanelSizePolicy.ClampPreferredHeight(height);
         PanelHeight = height;
         _settingsService.SetValue("PanelHeight", height.ToString(CultureInfo.InvariantCulture));
         if (!IsPanelCollapsed)
@@ -487,8 +510,10 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
                 _todoBackupService,
                 _quickTextService,
                 this,
+                systemThemeService: _systemThemeService,
                 sensorDiagnosticsService: _sensorDiagnosticsService,
-                hardwareMonitoringMaintenanceService: _hardwareMonitoringMaintenanceService);
+                hardwareMonitoringMaintenanceService: _hardwareMonitoringMaintenanceService,
+                monitorWorkAreas: _monitorWorkAreas);
 
             var settingsWindow = new SettingsWindow(viewModel, ownerWidth, ownerHeight);
             if (owner != null)
@@ -511,10 +536,6 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         {
             return;
         }
-
-        var scheme = AppColorSchemeCatalog.NormalizeId(
-            _settingsService.GetValue("ColorScheme", _settingsService.GetValue("Theme", AppColorSchemeCatalog.DefaultSchemeId)));
-        AppColorSchemeCatalog.Apply(scheme);
 
         var savedViewModel = viewModel;
         _ = savedViewModel.CompleteSaveFollowUpAsync(

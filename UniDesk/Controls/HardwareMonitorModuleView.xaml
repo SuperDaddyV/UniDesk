@@ -48,6 +48,7 @@
                             HorizontalAlignment="Center">
                     <TextBlock Text="{Binding SystemCpuUsageText}"
                                ToolTip="{Binding SystemCpuUsageToolTip}"
+                               FontFamily="{DynamicResource DataFontFamily}"
                                FontSize="{Binding DataContext.FontScale, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource ScaledFontSizeConverter}, ConverterParameter=13}"
                                FontWeight="SemiBold"
                                LineHeight="16"
@@ -56,6 +57,7 @@
                                Foreground="{DynamicResource PrimaryTextBrush}"/>
                     <TextBlock Text="{Binding SystemCpuTemperatureText}"
                                ToolTip="{Binding SystemCpuTemperatureToolTip}"
+                               FontFamily="{DynamicResource DataFontFamily}"
                                FontSize="{Binding DataContext.FontScale, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource ScaledFontSizeConverter}, ConverterParameter=10}"
                                LineHeight="12"
                                Margin="0,2,0,0"
@@ -69,6 +71,7 @@
                             VerticalAlignment="Top"
                             HorizontalAlignment="Center">
                     <TextBlock Text="{Binding SystemMemoryUsageText}"
+                               FontFamily="{DynamicResource DataFontFamily}"
                                FontSize="{Binding DataContext.FontScale, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource ScaledFontSizeConverter}, ConverterParameter=13}"
                                FontWeight="SemiBold"
                                LineHeight="16"
@@ -90,6 +93,7 @@
                             HorizontalAlignment="Center">
                     <TextBlock Text="{Binding SystemGpuUsageText}"
                                ToolTip="{Binding SystemGpuUsageToolTip}"
+                               FontFamily="{DynamicResource DataFontFamily}"
                                FontSize="{Binding DataContext.FontScale, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource ScaledFontSizeConverter}, ConverterParameter=13}"
                                FontWeight="SemiBold"
                                LineHeight="16"
@@ -98,6 +102,7 @@
                                Foreground="{DynamicResource PrimaryTextBrush}"/>
                     <TextBlock Text="{Binding SystemGpuTemperatureText}"
                                ToolTip="{Binding SystemGpuTemperatureToolTip}"
+                               FontFamily="{DynamicResource DataFontFamily}"
                                FontSize="{Binding DataContext.FontScale, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource ScaledFontSizeConverter}, ConverterParameter=10}"
                                LineHeight="12"
                                Margin="0,2,0,0"
@@ -139,6 +144,7 @@
                         <TextBlock x:Name="NetworkReceivedValueText"
                                    Grid.Column="1"
                                    Text="{Binding SystemNetworkReceivedText}"
+                                   FontFamily="{DynamicResource DataFontFamily}"
                                    Width="78"
                                    TextAlignment="Center"
                                    FontSize="{Binding DataContext.FontScale, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource ScaledFontSizeConverter}, ConverterParameter=10.5}"
@@ -166,6 +172,7 @@
                         <TextBlock x:Name="NetworkSentValueText"
                                    Grid.Column="1"
                                    Text="{Binding SystemNetworkSentText}"
+                                   FontFamily="{DynamicResource DataFontFamily}"
                                    Width="78"
                                    TextAlignment="Center"
                                    FontSize="{Binding DataContext.FontScale, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource ScaledFontSizeConverter}, ConverterParameter=10.5}"

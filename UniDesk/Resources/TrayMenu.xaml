@@ -1,16 +1,8 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
-    <SolidColorBrush x:Key="TrayMenuBackground" Color="#F2FFFFFF"/>
-    <SolidColorBrush x:Key="TrayMenuBorder" Color="#E2E8F0"/>
-    <SolidColorBrush x:Key="TrayMenuText" Color="#334155"/>
-    <SolidColorBrush x:Key="TrayMenuTextMuted" Color="#94A3B8"/>
-    <SolidColorBrush x:Key="TrayMenuHover" Color="#F1F5F9"/>
-    <SolidColorBrush x:Key="TrayMenuDangerHover" Color="#FEF2F2"/>
-    <SolidColorBrush x:Key="TrayMenuDangerText" Color="#DC2626"/>
-
     <Style x:Key="TrayMenuItemStyle" TargetType="MenuItem">
-        <Setter Property="Foreground" Value="{StaticResource TrayMenuText}"/>
+        <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
         <Setter Property="FontSize" Value="12"/>
         <Setter Property="Padding" Value="0"/>
         <Setter Property="Template">
@@ -27,10 +19,13 @@
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsHighlighted" Value="True">
-                            <Setter TargetName="ItemBorder" Property="Background" Value="{StaticResource TrayMenuHover}"/>
+                            <Setter TargetName="ItemBorder" Property="Background" Value="{DynamicResource CardHoverBrush}"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Foreground" Value="{DynamicResource MutedTextBrush}"/>
                         </Trigger>
                         <DataTrigger Binding="{Binding Tag, RelativeSource={RelativeSource Self}}" Value="Danger">
-                            <Setter Property="Foreground" Value="{StaticResource TrayMenuDangerText}"/>
+                            <Setter Property="Foreground" Value="{DynamicResource DangerBrush}"/>
                             <Setter TargetName="ItemBorder" Property="Background" Value="Transparent"/>
                         </DataTrigger>
                         <MultiDataTrigger>
@@ -38,7 +33,8 @@
                                 <Condition Binding="{Binding Tag, RelativeSource={RelativeSource Self}}" Value="Danger"/>
                                 <Condition Binding="{Binding IsHighlighted, RelativeSource={RelativeSource Self}}" Value="True"/>
                             </MultiDataTrigger.Conditions>
-                            <Setter TargetName="ItemBorder" Property="Background" Value="{StaticResource TrayMenuDangerHover}"/>
+                            <Setter TargetName="ItemBorder" Property="Background" Value="{DynamicResource DangerBrush}"/>
+                            <Setter Property="Foreground" Value="{DynamicResource DangerForegroundBrush}"/>
                         </MultiDataTrigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
@@ -54,8 +50,8 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ContextMenu">
-                    <Border Background="{StaticResource TrayMenuBackground}"
-                            BorderBrush="{StaticResource TrayMenuBorder}"
+                    <Border Background="{DynamicResource SecondarySurfaceBrush}"
+                            BorderBrush="{DynamicResource DividerBrush}"
                             BorderThickness="1"
                             CornerRadius="12"
                             Padding="4"
@@ -78,7 +74,7 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Separator">
-                    <Border Height="1" Background="{StaticResource TrayMenuBorder}"/>
+                    <Border Height="1" Background="{DynamicResource DividerBrush}"/>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>

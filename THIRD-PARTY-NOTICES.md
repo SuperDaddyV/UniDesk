@@ -79,6 +79,19 @@ provided by `HidSharp-Apache-2.0.txt` and
 UniDesk uses the unmodified icons and provides visible QWeather attribution in
 the expanded and collapsed weather displays.
 
+## Space Grotesk and JetBrains Mono
+
+- Space Grotesk is distributed under the SIL Open Font License 1.1.
+  Upstream: https://github.com/floriankarsten/space-grotesk
+  License: `installer-assets/licenses/SpaceGrotesk-OFL-1.1.txt`.
+- JetBrains Mono is distributed under the SIL Open Font License 1.1.
+  Upstream: https://github.com/JetBrains/JetBrainsMono
+  License: `installer-assets/licenses/JetBrainsMono-OFL-1.1.txt`.
+
+UniDesk embeds only the required static TTF files in its WPF resources and
+does not install either font system-wide. Chinese glyphs use the configured
+Windows fallback families.
+
 ## PawnIO 2.1.0.0
 
 - Project: https://github.com/namazso/PawnIO

@@ -12,8 +12,8 @@
         MaxWidth="320"
         KeyDown="Window_OnKeyDown">
 
-    <Border Background="#F5FFFFFF"
-            BorderBrush="#E2E8F0"
+    <Border Background="{DynamicResource WindowSurfaceBrush}"
+            BorderBrush="{DynamicResource DividerBrush}"
             BorderThickness="1"
             CornerRadius="12"
             Padding="16,14">
@@ -21,12 +21,12 @@
             <TextBlock x:Name="TitleText"
                        FontSize="13"
                        FontWeight="SemiBold"
-                       Foreground="#1E293B"
+                       Foreground="{DynamicResource PrimaryTextBrush}"
                        Margin="0,0,0,8"/>
             <TextBlock x:Name="MessageText"
                        TextWrapping="Wrap"
                        FontSize="12"
-                       Foreground="#64748B"
+                       Foreground="{DynamicResource SecondaryTextBrush}"
                        Margin="0,0,0,14"/>
             <StackPanel Orientation="Horizontal"
                         HorizontalAlignment="Right">
@@ -37,9 +37,9 @@
                         Margin="0,0,8,0"
                         FontSize="12"
                         Cursor="Hand"
-                        Background="#F8FAFC"
-                        Foreground="#64748B"
-                        BorderBrush="#E2E8F0"
+                        Background="{DynamicResource ControlSurfaceBrush}"
+                        Foreground="{DynamicResource SecondaryTextBrush}"
+                        BorderBrush="{DynamicResource DividerBrush}"
                         BorderThickness="1"
                         Click="CancelButton_OnClick">
                     <Button.Template>
@@ -60,8 +60,8 @@
                         FontSize="12"
                         FontWeight="SemiBold"
                         Cursor="Hand"
-                        Foreground="White"
-                        Background="#3B82F6"
+                        Foreground="{DynamicResource AccentForegroundBrush}"
+                        Background="{DynamicResource AccentBrush}"
                         BorderThickness="0"
                         Click="ConfirmButton_OnClick">
                     <Button.Template>

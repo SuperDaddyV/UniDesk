@@ -43,6 +43,7 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Resource Include="icon\QWeather-Icons-1.8.0\font\fonts\qweather-icons.ttf" />
+    <Resource Include="Resources\Fonts\*.ttf" />
     <Content Include="icon\QWeather-Icons-1.8.0\font\qweather-icons.css">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>

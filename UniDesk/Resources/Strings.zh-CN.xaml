@@ -230,6 +230,7 @@
     <sys:String x:Key="Settings.WindowOpacity">窗口透明度</sys:String>
     <sys:String x:Key="Settings.PanelWidth">面板宽度</sys:String>
     <sys:String x:Key="Settings.PanelHeight">面板高度</sys:String>
+    <sys:String x:Key="Settings.FitCurrentScreen">适应当前屏幕</sys:String>
     <sys:String x:Key="Settings.FontSize">字体大小</sys:String>
     <sys:String x:Key="Settings.FontSmall">小</sys:String>
     <sys:String x:Key="Settings.FontNormal">标准</sys:String>

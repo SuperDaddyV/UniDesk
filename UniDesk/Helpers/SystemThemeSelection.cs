@@ -19,4 +19,33 @@ public static class SystemThemeSelection
             followSystem
                 ? isSystemLight ? lightScheme : darkScheme
                 : manualScheme);
+
+    public static bool ShouldUseLightSurface(
+        bool followSystem,
+        bool isSystemLight,
+        string? manualScheme)
+    {
+        if (followSystem)
+        {
+            return isSystemLight;
+        }
+
+        if (string.Equals(manualScheme, "System", StringComparison.OrdinalIgnoreCase))
+        {
+            return isSystemLight;
+        }
+
+        if (string.Equals(manualScheme, "Dark", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        if (string.Equals(manualScheme, "Light", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        var normalized = AppColorSchemeCatalog.NormalizeId(manualScheme);
+        return normalized is not "DarkGrey" and not "Black";
+    }
 }

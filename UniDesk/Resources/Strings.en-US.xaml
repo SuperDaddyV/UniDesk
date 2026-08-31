@@ -230,6 +230,7 @@
     <sys:String x:Key="Settings.WindowOpacity">Window opacity</sys:String>
     <sys:String x:Key="Settings.PanelWidth">Panel width</sys:String>
     <sys:String x:Key="Settings.PanelHeight">Panel height</sys:String>
+    <sys:String x:Key="Settings.FitCurrentScreen">Fit current screen</sys:String>
     <sys:String x:Key="Settings.FontSize">Font size</sys:String>
     <sys:String x:Key="Settings.FontSmall">Small</sys:String>
     <sys:String x:Key="Settings.FontNormal">Normal</sys:String>

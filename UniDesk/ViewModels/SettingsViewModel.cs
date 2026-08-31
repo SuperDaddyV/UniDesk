@@ -7,6 +7,7 @@ using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Interop;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using UniDesk.Hardware.Contracts;
@@ -35,9 +36,11 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     private readonly ISystemThemeService? _systemThemeService;
     private readonly ISensorDiagnosticsService? _sensorDiagnosticsService;
     private readonly IHardwareMonitoringMaintenanceService? _hardwareMonitoringMaintenanceService;
+    private readonly IMonitorWorkAreaProvider _monitorWorkAreas;
 
     private readonly Dictionary<string, string> _originalSettings = new();
     private bool _isLoading;
+    private bool _isUpdatingPanelSlider;
 
     [ObservableProperty]
     private string _selectedColorScheme = AppColorSchemeCatalog.DefaultSchemeId;
@@ -62,6 +65,12 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
 
     [ObservableProperty]
     private double _panelHeight;
+
+    [ObservableProperty]
+    private double _panelWidthSliderValue;
+
+    [ObservableProperty]
+    private double _panelHeightSliderValue;
 
     [ObservableProperty]
     private double _fontScale = 1.0;
@@ -143,6 +152,14 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         "Settings.CurrentCountFormat",
         ClipboardHistoryMaxCount);
 
+    public double PanelWidthMinimum => GetCurrentPanelSizeBounds().MinWidth;
+
+    public double PanelWidthMaximum => GetCurrentPanelSizeBounds().MaxWidth;
+
+    public double PanelHeightMinimum => GetCurrentPanelSizeBounds().MinHeight;
+
+    public double PanelHeightMaximum => GetCurrentPanelSizeBounds().MaxHeight;
+
     public ObservableCollection<ColorSchemeOptionViewModel> ColorSchemes { get; } = new();
 
     public bool LastSaveSucceeded { get; private set; }
@@ -165,7 +182,8 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         MainWindowViewModel mainWindowViewModel,
         ISystemThemeService? systemThemeService = null,
         ISensorDiagnosticsService? sensorDiagnosticsService = null,
-        IHardwareMonitoringMaintenanceService? hardwareMonitoringMaintenanceService = null)
+        IHardwareMonitoringMaintenanceService? hardwareMonitoringMaintenanceService = null,
+        IMonitorWorkAreaProvider? monitorWorkAreas = null)
     {
         _settingsService = settingsService;
         _localizationService = localizationService;
@@ -181,6 +199,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         _systemThemeService = systemThemeService;
         _sensorDiagnosticsService = sensorDiagnosticsService;
         _hardwareMonitoringMaintenanceService = hardwareMonitoringMaintenanceService;
+        _monitorWorkAreas = monitorWorkAreas ?? Win32MonitorWorkAreaProvider.Instance;
 
         foreach (var scheme in AppColorSchemeCatalog.All)
         {
@@ -203,16 +222,17 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         {
             SelectedColorScheme = AppColorSchemeCatalog.NormalizeId(
                 _settingsService.GetValue("ColorScheme", _settingsService.GetValue("Theme", AppColorSchemeCatalog.DefaultSchemeId)));
-            FollowSystemTheme = _settingsService.GetSetting("FollowSystemTheme", false);
+            FollowSystemTheme = _settingsService.GetSetting("FollowSystemTheme", true);
             ColorSchemeLight = AppColorSchemeCatalog.NormalizeId(
                 _settingsService.GetValue("ColorSchemeLight", AppColorSchemeCatalog.DefaultSchemeId));
             ColorSchemeDark = AppColorSchemeCatalog.NormalizeId(
                 _settingsService.GetValue("ColorSchemeDark", "DarkGrey"));
 
+            var recommendedSize = PanelSizePolicy.GetRecommendedSize(GetCurrentWorkArea().WorkArea);
             StartupEnabled = ReadStartupSetting();
             WindowOpacity = _settingsService.GetSetting("WindowOpacity", 0.70);
-            PanelWidth = _settingsService.GetSetting("PanelWidth", 320.0);
-            PanelHeight = _settingsService.GetSetting("PanelHeight", 702.0);
+            PanelWidth = _settingsService.GetSetting("PanelWidth", recommendedSize.Width);
+            PanelHeight = _settingsService.GetSetting("PanelHeight", recommendedSize.Height);
             FontScale = _settingsService.GetSetting("FontScale", 1.0);
             DisplayTitle = MainWindowViewModel.NormalizeDisplayTitle(_settingsService.GetValue("DisplayTitle", "UniDesk"));
             City = WeatherCityNormalizer.Normalize(
@@ -246,6 +266,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
             _isLoading = false;
         }
 
+        RefreshPanelSliderValues();
         UpdateColorSchemeSelection();
         ApplyEffectiveThemePreview();
         SaveOriginalSettings();
@@ -289,6 +310,15 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
 
     [RelayCommand]
     private void ToggleWeatherApiEdit() => IsEditingWeatherApi = !IsEditingWeatherApi;
+
+    [RelayCommand]
+    private void FitCurrentScreen()
+    {
+        var recommendedSize = PanelSizePolicy.GetRecommendedSize(GetCurrentWorkArea().WorkArea);
+        PanelWidth = PanelSizePolicy.ClampPreferredWidth(recommendedSize.Width);
+        PanelHeight = PanelSizePolicy.ClampPreferredHeight(recommendedSize.Height);
+        ApplyWindowPreview();
+    }
 
     [RelayCommand]
     private void OpenLocationSettings()
@@ -436,9 +466,43 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
 
     partial void OnWindowOpacityChanged(double value) => ApplyWindowPreview();
 
-    partial void OnPanelWidthChanged(double value) => ApplyWindowPreview();
+    partial void OnPanelWidthChanged(double value)
+    {
+        if (!_isLoading)
+        {
+            SetPanelWidthSliderValue(
+                PanelSizePolicy.ClampActualWidth(value, GetCurrentWorkArea().WorkArea));
+        }
 
-    partial void OnPanelHeightChanged(double value) => ApplyWindowPreview();
+        ApplyWindowPreview();
+    }
+
+    partial void OnPanelHeightChanged(double value)
+    {
+        if (!_isLoading)
+        {
+            SetPanelHeightSliderValue(
+                PanelSizePolicy.ClampActualHeight(value, GetCurrentWorkArea().WorkArea));
+        }
+
+        ApplyWindowPreview();
+    }
+
+    partial void OnPanelWidthSliderValueChanged(double value)
+    {
+        if (!_isLoading && !_isUpdatingPanelSlider)
+        {
+            PanelWidth = PanelSizePolicy.ClampPreferredWidth(value);
+        }
+    }
+
+    partial void OnPanelHeightSliderValueChanged(double value)
+    {
+        if (!_isLoading && !_isUpdatingPanelSlider)
+        {
+            PanelHeight = PanelSizePolicy.ClampPreferredHeight(value);
+        }
+    }
 
     partial void OnFontScaleChanged(double value)
     {
@@ -558,13 +622,19 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
 
     private void ApplyEffectiveThemePreview()
     {
+        var isSystemLight = _systemThemeService?.IsLightTheme ?? true;
         var effective = SystemThemeSelection.GetEffectiveScheme(
             FollowSystemTheme,
-            _systemThemeService?.IsLightTheme ?? true,
+            isSystemLight,
             SelectedColorScheme,
             ColorSchemeLight,
             ColorSchemeDark);
-        AppColorSchemeCatalog.Apply(effective);
+        AppThemeManager.Apply(
+            SystemThemeSelection.ShouldUseLightSurface(
+                FollowSystemTheme,
+                isSystemLight,
+                SelectedColorScheme),
+            effective);
     }
 
     private void ApplyWindowPreview()
@@ -587,6 +657,60 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         _mainWindowViewModel.FontScale = FontScale;
         _mainWindowViewModel.DisplayTitle = MainWindowViewModel.NormalizeDisplayTitle(DisplayTitle);
     }
+
+    private void RefreshPanelSliderValues()
+    {
+        var workArea = GetCurrentWorkArea();
+        var actualSize = PanelSizePolicy.ClampActualSize(PanelWidth, PanelHeight, workArea.WorkArea);
+        SetPanelWidthSliderValue(actualSize.Width);
+        SetPanelHeightSliderValue(actualSize.Height);
+    }
+
+    private void SetPanelWidthSliderValue(double value)
+    {
+        if (PanelWidthSliderValue.Equals(value))
+        {
+            return;
+        }
+
+        _isUpdatingPanelSlider = true;
+        try
+        {
+            PanelWidthSliderValue = value;
+        }
+        finally
+        {
+            _isUpdatingPanelSlider = false;
+        }
+    }
+
+    private void SetPanelHeightSliderValue(double value)
+    {
+        if (PanelHeightSliderValue.Equals(value))
+        {
+            return;
+        }
+
+        _isUpdatingPanelSlider = true;
+        try
+        {
+            PanelHeightSliderValue = value;
+        }
+        finally
+        {
+            _isUpdatingPanelSlider = false;
+        }
+    }
+
+    private MonitorWorkArea GetCurrentWorkArea()
+    {
+        var owner = Application.Current?.MainWindow;
+        var handle = owner == null ? 0 : new WindowInteropHelper(owner).Handle;
+        return _monitorWorkAreas.GetForWindow(handle);
+    }
+
+    private PanelSizeBounds GetCurrentPanelSizeBounds() =>
+        PanelSizePolicy.GetBounds(GetCurrentWorkArea().WorkArea);
 
     [RelayCommand]
     private async Task Save()
@@ -779,13 +903,14 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         if (!result) return;
 
         SelectedColorScheme = AppColorSchemeCatalog.DefaultSchemeId;
-        FollowSystemTheme = false;
+        FollowSystemTheme = true;
         ColorSchemeLight = AppColorSchemeCatalog.DefaultSchemeId;
         ColorSchemeDark = "DarkGrey";
         StartupEnabled = true;
         WindowOpacity = 0.70;
-        PanelWidth = 320;
-        PanelHeight = 702;
+        var recommendedSize = PanelSizePolicy.GetRecommendedSize(GetCurrentWorkArea().WorkArea);
+        PanelWidth = PanelSizePolicy.ClampPreferredWidth(recommendedSize.Width);
+        PanelHeight = PanelSizePolicy.ClampPreferredHeight(recommendedSize.Height);
         FontScale = 1.0;
         DisplayTitle = "UniDesk";
         City = "";

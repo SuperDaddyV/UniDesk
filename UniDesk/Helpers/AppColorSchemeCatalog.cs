@@ -15,6 +15,8 @@ public sealed class AppColorScheme
     public required Color SecondaryBackground { get; init; }
     public required Color ModuleBackground { get; init; }
     public required Color Accent { get; init; }
+    public required Color AccentSoft { get; init; }
+    public required Color FocusRing { get; init; }
     public required Color Divider { get; init; }
 }
 
@@ -94,11 +96,11 @@ public static class AppColorSchemeCatalog
             return;
         }
 
-        SetColor(dictionary, "PrimaryBackgroundColor", scheme.PrimaryBackground);
-        SetColor(dictionary, "SecondaryBackgroundColor", scheme.SecondaryBackground);
-        SetColor(dictionary, "ModuleBackgroundColor", scheme.ModuleBackground);
+        // Calm Glass keeps surfaces and text neutral. A saved scheme supplies only
+        // the accent and its derived interaction colors.
         SetColor(dictionary, "AccentColor", scheme.Accent);
-        SetColor(dictionary, "DividerColor", scheme.Divider);
+        SetColor(dictionary, "AccentSoftColor", scheme.AccentSoft);
+        SetColor(dictionary, "FocusRingColor", scheme.FocusRing);
     }
 
     private static AppColorScheme Define(
@@ -109,8 +111,10 @@ public static class AppColorSchemeCatalog
         string secondaryHex,
         string moduleHex,
         string accentHex,
-        string dividerHex) =>
-        new()
+        string dividerHex)
+    {
+        var accent = ColorFromHex(accentHex);
+        return new()
         {
             Id = id,
             DisplayName = displayName,
@@ -118,14 +122,18 @@ public static class AppColorSchemeCatalog
             PrimaryBackground = ColorFromHex(primaryHex),
             SecondaryBackground = ColorFromHex(secondaryHex),
             ModuleBackground = ColorFromHex(moduleHex),
-            Accent = ColorFromHex(accentHex),
+            Accent = accent,
+            AccentSoft = WithAlpha(accent, 0x3D),
+            FocusRing = WithAlpha(accent, 0xCC),
             Divider = ColorFromHex(dividerHex)
         };
+    }
 
     private static AppColorScheme FromSwatch(string id, string displayName, string swatchHex, double glassFactor = 0.44)
     {
         var swatch = ColorFromHex(swatchHex);
         var glass = BuildGlassPalette(swatch, glassFactor);
+        var accent = glass.Accent;
         return new AppColorScheme
         {
             Id = id,
@@ -134,7 +142,9 @@ public static class AppColorSchemeCatalog
             PrimaryBackground = glass.Primary,
             SecondaryBackground = glass.Secondary,
             ModuleBackground = glass.Module,
-            Accent = glass.Accent,
+            Accent = accent,
+            AccentSoft = WithAlpha(accent, 0x3D),
+            FocusRing = WithAlpha(accent, 0xCC),
             Divider = glass.Divider
         };
     }
@@ -217,4 +227,7 @@ public static class AppColorSchemeCatalog
     }
 
     private static Color ColorFromHex(string hex) => (Color)ColorConverter.ConvertFromString(hex)!;
+
+    private static Color WithAlpha(Color color, byte alpha) =>
+        Color.FromArgb(alpha, color.R, color.G, color.B);
 }

@@ -409,7 +409,7 @@
                     Margin="0,6,0,0"
                     Padding="8,4"
                     CornerRadius="8"
-                    Background="#12FFFFFF">
+                    Background="{DynamicResource CardSurfaceBrush}">
                 <Border.Style>
                     <Style TargetType="Border">
                         <Setter Property="Visibility" Value="Collapsed"/>
@@ -447,7 +447,7 @@
                         <TextBlock Grid.Column="2"
                                    Text="{Binding DataContext.Todos.CollapsedPanelTodoDueText, RelativeSource={RelativeSource AncestorType=Window}}"
                                    FontSize="10"
-                                   Foreground="#5DB7FF"
+                                   Foreground="{DynamicResource AccentBrush}"
                                    VerticalAlignment="Center"
                                    Margin="8,0,0,0"
                                    Visibility="{Binding DataContext.Todos.CollapsedPanelTodoDueText, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource StringNotEmptyToVisibilityConverter}}"/>
@@ -472,8 +472,8 @@
                 <Border Width="360"
                         Padding="16"
                         CornerRadius="10"
-                        Background="#E6FFFFFF"
-                        BorderBrush="#E2E8F0"
+                        Background="{DynamicResource WindowSurfaceBrush}"
+                        BorderBrush="{DynamicResource DividerBrush}"
                         BorderThickness="1">
                     <Border.Effect>
                         <DropShadowEffect BlurRadius="18" ShadowDepth="3" Opacity="0.18" Color="#000000"/>
@@ -494,27 +494,27 @@
                             <TextBlock Text="{Binding CalendarMonthTitle}"
                                        FontSize="19"
                                        FontWeight="SemiBold"
-                                       Foreground="#1E293B"
+                                       Foreground="{DynamicResource PrimaryTextBrush}"
                                        VerticalAlignment="Center"/>
                             <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
                                 <Button Style="{StaticResource HeaderIconButtonStyle}"
                                         Width="32" Height="30"
                                         Click="PreviousCalendarMonthButton_OnClick"
                                         ToolTip="{DynamicResource Common.PreviousMonth}">
-                                    <TextBlock Text="&#xE76B;" FontFamily="Segoe MDL2 Assets" FontSize="13" Foreground="#64748B"/>
+                                    <TextBlock Text="&#xE76B;" FontFamily="Segoe MDL2 Assets" FontSize="13" Foreground="{DynamicResource SecondaryTextBrush}"/>
                                 </Button>
                                 <Button Style="{StaticResource HeaderIconButtonStyle}"
                                         Width="32" Height="30"
                                         Click="NextCalendarMonthButton_OnClick"
                                         ToolTip="{DynamicResource Common.NextMonth}">
-                                    <TextBlock Text="&#xE76C;" FontFamily="Segoe MDL2 Assets" FontSize="13" Foreground="#64748B"/>
+                                    <TextBlock Text="&#xE76C;" FontFamily="Segoe MDL2 Assets" FontSize="13" Foreground="{DynamicResource SecondaryTextBrush}"/>
                                 </Button>
                                 <Button Style="{StaticResource HeaderIconButtonStyle}"
                                         Width="32" Height="30"
                                         Margin="4,0,0,0"
                                         Click="CloseCalendarButton_OnClick"
                                         ToolTip="{DynamicResource Common.Close}">
-                                    <TextBlock Text="&#xE711;" FontFamily="Segoe MDL2 Assets" FontSize="13" Foreground="#64748B"/>
+                                    <TextBlock Text="&#xE711;" FontFamily="Segoe MDL2 Assets" FontSize="13" Foreground="{DynamicResource SecondaryTextBrush}"/>
                                 </Button>
                             </StackPanel>
                         </Grid>
@@ -522,7 +522,7 @@
                         <TextBlock Grid.Row="1"
                                    Text="{Binding CalendarSelectedDetailText}"
                                    FontSize="13"
-                                   Foreground="#64748B"
+                                   Foreground="{DynamicResource MutedTextBrush}"
                                    Margin="0,0,0,14"
                                    TextWrapping="Wrap"/>
     
@@ -538,7 +538,7 @@
                                 <DataTemplate>
                                     <TextBlock Text="{Binding}"
                                                HorizontalAlignment="Center"
-                                               Foreground="#64748B"
+                                               Foreground="{DynamicResource MutedTextBrush}"
                                                FontSize="13"/>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
@@ -560,7 +560,7 @@
                                         <Button.Style>
                                             <Style TargetType="Button" BasedOn="{StaticResource GhostButtonStyle}">
                                                 <Setter Property="Opacity" Value="1"/>
-                                                <Setter Property="Foreground" Value="#1E293B"/>
+                                                <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
                                                 <Style.Triggers>
                                                     <DataTrigger Binding="{Binding IsCurrentMonth}" Value="False">
                                                         <Setter Property="Opacity" Value="0.38"/>
@@ -580,23 +580,23 @@
                                                                    HorizontalAlignment="Center"/>
                                                         <TextBlock Text="{Binding LunarText}"
                                                                    FontSize="11"
-                                                                   Foreground="#64748B"
+                                                                   Foreground="{DynamicResource MutedTextBrush}"
                                                                    HorizontalAlignment="Center"/>
                                                     </StackPanel>
                                                 </Border>
                                                 <ControlTemplate.Triggers>
                                                     <Trigger Property="IsMouseOver" Value="True">
-                                                        <Setter TargetName="DayBackground" Property="Background" Value="#1A3B82F6"/>
+                                                        <Setter TargetName="DayBackground" Property="Background" Value="{DynamicResource AccentSoftBrush}"/>
                                                     </Trigger>
                                                     <DataTrigger Binding="{Binding IsToday}" Value="True">
-                                                        <Setter TargetName="DayBackground" Property="BorderBrush" Value="#3B82F6"/>
+                                                        <Setter TargetName="DayBackground" Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
                                                         <Setter TargetName="DayBackground" Property="BorderThickness" Value="1"/>
                                                     </DataTrigger>
                                                     <DataTrigger Binding="{Binding IsSelected}" Value="True">
-                                                        <Setter TargetName="DayBackground" Property="Background" Value="#1A3B82F6"/>
-                                                        <Setter TargetName="DayBackground" Property="BorderBrush" Value="#3B82F6"/>
+                                                        <Setter TargetName="DayBackground" Property="Background" Value="{DynamicResource AccentSoftBrush}"/>
+                                                        <Setter TargetName="DayBackground" Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
                                                         <Setter TargetName="DayBackground" Property="BorderThickness" Value="1"/>
-                                                        <Setter Property="Foreground" Value="#1E293B"/>
+                                                        <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
                                                     </DataTrigger>
                                                 </ControlTemplate.Triggers>
                                             </ControlTemplate>

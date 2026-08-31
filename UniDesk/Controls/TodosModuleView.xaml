@@ -107,7 +107,7 @@
                                                 <Setter Property="FontSize" Value="{Binding DataContext.FontScale, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource ScaledFontSizeConverter}, ConverterParameter=11}"/>
                                                 <Style.Triggers>
                                                     <DataTrigger Binding="{Binding IsCompleted}" Value="True">
-                                                        <Setter Property="Foreground" Value="#D5CCEA"/>
+                                                        <Setter Property="Foreground" Value="{DynamicResource MutedTextBrush}"/>
                                                     </DataTrigger>
                                                 </Style.Triggers>
                                             </Style>
@@ -116,7 +116,7 @@
                                     <Rectangle Height="2"
                                                RadiusX="1"
                                                RadiusY="1"
-                                               Fill="#BFAFE0"
+                                               Fill="{DynamicResource DividerBrush}"
                                                Opacity="0.9"
                                                VerticalAlignment="Center"
                                                HorizontalAlignment="Stretch"
@@ -131,13 +131,13 @@
                                     </TextBlock.Text>
                                     <TextBlock.Style>
                                         <Style TargetType="TextBlock">
-                                            <Setter Property="Foreground" Value="#5DB7FF"/>
+                                            <Setter Property="Foreground" Value="{DynamicResource AccentBrush}"/>
                                             <Style.Triggers>
                                                 <DataTrigger Value="True">
                                                     <DataTrigger.Binding>
                                                         <Binding Path="." Converter="{StaticResource TodoDueIsTodayConverter}"/>
                                                     </DataTrigger.Binding>
-                                                    <Setter Property="Foreground" Value="#FF7E45"/>
+                                                    <Setter Property="Foreground" Value="{DynamicResource WarningBrush}"/>
                                                 </DataTrigger>
                                             </Style.Triggers>
                                         </Style>

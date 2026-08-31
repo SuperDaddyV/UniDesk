@@ -500,6 +500,52 @@ public class WpfInteractionRegressionTests
     }
 
     [Fact]
+    public void MainWindow_MonitorTransition_ShouldNotClampOrPersistDuringDrag()
+    {
+        var mainCode = ReadProjectFile("UniDesk", "MainWindow.xaml.cs");
+        var handler = Regex.Match(
+            mainCode,
+            "private void MainWindow_OnLocationChanged[\\s\\S]*?(?=private void SearchButton_OnClick)");
+
+        Assert.True(handler.Success);
+        Assert.Contains("_currentMonitor", handler.Value, StringComparison.Ordinal);
+        Assert.Contains("_isDragging", handler.Value, StringComparison.Ordinal);
+        Assert.Contains("clampPosition: !_isDragging", handler.Value, StringComparison.Ordinal);
+        Assert.DoesNotContain("ClampToVisibleWorkArea", handler.Value, StringComparison.Ordinal);
+        Assert.DoesNotContain("SaveWindowPosition", handler.Value, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void MainWindow_ActualSize_ShouldNotBindDirectlyToPreferredSize()
+    {
+        var mainXaml = ReadProjectFile("UniDesk", "MainWindow.xaml");
+        var mainCode = ReadProjectFile("UniDesk", "MainWindow.xaml.cs");
+
+        Assert.DoesNotContain("Height=\"{Binding PanelHeight", mainXaml, StringComparison.Ordinal);
+        Assert.DoesNotContain("Width=\"{Binding PanelWidth", mainXaml, StringComparison.Ordinal);
+        Assert.Contains("PanelSizePolicy.ClampActualSize", mainCode, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void SettingsSizeActions_ShouldUseCurrentMonitorRecommendation()
+    {
+        var settingsCode = ReadProjectFile("UniDesk", "ViewModels", "SettingsViewModel.cs");
+        var fitAction = Regex.Match(
+            settingsCode,
+            "private void FitCurrentScreen\\(\\)[\\s\\S]*?(?=\\s*\\[RelayCommand\\])");
+        var resetAction = Regex.Match(
+            settingsCode,
+            "private void ResetToDefaults\\(\\)[\\s\\S]*?(?=\\s*\\[RelayCommand\\])");
+
+        Assert.True(fitAction.Success);
+        Assert.True(resetAction.Success);
+        Assert.Contains("PanelSizePolicy.GetRecommendedSize", fitAction.Value, StringComparison.Ordinal);
+        Assert.Contains("PanelSizePolicy.GetRecommendedSize", resetAction.Value, StringComparison.Ordinal);
+        Assert.DoesNotContain("PanelWidth = 320", resetAction.Value, StringComparison.Ordinal);
+        Assert.DoesNotContain("PanelHeight = 702", resetAction.Value, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void MainApplicationManifest_ShouldDeclarePerMonitorV2DpiAwareness()
     {
         var manifest = ReadProjectFile("UniDesk", "app.manifest");

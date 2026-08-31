@@ -230,6 +230,7 @@
     <sys:String x:Key="Settings.WindowOpacity">Opacidad de ventana</sys:String>
     <sys:String x:Key="Settings.PanelWidth">Ancho del panel</sys:String>
     <sys:String x:Key="Settings.PanelHeight">Alto del panel</sys:String>
+    <sys:String x:Key="Settings.FitCurrentScreen">Ajustar a la pantalla actual</sys:String>
     <sys:String x:Key="Settings.FontSize">Tamaño de fuente</sys:String>
     <sys:String x:Key="Settings.FontSmall">Pequeño</sys:String>
     <sys:String x:Key="Settings.FontNormal">Normal</sys:String>

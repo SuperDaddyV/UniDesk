@@ -12,7 +12,9 @@ public class DatabaseServiceTests
 
     private DatabaseService GetService()
     {
-        return new DatabaseService($"Data Source={_testDbFile}");
+        return new DatabaseService(
+            $"Data Source={_testDbFile}",
+            monitorWorkAreas: new FixedMonitorWorkAreaProvider(1366, 768));
     }
 
     [Fact]
@@ -289,6 +291,38 @@ public class DatabaseServiceTests
     }
 
     [Fact]
+    public async Task InitializeAsync_ShouldPersistMonitorAwarePanelRecommendation()
+    {
+        var databaseService = GetService();
+        await databaseService.InitializeAsync();
+
+        var values = await databaseService.QueryAsync<string>(
+            "SELECT Value FROM Settings WHERE Key IN ('PanelHeight', 'PanelWidth') ORDER BY Key",
+            reader => reader.GetString(0));
+
+        Assert.Equal(["560", "340"], values);
+        Cleanup();
+    }
+
+    [Fact]
+    public async Task InitializeAsync_ShouldPreserveExistingPanelSizes()
+    {
+        var databaseService = GetService();
+        await databaseService.InitializeAsync();
+        await databaseService.ExecuteNonQueryAsync(
+            "UPDATE Settings SET Value = CASE Key WHEN 'PanelWidth' THEN '480' ELSE '900' END WHERE Key IN ('PanelWidth', 'PanelHeight')");
+
+        await databaseService.InitializeAsync();
+
+        var values = await databaseService.QueryAsync<string>(
+            "SELECT Value FROM Settings WHERE Key IN ('PanelHeight', 'PanelWidth') ORDER BY Key",
+            reader => reader.GetString(0));
+
+        Assert.Equal(["900", "480"], values);
+        Cleanup();
+    }
+
+    [Fact]
     public async Task InitializeAsync_ShouldInitializeAllDefaultSettings()
     {
         var databaseService = GetService();
@@ -316,6 +350,7 @@ public class DatabaseServiceTests
             "Hotkey",
             "Language",
             "ModuleSettings",
+            "PanelHeight",
             "PanelCollapsed",
             "PanelWidth",
             "ShortcutMaxCount",
@@ -743,5 +778,24 @@ public class DatabaseServiceTests
         catch
         {
         }
+    }
+
+    private sealed class FixedMonitorWorkAreaProvider(double width, double height) : IMonitorWorkAreaProvider
+    {
+        private readonly MonitorWorkArea _monitor = new(
+            Handle: 1,
+            PixelWorkArea: new PixelRect(0, 0, width, height),
+            WorkArea: new LogicalRect(0, 0, width, height),
+            DpiX: 96,
+            DpiY: 96,
+            IsPrimary: true);
+
+        public IReadOnlyList<MonitorWorkArea> GetAll() => [_monitor];
+
+        public MonitorWorkArea GetForWindow(nint windowHandle) => _monitor;
+
+        public MonitorWorkArea GetForPixelRect(PixelRect pixelBounds) => _monitor;
+
+        public MonitorWorkArea GetForPixelPoint(PixelPoint pixelPoint) => _monitor;
     }
 }
