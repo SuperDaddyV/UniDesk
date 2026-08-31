@@ -96,11 +96,23 @@ public static class AppColorSchemeCatalog
             return;
         }
 
-        // Calm Glass keeps surfaces and text neutral. A saved scheme supplies only
-        // the accent and its derived interaction colors.
+        var settingsSurface = WithAlpha(scheme.PrimaryBackground, 0xD9);
+        var cardHover = Shift(scheme.ModuleBackground, 12, 0x80);
+        var controlSurface = Shift(scheme.SecondaryBackground, 8, 0x80);
+
+        SetColor(dictionary, "WindowSurfaceColor", scheme.PrimaryBackground);
+        SetColor(dictionary, "SettingsSurfaceColor", settingsSurface);
+        SetColor(dictionary, "SecondarySurfaceColor", scheme.SecondaryBackground);
+        SetColor(dictionary, "CardSurfaceColor", scheme.ModuleBackground);
+        SetColor(dictionary, "CardHoverColor", cardHover);
+        SetColor(dictionary, "ControlSurfaceColor", controlSurface);
+        SetColor(dictionary, "PrimaryBackgroundColor", scheme.PrimaryBackground);
+        SetColor(dictionary, "SecondaryBackgroundColor", scheme.SecondaryBackground);
+        SetColor(dictionary, "ModuleBackgroundColor", scheme.ModuleBackground);
         SetColor(dictionary, "AccentColor", scheme.Accent);
         SetColor(dictionary, "AccentSoftColor", scheme.AccentSoft);
         SetColor(dictionary, "FocusRingColor", scheme.FocusRing);
+        SetColor(dictionary, "DividerColor", scheme.Divider);
     }
 
     private static AppColorScheme Define(
@@ -230,4 +242,11 @@ public static class AppColorSchemeCatalog
 
     private static Color WithAlpha(Color color, byte alpha) =>
         Color.FromArgb(alpha, color.R, color.G, color.B);
+
+    private static Color Shift(Color color, byte amount, byte alpha) =>
+        Color.FromArgb(
+            alpha,
+            (byte)Math.Min(byte.MaxValue, color.R + amount),
+            (byte)Math.Min(byte.MaxValue, color.G + amount),
+            (byte)Math.Min(byte.MaxValue, color.B + amount));
 }

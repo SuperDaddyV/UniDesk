@@ -20,14 +20,14 @@
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
             <Grid Grid.Row="0" Margin="0,0,0,4">
-                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                    <UniformGrid Width="18" Height="18" Rows="2" Columns="2" Margin="0,0,6,0">
+                <StackPanel Orientation="Horizontal" Style="{StaticResource ModuleHeaderRowStyle}">
+                    <UniformGrid Style="{StaticResource ModuleHeaderIconContainerStyle}" Rows="2" Columns="2">
                         <Border Width="7" Height="7" CornerRadius="1.5" Style="{StaticResource ModuleTitleIconFillStyle}"/>
                         <Border Width="7" Height="7" CornerRadius="1.5" Style="{StaticResource ModuleTitleIconFillStyle}"/>
                         <Border Width="7" Height="7" CornerRadius="1.5" Style="{StaticResource ModuleTitleIconFillStyle}"/>
                         <Border Width="7" Height="7" CornerRadius="1.5" Style="{StaticResource ModuleTitleIconFillStyle}"/>
                     </UniformGrid>
-                    <TextBlock Text="{DynamicResource Module.Shortcuts}" Style="{StaticResource ModuleHeaderTextStyle}" FontSize="{Binding DataContext.FontScale, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource ScaledFontSizeConverter}, ConverterParameter=12}"/>
+                    <TextBlock Text="{DynamicResource Module.Shortcuts}" Style="{StaticResource ModuleHeaderTextStyle}"/>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                     <TextBlock Text="{DynamicResource Shortcut.EditHint}"

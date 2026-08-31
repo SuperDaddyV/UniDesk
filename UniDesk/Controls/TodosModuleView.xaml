@@ -14,8 +14,8 @@
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
             <Grid Grid.Row="0" Margin="0,0,0,8">
-                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                    <Viewbox Width="19" Height="19" Margin="0,0,6,0">
+                <StackPanel Orientation="Horizontal" Style="{StaticResource ModuleHeaderRowStyle}">
+                    <Viewbox Style="{StaticResource ModuleHeaderIconContainerStyle}">
                         <Canvas Width="20" Height="20">
                             <Path Data="M3,3.5 L17,3.5 L17,16.5 L3,16.5 Z"
                                   Style="{StaticResource ModuleTitleIconPathStyle}"
@@ -30,7 +30,7 @@
                                   StrokeLineJoin="Round"/>
                         </Canvas>
                     </Viewbox>
-                    <TextBlock Text="{DynamicResource Module.Todos}" Style="{StaticResource ModuleHeaderTextStyle}" FontSize="{Binding DataContext.FontScale, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource ScaledFontSizeConverter}, ConverterParameter=13}"/>
+                    <TextBlock Text="{DynamicResource Module.Todos}" Style="{StaticResource ModuleHeaderTextStyle}"/>
                 </StackPanel>
                 <Button Style="{StaticResource GhostButtonStyle}"
                         HorizontalAlignment="Right"

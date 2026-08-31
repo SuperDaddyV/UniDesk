@@ -285,7 +285,14 @@ public class WpfInteractionRegressionTests
             "Style=\"{StaticResource ModuleHeaderTextStyle}\"",
             radarXaml,
             StringComparison.Ordinal);
-        Assert.Contains("ConverterParameter=12", radarXaml, StringComparison.Ordinal);
+        Assert.Contains(
+            "Style=\"{StaticResource ModuleHeaderRowStyle}\"",
+            radarXaml,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "Style=\"{StaticResource ModuleHeaderIconContainerStyle}\"",
+            radarXaml,
+            StringComparison.Ordinal);
         Assert.DoesNotContain("Text=\"{Binding BatchText}\"", radarXaml, StringComparison.Ordinal);
         Assert.Equal(
             1,

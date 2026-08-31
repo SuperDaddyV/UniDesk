@@ -39,12 +39,28 @@ public class CalmGlassThemeContractTests
         Assert.Contains("Resources/Themes/Shared.xaml", app, StringComparison.Ordinal);
         Assert.Contains("Resources/Themes/Dark.xaml", app, StringComparison.Ordinal);
         Assert.Contains("x:Key=\"DisplayFontFamily\"", app, StringComparison.Ordinal);
+        Assert.Contains("x:Key=\"ModuleTitleFontFamily\"", app, StringComparison.Ordinal);
         Assert.Contains("x:Key=\"BodyFontFamily\"", app, StringComparison.Ordinal);
         Assert.Contains("x:Key=\"DataFontFamily\"", app, StringComparison.Ordinal);
         Assert.Contains("x:Key=\"CaptionFontFamily\"", app, StringComparison.Ordinal);
         Assert.Contains("Space Grotesk", app, StringComparison.Ordinal);
         Assert.Contains("JetBrains Mono", app, StringComparison.Ordinal);
         Assert.Contains("Microsoft YaHei UI", app, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("Light.xaml")]
+    [InlineData("Dark.xaml")]
+    public void ThemeDictionaries_ShouldKeepWhiteTypographyAndTransparentGlassSurfaces(string fileName)
+    {
+        var theme = ReadProjectFile("UniDesk", "Resources", "Themes", fileName);
+
+        Assert.Contains("<Color x:Key=\"PrimaryTextColor\">#FFFFFFFF</Color>", theme, StringComparison.Ordinal);
+        Assert.Contains("<Color x:Key=\"SecondaryTextColor\">#F0FFFFFF</Color>", theme, StringComparison.Ordinal);
+        Assert.Contains("<Color x:Key=\"MutedTextColor\">#BFFFFFFF</Color>", theme, StringComparison.Ordinal);
+        Assert.DoesNotContain("<Color x:Key=\"SettingsSurfaceColor\">#FA", theme, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("<Color x:Key=\"WindowSurfaceColor\">#FF", theme, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("<Color x:Key=\"CardSurfaceColor\">#FF", theme, StringComparison.OrdinalIgnoreCase);
     }
 
     [Theory]
@@ -129,6 +145,15 @@ public class CalmGlassThemeContractTests
     {
         var shared = ReadProjectFile("UniDesk", "Resources", "Themes", "Shared.xaml");
 
+        var fontScaleConverterIndex = shared.IndexOf(
+            "<helpers:ScaledFontSizeConverter x:Key=\"ScaledFontSizeConverter\"/>",
+            StringComparison.Ordinal);
+        var moduleHeaderStyleIndex = shared.IndexOf(
+            "<Style x:Key=\"ModuleHeaderTextStyle\"",
+            StringComparison.Ordinal);
+        Assert.True(fontScaleConverterIndex >= 0);
+        Assert.True(fontScaleConverterIndex < moduleHeaderStyleIndex);
+
         foreach (var key in new[]
                  {
                      "DisplayTextStyle",
@@ -154,6 +179,21 @@ public class CalmGlassThemeContractTests
 
         var dataTextStyle = ExtractStyle(shared, "DataTextStyle");
         Assert.Contains("Property=\"LineHeight\" Value=\"18\"", dataTextStyle, StringComparison.Ordinal);
+
+        var moduleHeaderStyle = ExtractStyle(shared, "ModuleHeaderTextStyle");
+        Assert.Contains("ModuleTitleFontFamily", moduleHeaderStyle, StringComparison.Ordinal);
+        Assert.Contains("ConverterParameter=14", moduleHeaderStyle, StringComparison.Ordinal);
+        Assert.Contains("Property=\"LineHeight\" Value=\"20\"", moduleHeaderStyle, StringComparison.Ordinal);
+        Assert.Contains("Property=\"FontWeight\" Value=\"Medium\"", moduleHeaderStyle, StringComparison.Ordinal);
+
+        var moduleHeaderRowStyle = ExtractStyle(shared, "ModuleHeaderRowStyle");
+        Assert.Contains("Property=\"MinHeight\" Value=\"20\"", moduleHeaderRowStyle, StringComparison.Ordinal);
+        Assert.Contains("Property=\"VerticalAlignment\" Value=\"Center\"", moduleHeaderRowStyle, StringComparison.Ordinal);
+
+        var moduleIconStyle = ExtractStyle(shared, "ModuleHeaderIconContainerStyle");
+        Assert.Contains("Property=\"Width\" Value=\"20\"", moduleIconStyle, StringComparison.Ordinal);
+        Assert.Contains("Property=\"Height\" Value=\"20\"", moduleIconStyle, StringComparison.Ordinal);
+        Assert.Contains("Property=\"Margin\" Value=\"0,0,8,0\"", moduleIconStyle, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -182,7 +222,7 @@ public class CalmGlassThemeContractTests
     }
 
     [Fact]
-    public void ColorSchemeCatalog_ShouldPreserveEightIdsAndOnlyUpdateAccentDerivedResources()
+    public void ColorSchemeCatalog_ShouldPreserveEightIdsAndUpdateTheCompleteTintedGlassPalette()
     {
         Assert.Equal(
             new[]
@@ -199,12 +239,25 @@ public class CalmGlassThemeContractTests
             AppColorSchemeCatalog.All.Select(scheme => scheme.Id));
 
         var catalogSource = ReadProjectFile("UniDesk", "Helpers", "AppColorSchemeCatalog.cs");
-        Assert.Contains("AccentSoftColor", catalogSource, StringComparison.Ordinal);
-        Assert.Contains("FocusRingColor", catalogSource, StringComparison.Ordinal);
-        Assert.DoesNotContain("SetColor(dictionary, \"PrimaryBackgroundColor\"", catalogSource, StringComparison.Ordinal);
-        Assert.DoesNotContain("SetColor(dictionary, \"SecondaryBackgroundColor\"", catalogSource, StringComparison.Ordinal);
-        Assert.DoesNotContain("SetColor(dictionary, \"ModuleBackgroundColor\"", catalogSource, StringComparison.Ordinal);
-        Assert.DoesNotContain("SetColor(dictionary, \"DividerColor\"", catalogSource, StringComparison.Ordinal);
+        foreach (var colorKey in new[]
+                 {
+                     "WindowSurfaceColor",
+                     "SettingsSurfaceColor",
+                     "SecondarySurfaceColor",
+                     "CardSurfaceColor",
+                     "CardHoverColor",
+                     "ControlSurfaceColor",
+                     "PrimaryBackgroundColor",
+                     "SecondaryBackgroundColor",
+                     "ModuleBackgroundColor",
+                     "AccentColor",
+                     "AccentSoftColor",
+                     "FocusRingColor",
+                     "DividerColor"
+                 })
+        {
+            Assert.Contains($"SetColor(dictionary, \"{colorKey}\"", catalogSource, StringComparison.Ordinal);
+        }
     }
 
     [Fact]

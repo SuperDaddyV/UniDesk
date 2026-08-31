@@ -8,13 +8,13 @@
             Padding="14,12"
             ClipToBounds="True">
         <StackPanel>
-            <Grid Margin="0,0,0,8">
+            <Grid Margin="0,0,0,8" Style="{StaticResource ModuleHeaderRowStyle}">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <Viewbox Width="18" Height="18" Margin="0,0,7,0" VerticalAlignment="Center">
+                <Viewbox Style="{StaticResource ModuleHeaderIconContainerStyle}">
                     <Canvas Width="20" Height="20">
                         <Path Data="M10,2 L16.9,6 L16.9,14 L10,18 L3.1,14 L3.1,6 Z M10,5 L14.3,7.5 L14.3,12.5 L10,15 L5.7,12.5 L5.7,7.5 Z M10,10 L10,5 M10,10 L14.3,12.5 M10,10 L5.7,12.5"
                               Style="{StaticResource ModuleTitleIconPathStyle}"
@@ -27,7 +27,6 @@
                 <TextBlock Grid.Column="1"
                            Text="{DynamicResource Module.ModelRadar}"
                            Style="{StaticResource ModuleHeaderTextStyle}"
-                           FontSize="{Binding DataContext.FontScale, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource ScaledFontSizeConverter}, ConverterParameter=12}"
                            VerticalAlignment="Center"/>
                 <Button Grid.Column="2"
                         Width="28"

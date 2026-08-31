@@ -1,3 +1,5 @@
+using System.Text.RegularExpressions;
+
 namespace UniDesk.Tests;
 
 public class CalmGlassShellAndModuleTests
@@ -73,6 +75,31 @@ public class CalmGlassShellAndModuleTests
 
         Assert.Contains("TextOptions.TextRenderingMode=\"Grayscale\"", hardwareXaml, StringComparison.Ordinal);
         Assert.Equal(2, CountOccurrences(hardwareXaml, "Width=\"78\""));
+    }
+
+    [Theory]
+    [InlineData("HardwareMonitorModuleView.xaml")]
+    [InlineData("ShortcutsModuleView.xaml")]
+    [InlineData("TodosModuleView.xaml")]
+    [InlineData("QuickNotesModuleView.xaml")]
+    [InlineData("QuickTextModuleView.xaml")]
+    [InlineData("ModelRadarModuleView.xaml")]
+    public void ModuleHeaders_ShouldUseOneTypographyAndIconGeometryContract(string fileName)
+    {
+        var moduleXaml = ReadProjectFile("UniDesk", "Controls", fileName);
+        var titleTag = Regex.Matches(
+                moduleXaml,
+                "<TextBlock[\\s\\S]*?/>",
+                RegexOptions.CultureInvariant)
+            .Select(match => match.Value)
+            .Single(tag => tag.Contains(
+                "Style=\"{StaticResource ModuleHeaderTextStyle}\"",
+                StringComparison.Ordinal));
+
+        Assert.DoesNotContain("FontSize=", titleTag, StringComparison.Ordinal);
+        Assert.DoesNotContain("FontWeight=", titleTag, StringComparison.Ordinal);
+        Assert.Contains("Style=\"{StaticResource ModuleHeaderRowStyle}\"", moduleXaml, StringComparison.Ordinal);
+        Assert.Contains("Style=\"{StaticResource ModuleHeaderIconContainerStyle}\"", moduleXaml, StringComparison.Ordinal);
     }
 
     private static int CountOccurrences(string value, string fragment) =>
