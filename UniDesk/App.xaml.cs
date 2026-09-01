@@ -59,7 +59,7 @@ public partial class App : Application
 
         try
         {
-            DirectoryHelper.EnsureDirectoriesExist();
+            await Task.Run(DirectoryHelper.EnsureDirectoriesExist);
             _singleInstanceHelper = new SingleInstanceHelper();
             if (!_singleInstanceHelper.TryAcquire())
             {

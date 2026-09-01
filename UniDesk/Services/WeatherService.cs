@@ -16,10 +16,15 @@ public class WeatherService : IWeatherService, IDisposable
     private readonly ILocalizationService? _localizationService;
     private readonly string _cacheFilePath;
     private readonly object _refreshLock = new();
+    private readonly SemaphoreSlim _cacheWriteLock = new(1, 1);
+    private readonly SemaphoreSlim _cityChangeLock = new(1, 1);
 
     private WeatherInfo? _cachedWeather;
     private DateTime _lastFetchTime;
     private CancellationTokenSource? _refreshCts;
+    private long _cityGeneration;
+    private string? _selectedCity;
+    private string? _persistedCity;
     private readonly TimeSpan _cacheDuration = TimeSpan.FromMinutes(30);
 
     public WeatherFailureReason LastFailure { get; private set; }
@@ -38,31 +43,67 @@ public class WeatherService : IWeatherService, IDisposable
         _apiClient = apiClient;
         _localizationService = localizationService;
         _cacheFilePath = cacheFilePath ?? Path.Combine(DirectoryHelper.DataDirectory, "weather_cache.json");
+        _persistedCity = _settingsService.GetValue("City", "");
+        _selectedCity = string.IsNullOrWhiteSpace(_persistedCity) ? null : _persistedCity;
     }
 
-    public async Task<WeatherInfo?> GetWeatherAsync(
+    public Task<WeatherInfo?> GetWeatherAsync(
         string city,
         CancellationToken cancellationToken = default,
         bool notifyUser = true)
     {
+        return GetWeatherAsyncCore(city, cancellationToken, notifyUser, expectedRefreshCts: null);
+    }
+
+    private async Task<WeatherInfo?> GetWeatherAsyncCore(
+        string city,
+        CancellationToken cancellationToken,
+        bool notifyUser,
+        CancellationTokenSource? expectedRefreshCts)
+    {
+        var cityGeneration = GetCityGeneration();
+        if (!IsCurrentWeatherRequest(city, cityGeneration, expectedRefreshCts))
+        {
+            return null;
+        }
+
         LastFailure = WeatherFailureReason.None;
         var apiKey = _apiClient.GetApiKey();
         if (string.IsNullOrEmpty(apiKey))
         {
+            if (!IsCurrentWeatherRequest(city, cityGeneration, expectedRefreshCts))
+            {
+                return null;
+            }
+
             LastFailure = WeatherFailureReason.ApiConfigurationMissing;
             if (notifyUser)
             {
                 _notificationService.ShowWarningMessage(L("Weather.ApiKeyMissing", "请先在设置中配置和风天气 API Key"));
             }
 
-            return await GetCachedWeatherAsync();
+            return await GetCurrentCachedWeatherAsync(
+                city,
+                cityGeneration,
+                expectedRefreshCts,
+                markExpired: false);
         }
 
         try
         {
+            if (!IsCurrentWeatherRequest(city, cityGeneration, expectedRefreshCts))
+            {
+                return null;
+            }
+
             var location = await GetCityLocationAsync(city, cancellationToken);
             if (location == null)
             {
+                if (!IsCurrentWeatherRequest(city, cityGeneration, expectedRefreshCts))
+                {
+                    return null;
+                }
+
                 if (LastFailure == WeatherFailureReason.None)
                 {
                     LastFailure = WeatherFailureReason.InvalidCity;
@@ -80,12 +121,20 @@ public class WeatherService : IWeatherService, IDisposable
                     }
                 }
 
-                return await GetCachedWeatherAsync();
+                return await GetCurrentCachedWeatherAsync(
+                    city,
+                    cityGeneration,
+                    expectedRefreshCts,
+                    markExpired: false);
             }
 
             var locationId = location.Value.Id;
 
             cancellationToken.ThrowIfCancellationRequested();
+            if (!IsCurrentWeatherRequest(city, cityGeneration, expectedRefreshCts))
+            {
+                return null;
+            }
 
             var weatherResponse = await _apiClient.GetAsync(
                 "/v7/weather/now",
@@ -97,6 +146,11 @@ public class WeatherService : IWeatherService, IDisposable
 
             if (weatherResult?.Code != "200")
             {
+                if (!IsCurrentWeatherRequest(city, cityGeneration, expectedRefreshCts))
+                {
+                    return null;
+                }
+
                 LastFailure = weatherResult?.Code == "404"
                     ? WeatherFailureReason.InvalidCity
                     : WeatherFailureReason.ApiRejected;
@@ -105,10 +159,18 @@ public class WeatherService : IWeatherService, IDisposable
                     HandleApiError(weatherResult?.Code ?? "unknown", city);
                 }
 
-                return await GetCachedWeatherAsync(markExpired: true);
+                return await GetCurrentCachedWeatherAsync(
+                    city,
+                    cityGeneration,
+                    expectedRefreshCts,
+                    markExpired: true);
             }
 
             cancellationToken.ThrowIfCancellationRequested();
+            if (!IsCurrentWeatherRequest(city, cityGeneration, expectedRefreshCts))
+            {
+                return null;
+            }
 
             var forecastResponse = await _apiClient.GetAsync(
                 "/v7/weather/3d",
@@ -119,6 +181,11 @@ public class WeatherService : IWeatherService, IDisposable
             var forecastResult = DeserializeJson<QWeatherForecastResponse>(forecastResponse);
             var todayForecast = forecastResult?.Daily?.FirstOrDefault();
 
+            if (!IsCurrentWeatherRequest(city, cityGeneration, expectedRefreshCts))
+            {
+                return null;
+            }
+
             var airPath = $"/airquality/v1/current/{location.Value.Lat}/{location.Value.Lon}";
             var airResponse = await _apiClient.GetAsync(
                 airPath,
@@ -127,6 +194,11 @@ public class WeatherService : IWeatherService, IDisposable
                 legacyHost: "devapi.qweather.com",
                 legacyPath: airPath);
             var airResult = DeserializeJson<QWeatherAirQualityResponse>(airResponse);
+
+            if (!IsCurrentWeatherRequest(city, cityGeneration, expectedRefreshCts))
+            {
+                return null;
+            }
 
             var info = new WeatherInfo
             {
@@ -143,11 +215,15 @@ public class WeatherService : IWeatherService, IDisposable
                 IsExpired = false
             };
 
-            _cachedWeather = info;
-            _lastFetchTime = DateTime.Now;
-            await SaveCacheAsync(info);
+            if (!await SaveCacheAsync(info, city, cityGeneration, expectedRefreshCts, cancellationToken))
+            {
+                return null;
+            }
 
-            return info;
+            cancellationToken.ThrowIfCancellationRequested();
+            return IsCurrentWeatherRequest(city, cityGeneration, expectedRefreshCts)
+                ? info
+                : null;
         }
         catch (OperationCanceledException)
         {
@@ -155,6 +231,11 @@ public class WeatherService : IWeatherService, IDisposable
         }
         catch (HttpRequestException ex)
         {
+            if (!IsCurrentWeatherRequest(city, cityGeneration, expectedRefreshCts))
+            {
+                return null;
+            }
+
             LastFailure = WeatherFailureReason.NetworkUnavailable;
             Logger.LogError(ex, "WeatherService.GetWeather.Network");
             if (notifyUser)
@@ -163,10 +244,19 @@ public class WeatherService : IWeatherService, IDisposable
                     L("Weather.NetworkRequestFailed", "天气服务暂时不可用，请稍后重试。"));
             }
 
-            return await GetCachedWeatherAsync(markExpired: true);
+            return await GetCurrentCachedWeatherAsync(
+                city,
+                cityGeneration,
+                expectedRefreshCts,
+                markExpired: true);
         }
         catch (Exception ex)
         {
+            if (!IsCurrentWeatherRequest(city, cityGeneration, expectedRefreshCts))
+            {
+                return null;
+            }
+
             LastFailure = WeatherFailureReason.Unknown;
             Logger.LogError(ex, "WeatherService.GetWeather.Unknown");
             if (notifyUser)
@@ -175,7 +265,11 @@ public class WeatherService : IWeatherService, IDisposable
                     L("Weather.GetWeatherFailed", "无法获取天气，请稍后重试。"));
             }
 
-            return await GetCachedWeatherAsync(markExpired: true);
+            return await GetCurrentCachedWeatherAsync(
+                city,
+                cityGeneration,
+                expectedRefreshCts,
+                markExpired: true);
         }
     }
 
@@ -186,36 +280,59 @@ public class WeatherService : IWeatherService, IDisposable
 
     private async Task<WeatherInfo?> GetCachedWeatherAsync(bool markExpired)
     {
-        if (_cachedWeather != null && DateTime.Now - _lastFetchTime < _cacheDuration)
+        await _cacheWriteLock.WaitAsync();
+        try
         {
-            if (markExpired)
+            lock (_refreshLock)
             {
-                _cachedWeather.IsExpired = true;
-            }
-
-            return _cachedWeather;
-        }
-
-        if (File.Exists(_cacheFilePath))
-        {
-            try
-            {
-                var json = await File.ReadAllTextAsync(_cacheFilePath);
-                var cached = JsonSerializer.Deserialize<WeatherInfo>(json);
-                if (cached != null)
+                if (_cachedWeather != null && DateTime.Now - _lastFetchTime < _cacheDuration)
                 {
-                    cached.IsExpired = markExpired || DateTime.Now - cached.FetchTime > _cacheDuration;
-                    _cachedWeather = cached;
-                    _lastFetchTime = cached.FetchTime;
-                    return cached;
+                    if (IsCacheForSelectedCityNoLock(_cachedWeather))
+                    {
+                        if (markExpired)
+                        {
+                            _cachedWeather.IsExpired = true;
+                        }
+
+                        return _cachedWeather;
+                    }
                 }
             }
-            catch
-            {
-            }
-        }
 
-        return null;
+            if (File.Exists(_cacheFilePath))
+            {
+                try
+                {
+                    var json = await File.ReadAllTextAsync(_cacheFilePath);
+                    var cached = JsonSerializer.Deserialize<WeatherInfo>(json);
+                    if (cached != null)
+                    {
+                        cached.IsExpired = markExpired || DateTime.Now - cached.FetchTime > _cacheDuration;
+                        lock (_refreshLock)
+                        {
+                            if (!IsCacheForSelectedCityNoLock(cached))
+                            {
+                                return null;
+                            }
+
+                            _cachedWeather = cached;
+                            _lastFetchTime = cached.FetchTime;
+                        }
+
+                        return cached;
+                    }
+                }
+                catch
+                {
+                }
+            }
+
+            return null;
+        }
+        finally
+        {
+            _cacheWriteLock.Release();
+        }
     }
 
     public async Task<WeatherInfo?> RefreshWeatherAsync(
@@ -224,6 +341,7 @@ public class WeatherService : IWeatherService, IDisposable
     {
         var refreshCts = CreateRefreshToken(cancellationToken);
         var token = refreshCts.Token;
+        var cityGeneration = GetCityGeneration();
 
         try
         {
@@ -231,9 +349,14 @@ public class WeatherService : IWeatherService, IDisposable
             if (string.IsNullOrEmpty(city))
             {
                 var cached = await GetCachedWeatherAsync(markExpired: true);
+                if (!IsCurrentRefreshRequest(cityGeneration, refreshCts))
+                {
+                    return null;
+                }
+
                 if (!string.IsNullOrWhiteSpace(cached?.City))
                 {
-                    return await GetWeatherAsync(cached.City, token, notifyUser);
+                    return await GetWeatherAsyncCore(cached.City, token, notifyUser, refreshCts);
                 }
 
                 if (notifyUser)
@@ -243,16 +366,29 @@ public class WeatherService : IWeatherService, IDisposable
                         L(GetFailureResourceKey(LastFailure), "无法获取天气位置，请检查 Windows 定位权限或手动填写城市"));
                 }
 
+                if (!IsCurrentRefreshRequest(cityGeneration, refreshCts))
+                {
+                    return null;
+                }
+
                 LastFailure = MapLocationFailure(_locationProvider.LastFailure);
 
                 return cached;
             }
 
-            return await GetWeatherAsync(city, token, notifyUser);
+            return await GetWeatherAsyncCore(city, token, notifyUser, refreshCts);
         }
         catch (OperationCanceledException)
         {
-            return await GetCachedWeatherAsync();
+            if (!IsCurrentRefreshRequest(cityGeneration, refreshCts))
+            {
+                return null;
+            }
+
+            var cached = await GetCachedWeatherAsync();
+            return IsCurrentRefreshRequest(cityGeneration, refreshCts)
+                ? cached
+                : null;
         }
         finally
         {
@@ -270,15 +406,82 @@ public class WeatherService : IWeatherService, IDisposable
 
     public async Task SetCityAsync(string city)
     {
-        await _settingsService.SetSettingAsync("City", city);
-        _cachedWeather = null;
-        _lastFetchTime = DateTime.MinValue;
-
-        if (File.Exists(_cacheFilePath))
+        string? previousCity;
+        long cityGeneration;
+        lock (_refreshLock)
         {
-            File.Delete(_cacheFilePath);
+            previousCity = _selectedCity;
+            cityGeneration = ++_cityGeneration;
+            _selectedCity = city;
+            _refreshCts?.Cancel();
         }
 
+        await _cityChangeLock.WaitAsync();
+        try
+        {
+            lock (_refreshLock)
+            {
+                if (cityGeneration != _cityGeneration ||
+                    !string.Equals(_selectedCity, city, StringComparison.Ordinal))
+                {
+                    return;
+                }
+            }
+
+            try
+            {
+                await _settingsService.SetSettingAsync("City", city);
+                lock (_refreshLock)
+                {
+                    _persistedCity = city;
+                }
+            }
+            catch
+            {
+                lock (_refreshLock)
+                {
+                    if (cityGeneration == _cityGeneration &&
+                        string.Equals(_selectedCity, city, StringComparison.Ordinal))
+                    {
+                        _selectedCity = string.IsNullOrWhiteSpace(_persistedCity)
+                            ? previousCity
+                            : _persistedCity;
+                    }
+                }
+
+                throw;
+            }
+
+            await _cacheWriteLock.WaitAsync();
+            try
+            {
+                lock (_refreshLock)
+                {
+                    _cachedWeather = null;
+                    _lastFetchTime = DateTime.MinValue;
+                }
+
+                if (File.Exists(_cacheFilePath))
+                {
+                    try
+                    {
+                        File.Delete(_cacheFilePath);
+                    }
+                    catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                    {
+                        Logger.LogError(ex, "WeatherService.SetCity.DeleteStaleCache");
+                    }
+                }
+            }
+            finally
+            {
+                _cacheWriteLock.Release();
+            }
+        }
+        finally
+        {
+            _cityChangeLock.Release();
+        }
     }
 
     public Task<QWeatherValidationResult> ValidateApiKeyAsync(
@@ -313,6 +516,60 @@ public class WeatherService : IWeatherService, IDisposable
         }
 
         refreshCts.Dispose();
+    }
+
+    private long GetCityGeneration()
+    {
+        lock (_refreshLock)
+        {
+            return _cityGeneration;
+        }
+    }
+
+    private bool IsCurrentWeatherRequest(
+        string city,
+        long cityGeneration,
+        CancellationTokenSource? expectedRefreshCts)
+    {
+        lock (_refreshLock)
+        {
+            return IsCurrentWeatherRequestNoLock(city, cityGeneration, expectedRefreshCts);
+        }
+    }
+
+    private bool IsCurrentWeatherRequestNoLock(
+        string city,
+        long cityGeneration,
+        CancellationTokenSource? expectedRefreshCts)
+    {
+        return cityGeneration == _cityGeneration &&
+            (_selectedCity == null || string.Equals(_selectedCity, city, StringComparison.Ordinal)) &&
+            (expectedRefreshCts == null || ReferenceEquals(_refreshCts, expectedRefreshCts));
+    }
+
+    private bool IsCurrentRefreshRequest(long cityGeneration, CancellationTokenSource refreshCts)
+    {
+        lock (_refreshLock)
+        {
+            return cityGeneration == _cityGeneration && ReferenceEquals(_refreshCts, refreshCts);
+        }
+    }
+
+    private bool IsCacheForSelectedCityNoLock(WeatherInfo cached) =>
+        string.IsNullOrWhiteSpace(_selectedCity) ||
+        string.Equals(cached.City, _selectedCity, StringComparison.Ordinal);
+
+    private async Task<WeatherInfo?> GetCurrentCachedWeatherAsync(
+        string city,
+        long cityGeneration,
+        CancellationTokenSource? expectedRefreshCts,
+        bool markExpired)
+    {
+        var cached = await GetCachedWeatherAsync(markExpired);
+        return IsCurrentWeatherRequest(city, cityGeneration, expectedRefreshCts) &&
+               (cached == null || string.Equals(cached.City, city, StringComparison.Ordinal))
+            ? cached
+            : null;
     }
 
     private async Task<(string Id, string Lat, string Lon)?> GetCityLocationAsync(string city, CancellationToken cancellationToken)
@@ -417,15 +674,54 @@ public class WeatherService : IWeatherService, IDisposable
             : Format("Weather.HumidityFormat", $"湿度 {humidity}%", humidity);
     }
 
-    private async Task SaveCacheAsync(WeatherInfo info)
+    private async Task<bool> SaveCacheAsync(
+        WeatherInfo info,
+        string city,
+        long cityGeneration,
+        CancellationTokenSource? expectedRefreshCts,
+        CancellationToken cancellationToken)
     {
+        await _cacheWriteLock.WaitAsync(cancellationToken);
         try
         {
             var json = JsonSerializer.Serialize(info);
-            await File.WriteAllTextAsync(_cacheFilePath, json);
+
+            lock (_refreshLock)
+            {
+                if (!IsCurrentWeatherRequestNoLock(city, cityGeneration, expectedRefreshCts))
+                {
+                    return false;
+                }
+            }
+
+            try
+            {
+                await File.WriteAllTextAsync(_cacheFilePath, json, cancellationToken);
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch
+            {
+            }
+
+            lock (_refreshLock)
+            {
+                if (!IsCurrentWeatherRequestNoLock(city, cityGeneration, expectedRefreshCts))
+                {
+                    return false;
+                }
+
+                _cachedWeather = info;
+                _lastFetchTime = DateTime.Now;
+            }
+
+            return true;
         }
-        catch
+        finally
         {
+            _cacheWriteLock.Release();
         }
     }
 

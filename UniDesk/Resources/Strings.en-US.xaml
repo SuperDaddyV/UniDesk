@@ -75,6 +75,11 @@
     <sys:String x:Key="ModelRadar.OverallBest">Overall leader</sys:String>
     <sys:String x:Key="ModelRadar.ValueRecommendation">Value recommendation</sys:String>
     <sys:String x:Key="ModelRadar.NoValueRecommendation">No value recommendation for this batch</sys:String>
+    <sys:String x:Key="ModelRadar.CompactOverallLabel">TOP</sys:String>
+    <sys:String x:Key="ModelRadar.CompactValueLabel">VAL</sys:String>
+    <sys:String x:Key="ModelRadar.CompactOverallFormat">Overall: {0} / {1} · {2}</sys:String>
+    <sys:String x:Key="ModelRadar.CompactValueFormat">Value: {0} / {1} · {2}</sys:String>
+    <sys:String x:Key="ModelRadar.CompactCached">Cached</sys:String>
     <sys:String x:Key="ModelRadar.OverallCategory">Overall</sys:String>
     <sys:String x:Key="ModelRadar.BackendCategory">Backend</sys:String>
     <sys:String x:Key="ModelRadar.FrontendCategory">Frontend</sys:String>

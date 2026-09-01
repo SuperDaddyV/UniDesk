@@ -22,7 +22,8 @@ public partial class MainWindow : Window
     private bool _isApplyingMonitorBounds;
     private bool _isDragging;
     private MonitorWorkArea? _currentMonitor;
-    private const double CollapsedPanelHeight = 178;
+    private const double CollapsedPanelHeight = 190;
+    private const double CollapsedPanelMinWidth = 350;
     private const double MinimumCompactHeight = CollapsedPanelHeight;
     private const double WorkAreaMargin = 16;
     private const double WindowCornerRadius = 16;
@@ -100,7 +101,7 @@ public partial class MainWindow : Window
         try
         {
             var actualSize = PanelSizePolicy.ClampActualSize(
-                _viewModel.PanelWidth,
+                GetRequestedPanelWidth(),
                 _viewModel.PanelHeight,
                 monitor.WorkArea);
             ApplyPanelSizeConstraints(monitor);
@@ -176,7 +177,7 @@ public partial class MainWindow : Window
 
             ApplyPanelSizeConstraints(targetMonitor);
             var actualSize = PanelSizePolicy.ClampActualSize(
-                _viewModel.PanelWidth,
+                GetRequestedPanelWidth(),
                 requestedHeight,
                 targetMonitor.WorkArea);
             Width = actualSize.Width;
@@ -501,7 +502,9 @@ public partial class MainWindow : Window
     {
         var bounds = PanelSizePolicy.GetBounds(monitor.WorkArea);
         MaxWidth = double.PositiveInfinity;
-        MinWidth = bounds.MinWidth;
+        MinWidth = _viewModel.IsPanelCollapsed
+            ? Math.Min(CollapsedPanelMinWidth, bounds.MaxWidth)
+            : bounds.MinWidth;
         MaxWidth = bounds.MaxWidth;
 
         var usableWorkAreaHeight = GetUsableWorkAreaHeight(monitor);
@@ -515,6 +518,11 @@ public partial class MainWindow : Window
         MinHeight = _viewModel.IsPanelCollapsed ? CollapsedPanelHeight : expandedMinimumHeight;
         MaxHeight = _viewModel.IsPanelCollapsed ? CollapsedPanelHeight : expandedMaximumHeight;
     }
+
+    private double GetRequestedPanelWidth() =>
+        _viewModel.IsPanelCollapsed
+            ? Math.Max(_viewModel.PanelWidth, CollapsedPanelMinWidth)
+            : _viewModel.PanelWidth;
 
     private double GetUsableWorkAreaHeight() =>
         GetUsableWorkAreaHeight(_monitorWorkAreas.GetForWindow(

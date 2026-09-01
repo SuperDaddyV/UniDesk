@@ -13,7 +13,7 @@
                     <DataTrigger Binding="{Binding DataContext.IsPanelCollapsed, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
                         <Setter Property="Padding" Value="0"/>
                         <Setter Property="Margin" Value="0"/>
-                        <Setter Property="Height" Value="128"/>
+                        <Setter Property="Height" Value="140"/>
                         <Setter Property="Background" Value="Transparent"/>
                         <Setter Property="BorderBrush" Value="Transparent"/>
                         <Setter Property="BorderThickness" Value="0"/>
@@ -400,8 +400,8 @@
             <Border x:Name="CompactStatusStrip"
                     Grid.Row="1"
                     Grid.ColumnSpan="3"
-                    Margin="0,6,0,0"
-                    Padding="8,4"
+                    Margin="0,4,0,0"
+                    Padding="8,2"
                     CornerRadius="8"
                     Background="{DynamicResource CardSurfaceBrush}">
                 <Border.Style>
@@ -414,44 +414,167 @@
                         </Style.Triggers>
                     </Style>
                 </Border.Style>
+                <Border.Resources>
+                    <Style x:Key="CompactBodyTextStyle" TargetType="TextBlock" BasedOn="{StaticResource BodyTextStyle}">
+                        <Setter Property="FontSize" Value="10"/>
+                        <Setter Property="LineHeight" Value="16"/>
+                        <Setter Property="LineStackingStrategy" Value="BlockLineHeight"/>
+                        <Setter Property="Height" Value="16"/>
+                        <Setter Property="FontWeight" Value="Normal"/>
+                        <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
+                        <Setter Property="VerticalAlignment" Value="Center"/>
+                        <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+                        <Setter Property="TextWrapping" Value="NoWrap"/>
+                        <Setter Property="TextOptions.TextFormattingMode" Value="Display"/>
+                    </Style>
+                    <Style x:Key="CompactStatusTextStyle" TargetType="TextBlock" BasedOn="{StaticResource CaptionTextStyle}">
+                        <Setter Property="FontSize" Value="10"/>
+                        <Setter Property="LineHeight" Value="16"/>
+                        <Setter Property="LineStackingStrategy" Value="BlockLineHeight"/>
+                        <Setter Property="Height" Value="16"/>
+                        <Setter Property="VerticalAlignment" Value="Center"/>
+                        <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+                        <Setter Property="TextWrapping" Value="NoWrap"/>
+                        <Setter Property="TextOptions.TextFormattingMode" Value="Display"/>
+                    </Style>
+                </Border.Resources>
                 <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
-                    <Grid Grid.Column="0"
-                          Visibility="{Binding DataContext.Todos.HasCollapsedPanelTodo, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BooleanToVisibilityConverter}}">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <Grid x:Name="CompactModelRadarSummary"
+                          Grid.Row="0"
+                          Height="16"
+                          Margin="0,0,0,1"
+                          ToolTip="{Binding DataContext.ModelRadar.CompactToolTipText, RelativeSource={RelativeSource AncestorType=Window}}"
+                          Visibility="{Binding DataContext.ModelRadar.IsCompactSummaryVisible, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BooleanToVisibilityConverter}}">
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
-                        <Ellipse Grid.Column="0"
-                                 Width="7"
-                                 Height="7"
-                                 Fill="{Binding DataContext.Todos.CollapsedPanelTodo.Priority, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource TodoPriorityBrush}}"
-                                 VerticalAlignment="Center"
-                                 Margin="0,0,7,0"/>
-                        <TextBlock Grid.Column="1"
-                                   Text="{Binding DataContext.Todos.CollapsedPanelTodo.Title, RelativeSource={RelativeSource AncestorType=Window}}"
-                                   Style="{StaticResource BodyTextStyle}"
-                                   FontSize="10"
-                                   FontWeight="SemiBold"
-                                   VerticalAlignment="Center"
-                                   TextTrimming="CharacterEllipsis"/>
-                        <TextBlock Grid.Column="2"
-                                   Text="{Binding DataContext.Todos.CollapsedPanelTodoDueText, RelativeSource={RelativeSource AncestorType=Window}}"
-                                   FontSize="10"
-                                   Foreground="{DynamicResource AccentBrush}"
-                                   VerticalAlignment="Center"
-                                   Margin="8,0,0,0"
-                                   Visibility="{Binding DataContext.Todos.CollapsedPanelTodoDueText, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource StringNotEmptyToVisibilityConverter}}"/>
+                        <Grid x:Name="CompactModelRadarOverallRecommendation"
+                              Grid.Column="0"
+                              Visibility="{Binding DataContext.ModelRadar.HasCompactRecommendations, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BooleanToVisibilityConverter}}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock x:Name="CompactModelRadarOverallLabelText"
+                                       Grid.Column="0"
+                                       Width="24"
+                                       Margin="0,0,3,0"
+                                       FontWeight="Medium"
+                                       TextAlignment="Center"
+                                       TextTrimming="None"
+                                       Style="{StaticResource CompactBodyTextStyle}"
+                                       Text="{Binding DataContext.ModelRadar.CompactOverallLabelText, RelativeSource={RelativeSource AncestorType=Window}}"/>
+                            <TextBlock x:Name="CompactModelRadarOverallModelText"
+                                       Grid.Column="1"
+                                       TextTrimming="None"
+                                       Style="{StaticResource CompactBodyTextStyle}"
+                                       Text="{Binding DataContext.ModelRadar.CompactOverallModelText, RelativeSource={RelativeSource AncestorType=Window}}"/>
+                            <TextBlock x:Name="CompactModelRadarOverallScoreText"
+                                       Grid.Column="2"
+                                       Margin="4,0,0,0"
+                                       HorizontalAlignment="Right"
+                                       TextAlignment="Right"
+                                       Style="{StaticResource CompactBodyTextStyle}"
+                                       Text="{Binding DataContext.ModelRadar.CompactOverallScoreText, RelativeSource={RelativeSource AncestorType=Window}}"/>
+                        </Grid>
+                        <Border x:Name="CompactModelRadarDivider"
+                                Grid.Column="1"
+                                Width="1"
+                                Margin="6,1"
+                                Background="{DynamicResource DividerBrush}"
+                                Visibility="{Binding DataContext.ModelRadar.HasCompactRecommendations, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                        <Grid x:Name="CompactModelRadarValueRecommendation"
+                              Grid.Column="2"
+                              Visibility="{Binding DataContext.ModelRadar.HasCompactRecommendations, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BooleanToVisibilityConverter}}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock x:Name="CompactModelRadarValueLabelText"
+                                       Grid.Column="0"
+                                       Width="24"
+                                       Margin="0,0,3,0"
+                                       FontWeight="Medium"
+                                       TextAlignment="Center"
+                                       TextTrimming="None"
+                                       Style="{StaticResource CompactBodyTextStyle}"
+                                       Text="{Binding DataContext.ModelRadar.CompactValueLabelText, RelativeSource={RelativeSource AncestorType=Window}}"/>
+                            <TextBlock x:Name="CompactModelRadarValueModelText"
+                                       Grid.Column="1"
+                                       TextTrimming="None"
+                                       Style="{StaticResource CompactBodyTextStyle}"
+                                       Text="{Binding DataContext.ModelRadar.CompactValueModelText, RelativeSource={RelativeSource AncestorType=Window}}"/>
+                            <TextBlock x:Name="CompactModelRadarValueScoreText"
+                                       Grid.Column="2"
+                                       Margin="4,0,0,0"
+                                       HorizontalAlignment="Right"
+                                       TextAlignment="Right"
+                                       Style="{StaticResource CompactBodyTextStyle}"
+                                       Text="{Binding DataContext.ModelRadar.CompactValueScoreText, RelativeSource={RelativeSource AncestorType=Window}}"/>
+                        </Grid>
+                        <TextBlock x:Name="CompactModelRadarStatusText"
+                                   Grid.ColumnSpan="3"
+                                   Style="{StaticResource CompactStatusTextStyle}"
+                                   Foreground="{DynamicResource SecondaryTextBrush}"
+                                   Text="{Binding DataContext.ModelRadar.CompactStatusText, RelativeSource={RelativeSource AncestorType=Window}}"
+                                   Visibility="{Binding DataContext.ModelRadar.HasCompactRecommendations, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource InverseBooleanToVisibilityConverter}}"/>
                     </Grid>
-                    <TextBlock Grid.Column="0"
-                               Text="{DynamicResource Todo.NoData}"
-                               FontSize="10"
-                               Foreground="{DynamicResource SecondaryTextBrush}"
-                               VerticalAlignment="Center"
-                               Visibility="{Binding DataContext.Todos.HasCollapsedPanelTodo, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource InverseBooleanToVisibilityConverter}}"/>
+
+                    <Border Grid.Row="1">
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Setter Property="BorderThickness" Value="0"/>
+                                <Setter Property="Padding" Value="0"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding DataContext.ModelRadar.IsCompactSummaryVisible, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
+                                        <Setter Property="BorderBrush" Value="{DynamicResource DividerBrush}"/>
+                                        <Setter Property="BorderThickness" Value="0,1,0,0"/>
+                                        <Setter Property="Padding" Value="0,1,0,0"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
+                        <Grid x:Name="CompactTodoSummary" Height="16">
+                            <Grid Height="16"
+                                  Visibility="{Binding DataContext.Todos.HasCollapsedPanelTodo, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <Ellipse Grid.Column="0"
+                                         Width="7"
+                                         Height="7"
+                                         Fill="{Binding DataContext.Todos.CollapsedPanelTodo.Priority, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource TodoPriorityBrush}}"
+                                         VerticalAlignment="Center"
+                                         Margin="0,0,7,0"/>
+                                <TextBlock x:Name="CompactTodoTitleText"
+                                           Grid.Column="1"
+                                           Style="{StaticResource CompactBodyTextStyle}"
+                                           Text="{Binding DataContext.Todos.CollapsedPanelTodo.Title, RelativeSource={RelativeSource AncestorType=Window}}"/>
+                                <TextBlock x:Name="CompactTodoDueText"
+                                           Grid.Column="2"
+                                           Style="{StaticResource CompactBodyTextStyle}"
+                                           Foreground="{DynamicResource AccentBrush}"
+                                           Margin="8,0,0,0"
+                                           Text="{Binding DataContext.Todos.CollapsedPanelTodoDueText, RelativeSource={RelativeSource AncestorType=Window}}"
+                                           Visibility="{Binding DataContext.Todos.CollapsedPanelTodoDueText, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource StringNotEmptyToVisibilityConverter}}"/>
+                            </Grid>
+                            <TextBlock Text="{DynamicResource Todo.NoData}"
+                                       Style="{StaticResource CompactStatusTextStyle}"
+                                       Foreground="{DynamicResource SecondaryTextBrush}"
+                                       Visibility="{Binding DataContext.Todos.HasCollapsedPanelTodo, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource InverseBooleanToVisibilityConverter}}"/>
+                        </Grid>
+                    </Border>
                 </Grid>
             </Border>
     

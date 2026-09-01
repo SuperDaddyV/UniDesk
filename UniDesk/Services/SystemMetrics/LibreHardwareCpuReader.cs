@@ -337,7 +337,7 @@ public sealed class LibreHardwareCpuReader : IDisposable
         _lastReaderErrorLogUtc = now;
         Debug.WriteLine($"CPU 温度读取失败：{ex.GetType().Name}: {ex.Message}");
         Logger.LogWarning(
-            $"CPU 温度读取失败：{ex.GetType().Name}: {ex.Message}。部分硬件传感器可能需要管理员权限或主板驱动支持。",
+            $"CPU 温度读取失败：{ex.GetType().Name}。部分硬件传感器可能需要管理员权限或主板驱动支持。",
             "SystemMetricsService.CpuTemperature");
     }
 
@@ -351,7 +351,7 @@ public sealed class LibreHardwareCpuReader : IDisposable
 
         _lastWindowsThermalZoneErrorLogUtc = now;
         Logger.LogWarning(
-            $"Windows ACPI Thermal Zone 读取失败：{ex.GetType().Name}: {ex.Message}。将继续使用其它 CPU 温度来源。",
+            $"Windows ACPI Thermal Zone 读取失败：{ex.GetType().Name}。将继续使用其它 CPU 温度来源。",
             "SystemMetricsService.WindowsThermalZone");
     }
 }

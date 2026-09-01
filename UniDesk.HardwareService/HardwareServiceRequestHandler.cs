@@ -36,17 +36,17 @@ public sealed class HardwareServiceRequestHandler
 
             return HardwareIpcProtocol.SerializeResponse(snapshot);
         }
-        catch (InvalidDataException ex)
+        catch (InvalidDataException)
         {
             return HardwareIpcProtocol.SerializeResponse(CreateError(
                 HardwareServiceAvailability.ProtocolMismatch,
-                ex.Message));
+                "Invalid hardware service request payload."));
         }
         catch (Exception ex)
         {
             return HardwareIpcProtocol.SerializeResponse(CreateError(
                 HardwareServiceAvailability.Error,
-                $"{ex.GetType().Name}: {ex.Message}"));
+                $"{ex.GetType().Name} (0x{ex.HResult:X8})"));
         }
     }
 

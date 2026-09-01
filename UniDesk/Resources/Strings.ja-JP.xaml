@@ -75,6 +75,11 @@
     <sys:String x:Key="ModelRadar.OverallBest">総合トップ</sys:String>
     <sys:String x:Key="ModelRadar.ValueRecommendation">コストパフォーマンス推薦</sys:String>
     <sys:String x:Key="ModelRadar.NoValueRecommendation">このバッチにはコストパフォーマンス推薦がありません</sys:String>
+    <sys:String x:Key="ModelRadar.CompactOverallLabel">TOP</sys:String>
+    <sys:String x:Key="ModelRadar.CompactValueLabel">VAL</sys:String>
+    <sys:String x:Key="ModelRadar.CompactOverallFormat">総合：{0} / {1} · {2}</sys:String>
+    <sys:String x:Key="ModelRadar.CompactValueFormat">コスパ：{0} / {1} · {2}</sys:String>
+    <sys:String x:Key="ModelRadar.CompactCached">キャッシュ</sys:String>
     <sys:String x:Key="ModelRadar.OverallCategory">総合</sys:String>
     <sys:String x:Key="ModelRadar.BackendCategory">バックエンド</sys:String>
     <sys:String x:Key="ModelRadar.FrontendCategory">フロントエンド</sys:String>

@@ -84,8 +84,8 @@ public class ReleasePipelineTests
             "Test-UnsignedReleaseReadiness.ps1"));
 
         Assert.Contains("[string]$ExpectedSourceRevision", script, StringComparison.Ordinal);
-        Assert.Contains("[string]$ExpectedVersion = '2.2.0'", script, StringComparison.Ordinal);
-        Assert.Contains("@('2.1.0', '2.2.0')", script, StringComparison.Ordinal);
+        Assert.Contains("[string]$ExpectedVersion = '2.2.1'", script, StringComparison.Ordinal);
+        Assert.Contains("@('2.1.0', '2.2.0', '2.2.1')", script, StringComparison.Ordinal);
         Assert.Contains("-cnotcontains $ExpectedVersion", script, StringComparison.Ordinal);
         Assert.Contains("Test-ReleasePayloadIntegrity.ps1", script, StringComparison.Ordinal);
         Assert.Contains("-isnot [bool]", script, StringComparison.Ordinal);
@@ -132,6 +132,7 @@ public class ReleasePipelineTests
             "VersionInfoCopyright=UniDesk payload 2 {#MyPayloadManifestSha256Part2}",
             installerScript,
             StringComparison.Ordinal);
+        Assert.Contains("VersionInfoVersion={#MyAppVersion}.0", installerScript, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -149,7 +150,7 @@ public class ReleasePipelineTests
                 JsonSerializer.Serialize(new
                 {
                     schema = 3,
-                    version = "2.2.0",
+                    version = "2.2.1",
                     isDirty = 0,
                     sourceRevision,
                     runtime = "win-x64"
@@ -179,7 +180,7 @@ public class ReleasePipelineTests
                 JsonSerializer.Serialize(new
                 {
                     schema = 3,
-                    version = "2.2.0",
+                    version = "2.2.1",
                     isDirty = false,
                     sourceRevision = expectedRevision,
                     runtime = "win-x64"
@@ -211,7 +212,7 @@ public class ReleasePipelineTests
                 JsonSerializer.Serialize(new
                 {
                     schema = 3,
-                    version = "2.2.0",
+                    version = "2.2.1",
                     isDirty = false,
                     sourceRevision,
                     runtime = "win-x64"
@@ -229,7 +230,7 @@ public class ReleasePipelineTests
 
     [Theory]
     [InlineData("2.1.1")]
-    [InlineData("2.2.1")]
+    [InlineData("2.2.2")]
     [InlineData("2.3.0")]
     [InlineData("2.2.0-rc.1")]
     public void UnsignedReleaseReadinessGate_ShouldRejectVersionsWithoutExplicitException(
@@ -266,7 +267,8 @@ public class ReleasePipelineTests
     [Theory]
     [InlineData("2.1.0")]
     [InlineData("2.2.0")]
-    public void UnsignedReleaseReadinessGate_ShouldRecognizeOnlyTheTwoApprovedStableVersions(
+    [InlineData("2.2.1")]
+    public void UnsignedReleaseReadinessGate_ShouldRecognizeOnlyTheThreeApprovedStableVersions(
         string version)
     {
         var sourceRevision = GetCurrentSourceRevision();
@@ -802,6 +804,7 @@ public class ReleasePipelineTests
 
         Assert.Contains("v2.1.0 unsigned release exception", codeSigningPolicy, StringComparison.Ordinal);
         Assert.Contains("v2.2.0 unsigned release exception", codeSigningPolicy, StringComparison.Ordinal);
+        Assert.Contains("v2.2.1 unsigned release exception", codeSigningPolicy, StringComparison.Ordinal);
         Assert.Contains("Test-UnsignedReleaseReadiness.ps1", File.ReadAllText(Path.Combine(
             ProjectRoot,
             "docs",
@@ -810,6 +813,10 @@ public class ReleasePipelineTests
             ProjectRoot,
             "docs",
             "release-test-matrix-2.2.0.md")), StringComparison.Ordinal);
+        Assert.Contains("Test-UnsignedReleaseReadiness.ps1", File.ReadAllText(Path.Combine(
+            ProjectRoot,
+            "docs",
+            "release-test-matrix-2.2.1.md")), StringComparison.Ordinal);
     }
 
     [Fact]

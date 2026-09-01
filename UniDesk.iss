@@ -3,7 +3,7 @@
 ; overrides all source and output directories so historical publish output is never reused.
 
 #define MyAppName "UniDesk"
-#define MyAppVersion "2.2.0"
+#define MyAppVersion "2.2.1"
 #define MyAppPublisher "UniDesk"
 #define MyAppURL "https://github.com/SuperDaddyV/UniDesk"
 #define MyAppExeName "UniDesk.exe"
@@ -41,6 +41,7 @@ AppSupportURL={#MyAppURL}
 AppUpdatesURL={#MyAppURL}
 VersionInfoDescription=UniDesk payload 1 {#MyPayloadManifestSha256Part1}
 VersionInfoCopyright=UniDesk payload 2 {#MyPayloadManifestSha256Part2}
+VersionInfoVersion={#MyAppVersion}.0
 DefaultDirName={autopf}\{#MyAppName}
 DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes
@@ -152,6 +153,10 @@ spanish.PawnIoRemoveFailed=No se pudo desinstalar PawnIO. La desinstalación de 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"
 Name: "completehardware"; Description: "{cm:CompleteHardwareTask}"; GroupDescription: "{cm:HardwareMonitoringGroup}"
+
+[Dirs]
+Name: "{commonappdata}\UniDesk"; Permissions: admins-full system-full
+Name: "{commonappdata}\UniDesk\logs"; Permissions: admins-full system-full
 
 [Files]
 ; Package the release output, including dlls, runtimeconfig, deps and native runtimes.
@@ -1206,6 +1211,23 @@ begin
   end;
 end;
 
+function WaitForHardwareServiceRemoved: Boolean;
+var
+  Attempt: Integer;
+begin
+  Result := False;
+  for Attempt := 1 to 20 do
+  begin
+    if not HardwareServiceExists then
+    begin
+      Result := True;
+      Exit;
+    end;
+    if Attempt < 20 then
+      Sleep(500);
+  end;
+end;
+
 function RetireOwnedHardwareServiceAt(
   const OwnedApplicationPath: String): Boolean;
 var
@@ -1249,8 +1271,15 @@ begin
     '',
     SW_HIDE,
     ewWaitUntilTerminated,
-    TaskKillCode);
+  TaskKillCode);
   StopSafe := WaitForHardwareServiceStopped;
+  if not StopSafe then
+  begin
+    Log('Owned hardware service could not be confirmed stopped; delete was not attempted.');
+    Result := False;
+    Exit;
+  end;
+
   DeleteCode := -1;
   DeleteSafe := Exec(
     ExpandConstant('{sys}\sc.exe'),
@@ -1260,7 +1289,10 @@ begin
     ewWaitUntilTerminated,
     DeleteCode) and ((DeleteCode = 0) or (DeleteCode = 1060));
 
-  Result := StopSafe and (DeleteSafe or DisableSafe);
+  if DeleteSafe then
+    DeleteSafe := WaitForHardwareServiceRemoved;
+
+  Result := StopSafe and DeleteSafe;
   Log('Owned hardware service retirement: disabled=' +
     BooleanLogValue(DisableSafe) + '; stopped=' + BooleanLogValue(StopSafe) +
     '; deleted=' + BooleanLogValue(DeleteSafe) + '.');
@@ -1333,6 +1365,53 @@ begin
       QuotedPath +
       ' /grant:r *S-1-5-18:(OI)(CI)F *S-1-5-32-544:(OI)(CI)F *S-1-5-32-545:(OI)(CI)RX /C /L /Q') and
     ResetDirectoryChildrenAcl(DirectoryPath);
+end;
+
+function HardenLogDirectoryAcl(const DirectoryPath: String): Boolean;
+var
+  QuotedPath: String;
+begin
+  QuotedPath := '"' + DirectoryPath + '"';
+
+  Result :=
+    RunIcacls(QuotedPath + ' /setowner *S-1-5-32-544 /C /L /Q') and
+    RunIcacls(QuotedPath + ' /inheritance:r /C /L /Q') and
+    RunIcacls(QuotedPath + ' /remove:g *S-1-1-0 *S-1-5-11 *S-1-5-32-545 /C /L /Q') and
+    RunIcacls(
+      QuotedPath +
+      ' /grant:r *S-1-5-18:(OI)(CI)F *S-1-5-32-544:(OI)(CI)F *S-1-5-32-545:(OI)(CI)RX /C /L /Q');
+end;
+
+function HardenHardwareRepairLogDirectory: Boolean;
+var
+  LogRoot: String;
+  LogDirectory: String;
+begin
+  LogRoot := AddBackslash(ExpandConstant('{commonappdata}')) + 'UniDesk';
+  LogDirectory := AddBackslash(LogRoot) + 'logs';
+  if ContainsReparsePointInExistingAncestorChain(LogDirectory) then
+  begin
+    Log('Refusing a reparse-point ancestor for the hardware repair log directory.');
+    Result := False;
+    Exit;
+  end;
+
+  if not ForceDirectories(LogDirectory) then
+  begin
+    Log('Could not create the hardware repair log directory.');
+    Result := False;
+    Exit;
+  end;
+
+  if ContainsReparsePointInExistingAncestorChain(LogDirectory) or
+    ContainsReparsePoint(LogRoot) or ContainsReparsePoint(LogDirectory) then
+  begin
+    Log('Refusing a reparse point in the hardware repair log directory.');
+    Result := False;
+    Exit;
+  end;
+
+  Result := HardenLogDirectoryAcl(LogRoot) and HardenLogDirectoryAcl(LogDirectory);
 end;
 
 function HardenProtectedComponentPayload: Boolean;
@@ -1538,6 +1617,13 @@ begin
     Exit;
   end;
 
+  if not HardenHardwareRepairLogDirectory then
+  begin
+    Result := FmtMessage(
+      ExpandConstant('{cm:HardwareAclFailed}'), [ExpandConstant('{log}')]);
+    Exit;
+  end;
+
   if not RetireLegacyAppHostedHardwareService(RetiredLegacyService) then
   begin
     Result := FmtMessage(
@@ -1545,7 +1631,15 @@ begin
     Exit;
   end;
 
-  if HardwareServiceExists and (not RetiredLegacyService) then
+  if HardwareServiceExists and RetiredLegacyService then
+  begin
+    Log('Legacy hardware service deletion was accepted but the service still exists; refusing to continue.');
+    Result := FmtMessage(
+      ExpandConstant('{cm:HardwareUnsafeServiceRetirementFailed}'), [ExpandConstant('{log}')]);
+    Exit;
+  end;
+
+  if HardwareServiceExists then
   begin
     if not IsHardwareServiceOwned then
     begin

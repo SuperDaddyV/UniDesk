@@ -16,9 +16,226 @@ public class ModelRadarViewModelTests
         using var viewModel = new ModelRadarViewModel(service, new TestLocalizationService());
 
         Assert.False(viewModel.IsEnabled);
+        Assert.False(viewModel.IsCompactSummaryVisible);
+        Assert.False(viewModel.HasCompactRecommendations);
+        Assert.Equal(string.Empty, viewModel.CompactOverallLabelText);
+        Assert.Equal(string.Empty, viewModel.CompactOverallModelText);
+        Assert.Equal(string.Empty, viewModel.CompactOverallScoreText);
+        Assert.Equal(string.Empty, viewModel.CompactValueLabelText);
+        Assert.Equal(string.Empty, viewModel.CompactValueModelText);
+        Assert.Equal(string.Empty, viewModel.CompactValueScoreText);
+        Assert.Equal(string.Empty, viewModel.CompactOverallText);
+        Assert.Equal(string.Empty, viewModel.CompactValueText);
+        Assert.Equal(string.Empty, viewModel.CompactStatusText);
+        Assert.Equal(string.Empty, viewModel.CompactToolTipText);
         Assert.Equal(0, service.ReadCacheCallCount);
         Assert.Equal(0, service.RefreshCallCount);
         Assert.False(viewModel.IsAutomaticRefreshScheduled);
+    }
+
+    [Fact]
+    public async Task CompactSummary_WithCompleteSnapshot_ShouldExposeOfficialRecommendationsAndTooltip()
+    {
+        var localization = new TestLocalizationService();
+        var snapshot = CreateSnapshot(publishedAt: Now);
+        var service = new FakeModelRadarService
+        {
+            CacheResult = Success(snapshot, Now)
+        };
+        using var viewModel = CreateViewModel(service, localization);
+
+        await viewModel.SetEnabledAsync(true);
+
+        Assert.True(viewModel.IsCompactSummaryVisible);
+        Assert.True(viewModel.HasCompactRecommendations);
+        Assert.Equal("ModelRadar.CompactOverallLabel", viewModel.CompactOverallLabelText);
+        Assert.EndsWith(
+            $"{snapshot.OverallLeader!.Model}/{snapshot.OverallLeader.ReasoningEffort}",
+            viewModel.CompactOverallModelText,
+            StringComparison.Ordinal);
+        Assert.Equal("88.0", viewModel.CompactOverallScoreText);
+        Assert.Equal("ModelRadar.CompactValueLabel", viewModel.CompactValueLabelText);
+        Assert.Equal(
+            $"{snapshot.ValueRecommendation!.Model}/{snapshot.ValueRecommendation.ReasoningEffort}",
+            viewModel.CompactValueModelText);
+        Assert.Equal("88.0", viewModel.CompactValueScoreText);
+        Assert.Contains(snapshot.OverallLeader!.Model, viewModel.CompactOverallText, StringComparison.Ordinal);
+        Assert.Contains(snapshot.OverallLeader.ReasoningEffort, viewModel.CompactOverallText, StringComparison.Ordinal);
+        Assert.Contains("88.0", viewModel.CompactOverallText, StringComparison.Ordinal);
+        Assert.Contains("ModelRadar.CompactOverallFormat", viewModel.CompactOverallText, StringComparison.Ordinal);
+        Assert.Contains(snapshot.ValueRecommendation!.Model, viewModel.CompactValueText, StringComparison.Ordinal);
+        Assert.Contains(snapshot.ValueRecommendation.ReasoningEffort, viewModel.CompactValueText, StringComparison.Ordinal);
+        Assert.Contains("88.0", viewModel.CompactValueText, StringComparison.Ordinal);
+        Assert.Contains("ModelRadar.CompactValueFormat", viewModel.CompactValueText, StringComparison.Ordinal);
+        Assert.Contains(viewModel.CompactOverallText, viewModel.CompactToolTipText, StringComparison.Ordinal);
+        Assert.Contains(viewModel.CompactValueText, viewModel.CompactToolTipText, StringComparison.Ordinal);
+        Assert.Contains(viewModel.PublishedText, viewModel.CompactToolTipText, StringComparison.Ordinal);
+        Assert.Contains(viewModel.StatusText, viewModel.CompactToolTipText, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task CompactSummary_GptModels_ShouldUseCompactDisplayNamesAndKeepRawTooltip()
+    {
+        var snapshot = CreateSnapshot(
+            publishedAt: Now,
+            model: "gpt-5.6-sol",
+            reasoningEffort: "max",
+            valueModel: "gpt-5.6-luna",
+            valueReasoningEffort: "high");
+        var service = new FakeModelRadarService
+        {
+            CacheResult = Success(snapshot, Now)
+        };
+        using var viewModel = CreateViewModel(service);
+
+        await viewModel.SetEnabledAsync(true);
+
+        Assert.Equal("GPT5.6-Sol/Max", viewModel.CompactOverallModelText);
+        Assert.Equal("GPT5.6-Luna/High", viewModel.CompactValueModelText);
+        Assert.Contains("gpt-5.6-sol", viewModel.CompactToolTipText, StringComparison.Ordinal);
+        Assert.Contains("gpt-5.6-luna", viewModel.CompactToolTipText, StringComparison.Ordinal);
+        Assert.Contains("max", viewModel.CompactToolTipText, StringComparison.Ordinal);
+        Assert.Contains("high", viewModel.CompactToolTipText, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task CompactSummary_WithPendingSnapshot_ShouldExposeStatusWithoutBackendRecommendation()
+    {
+        var snapshot = CreateSnapshot("pending", isPending: true);
+        var service = new FakeModelRadarService
+        {
+            CacheResult = Success(snapshot, Now)
+        };
+        using var viewModel = CreateViewModel(service);
+
+        await viewModel.SetEnabledAsync(true);
+
+        Assert.True(viewModel.IsCompactSummaryVisible);
+        Assert.False(viewModel.HasCompactRecommendations);
+        Assert.Equal(string.Empty, viewModel.CompactOverallText);
+        Assert.Equal(string.Empty, viewModel.CompactValueText);
+        Assert.Contains(viewModel.StatusText, viewModel.CompactStatusText, StringComparison.Ordinal);
+        Assert.DoesNotContain(snapshot.ValueRecommendation!.Model, viewModel.CompactStatusText, StringComparison.Ordinal);
+        Assert.Contains(viewModel.StatusText, viewModel.CompactToolTipText, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task CompactSummary_WithoutValueRecommendation_ShouldUseNoValueStatus()
+    {
+        var snapshot = CreateSnapshot() with { ValueRecommendation = null };
+        var service = new FakeModelRadarService
+        {
+            CacheResult = Success(snapshot, Now)
+        };
+        using var viewModel = CreateViewModel(service);
+
+        await viewModel.SetEnabledAsync(true);
+
+        Assert.True(viewModel.IsCompactSummaryVisible);
+        Assert.True(viewModel.HasCompactRecommendations);
+        Assert.Equal("ModelRadar.CompactOverallLabel", viewModel.CompactOverallLabelText);
+        Assert.EndsWith(
+            $"{snapshot.OverallLeader!.Model}/{snapshot.OverallLeader.ReasoningEffort}",
+            viewModel.CompactOverallModelText,
+            StringComparison.Ordinal);
+        Assert.Equal("88.0", viewModel.CompactOverallScoreText);
+        Assert.Equal("ModelRadar.CompactValueLabel", viewModel.CompactValueLabelText);
+        Assert.Equal("ModelRadar.NoValueRecommendation", viewModel.CompactValueModelText);
+        Assert.Equal(string.Empty, viewModel.CompactValueScoreText);
+        Assert.Contains(snapshot.OverallLeader!.Model, viewModel.CompactOverallText, StringComparison.Ordinal);
+        Assert.Equal("ModelRadar.NoValueRecommendation", viewModel.CompactValueText);
+        Assert.Equal(string.Empty, viewModel.CompactStatusText);
+        Assert.Contains(viewModel.CompactOverallText, viewModel.CompactToolTipText, StringComparison.Ordinal);
+        Assert.Contains("ModelRadar.NoValueRecommendation", viewModel.CompactToolTipText, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task CompactSummary_WithoutSnapshot_ShouldExposeUnavailableStatus()
+    {
+        var service = new FakeModelRadarService
+        {
+            CacheResult = Result(ModelRadarServiceStatus.NotFound),
+            RefreshHandler = _ => Task.FromResult(Result(ModelRadarServiceStatus.NetworkError))
+        };
+        using var viewModel = CreateViewModel(service);
+
+        await viewModel.SetEnabledAsync(true);
+
+        Assert.True(viewModel.IsCompactSummaryVisible);
+        Assert.False(viewModel.HasCompactRecommendations);
+        Assert.Equal(string.Empty, viewModel.CompactOverallText);
+        Assert.Equal(string.Empty, viewModel.CompactValueText);
+        Assert.Contains(viewModel.StatusText, viewModel.CompactStatusText, StringComparison.Ordinal);
+        Assert.Contains(viewModel.StatusText, viewModel.CompactToolTipText, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task CompactSummary_WithOfflineCache_ShouldKeepPublishedDateAndOfflineStatusInTooltip()
+    {
+        var localization = new TestLocalizationService();
+        var snapshot = CreateSnapshot(publishedAt: Now.AddDays(-1));
+        var service = new FakeModelRadarService
+        {
+            CacheResult = Success(snapshot, Now),
+            RefreshHandler = _ => Task.FromResult(Result(ModelRadarServiceStatus.NetworkError))
+        };
+        using var viewModel = CreateViewModel(service, localization);
+
+        await viewModel.SetEnabledAsync(true);
+        Assert.True(viewModel.HasCompactRecommendations);
+        Assert.Contains(
+            snapshot.PublishedAt.ToLocalTime().ToString("MM/dd", localization.CurrentCulture),
+            viewModel.CompactOverallText,
+            StringComparison.Ordinal);
+        Assert.DoesNotContain("ModelRadar.CompactCached", viewModel.CompactOverallText, StringComparison.Ordinal);
+
+        await viewModel.RefreshCommand.ExecuteAsync(null);
+
+        Assert.True(viewModel.HasCompactRecommendations);
+        Assert.Contains(
+            snapshot.PublishedAt.ToLocalTime().ToString("MM/dd", localization.CurrentCulture),
+            viewModel.CompactOverallText,
+            StringComparison.Ordinal);
+        Assert.Contains("ModelRadar.CompactCached", viewModel.CompactOverallText, StringComparison.Ordinal);
+        Assert.Contains(viewModel.PublishedText, viewModel.CompactToolTipText, StringComparison.Ordinal);
+        Assert.Contains(viewModel.StatusText, viewModel.CompactToolTipText, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task CompactSummary_ShouldRefreshAllBindingsAfterLanguageChange()
+    {
+        var localization = new TestLocalizationService();
+        var snapshot = CreateSnapshot(publishedAt: Now);
+        var service = new FakeModelRadarService
+        {
+            CacheResult = Success(snapshot, Now)
+        };
+        using var viewModel = CreateViewModel(service, localization);
+        await viewModel.SetEnabledAsync(true);
+
+        var changedProperties = new List<string>();
+        viewModel.PropertyChanged += (_, args) =>
+        {
+            if (args.PropertyName != null)
+            {
+                changedProperties.Add(args.PropertyName);
+            }
+        };
+
+        localization.SetLanguage("zh-CN");
+
+        Assert.Contains(nameof(viewModel.IsCompactSummaryVisible), changedProperties);
+        Assert.Contains(nameof(viewModel.HasCompactRecommendations), changedProperties);
+        Assert.Contains(nameof(viewModel.CompactOverallLabelText), changedProperties);
+        Assert.Contains(nameof(viewModel.CompactOverallModelText), changedProperties);
+        Assert.Contains(nameof(viewModel.CompactOverallScoreText), changedProperties);
+        Assert.Contains(nameof(viewModel.CompactValueLabelText), changedProperties);
+        Assert.Contains(nameof(viewModel.CompactValueModelText), changedProperties);
+        Assert.Contains(nameof(viewModel.CompactValueScoreText), changedProperties);
+        Assert.Contains(nameof(viewModel.CompactOverallText), changedProperties);
+        Assert.Contains(nameof(viewModel.CompactValueText), changedProperties);
+        Assert.Contains(nameof(viewModel.CompactStatusText), changedProperties);
+        Assert.Contains(nameof(viewModel.CompactToolTipText), changedProperties);
     }
 
     [Fact]
@@ -274,22 +491,31 @@ public class ModelRadarViewModelTests
         Assert.Equal(expectedState, viewModel.State);
     }
 
-    private static ModelRadarViewModel CreateViewModel(FakeModelRadarService service) =>
+    private static ModelRadarViewModel CreateViewModel(
+        FakeModelRadarService service,
+        TestLocalizationService? localization = null) =>
         new(
             service,
-            new TestLocalizationService(),
+            localization ?? new TestLocalizationService(),
             new FixedTimeProvider(Now),
             TimeSpan.FromHours(6),
             startAutomaticRefresh: false);
 
-    private static ModelRadarSnapshot CreateSnapshot(string batchId = "overall-batch", bool isPending = false)
+    private static ModelRadarSnapshot CreateSnapshot(
+        string batchId = "overall-batch",
+        bool isPending = false,
+        DateTimeOffset? publishedAt = null,
+        string model = "model-name",
+        string reasoningEffort = "high",
+        string? valueModel = null,
+        string? valueReasoningEffort = null)
     {
         var entry = new ModelRadarEntry
         {
             Id = $"provider:model:{batchId}",
-            Model = "model-name",
-            DisplayName = "model-name / High",
-            ReasoningEffort = "high",
+            Model = model,
+            DisplayName = $"{model} / {reasoningEffort}",
+            ReasoningEffort = reasoningEffort,
             Route = "official_login",
             OverallScore = isPending ? null : 88,
             BackendScore = 86,
@@ -297,6 +523,15 @@ public class ModelRadarViewModelTests
             KnowledgeScore = isPending ? null : 85,
             DecisionTags = ["value"]
         };
+        var valueEntry = valueModel == null && valueReasoningEffort == null
+            ? entry
+            : entry with
+            {
+                Id = $"provider:value:{batchId}",
+                Model = valueModel ?? model,
+                DisplayName = $"{valueModel ?? model} / {valueReasoningEffort ?? reasoningEffort}",
+                ReasoningEffort = valueReasoningEffort ?? reasoningEffort
+            };
         var backendTop = new[] { new ModelRadarListItem(1, entry, entry.BackendScore) };
         var overallTop = isPending
             ? Array.Empty<ModelRadarListItem>()
@@ -306,10 +541,10 @@ public class ModelRadarViewModelTests
         {
             SchemaVersion = "1.1",
             BatchId = batchId,
-            PublishedAt = new DateTimeOffset(2026, 8, 29, 2, 44, 55, TimeSpan.Zero),
+            PublishedAt = publishedAt ?? new DateTimeOffset(2026, 8, 29, 2, 44, 55, TimeSpan.Zero),
             IsPending = isPending,
             OverallLeader = isPending ? null : entry,
-            ValueRecommendation = entry,
+            ValueRecommendation = valueEntry,
             OverallTop = overallTop,
             BackendTop = backendTop,
             FrontendTop = isPending ? [] : [new ModelRadarListItem(1, entry, entry.FrontendScore)],
@@ -363,12 +598,16 @@ public class ModelRadarViewModelTests
     private sealed class TestLocalizationService : ILocalizationService
     {
         public event EventHandler? LanguageChanged;
-        public string CurrentLanguage => "en-US";
+        public string CurrentLanguage { get; private set; } = "en-US";
         public CultureInfo CurrentCulture => CultureInfo.GetCultureInfo("en-US");
         public IReadOnlyList<LanguageOption> SupportedLanguages => [];
         public void Initialize(ISettingsService settingsService) { }
         public string NormalizeLanguage(string? language) => "en-US";
-        public void SetLanguage(string? language) => LanguageChanged?.Invoke(this, EventArgs.Empty);
+        public void SetLanguage(string? language)
+        {
+            CurrentLanguage = language ?? "en-US";
+            LanguageChanged?.Invoke(this, EventArgs.Empty);
+        }
         public string GetString(string key) => key;
         public string Format(string key, params object?[] args) =>
             string.Format(CultureInfo.InvariantCulture, "{0}: {1}", key, string.Join(", ", args));

@@ -248,6 +248,30 @@ public class TodoBackupServiceTests
     }
 
     [Fact]
+    public async Task PrepareImportAsync_InvalidNonEmptyModuleSettings_ShouldRejectBeforePreview()
+    {
+        var (_, todoService, _, _, _, _, backupService) = await InitAsync();
+        await todoService.CreateTodoAsync(new TodoItem { Title = "保留的待办" });
+        await File.WriteAllTextAsync(
+            _backupFile,
+            """
+            {
+              "version": 5,
+              "exportedAt": "2026-07-10T00:00:00Z",
+              "settings": {
+                "ModuleSettings": "{ invalid json"
+              }
+            }
+            """);
+
+        await Assert.ThrowsAsync<InvalidDataException>(
+            () => backupService.PrepareImportAsync(_backupFile));
+
+        Assert.Equal("保留的待办", Assert.Single(await todoService.GetAllTodosAsync()).Title);
+        Cleanup();
+    }
+
+    [Fact]
     public async Task ExportToFileAsync_Default_ShouldExcludeWeatherCredentialsAndClipboardHistory()
     {
         var (_, _, _, quickTextService, _, settingsService, backupService) = await InitAsync();

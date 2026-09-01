@@ -31,7 +31,7 @@ internal static class Program
         }
         catch (Exception ex)
         {
-            logger.Log($"Unexpected {ex.GetType().Name}: {ex.Message}");
+            logger.Log($"Unexpected {ex.GetType().Name} (0x{ex.HResult:X8}).");
             return (int)HardwareRepairExitCode.UnexpectedError;
         }
     }

@@ -5,7 +5,7 @@ param(
     [string]$SourceManifestPath,
     [Parameter(Mandatory)]
     [string]$ExpectedSourceRevision,
-    [string]$ExpectedVersion = '2.2.0',
+    [string]$ExpectedVersion = '2.2.1',
     [string]$PawnIoPath = (Join-Path (Split-Path -Parent $PSScriptRoot) 'installer-assets\PawnIO_setup.exe'),
     [string]$ExpectedPawnIoSignerSubject = 'E=admin@namazso.eu, CN=namazso.eu, O=namazso, L=Debrecen, C=HU',
     [string]$ManifestOutputPath,
@@ -16,7 +16,7 @@ $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
 $projectRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
-$approvedUnsignedStableVersions = @('2.1.0', '2.2.0')
+$approvedUnsignedStableVersions = @('2.1.0', '2.2.0', '2.2.1')
 if ($approvedUnsignedStableVersions -cnotcontains $ExpectedVersion) {
     throw "Version '$ExpectedVersion' is not an approved unsigned stable-release exception."
 }

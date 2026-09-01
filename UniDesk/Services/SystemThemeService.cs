@@ -60,7 +60,7 @@ public sealed class SystemThemeService : ISystemThemeService
         }
         catch (Exception ex)
         {
-            Logger.LogWarning($"读取系统主题失败：{ex.Message}", "SystemThemeService.ReadIsLightTheme");
+            Logger.LogError(ex, "SystemThemeService.ReadIsLightTheme");
             return true;
         }
     }

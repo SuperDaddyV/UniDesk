@@ -76,6 +76,7 @@ public partial class ModelRadarViewModel : ObservableObject, IDisposable
             {
                 OnPropertyChanged(nameof(CanRefresh));
                 RefreshCommand.NotifyCanExecuteChanged();
+                NotifyCompactSummaryChanged();
             }
         }
     }
@@ -97,6 +98,114 @@ public partial class ModelRadarViewModel : ObservableObject, IDisposable
     public bool HasOverallLeader => Snapshot?.OverallLeader != null;
 
     public bool HasValueRecommendation => Snapshot?.ValueRecommendation != null;
+
+    public bool IsCompactSummaryVisible => IsEnabled;
+
+    public bool HasCompactRecommendations =>
+        IsEnabled &&
+        Snapshot is
+        {
+            IsPending: false,
+            OverallLeader: not null
+        };
+
+    public string CompactOverallLabelText =>
+        HasCompactRecommendations
+            ? L("ModelRadar.CompactOverallLabel")
+            : string.Empty;
+
+    public string CompactOverallModelText =>
+        HasCompactRecommendations && Snapshot?.OverallLeader is { } leader
+            ? $"{CompactFreshnessPrefix}{FormatCompactModel(leader)}"
+            : string.Empty;
+
+    public string CompactOverallScoreText =>
+        HasCompactRecommendations && Snapshot?.OverallLeader is { } leader
+            ? FormatScore(leader.OverallScore)
+            : string.Empty;
+
+    public string CompactValueLabelText =>
+        HasCompactRecommendations
+            ? L("ModelRadar.CompactValueLabel")
+            : string.Empty;
+
+    public string CompactValueModelText =>
+        HasCompactRecommendations && Snapshot?.ValueRecommendation is { } value
+            ? FormatCompactModel(value)
+            : HasCompactRecommendations
+                ? L("ModelRadar.NoValueRecommendation")
+                : string.Empty;
+
+    public string CompactValueScoreText =>
+        HasCompactRecommendations && Snapshot?.ValueRecommendation is { } value
+            ? FormatScore(value.OverallScore)
+            : string.Empty;
+
+    public string CompactOverallText =>
+        HasCompactRecommendations && Snapshot?.OverallLeader is { } leader
+            ? $"{CompactFreshnessPrefix}{FormatCompactRecommendation(
+                "ModelRadar.CompactOverallFormat",
+                leader)}"
+            : string.Empty;
+
+    public string CompactValueText =>
+        HasCompactRecommendations && Snapshot?.ValueRecommendation is { } value
+            ? FormatCompactRecommendation("ModelRadar.CompactValueFormat", value)
+            : Snapshot is { IsPending: false, ValueRecommendation: null }
+                ? L("ModelRadar.NoValueRecommendation")
+                : string.Empty;
+
+    public string CompactStatusText
+    {
+        get
+        {
+            if (!IsEnabled || HasCompactRecommendations)
+            {
+                return string.Empty;
+            }
+
+            if (Snapshot is { IsPending: false, ValueRecommendation: null })
+            {
+                return $"{CompactFreshnessPrefix}{L("ModelRadar.NoValueRecommendation")}";
+            }
+
+            return $"{CompactFreshnessPrefix}{StatusText}";
+        }
+    }
+
+    public string CompactToolTipText
+    {
+        get
+        {
+            if (!IsEnabled)
+            {
+                return string.Empty;
+            }
+
+            var lines = new List<string>();
+            if (HasCompactRecommendations)
+            {
+                lines.Add(CompactOverallText);
+                lines.Add(CompactValueText);
+            }
+            else if (Snapshot is { IsPending: false, ValueRecommendation: null })
+            {
+                lines.Add(CompactValueText);
+            }
+
+            if (!string.IsNullOrWhiteSpace(PublishedText))
+            {
+                lines.Add(PublishedText);
+            }
+
+            if (!string.IsNullOrWhiteSpace(StatusText))
+            {
+                lines.Add(StatusText);
+            }
+
+            return string.Join(Environment.NewLine, lines);
+        }
+    }
 
     public string StatusText
     {
@@ -464,6 +573,76 @@ public partial class ModelRadarViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(StatusText));
         OnPropertyChanged(nameof(PublishedText));
         OnPropertyChanged(nameof(RankingDescription));
+        NotifyCompactSummaryChanged();
+    }
+
+    private string CompactFreshnessPrefix
+    {
+        get
+        {
+            if (Snapshot is not { } snapshot)
+            {
+                return string.Empty;
+            }
+
+            var localPublishedAt = snapshot.PublishedAt.ToLocalTime();
+            var localNow = _timeProvider.GetUtcNow().ToLocalTime();
+            var prefix = localPublishedAt.Date == localNow.Date
+                ? string.Empty
+                : $"{localPublishedAt.ToString("MM/dd", _localizationService.CurrentCulture)} · ";
+
+            if (IsOfflineCache || State == ModelRadarCacheState.Stale)
+            {
+                prefix += $"{L("ModelRadar.CompactCached")} · ";
+            }
+
+            return prefix;
+        }
+    }
+
+    private string FormatCompactRecommendation(string key, ModelRadarEntry entry) =>
+        _localizationService.Format(
+            key,
+            entry.Model,
+            entry.ReasoningEffort,
+            FormatScore(entry.OverallScore));
+
+    private static string FormatCompactModel(ModelRadarEntry entry)
+    {
+        var model = entry.Model.Trim();
+        var reasoningEffort = entry.ReasoningEffort.Trim();
+        if (model.StartsWith("gpt-", StringComparison.OrdinalIgnoreCase))
+        {
+            model = $"GPT{string.Join(
+                "-",
+                model[4..]
+                    .Split('-', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                    .Select(FormatCompactIdentifierSegment))}";
+            reasoningEffort = FormatCompactIdentifierSegment(reasoningEffort);
+        }
+
+        return $"{model}/{reasoningEffort}";
+    }
+
+    private static string FormatCompactIdentifierSegment(string value) =>
+        string.IsNullOrEmpty(value)
+            ? value
+            : $"{char.ToUpperInvariant(value[0])}{value[1..].ToLowerInvariant()}";
+
+    private void NotifyCompactSummaryChanged()
+    {
+        OnPropertyChanged(nameof(IsCompactSummaryVisible));
+        OnPropertyChanged(nameof(HasCompactRecommendations));
+        OnPropertyChanged(nameof(CompactOverallLabelText));
+        OnPropertyChanged(nameof(CompactOverallModelText));
+        OnPropertyChanged(nameof(CompactOverallScoreText));
+        OnPropertyChanged(nameof(CompactValueLabelText));
+        OnPropertyChanged(nameof(CompactValueModelText));
+        OnPropertyChanged(nameof(CompactValueScoreText));
+        OnPropertyChanged(nameof(CompactOverallText));
+        OnPropertyChanged(nameof(CompactValueText));
+        OnPropertyChanged(nameof(CompactStatusText));
+        OnPropertyChanged(nameof(CompactToolTipText));
     }
 
     private ModelRadarDecisionCard CreateDecisionCard(ModelRadarEntry entry, double? score) =>
@@ -571,14 +750,34 @@ public partial class ModelRadarViewModel : ObservableObject, IDisposable
     {
         OnPropertyChanged(nameof(CanRefresh));
         OnPropertyChanged(nameof(StatusText));
+        NotifyCompactSummaryChanged();
         RefreshCommand.NotifyCanExecuteChanged();
+    }
+
+    partial void OnStateChanged(ModelRadarCacheState value)
+    {
+        OnPropertyChanged(nameof(StatusText));
+        NotifyCompactSummaryChanged();
+    }
+
+    partial void OnSnapshotChanged(ModelRadarSnapshot? value)
+    {
+        OnPropertyChanged(nameof(HasSnapshot));
+        OnPropertyChanged(nameof(HasNoSnapshot));
+        OnPropertyChanged(nameof(HasOverallLeader));
+        OnPropertyChanged(nameof(HasValueRecommendation));
+        OnPropertyChanged(nameof(PublishedText));
+        NotifyCompactSummaryChanged();
     }
 
     partial void OnSelectedCategoryChanged(ModelRadarCategory value) =>
         OnPropertyChanged(nameof(RankingDescription));
 
-    partial void OnIsOfflineCacheChanged(bool value) =>
+    partial void OnIsOfflineCacheChanged(bool value)
+    {
         OnPropertyChanged(nameof(StatusText));
+        NotifyCompactSummaryChanged();
+    }
 
     private bool IsCurrent(int generation, CancellationTokenSource cts)
     {

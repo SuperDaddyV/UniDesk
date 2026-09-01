@@ -2,6 +2,7 @@ using Xunit;
 using UniDesk.Services;
 using UniDesk.Helpers;
 using Microsoft.Data.Sqlite;
+using UniDesk.Models;
 
 namespace UniDesk.Tests;
 
@@ -15,6 +16,36 @@ public class DatabaseServiceTests
         return new DatabaseService(
             $"Data Source={_testDbFile}",
             monitorWorkAreas: new FixedMonitorWorkAreaProvider(1366, 768));
+    }
+
+    [Fact]
+    public void StartupAndDatabaseConstructor_ShouldKeepDirectoryMigrationOffCallerThread()
+    {
+        var projectRoot = Path.GetFullPath(Path.Combine(
+            AppContext.BaseDirectory,
+            "..",
+            "..",
+            "..",
+            ".."));
+        var appSource = File.ReadAllText(Path.Combine(projectRoot, "UniDesk", "App.xaml.cs"));
+        var databaseSource = File.ReadAllText(Path.Combine(
+            projectRoot,
+            "UniDesk",
+            "Services",
+            "DatabaseService.cs"));
+        var constructorStart = databaseSource.IndexOf("public DatabaseService(", StringComparison.Ordinal);
+        var initializeStart = databaseSource.IndexOf("public Task InitializeAsync", constructorStart, StringComparison.Ordinal);
+        var constructorBody = databaseSource[constructorStart..initializeStart];
+
+        Assert.Contains(
+            "await Task.Run(DirectoryHelper.EnsureDirectoriesExist)",
+            appSource,
+            StringComparison.Ordinal);
+        Assert.DoesNotContain("DirectoryHelper.EnsureDirectoriesExist", constructorBody, StringComparison.Ordinal);
+        Assert.Contains(
+            "DirectoryHelper.EnsureDirectoriesExist();",
+            databaseSource[initializeStart..],
+            StringComparison.Ordinal);
     }
 
     [Fact]
@@ -726,6 +757,127 @@ public class DatabaseServiceTests
             "SELECT Value FROM Settings WHERE Key = 'DatabaseVersion'",
             reader => reader.GetString(0));
         Assert.Equal("1.10", version);
+        Cleanup();
+    }
+
+    [Fact]
+    public async Task InitializeAsync_ExistingSchemaWithoutDatabaseVersion_ShouldFailClosed()
+    {
+        Cleanup();
+        await using (var connection = new SqliteConnection($"Data Source={_testDbFile}"))
+        {
+            await connection.OpenAsync();
+            var command = connection.CreateCommand();
+            command.CommandText = "CREATE TABLE Settings (Key TEXT PRIMARY KEY, Value TEXT); CREATE TABLE Notes (Id INTEGER PRIMARY KEY);";
+            await command.ExecuteNonQueryAsync();
+        }
+
+        var databaseService = GetService();
+        var exception = await Assert.ThrowsAsync<InvalidDataException>(
+            () => databaseService.InitializeAsync());
+
+        Assert.Contains("DatabaseVersion", exception.Message, StringComparison.Ordinal);
+        var versionCount = await databaseService.QuerySingleAsync(
+            "SELECT COUNT(*) FROM Settings WHERE Key = 'DatabaseVersion'",
+            reader => reader.GetInt32(0));
+        Assert.Equal(0, versionCount);
+        Cleanup();
+    }
+
+    [Fact]
+    public async Task InitializeAsync_CompleteKnownSchemaWithoutDatabaseVersion_ShouldInferAndStampCurrentVersion()
+    {
+        Cleanup();
+        var databaseService = GetService();
+        await databaseService.InitializeAsync();
+        await databaseService.ExecuteNonQueryAsync(
+            "DELETE FROM Settings WHERE Key = 'DatabaseVersion'");
+
+        await databaseService.InitializeAsync();
+
+        var version = await databaseService.QuerySingleAsync(
+            "SELECT Value FROM Settings WHERE Key = 'DatabaseVersion'",
+            reader => reader.GetString(0));
+        Assert.Equal("1.5", version);
+        Cleanup();
+    }
+
+    [Fact]
+    public async Task InitializeAsync_MissingDatabaseVersionWithTrigger_ShouldFailClosed()
+    {
+        Cleanup();
+        var databaseService = GetService();
+        await databaseService.InitializeAsync();
+        await databaseService.ExecuteNonQueryAsync(
+            """
+            DELETE FROM Settings WHERE Key = 'DatabaseVersion';
+            CREATE TRIGGER unexpected_restore_trigger
+            AFTER INSERT ON Notes
+            BEGIN
+                SELECT 1;
+            END;
+            """);
+
+        await Assert.ThrowsAsync<InvalidDataException>(
+            () => databaseService.InitializeAsync());
+
+        var versionCount = await databaseService.QuerySingleAsync(
+            "SELECT COUNT(*) FROM Settings WHERE Key = 'DatabaseVersion'",
+            reader => reader.GetInt32(0));
+        Assert.Equal(0, versionCount);
+        Cleanup();
+    }
+
+    [Fact]
+    public async Task InitializeAsync_NewDatabase_ShouldUseDashboardModuleCatalogDefaults()
+    {
+        Cleanup();
+        var databaseService = GetService();
+        await databaseService.InitializeAsync();
+
+        var json = await databaseService.QuerySingleAsync(
+            "SELECT Value FROM Settings WHERE Key = 'ModuleSettings'",
+            reader => reader.GetString(0));
+        var modules = System.Text.Json.JsonSerializer.Deserialize<List<ModuleSetting>>(
+            json!,
+            new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web));
+
+        Assert.NotNull(modules);
+        Assert.Equal(
+            DashboardModuleCatalog.CreateDefaultModules().Select(module => module.ModuleId),
+            modules!.Select(module => module.ModuleId));
+        Assert.Equal(
+            DashboardModuleCatalog.CreateDefaultModules().Select(module => module.IsEnabled),
+            modules.Select(module => module.IsEnabled));
+        Cleanup();
+    }
+
+    [Fact]
+    public async Task ExecuteInTransactionAsync_ShouldReturnBeforeSynchronousDatabaseCallbackCompletes()
+    {
+        Cleanup();
+        var databaseService = GetService();
+        await databaseService.InitializeAsync();
+
+        var callbackStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var callbackRelease = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var invocationReturned = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var invocation = Task.Run(async () =>
+        {
+            var operation = databaseService.ExecuteInTransactionAsync<int>(_ =>
+            {
+                callbackStarted.SetResult();
+                callbackRelease.Task.GetAwaiter().GetResult();
+                return Task.FromResult(1);
+            });
+            invocationReturned.SetResult();
+            return await operation;
+        });
+
+        await invocationReturned.Task.WaitAsync(TimeSpan.FromSeconds(2));
+        await callbackStarted.Task.WaitAsync(TimeSpan.FromSeconds(2));
+        callbackRelease.SetResult();
+        Assert.Equal(1, await invocation);
         Cleanup();
     }
 

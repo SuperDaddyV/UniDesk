@@ -1,7 +1,7 @@
 # Third-party notices
 
 This file describes the third-party components distributed in the UniDesk
-2.2.0 self-contained Windows installer. The complete license texts and notices
+2.2.1 self-contained Windows installer. The complete license texts and notices
 listed below are installed in the `licenses` directory.
 
 ## .NET 10 Runtime and Microsoft libraries

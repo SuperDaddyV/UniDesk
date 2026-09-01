@@ -1385,9 +1385,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         }
         catch (Exception ex)
         {
-            Logger.LogWarning(
-                $"读取硬件监控组件状态失败：{ex.GetType().Name}: {ex.Message}",
-                "SettingsViewModel.HardwareMonitoring");
+            Logger.LogError(ex, "SettingsViewModel.HardwareMonitoring");
             HardwareMonitoringStatusText = L("Settings.HardwareMonitoringError");
             IsHardwareMonitoringRepairVisible = true;
         }

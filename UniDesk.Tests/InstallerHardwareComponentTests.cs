@@ -32,6 +32,10 @@ public class InstallerHardwareComponentTests
         Assert.DoesNotContain("Flags:", hardwareTask, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Name: \"completehardware\"", script, StringComparison.Ordinal);
         Assert.Contains("将安装 PawnIO 驱动和以 LocalSystem 运行的只读硬件监控服务", script, StringComparison.Ordinal);
+        Assert.Contains(
+            "Name: \"{commonappdata}\\UniDesk\\logs\"; Permissions: admins-full system-full",
+            script,
+            StringComparison.Ordinal);
         Assert.DoesNotContain("InfoBeforeFile", script, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("WizardIsTaskSelected('completehardware')", script, StringComparison.Ordinal);
         Assert.Contains("--install-or-repair", script, StringComparison.Ordinal);
@@ -130,6 +134,29 @@ public class InstallerHardwareComponentTests
         Assert.True(
             fallbackOwnershipIndex > removeIndex && fallbackRetirementIndex > fallbackOwnershipIndex,
             "Uninstall fallback can delete a same-named foreign service.");
+
+        Assert.Contains("Result := StopSafe and DeleteSafe;", script, StringComparison.Ordinal);
+        Assert.DoesNotContain("Result := StopSafe and (DeleteSafe or DisableSafe);", script, StringComparison.Ordinal);
+        Assert.Contains("if not StopSafe then", script, StringComparison.Ordinal);
+        Assert.Contains("function WaitForHardwareServiceRemoved", script, StringComparison.Ordinal);
+        Assert.Contains("DeleteSafe := WaitForHardwareServiceRemoved", script, StringComparison.Ordinal);
+        Assert.Contains("if HardwareServiceExists and RetiredLegacyService then", script, StringComparison.Ordinal);
+        Assert.Contains("function HardenHardwareRepairLogDirectory", script, StringComparison.Ordinal);
+        Assert.Contains("function HardenLogDirectoryAcl", script, StringComparison.Ordinal);
+        Assert.Contains("if not HardenHardwareRepairLogDirectory then", script, StringComparison.Ordinal);
+        Assert.Contains("ForceDirectories(LogDirectory)", script, StringComparison.Ordinal);
+        Assert.Contains("HardenLogDirectoryAcl(LogRoot)", script, StringComparison.Ordinal);
+        Assert.DoesNotContain("HardenDirectoryAcl(LogRoot)", script, StringComparison.Ordinal);
+        Assert.Contains("ContainsReparsePointInExistingAncestorChain(LogDirectory)", script, StringComparison.Ordinal);
+
+        var logAclStart = script.IndexOf("function HardenLogDirectoryAcl", StringComparison.Ordinal);
+        var logDirectoryStart = script.IndexOf(
+            "function HardenHardwareRepairLogDirectory",
+            logAclStart,
+            StringComparison.Ordinal);
+        var logAclBody = script[logAclStart..logDirectoryStart];
+        Assert.DoesNotContain(" /T ", logAclBody, StringComparison.Ordinal);
+        Assert.DoesNotContain("ResetDirectoryChildrenAcl", logAclBody, StringComparison.Ordinal);
     }
 
     [Fact]
