@@ -216,6 +216,50 @@ public class HardwareServiceIntegrationTests
     }
 
     [Fact]
+    public void RequestHandler_WhenSnapshotFails_ShouldNotExposeExceptionPayload()
+    {
+        const string secretPath = @"C:\Users\Alice\private-sensor.txt";
+        var handler = new HardwareServiceRequestHandler(
+            new ThrowingHardwareSnapshotSource(secretPath));
+        var request = HardwareIpcProtocol.SerializeRequest(new HardwareServiceRequest(
+            HardwareIpcProtocol.CurrentVersion,
+            HardwareServiceCommand.GetSnapshot));
+
+        var response = HardwareIpcProtocol.DeserializeResponse(handler.Handle(request));
+
+        Assert.Equal(HardwareServiceAvailability.Error, response.Availability);
+        Assert.Contains(nameof(InvalidOperationException), response.Error, StringComparison.Ordinal);
+        Assert.DoesNotContain(secretPath, response.Error, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void HardwareServiceSources_ShouldNotPersistExceptionPayloads()
+    {
+        var projectRoot = Path.GetFullPath(Path.Combine(
+            AppContext.BaseDirectory,
+            "..",
+            "..",
+            "..",
+            ".."));
+
+        foreach (var sourceName in new[]
+                 {
+                     "HardwareServiceRequestHandler.cs",
+                     "HardwareServiceWorkers.cs",
+                     "LibreHardwareSnapshotCollector.cs"
+                 })
+        {
+            var source = File.ReadAllText(Path.Combine(
+                projectRoot,
+                "UniDesk.HardwareService",
+                sourceName));
+            Assert.DoesNotContain("ex.Message", source, StringComparison.Ordinal);
+            Assert.DoesNotContain("LogError(ex", source, StringComparison.Ordinal);
+            Assert.DoesNotContain("LogCritical(ex", source, StringComparison.Ordinal);
+        }
+    }
+
+    [Fact]
     public async Task MaintenanceService_ShouldReportMissingRepairHelperWithoutLaunching()
     {
         var diagnostics = new FakeDiagnosticsSource(new HardwareMetricsDiagnosticsSnapshot(
@@ -461,6 +505,13 @@ public class HardwareServiceIntegrationTests
             ReadCount++;
             return response;
         }
+    }
+
+    private sealed class ThrowingHardwareSnapshotSource(string message)
+        : IHardwareSnapshotSource
+    {
+        public HardwareServiceSnapshotResponse GetSnapshot() =>
+            throw new InvalidOperationException(message);
     }
 
     private sealed class FakeDiagnosticsSource(HardwareMetricsDiagnosticsSnapshot snapshot)

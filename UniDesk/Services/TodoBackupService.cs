@@ -468,15 +468,39 @@ public class TodoBackupService : ITodoBackupService
             return JsonSerializer.Serialize(DashboardModuleCatalog.CreateDefaultModules(), JsonOptions);
         }
 
+        var modules = DeserializeModuleSettingsJson(json);
+        return JsonSerializer.Serialize(DashboardModuleCatalog.Normalize(modules), JsonOptions);
+    }
+
+    private static void ValidateModuleSettingsJson(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            return;
+        }
+
+        _ = DeserializeModuleSettingsJson(json);
+    }
+
+    private static List<ModuleSetting> DeserializeModuleSettingsJson(string json)
+    {
+        List<ModuleSetting>? modules;
         try
         {
-            var modules = JsonSerializer.Deserialize<List<ModuleSetting>>(json, JsonOptions);
-            return JsonSerializer.Serialize(DashboardModuleCatalog.Normalize(modules), JsonOptions);
+            modules = JsonSerializer.Deserialize<List<ModuleSetting>>(json, JsonOptions);
         }
-        catch
+        catch (JsonException exception)
         {
-            return JsonSerializer.Serialize(DashboardModuleCatalog.CreateDefaultModules(), JsonOptions);
+            throw new InvalidDataException("ModuleSettings 格式无效。", exception);
         }
+
+        if (modules == null ||
+            modules.Any(module => module == null || string.IsNullOrWhiteSpace(module.ModuleId)))
+        {
+            throw new InvalidDataException("ModuleSettings 结构无效。模块 ID 不能为空。");
+        }
+
+        return modules;
     }
 
     private static bool HasRestorableData(TodoBackupFile payload) =>
@@ -533,6 +557,10 @@ public class TodoBackupService : ITodoBackupService
 
                 ValidateFieldLength(key, $"Settings[{key}].Key", MaxSettingKeyLength);
                 ValidateFieldLength(value, $"Settings[{key}].Value", MaxContentFieldLength);
+                if (string.Equals(key, DashboardModuleCatalog.SettingsKey, StringComparison.Ordinal))
+                {
+                    ValidateModuleSettingsJson(value);
+                }
             }
         }
 

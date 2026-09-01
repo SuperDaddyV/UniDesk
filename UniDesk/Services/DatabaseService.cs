@@ -1,6 +1,7 @@
 using Microsoft.Data.Sqlite;
 using System.Globalization;
 using System.IO;
+using System.Text.Json;
 using UniDesk.Helpers;
 using UniDesk.Models;
 
@@ -9,6 +10,8 @@ namespace UniDesk.Services;
 public class DatabaseService : IDatabaseService
 {
     private const string DatabaseVersion = "1.5";
+    private static readonly JsonSerializerOptions ModuleSettingsJsonOptions =
+        new(JsonSerializerDefaults.Web);
     private readonly string _connectionString;
     private readonly string _initialLanguage;
     private readonly IMonitorWorkAreaProvider _monitorWorkAreas;
@@ -18,16 +21,18 @@ public class DatabaseService : IDatabaseService
         string? initialLanguage = null,
         IMonitorWorkAreaProvider? monitorWorkAreas = null)
     {
-        DirectoryHelper.EnsureDirectoriesExist();
         _connectionString = connectionString ?? $"Data Source={DirectoryHelper.DatabaseFile}";
         _initialLanguage = initialLanguage ?? ILocalizationService.DefaultLanguage;
         _monitorWorkAreas = monitorWorkAreas ?? Win32MonitorWorkAreaProvider.Instance;
     }
 
-    public async Task InitializeAsync()
+    public Task InitializeAsync() => Task.Run(InitializeCoreAsync);
+
+    private async Task InitializeCoreAsync()
     {
         try
         {
+            DirectoryHelper.EnsureDirectoriesExist();
             using var connection = new SqliteConnection(_connectionString);
             await connection.OpenAsync();
             await EnableWalAsync(connection);
@@ -38,14 +43,24 @@ public class DatabaseService : IDatabaseService
                 await ExecuteConnectionCommandAsync(connection, "BEGIN IMMEDIATE");
                 transactionStarted = true;
 
+                var hasUserTables = await HasUserTablesAsync(connection);
                 var version = await GetDatabaseVersionAsync(connection);
-                if (version == null)
+                if (!hasUserTables)
                 {
                     await CreateTablesAsync(connection);
                     await SetDatabaseVersionAsync(connection, DatabaseVersion);
                 }
                 else
                 {
+                    var inferredVersion = false;
+                    if (string.IsNullOrWhiteSpace(version))
+                    {
+                        version = await InferDatabaseVersionAsync(connection)
+                            ?? throw new InvalidDataException(
+                                "现有数据库缺少 DatabaseVersion，且无法识别为完整的已知数据库结构。");
+                        inferredVersion = true;
+                    }
+
                     var comparison = CompareDatabaseVersions(version, DatabaseVersion);
                     if (comparison > 0)
                     {
@@ -56,6 +71,10 @@ public class DatabaseService : IDatabaseService
                     if (comparison < 0)
                     {
                         await MigrateDatabaseAsync(connection, version, DatabaseVersion);
+                        await SetDatabaseVersionAsync(connection, DatabaseVersion);
+                    }
+                    else if (inferredVersion)
+                    {
                         await SetDatabaseVersionAsync(connection, DatabaseVersion);
                     }
                 }
@@ -102,7 +121,15 @@ public class DatabaseService : IDatabaseService
         await command.ExecuteNonQueryAsync();
     }
 
-    private async Task<string?> GetDatabaseVersionAsync(SqliteConnection connection)
+    private static async Task<bool> HasUserTablesAsync(SqliteConnection connection)
+    {
+        var command = connection.CreateCommand();
+        command.CommandText =
+            "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'";
+        return Convert.ToInt32(await command.ExecuteScalarAsync()) > 0;
+    }
+
+    private static async Task<string?> GetDatabaseVersionAsync(SqliteConnection connection)
     {
         var tableCheck = connection.CreateCommand();
         tableCheck.CommandText =
@@ -116,6 +143,136 @@ public class DatabaseService : IDatabaseService
         command.CommandText = "SELECT Value FROM Settings WHERE Key = 'DatabaseVersion'";
         var result = await command.ExecuteScalarAsync();
         return result?.ToString();
+    }
+
+    private static async Task<string?> InferDatabaseVersionAsync(SqliteConnection connection)
+    {
+        var knownTables = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "Settings", "Notes", "Todos", "Shortcuts", "QuickNotes", "ClipboardHistory", "TextSnippets"
+        };
+        var tables = await ReadTableNamesAsync(connection);
+        if (tables.Any(table => !knownTables.Contains(table)) ||
+            !tables.Contains("Settings", StringComparer.OrdinalIgnoreCase) ||
+            !tables.Contains("Notes", StringComparer.OrdinalIgnoreCase) ||
+            !tables.Contains("Todos", StringComparer.OrdinalIgnoreCase) ||
+            !tables.Contains("Shortcuts", StringComparer.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
+        if (!await HasSupportedSchemaObjectsAsync(connection, knownTables))
+        {
+            return null;
+        }
+
+        if (!await HasColumnsAsync(connection, "Settings", "Key", "Value") ||
+            !await HasColumnsAsync(connection, "Notes", "Id", "Title", "Content", "Color", "CreatedAt", "UpdatedAt") ||
+            !await HasColumnsAsync(connection, "Todos", "Id", "Title", "IsCompleted", "DueDate", "CreatedAt", "CompletedAt") ||
+            !await HasColumnsAsync(connection, "Shortcuts", "Id", "Name", "Path", "Type", "IconPath", "CreatedAt"))
+        {
+            return null;
+        }
+
+        var hasQuickNotes = tables.Contains("QuickNotes", StringComparer.OrdinalIgnoreCase);
+        if (hasQuickNotes &&
+            !await HasColumnsAsync(connection, "QuickNotes", "Id", "Title", "Content", "IsPinned", "SortOrder", "CreatedAt", "UpdatedAt"))
+        {
+            return null;
+        }
+
+        var hasClipboardHistory = tables.Contains("ClipboardHistory", StringComparer.OrdinalIgnoreCase);
+        var hasTextSnippets = tables.Contains("TextSnippets", StringComparer.OrdinalIgnoreCase);
+        if (hasClipboardHistory != hasTextSnippets)
+        {
+            return null;
+        }
+
+        if (hasClipboardHistory &&
+            (!await HasColumnsAsync(connection, "ClipboardHistory", "Id", "Content", "ContentHash", "CreatedAt", "LastUsedAt", "UseCount") ||
+             !await HasColumnsAsync(connection, "TextSnippets", "Id", "Title", "Content", "Category", "IsPinned", "SortOrder", "UseCount", "CreatedAt", "UpdatedAt", "LastUsedAt")))
+        {
+            return null;
+        }
+
+        if (!await HasColumnsAsync(connection, "Todos", "Priority"))
+        {
+            return "1.0";
+        }
+
+        if (!await HasColumnsAsync(connection, "Shortcuts", "LaunchArguments"))
+        {
+            return "1.1";
+        }
+
+        if (!hasQuickNotes)
+        {
+            return "1.3";
+        }
+
+        return hasClipboardHistory ? DatabaseVersion : "1.4";
+    }
+
+    private static async Task<List<string>> ReadTableNamesAsync(SqliteConnection connection)
+    {
+        var command = connection.CreateCommand();
+        command.CommandText =
+            "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'";
+        await using var reader = await command.ExecuteReaderAsync();
+        var tables = new List<string>();
+        while (await reader.ReadAsync())
+        {
+            tables.Add(reader.GetString(0));
+        }
+
+        return tables;
+    }
+
+    private static async Task<bool> HasSupportedSchemaObjectsAsync(
+        SqliteConnection connection,
+        IReadOnlySet<string> knownTables)
+    {
+        var command = connection.CreateCommand();
+        command.CommandText =
+            "SELECT type, name, sql FROM sqlite_master WHERE name NOT LIKE 'sqlite_%'";
+        await using var reader = await command.ExecuteReaderAsync();
+        while (await reader.ReadAsync())
+        {
+            var type = reader.GetString(0);
+            var name = reader.GetString(1);
+            if (string.Equals(type, "table", StringComparison.OrdinalIgnoreCase))
+            {
+                var sql = reader.IsDBNull(2) ? string.Empty : reader.GetString(2);
+                if (!knownTables.Contains(name) ||
+                    sql.Contains("VIRTUAL TABLE", StringComparison.OrdinalIgnoreCase))
+                {
+                    return false;
+                }
+            }
+            else if (!string.Equals(type, "index", StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static async Task<bool> HasColumnsAsync(
+        SqliteConnection connection,
+        string table,
+        params string[] requiredColumns)
+    {
+        var command = connection.CreateCommand();
+        command.CommandText = $"PRAGMA table_info(\"{table}\")";
+        await using var reader = await command.ExecuteReaderAsync();
+        var columns = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        while (await reader.ReadAsync())
+        {
+            columns.Add(reader.GetString(1));
+        }
+
+        return requiredColumns.All(columns.Contains);
     }
 
     private async Task SetDatabaseVersionAsync(SqliteConnection connection, string version)
@@ -251,7 +408,7 @@ public class DatabaseService : IDatabaseService
             { QuickTextService.HistoryEnabledSettingKey, "true" },
             { QuickTextService.SensitiveFilterSettingKey, "true" },
             { QuickTextService.HistoryMaxCountSettingKey, QuickTextService.DefaultHistoryLimit.ToString() },
-            { DashboardModuleCatalog.SettingsKey, "[{\"moduleId\":\"TimeWeather\",\"displayName\":\"时间天气\",\"isEnabled\":true,\"sortOrder\":0},{\"moduleId\":\"HardwareMonitor\",\"displayName\":\"硬件监视\",\"isEnabled\":true,\"sortOrder\":1},{\"moduleId\":\"Shortcuts\",\"displayName\":\"快捷方式\",\"isEnabled\":true,\"sortOrder\":2},{\"moduleId\":\"Todos\",\"displayName\":\"待办事项\",\"isEnabled\":true,\"sortOrder\":3},{\"moduleId\":\"QuickNotes\",\"displayName\":\"快速便签\",\"isEnabled\":true,\"sortOrder\":4},{\"moduleId\":\"QuickText\",\"displayName\":\"快捷文本\",\"isEnabled\":true,\"sortOrder\":5}]" }
+            { DashboardModuleCatalog.SettingsKey, JsonSerializer.Serialize(DashboardModuleCatalog.CreateDefaultModules(), ModuleSettingsJsonOptions) }
         };
 
         foreach (var setting in defaultSettings)
@@ -470,10 +627,14 @@ public class DatabaseService : IDatabaseService
         await alter.ExecuteNonQueryAsync();
     }
 
-    public async Task<T> ExecuteInTransactionAsync<T>(Func<IDatabaseSession, Task<T>> operation)
+    public Task<T> ExecuteInTransactionAsync<T>(Func<IDatabaseSession, Task<T>> operation)
     {
         ArgumentNullException.ThrowIfNull(operation);
+        return Task.Run(() => ExecuteInTransactionCoreAsync(operation));
+    }
 
+    private async Task<T> ExecuteInTransactionCoreAsync<T>(Func<IDatabaseSession, Task<T>> operation)
+    {
         using var connection = new SqliteConnection(_connectionString);
         await connection.OpenAsync();
         using var transaction = connection.BeginTransaction();
@@ -517,7 +678,10 @@ public class DatabaseService : IDatabaseService
         return leftVersion.CompareTo(rightVersion);
     }
 
-    public async Task<int> ExecuteNonQueryAsync(string sql, params object?[] parameters)
+    public Task<int> ExecuteNonQueryAsync(string sql, params object?[] parameters) =>
+        Task.Run(() => ExecuteNonQueryCoreAsync(sql, parameters));
+
+    private async Task<int> ExecuteNonQueryCoreAsync(string sql, object?[] parameters)
     {
         using var connection = new SqliteConnection(_connectionString);
         await connection.OpenAsync();
@@ -533,7 +697,10 @@ public class DatabaseService : IDatabaseService
         return await command.ExecuteNonQueryAsync();
     }
 
-    public async Task<List<T>> QueryAsync<T>(string sql, Func<SqliteDataReader, T> map, params object?[] parameters)
+    public Task<List<T>> QueryAsync<T>(string sql, Func<SqliteDataReader, T> map, params object?[] parameters) =>
+        Task.Run(() => QueryCoreAsync(sql, map, parameters));
+
+    private async Task<List<T>> QueryCoreAsync<T>(string sql, Func<SqliteDataReader, T> map, object?[] parameters)
     {
         using var connection = new SqliteConnection(_connectionString);
         await connection.OpenAsync();
@@ -556,7 +723,10 @@ public class DatabaseService : IDatabaseService
         return results;
     }
 
-    public async Task<T?> QuerySingleAsync<T>(string sql, Func<SqliteDataReader, T> map, params object?[] parameters)
+    public Task<T?> QuerySingleAsync<T>(string sql, Func<SqliteDataReader, T> map, params object?[] parameters) =>
+        Task.Run(() => QuerySingleCoreAsync(sql, map, parameters));
+
+    private async Task<T?> QuerySingleCoreAsync<T>(string sql, Func<SqliteDataReader, T> map, object?[] parameters)
     {
         using var connection = new SqliteConnection(_connectionString);
         await connection.OpenAsync();

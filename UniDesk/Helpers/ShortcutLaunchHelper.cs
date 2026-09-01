@@ -77,7 +77,7 @@ public static class ShortcutLaunchHelper
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, $"ShortcutLaunchHelper.TryLaunchCore: {shortcut.Path}");
+            Logger.LogError(ex, "ShortcutLaunchHelper.TryLaunchCore");
             return false;
         }
     }

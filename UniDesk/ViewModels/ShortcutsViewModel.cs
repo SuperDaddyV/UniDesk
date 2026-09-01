@@ -280,7 +280,7 @@ public partial class ShortcutsViewModel : ObservableObject
                 }
                 catch (Exception ex)
                 {
-                    Logger.LogError(ex, $"ShortcutsViewModel.AddShortcutFromPath: {path}");
+                    Logger.LogError(ex, "ShortcutsViewModel.AddShortcutFromPath");
                     result.InvalidCount++;
                 }
             }

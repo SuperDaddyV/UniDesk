@@ -82,7 +82,7 @@ public sealed class LibreHardwareSnapshotCollector : IDisposable
             return CreateUnavailable(
                 HardwareServiceAvailability.Error,
                 pawnIo,
-                $"{ex.GetType().Name}: {ex.Message}");
+                FormatExceptionIdentity(ex));
         }
     }
 
@@ -125,12 +125,15 @@ public sealed class LibreHardwareSnapshotCollector : IDisposable
             }
 
             _computer = null;
-            _lastInitializationError = $"{ex.GetType().Name}: {ex.Message}";
+            _lastInitializationError = FormatExceptionIdentity(ex);
             _initializationRetryPolicy.RecordFailure(nowUtc);
             error = _lastInitializationError;
             return false;
         }
     }
+
+    private static string FormatExceptionIdentity(Exception exception) =>
+        $"{exception.GetType().Name} (0x{exception.HResult:X8})";
 
     private HardwareServiceSnapshotResponse CreateUnavailable(
         HardwareServiceAvailability availability,

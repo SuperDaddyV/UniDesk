@@ -426,6 +426,28 @@ public class WpfInteractionRegressionTests
     }
 
     [Fact]
+    public void CompactModelRadarResources_ShouldExistInEveryLanguage()
+    {
+        foreach (var languageFile in new[]
+                 {
+                     "Strings.zh-CN.xaml",
+                     "Strings.en-US.xaml",
+                     "Strings.ja-JP.xaml",
+                     "Strings.es-ES.xaml"
+                 })
+        {
+            var resources = ReadProjectFile("UniDesk", "Resources", languageFile);
+            Assert.Contains("x:Key=\"ModelRadar.CompactOverallLabel\"", resources, StringComparison.Ordinal);
+            Assert.Contains("x:Key=\"ModelRadar.CompactValueLabel\"", resources, StringComparison.Ordinal);
+            Assert.Contains("x:Key=\"ModelRadar.CompactOverallLabel\">TOP</", resources, StringComparison.Ordinal);
+            Assert.Contains("x:Key=\"ModelRadar.CompactValueLabel\">VAL</", resources, StringComparison.Ordinal);
+            Assert.Contains("x:Key=\"ModelRadar.CompactOverallFormat\"", resources, StringComparison.Ordinal);
+            Assert.Contains("x:Key=\"ModelRadar.CompactValueFormat\"", resources, StringComparison.Ordinal);
+            Assert.Contains("x:Key=\"ModelRadar.CompactCached\"", resources, StringComparison.Ordinal);
+        }
+    }
+
+    [Fact]
     public void DesktopSettings_ClipboardLimit_ShouldExposePersistentSingleSelection()
     {
         var desktopXaml = ReadProjectFile("UniDesk", "Controls", "Settings", "DesktopSettingsPage.xaml");
@@ -453,7 +475,13 @@ public class WpfInteractionRegressionTests
         var timeWeatherXaml = ReadProjectFile("UniDesk", "Controls", "TimeWeatherModuleView.xaml");
         var sharedTheme = ReadProjectFile("UniDesk", "Resources", "Themes", "Shared.xaml");
 
-        Assert.Contains("private const double CollapsedPanelHeight = 178;", mainCode, StringComparison.Ordinal);
+        Assert.Contains("private const double CollapsedPanelHeight = 190;", mainCode, StringComparison.Ordinal);
+        Assert.Contains("private const double CollapsedPanelMinWidth = 350;", mainCode, StringComparison.Ordinal);
+        Assert.Contains("GetRequestedPanelWidth()", mainCode, StringComparison.Ordinal);
+        Assert.Contains(
+            "Math.Max(_viewModel.PanelWidth, CollapsedPanelMinWidth)",
+            mainCode,
+            StringComparison.Ordinal);
         Assert.Contains("Element = (FrameworkElement?)TimeWeatherModule", mainCode, StringComparison.Ordinal);
         Assert.DoesNotContain("modules.Take(1)", mainCode, StringComparison.Ordinal);
         Assert.Contains(
@@ -462,6 +490,14 @@ public class WpfInteractionRegressionTests
             StringComparison.Ordinal);
         Assert.Contains(
             "TimeWeather.IsEnabled = IsPanelCollapsed || IsModuleEnabled(DashboardModuleIds.TimeWeather)",
+            mainViewModelCode,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "ModelRadar.SetEnabledAsync(IsModuleEnabled(DashboardModuleIds.ModelRadar))",
+            mainViewModelCode,
+            StringComparison.Ordinal);
+        Assert.DoesNotContain(
+            "IsPanelCollapsed || IsModuleEnabled(DashboardModuleIds.ModelRadar)",
             mainViewModelCode,
             StringComparison.Ordinal);
         Assert.Contains("x:Name=\"ExpandedHeaderActions\"", mainXaml, StringComparison.Ordinal);
@@ -517,9 +553,74 @@ public class WpfInteractionRegressionTests
             timeWeatherXaml,
             "<Border x:Name=\"CompactStatusStrip\"[\\s\\S]*?</Border>");
         Assert.True(statusStrip.Success);
+        Assert.Contains("x:Name=\"CompactModelRadarSummary\"", statusStrip.Value, StringComparison.Ordinal);
+        Assert.Contains("x:Name=\"CompactModelRadarDivider\"", statusStrip.Value, StringComparison.Ordinal);
+        Assert.Contains("Background=\"{DynamicResource DividerBrush}\"", statusStrip.Value, StringComparison.Ordinal);
+        Assert.Contains("ModelRadar.IsCompactSummaryVisible", statusStrip.Value, StringComparison.Ordinal);
+        Assert.Contains("ModelRadar.HasCompactRecommendations", statusStrip.Value, StringComparison.Ordinal);
+        Assert.Contains("ModelRadar.CompactOverallLabelText", statusStrip.Value, StringComparison.Ordinal);
+        Assert.Contains("ModelRadar.CompactOverallModelText", statusStrip.Value, StringComparison.Ordinal);
+        Assert.Contains("ModelRadar.CompactOverallScoreText", statusStrip.Value, StringComparison.Ordinal);
+        Assert.Contains("ModelRadar.CompactValueLabelText", statusStrip.Value, StringComparison.Ordinal);
+        Assert.Contains("ModelRadar.CompactValueModelText", statusStrip.Value, StringComparison.Ordinal);
+        Assert.Contains("ModelRadar.CompactValueScoreText", statusStrip.Value, StringComparison.Ordinal);
+        Assert.Contains("ModelRadar.CompactStatusText", statusStrip.Value, StringComparison.Ordinal);
+        Assert.Contains("ModelRadar.CompactToolTipText", statusStrip.Value, StringComparison.Ordinal);
+        Assert.Contains("x:Name=\"CompactTodoSummary\"", statusStrip.Value, StringComparison.Ordinal);
         Assert.Contains("Todos.CollapsedPanelTodo.Title", statusStrip.Value, StringComparison.Ordinal);
+        Assert.Contains(
+            "x:Key=\"CompactBodyTextStyle\" TargetType=\"TextBlock\" BasedOn=\"{StaticResource BodyTextStyle}\"",
+            statusStrip.Value,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "x:Key=\"CompactStatusTextStyle\" TargetType=\"TextBlock\" BasedOn=\"{StaticResource CaptionTextStyle}\"",
+            statusStrip.Value,
+            StringComparison.Ordinal);
+        Assert.Contains("Margin=\"0,4,0,0\"", statusStrip.Value, StringComparison.Ordinal);
+        Assert.Contains("Padding=\"8,2\"", statusStrip.Value, StringComparison.Ordinal);
+        Assert.Contains("<Setter Property=\"LineHeight\" Value=\"16\"/>", statusStrip.Value, StringComparison.Ordinal);
+        Assert.Contains(
+            "<Setter Property=\"LineStackingStrategy\" Value=\"BlockLineHeight\"/>",
+            statusStrip.Value,
+            StringComparison.Ordinal);
+        Assert.Contains("<Setter Property=\"Height\" Value=\"16\"/>", statusStrip.Value, StringComparison.Ordinal);
+        Assert.Contains("<Setter Property=\"FontWeight\" Value=\"Normal\"/>", statusStrip.Value, StringComparison.Ordinal);
+        Assert.Contains("x:Name=\"CompactTodoTitleText\"", statusStrip.Value, StringComparison.Ordinal);
+        Assert.Contains("x:Name=\"CompactTodoDueText\"", statusStrip.Value, StringComparison.Ordinal);
+        Assert.Equal(
+            8,
+            statusStrip.Value.Split(
+                "Style=\"{StaticResource CompactBodyTextStyle}\"",
+                StringSplitOptions.None).Length - 1);
+        Assert.DoesNotContain("DataTextStyle", statusStrip.Value, StringComparison.Ordinal);
+        Assert.DoesNotContain("CompactModelRadarTextStyle", statusStrip.Value, StringComparison.Ordinal);
+        Assert.DoesNotContain("CompactTodoTextStyle", statusStrip.Value, StringComparison.Ordinal);
+        Assert.DoesNotContain("FontWeight=\"SemiBold\"", statusStrip.Value, StringComparison.Ordinal);
+        Assert.Equal(
+            2,
+            statusStrip.Value.Split(
+                "FontWeight=\"Medium\"",
+                StringSplitOptions.None).Length - 1);
+        Assert.Equal(
+            2,
+            statusStrip.Value.Split(
+                "TextAlignment=\"Right\"",
+                StringSplitOptions.None).Length - 1);
+        Assert.Equal(
+            4,
+            statusStrip.Value.Split(
+                "TextTrimming=\"None\"",
+                StringSplitOptions.None).Length - 1);
+        Assert.Equal(
+            2,
+            statusStrip.Value.Split(
+                "Width=\"24\"",
+                StringSplitOptions.None).Length - 1);
+        Assert.True(
+            statusStrip.Value.IndexOf("CompactModelRadarSummary", StringComparison.Ordinal) <
+            statusStrip.Value.IndexOf("CompactTodoSummary", StringComparison.Ordinal));
         Assert.DoesNotContain("HardwareMonitor.", statusStrip.Value, StringComparison.Ordinal);
-        Assert.Contains("<Setter Property=\"Height\" Value=\"128\"/>", timeWeatherXaml, StringComparison.Ordinal);
+        Assert.Contains("<Setter Property=\"Height\" Value=\"140\"/>", timeWeatherXaml, StringComparison.Ordinal);
         Assert.Contains("<Setter Property=\"Background\" Value=\"Transparent\"/>", timeWeatherXaml, StringComparison.Ordinal);
 
         Assert.Contains("<Setter Property=\"FocusVisualStyle\" Value=\"{x:Null}\"/>", sharedTheme, StringComparison.Ordinal);

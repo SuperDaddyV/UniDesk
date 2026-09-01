@@ -2,9 +2,44 @@
 
 ## Code signing policy
 
-Public packages follow the [UniDesk code signing policy](../CODE_SIGNING_POLICY.md) and [privacy policy](../PRIVACY.md). `v2.1.0` and `v2.2.0` each use a separately approved, version-specific unsigned-stable exception; each must be rebuilt from its documented public source revision, pass the unsigned readiness gate and applicable manual matrix, and disclose `Authenticode: NotSigned` plus Windows SmartScreen or enterprise-policy risk. No later version inherits either exception.
+Public packages follow the [UniDesk code signing policy](../CODE_SIGNING_POLICY.md) and [privacy policy](../PRIVACY.md). `v2.1.0`, `v2.2.0`, and `v2.2.1` each use a separately approved, version-specific unsigned-stable exception; each must be rebuilt from its documented public source revision, pass the unsigned readiness gate and applicable manual matrix, and state `Authenticode: NotSigned` with a concise note that Windows may show a SmartScreen or enterprise-policy prompt. No later version inherits these exceptions.
 
 Free code signing provided by SignPath.io, certificate by SignPath Foundation.
+
+## v2.2.1
+
+This maintenance release combines the post-`v2.2.0` security and reliability repairs with the accepted compact-dashboard correction. The exact `v2.2.1` release has its own version-specific unsigned exception; publication still requires the final asset's source revision, CI, hashes, manifest, Authenticode state, and manual installation matrix to be verified independently.
+
+Distribution notice: the installer and UniDesk first-party binaries are `Authenticode: NotSigned`. Windows may show a SmartScreen or enterprise-policy prompt; download only from the official Release and verify the published SHA-256.
+
+### Changes
+
+- Moved SQLite initialization and query work behind explicit background boundaries, hardened legacy database migration with validated online backup plus atomic publication, and rejected incomplete or unknown schema objects instead of inferring a safe version.
+- Strengthened backup restore validation and transaction semantics so malformed module settings or partial persistence cannot be reported as success.
+- Disabled QWeather redirects, bounded response bodies, prevented stale city requests from overwriting current state, and serialized cache writes and city changes.
+- Removed secrets, coordinates, user content, paths, exception messages, and stack traces from normal-user, elevated-helper, `LocalSystem`, and IPC diagnostics.
+- Revalidated service ownership around stop and delete operations, required confirmed service disappearance, and hardened installer／repair log paths against reparse-point, ACL, and hard-link attacks.
+- Corrected the collapsed todo baseline and added an optional Model Radar summary above it. The summary shows the official overall leader and first official `value` recommendation from the existing enabled snapshot, labels stale／offline data honestly, and never enables Model Radar or starts network activity on its own.
+
+### 中文说明
+
+本维护版本将 `v2.2.0` 发布后的安全与稳定性修复，与已经验收的折叠仪表盘修订合并交付。`v2.2.1` 拥有独立、仅适用于该精确版本的未签名正式版例外；公开前仍须独立核验最终制品的源码提交、CI、哈希、清单、Authenticode 状态和人工安装矩阵。
+
+分发说明：安装包和 UniDesk 一方二进制文件为 `Authenticode: NotSigned`。Windows 可能显示 SmartScreen 或企业策略提示；请仅从官方 Release 下载并核对 SHA-256。
+
+- 将 SQLite 初始化和查询放入明确后台边界，以完成校验的在线备份和原子发布强化旧数据库迁移，并拒绝从不完整或未知 Schema 对象推断安全版本。
+- 加强备份恢复的语义校验和事务边界，损坏的模块设置或部分持久化不得报告为成功。
+- 禁止 QWeather 重定向并限制响应体，阻止旧城市请求覆盖当前状态，串行化城市切换和缓存写入。
+- 从普通用户程序、提权修复工具、`LocalSystem` 服务和 IPC 诊断中清除密钥、坐标、用户内容、路径、异常消息和堆栈。
+- 在停止和删除服务前后重新验证归属，必须确认服务真正消失，并防御安装器／修复日志路径中的重解析点、ACL 和硬链接攻击。
+- 修正折叠待办的文字基线，并在其上方增加可选模型雷达摘要。摘要只消费已启用模块的现有快照，显示官方综合榜首和首个官方 `value` 推荐，诚实标注过期／离线数据，且不会自行启用模型雷达或发起网络活动。
+
+### Installer integrity / 安装包校验
+
+- `UniDesk_Setup_2.2.1.exe`
+- SHA-256：以 GitHub Release 同页发布的 `SHA256SUMS.txt` 为准
+- Authenticode：`NotSigned`
+- 源码提交、载荷清单与一方 PE 状态：以同页 `release-manifest.json` 为准
 
 ## v2.2.0
 

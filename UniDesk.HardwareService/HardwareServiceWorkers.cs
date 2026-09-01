@@ -26,7 +26,10 @@ public sealed class HardwareSensorWorker : BackgroundService
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Hardware sensor refresh failed.");
+                _logger.LogError(
+                    "Hardware sensor refresh failed: {ExceptionType} (0x{HResult:X8}).",
+                    ex.GetType().Name,
+                    ex.HResult);
             }
 
             await Task.Delay(TimeSpan.FromSeconds(2), stoppingToken).ConfigureAwait(false);
@@ -64,7 +67,10 @@ public sealed class HardwarePipeWorker : BackgroundService
         }
         catch (Exception ex)
         {
-            _logger.LogCritical(ex, "Hardware service pipe server stopped unexpectedly.");
+            _logger.LogCritical(
+                "Hardware service pipe server stopped unexpectedly: {ExceptionType} (0x{HResult:X8}).",
+                ex.GetType().Name,
+                ex.HResult);
             throw;
         }
     }

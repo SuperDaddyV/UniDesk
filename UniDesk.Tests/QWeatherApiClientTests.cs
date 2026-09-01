@@ -1,3 +1,6 @@
+using System.Net;
+using System.Net.Http;
+using System.Text;
 using UniDesk.Services;
 using Xunit;
 
@@ -50,6 +53,116 @@ public class QWeatherApiClientTests
         Assert.False(client.IsUsingBuiltInDefaults);
         Assert.Equal(string.Empty, client.GetApiKey());
         Assert.Equal(string.Empty, client.GetApiHost());
+    }
+
+    [Fact]
+    public async Task GetAsync_RedirectResponse_IsRejectedWithoutFollowingOrTreatingBodyAsSuccess()
+    {
+        var settings = new InMemorySettingsService();
+        settings.SetValue("WeatherApiKey", "secret-key");
+        settings.SetValue("WeatherApiHost", "abc.def.qweatherapi.com");
+        using var handler = new RecordingHttpHandler(_ => new HttpResponseMessage(HttpStatusCode.Found)
+        {
+            Headers = { Location = new Uri("https://attacker.example/collect") },
+            Content = new StringContent("{\"code\":\"200\"}", Encoding.UTF8, "application/json")
+        });
+        using var httpClient = new HttpClient(handler);
+        using var client = new QWeatherApiClient(settings, httpClient);
+
+        var result = await client.GetAsync(
+            "/v7/weather/now",
+            "location=101010100",
+            legacyHost: "devapi.qweather.com",
+            legacyPath: "/v7/weather/now");
+
+        Assert.Null(result);
+        var request = Assert.Single(handler.Requests);
+        Assert.Equal("abc.def.qweatherapi.com", request.RequestUri!.Host);
+        Assert.Equal("secret-key", Assert.Single(request.Headers.GetValues("X-QW-Api-Key")));
+    }
+
+    [Fact]
+    public async Task GetAsync_ResponseBodyLargerThanOneMiB_IsRejected()
+    {
+        var settings = new InMemorySettingsService();
+        settings.SetValue("WeatherApiKey", "secret-key");
+        settings.SetValue("WeatherApiHost", "abc.def.qweatherapi.com");
+        var body = "{\"code\":\"200\",\"payload\":\"" + new string('x', 1024 * 1024) + "\"}";
+        using var handler = new RecordingHttpHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent(body, Encoding.UTF8, "application/json")
+        });
+        using var httpClient = new HttpClient(handler);
+        using var client = new QWeatherApiClient(settings, httpClient);
+
+        var result = await client.GetAsync(
+            "/v7/weather/now",
+            "location=101010100");
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public async Task GetAsync_UnknownLengthResponseBodyLargerThanOneMiB_IsRejected()
+    {
+        var settings = new InMemorySettingsService();
+        settings.SetValue("WeatherApiKey", "secret-key");
+        settings.SetValue("WeatherApiHost", "abc.def.qweatherapi.com");
+        var body = Encoding.UTF8.GetBytes("{\"code\":\"200\",\"payload\":\"" + new string('x', 1024 * 1024) + "\"}");
+        using var handler = new RecordingHttpHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new UnknownLengthContent(body)
+        });
+        using var httpClient = new HttpClient(handler);
+        using var client = new QWeatherApiClient(settings, httpClient);
+
+        var result = await client.GetAsync(
+            "/v7/weather/now",
+            "location=101010100");
+
+        Assert.Null(result);
+    }
+
+    private sealed class RecordingHttpHandler : HttpMessageHandler
+    {
+        private readonly Func<HttpRequestMessage, HttpResponseMessage> _responseFactory;
+
+        public RecordingHttpHandler(Func<HttpRequestMessage, HttpResponseMessage> responseFactory)
+        {
+            _responseFactory = responseFactory;
+        }
+
+        public List<HttpRequestMessage> Requests { get; } = new();
+
+        protected override Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request,
+            CancellationToken cancellationToken)
+        {
+            Requests.Add(request);
+            return Task.FromResult(_responseFactory(request));
+        }
+    }
+
+    private sealed class UnknownLengthContent : HttpContent
+    {
+        private readonly byte[] _content;
+
+        public UnknownLengthContent(byte[] content)
+        {
+            _content = content;
+        }
+
+        protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context) =>
+            stream.WriteAsync(_content).AsTask();
+
+        protected override bool TryComputeLength(out long length)
+        {
+            length = 0;
+            return false;
+        }
+
+        protected override Task<Stream> CreateContentReadStreamAsync() =>
+            Task.FromResult<Stream>(new MemoryStream(_content, writable: false));
     }
 
     private sealed class InMemorySettingsService : ISettingsService

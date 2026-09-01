@@ -75,6 +75,11 @@
     <sys:String x:Key="ModelRadar.OverallBest">综合最高</sys:String>
     <sys:String x:Key="ModelRadar.ValueRecommendation">性价比推荐</sys:String>
     <sys:String x:Key="ModelRadar.NoValueRecommendation">本批次暂无性价比推荐</sys:String>
+    <sys:String x:Key="ModelRadar.CompactOverallLabel">TOP</sys:String>
+    <sys:String x:Key="ModelRadar.CompactValueLabel">VAL</sys:String>
+    <sys:String x:Key="ModelRadar.CompactOverallFormat">综合：{0} / {1} · {2}</sys:String>
+    <sys:String x:Key="ModelRadar.CompactValueFormat">性价比：{0} / {1} · {2}</sys:String>
+    <sys:String x:Key="ModelRadar.CompactCached">缓存</sys:String>
     <sys:String x:Key="ModelRadar.OverallCategory">综合</sys:String>
     <sys:String x:Key="ModelRadar.BackendCategory">后端</sys:String>
     <sys:String x:Key="ModelRadar.FrontendCategory">前端</sys:String>

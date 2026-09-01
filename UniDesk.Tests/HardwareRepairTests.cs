@@ -1,10 +1,110 @@
 using System.Security.AccessControl;
+using System.Reflection;
 using UniDesk.HardwareRepair;
 
 namespace UniDesk.Tests;
 
 public class HardwareRepairTests
 {
+    [Fact]
+    public void HardwareRepairLogger_ShouldRedactSensitivePayloadsBeforeWriting()
+    {
+        var sanitizer = typeof(HardwareRepairLogger).GetMethod(
+            "SanitizeMessage",
+            BindingFlags.Static | BindingFlags.NonPublic);
+        Assert.NotNull(sanitizer);
+
+        var sanitized = Assert.IsType<string>(sanitizer.Invoke(
+            null,
+            ["Path=C:\\Users\\Alice\\secret.txt\n" +
+             "WeatherApiKey=abc123\n" +
+             "Authorization: Bearer auth-secret\n" +
+             "location=39.904200,116.407400\n" +
+             "https://example.test/data?token=xyz"]));
+
+        Assert.Contains("[REDACTED]", sanitized, StringComparison.Ordinal);
+        Assert.DoesNotContain(@"C:\Users\Alice", sanitized, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("abc123", sanitized, StringComparison.Ordinal);
+        Assert.DoesNotContain("auth-secret", sanitized, StringComparison.Ordinal);
+        Assert.DoesNotContain("39.904200", sanitized, StringComparison.Ordinal);
+        Assert.DoesNotContain("116.407400", sanitized, StringComparison.Ordinal);
+        Assert.DoesNotContain("token=xyz", sanitized, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain('\n', sanitized);
+    }
+
+    [Fact]
+    public void HardwareRepairSources_ShouldNotPersistExceptionMessages()
+    {
+        var projectRoot = Path.GetFullPath(Path.Combine(
+            AppContext.BaseDirectory,
+            "..",
+            "..",
+            "..",
+            ".."));
+
+        foreach (var sourceName in new[]
+                 {
+                     "Program.cs",
+                     "StartupCleanupRunner.cs",
+                     "ServiceOwnershipVerifier.cs",
+                     "ServicePayloadSecurityVerifier.cs"
+                 })
+        {
+            var source = File.ReadAllText(Path.Combine(
+                projectRoot,
+                "UniDesk.HardwareRepair",
+                sourceName));
+            Assert.DoesNotContain("ex.Message", source, StringComparison.Ordinal);
+        }
+    }
+
+    [Fact]
+    public void HardwareRepairLogger_ShouldUseProtectedHandleAndRejectReparseOrHardlinkTargets()
+    {
+        var projectRoot = Path.GetFullPath(Path.Combine(
+            AppContext.BaseDirectory,
+            "..",
+            "..",
+            "..",
+            ".."));
+        var loggerSource = File.ReadAllText(Path.Combine(
+            projectRoot,
+            "UniDesk.HardwareRepair",
+            "HardwareRepairLogger.cs"));
+
+        Assert.Contains("FILE_FLAG_OPEN_REPARSE_POINT", loggerSource, StringComparison.Ordinal);
+        Assert.Contains("FILE_FLAG_BACKUP_SEMANTICS", loggerSource, StringComparison.Ordinal);
+        Assert.Contains("GetFileInformationByHandle", loggerSource, StringComparison.Ordinal);
+        Assert.Contains("NumberOfLinks", loggerSource, StringComparison.Ordinal);
+        Assert.Contains("SetAccessRuleProtection", loggerSource, StringComparison.Ordinal);
+        Assert.Contains("FileShare.Read", loggerSource, StringComparison.Ordinal);
+        Assert.DoesNotContain("FileShare.Delete", loggerSource, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void HardwareRepairLogger_ShouldFailClosedForAnUntrustedTemporaryDirectory()
+    {
+        var directory = Path.Combine(
+            Path.GetTempPath(),
+            $"UniDesk_hardware_logger_untrusted_{Guid.NewGuid():N}");
+        Directory.CreateDirectory(directory);
+        var logPath = Path.Combine(directory, "hardware-repair.log");
+
+        try
+        {
+            new HardwareRepairLogger(logPath).Log("must not be written");
+
+            Assert.False(File.Exists(logPath));
+        }
+        finally
+        {
+            if (Directory.Exists(directory))
+            {
+                Directory.Delete(directory, recursive: true);
+            }
+        }
+    }
+
     [Fact]
     public void ServicePayloadVerifier_ShouldVerifyOnlyTheDirectProgramFilesBoundary()
     {
@@ -284,7 +384,11 @@ public class HardwareRepairTests
         var processRunner = new RecordingProcessRunner();
         var runner = CreateRunner(
             processRunner,
-            serviceOwnershipVerifier: new StubServiceOwnershipVerifier(ServiceOwnershipStatus.Owned));
+            serviceOwnershipVerifier: new StubServiceOwnershipVerifier(
+                ServiceOwnershipStatus.Owned,
+                ServiceOwnershipStatus.Owned,
+                ServiceOwnershipStatus.Owned,
+                ServiceOwnershipStatus.Missing));
 
         var result = runner.RemoveService();
 
@@ -296,6 +400,44 @@ public class HardwareRepairTests
             call.Arguments.SequenceEqual(["/F", "/FI", "SERVICES eq UniDeskHardwareService"]));
         Assert.Contains(processRunner.Calls, call =>
             Path.GetFileName(call.FileName).Equals("powershell.exe", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(processRunner.Calls, call =>
+            call.Arguments.SequenceEqual(["delete", "UniDeskHardwareService"]));
+    }
+
+    [Fact]
+    public void RemoveService_WhenOwnershipChangesAfterStop_ShouldFailWithoutDeleting()
+    {
+        var processRunner = new RecordingProcessRunner();
+        var runner = CreateRunner(
+            processRunner,
+            serviceOwnershipVerifier: new StubServiceOwnershipVerifier(
+                ServiceOwnershipStatus.Owned,
+                ServiceOwnershipStatus.Owned,
+                ServiceOwnershipStatus.Foreign),
+            delay: _ => { });
+
+        var result = runner.RemoveService();
+
+        Assert.Equal(HardwareRepairExitCode.ServiceOwnershipInvalid, result);
+        Assert.DoesNotContain(processRunner.Calls, call =>
+            call.Arguments.SequenceEqual(["delete", "UniDeskHardwareService"]));
+    }
+
+    [Fact]
+    public void RemoveService_WhenDeleteIsAcceptedButServiceRemainsOwned_ShouldFail()
+    {
+        var processRunner = new RecordingProcessRunner();
+        var runner = CreateRunner(
+            processRunner,
+            serviceOwnershipVerifier: new StubServiceOwnershipVerifier(
+                ServiceOwnershipStatus.Owned,
+                ServiceOwnershipStatus.Owned,
+                ServiceOwnershipStatus.Owned),
+            delay: _ => { });
+
+        var result = runner.RemoveService();
+
+        Assert.Equal(HardwareRepairExitCode.ServiceRemoveFailed, result);
         Assert.Contains(processRunner.Calls, call =>
             call.Arguments.SequenceEqual(["delete", "UniDeskHardwareService"]));
     }

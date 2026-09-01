@@ -52,12 +52,14 @@ internal sealed class ServiceOwnershipVerifier : IServiceOwnershipVerifier
             var actual = Path.GetFullPath(Environment.ExpandEnvironmentVariables(actualBinaryPath));
             return string.Equals(expected, actual, StringComparison.OrdinalIgnoreCase)
                 ? new(ServiceOwnershipStatus.Owned, "Service ImagePath matches the packaged service binary.")
-                : new(ServiceOwnershipStatus.Foreign, $"Service ImagePath points outside this installation: {actual}");
+                : new(ServiceOwnershipStatus.Foreign, "Service ImagePath points outside this installation.");
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or
                                    NotSupportedException or SecurityException)
         {
-            return new(ServiceOwnershipStatus.Unavailable, $"Service ImagePath could not be verified: {ex.Message}");
+            return new(
+                ServiceOwnershipStatus.Unavailable,
+                $"Service ImagePath could not be verified: {ex.GetType().Name} (0x{ex.HResult:X8}).");
         }
     }
 }

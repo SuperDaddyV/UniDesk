@@ -253,7 +253,7 @@ public sealed class ClipboardMonitorService : IClipboardMonitorService
         }
         catch (Exception ex)
         {
-            Logger.LogWarning($"剪贴板读取失败：{ex.Message}", "ClipboardMonitorService.HandleClipboardUpdate");
+            Logger.LogError(ex, "ClipboardMonitorService.HandleClipboardUpdate");
             return;
         }
 

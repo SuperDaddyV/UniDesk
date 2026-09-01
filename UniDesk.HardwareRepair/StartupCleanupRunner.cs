@@ -135,7 +135,7 @@ internal sealed class StartupCleanupRunner
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException or
                                    SecurityException or XmlException)
         {
-            _logger.Log($"Startup cleanup failed: {ex.Message}");
+            _logger.Log($"Startup cleanup failed: {ex.GetType().Name} (0x{ex.HResult:X8}).");
             return HardwareRepairExitCode.StartupCleanupFailed;
         }
     }

@@ -1,6 +1,6 @@
 # UniDesk v1.3.3 历史发布前审查报告（归档）
 
-> 本文仅保留 2026-06-13 的历史审查证据，不适用于当前 `v2.1.0`。当前版本以 `docs/release-audit-2.1.0.md`、`docs/release-test-matrix-2.1.0.md` 和自动发布门禁为准。
+> 本文仅保留 2026-06-13 的历史审查证据，不适用于当前源码或 `v2.2.1`。`v2.1.0`／`v2.2.0` 文档同样是版本快照；当前行为以 `docs/DESIGN.md` 为准，`v2.2.1` 的发布证据以 `docs/release-test-matrix-2.2.1.md`、GitHub Release 资产及对应自动门禁为准，任何历史 PASS 均需重新验证。
 
 审查时间：2026-06-13
 审查对象：本地仓库 `C:\Users\Administrator\Documents\UniDesk`，远端仓库 `https://github.com/SuperDaddyV/UniDesk`

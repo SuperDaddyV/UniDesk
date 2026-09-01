@@ -89,6 +89,141 @@ public class WeatherServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task SetCityAsync_WhenPersistenceFails_RestoresPreviousCityAndKeepsCache()
+    {
+        var settings = new InMemorySettingsService();
+        using var client = new HttpClient(new ThrowingHttpHandler());
+        using var apiClient = new QWeatherApiClient(settings, client);
+        using var service = new WeatherService(
+            settings,
+            new NoOpNotificationService(),
+            new StubLocationProvider(),
+            apiClient,
+            _cachePath);
+
+        await service.SetCityAsync("北京");
+        var cachedInfo = new WeatherInfo
+        {
+            City = "北京",
+            Temperature = "25°C",
+            WeatherDesc = "晴",
+            FetchTime = DateTime.Now
+        };
+        await File.WriteAllTextAsync(_cachePath, JsonSerializer.Serialize(cachedInfo));
+
+        settings.FailWrites = true;
+        await Assert.ThrowsAsync<InvalidOperationException>(() => service.SetCityAsync("广州"));
+
+        Assert.Equal("北京", settings.GetValue("City", ""));
+        Assert.True(File.Exists(_cachePath));
+        var result = await service.GetWeatherAsync("北京", notifyUser: false);
+
+        Assert.NotNull(result);
+        Assert.Equal("北京", result!.City);
+    }
+
+    [Fact]
+    public async Task SetCityAsync_WhenOldCacheCannotBeDeleted_KeepsPersistedCityAndRejectsStaleCache()
+    {
+        using var testLogs = new TestLogDirectoryScope();
+        var settings = new InMemorySettingsService();
+        settings.SetValue("City", "北京");
+        using var service = CreateWeatherService(settings);
+        var cachedInfo = new WeatherInfo
+        {
+            City = "北京",
+            Temperature = "25°C",
+            WeatherDesc = "晴",
+            FetchTime = DateTime.Now
+        };
+        await File.WriteAllTextAsync(_cachePath, JsonSerializer.Serialize(cachedInfo));
+
+        using (File.Open(_cachePath, FileMode.Open, FileAccess.Read, FileShare.None))
+        {
+            await service.SetCityAsync("广州");
+        }
+
+        Assert.Equal("广州", settings.GetValue("City", ""));
+        Assert.Null(await service.GetCachedWeatherAsync());
+    }
+
+    [Fact]
+    public async Task GetWeatherAsync_WhenCachedCityDiffers_ShouldNotReturnStaleCity()
+    {
+        var settings = new InMemorySettingsService();
+        settings.SetValue("City", "广州");
+        settings.SetValue("WeatherApiKey", "incomplete-user-configuration");
+        var cachedInfo = new WeatherInfo
+        {
+            City = "北京",
+            Temperature = "25°C",
+            WeatherDesc = "晴",
+            FetchTime = DateTime.Now
+        };
+        await File.WriteAllTextAsync(_cachePath, JsonSerializer.Serialize(cachedInfo));
+        using var service = CreateWeatherService(settings);
+
+        var result = await service.GetWeatherAsync("广州", notifyUser: false);
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public async Task SetCityAsync_ConcurrentChanges_SerializesDelayedWritesAndKeepsLatestCity()
+    {
+        var settings = new InMemorySettingsService();
+        settings.SetValue("WeatherApiKey", "test-key");
+        settings.SetValue("WeatherApiHost", "test.qweatherapi.com");
+        var location = new OverlappingLocationProvider();
+        using var client = new HttpClient(new ThrowingHttpHandler());
+        using var apiClient = new QWeatherApiClient(settings, client);
+        using var service = new WeatherService(
+            settings,
+            new NoOpNotificationService(),
+            location,
+            apiClient,
+            _cachePath);
+
+        await service.SetCityAsync("上海");
+        var oldRefresh = service.RefreshWeatherAsync(notifyUser: false);
+        await location.WaitForCallAsync(1);
+
+        var firstWriteStarted = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var firstWriteRelease = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var secondWriteStarted = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        settings.SetSettingGate = async value =>
+        {
+            if (value == "北京")
+            {
+                firstWriteStarted.TrySetResult(true);
+                await firstWriteRelease.Task;
+            }
+            else if (value == "广州")
+            {
+                secondWriteStarted.TrySetResult(true);
+            }
+        };
+        settings.FailValue = "广州";
+
+        var firstChange = service.SetCityAsync("北京");
+        await firstWriteStarted.Task.WaitAsync(TimeSpan.FromSeconds(2));
+        await location.FirstCallCancelled.Task.WaitAsync(TimeSpan.FromSeconds(2));
+        var secondChange = service.SetCityAsync("广州");
+
+        var secondStartedBeforeFirstCompleted =
+            await Task.WhenAny(secondWriteStarted.Task, Task.Delay(TimeSpan.FromMilliseconds(200))) == secondWriteStarted.Task;
+        firstWriteRelease.TrySetResult(true);
+
+        await firstChange;
+        var secondFailure = await Record.ExceptionAsync(() => secondChange);
+        await oldRefresh;
+
+        Assert.False(secondStartedBeforeFirstCompleted);
+        Assert.IsType<InvalidOperationException>(secondFailure);
+        Assert.Equal("北京", settings.GetValue("City", ""));
+    }
+
+    [Fact]
     public async Task GetWeatherAsync_WhenHttpTransportFails_ShouldKeepNetworkUnavailableReason()
     {
         using var testLogs = new TestLogDirectoryScope();
@@ -153,6 +288,35 @@ public class WeatherServiceTests : IDisposable
         }
     }
 
+    [Fact]
+    public async Task GetWeatherAsync_WhenCityChangesBeforeLateResponse_DoesNotCommitOldCity()
+    {
+        var settings = new InMemorySettingsService();
+        settings.SetValue("WeatherApiKey", "test-key");
+        settings.SetValue("WeatherApiHost", "test.qweatherapi.com");
+        using var handler = new LateWeatherResponseHandler();
+        using var client = new HttpClient(handler);
+        using var apiClient = new QWeatherApiClient(settings, client);
+        using var service = new WeatherService(
+            settings,
+            new NoOpNotificationService(),
+            new StubLocationProvider(),
+            apiClient,
+            _cachePath);
+
+        var oldCityRequest = service.GetWeatherAsync("北京", notifyUser: false);
+        await handler.WaitForAirRequestAsync();
+
+        await service.SetCityAsync("广州");
+        handler.ReleaseAirResponse();
+
+        var result = await oldCityRequest;
+
+        Assert.Null(result);
+        Assert.Null(await service.GetCachedWeatherAsync());
+        Assert.False(File.Exists(_cachePath));
+    }
+
     private WeatherService CreateWeatherService(InMemorySettingsService settings)
     {
         var notification = new NoOpNotificationService();
@@ -164,6 +328,9 @@ public class WeatherServiceTests : IDisposable
     private sealed class InMemorySettingsService : ISettingsService
     {
         private readonly Dictionary<string, string?> _values = new();
+        public bool FailWrites { get; set; }
+        public string? FailValue { get; set; }
+        public Func<string?, Task>? SetSettingGate { get; set; }
 
         public Task InitializeAsync() => Task.CompletedTask;
 
@@ -171,10 +338,19 @@ public class WeatherServiceTests : IDisposable
 
         public string? GetSetting(string key) => _values.TryGetValue(key, out var value) ? value : null;
 
-        public Task SetSettingAsync(string key, string? value)
+        public async Task SetSettingAsync(string key, string? value)
         {
+            if (SetSettingGate != null)
+            {
+                await SetSettingGate(value);
+            }
+
+            if (FailWrites || string.Equals(FailValue, value, StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException("forced settings failure");
+            }
+
             SetSetting(key, value);
-            return Task.CompletedTask;
         }
 
         public void SetSetting(string key, string? value) => _values[key] = value;
@@ -241,6 +417,8 @@ public class WeatherServiceTests : IDisposable
             new(TaskCreationOptions.RunContinuationsAsynchronously);
         public readonly TaskCompletionSource<bool> SecondCallCancelled =
             new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public readonly TaskCompletionSource<bool> FirstCallCancelled =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
         private int _callCount;
 
         public LocationFailureReason LastFailure => LocationFailureReason.WindowsLocationUnavailable;
@@ -268,6 +446,11 @@ public class WeatherServiceTests : IDisposable
                 await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
                 return null;
             }
+            catch (OperationCanceledException) when (call == 1)
+            {
+                FirstCallCancelled.TrySetResult(true);
+                throw;
+            }
             catch (OperationCanceledException) when (call == 2)
             {
                 SecondCallCancelled.TrySetResult(true);
@@ -289,5 +472,48 @@ public class WeatherServiceTests : IDisposable
                 "forced transport failure",
                 null,
                 HttpStatusCode.ServiceUnavailable));
+    }
+
+    private sealed class LateWeatherResponseHandler : HttpMessageHandler
+    {
+        private readonly TaskCompletionSource<bool> _airRequestStarted =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource<bool> _releaseAirResponse =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public Task WaitForAirRequestAsync() =>
+            _airRequestStarted.Task.WaitAsync(TimeSpan.FromSeconds(2));
+
+        public void ReleaseAirResponse() => _releaseAirResponse.TrySetResult(true);
+
+        protected override async Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request,
+            CancellationToken cancellationToken)
+        {
+            var path = request.RequestUri?.AbsolutePath ?? string.Empty;
+            if (path.Contains("/airquality/", StringComparison.Ordinal))
+            {
+                _airRequestStarted.TrySetResult(true);
+                await _releaseAirResponse.Task;
+                return JsonResponse("{\"metadata\":{\"tag\":\"test\"},\"indexes\":[]}");
+            }
+
+            if (path.Contains("/geo/", StringComparison.Ordinal))
+            {
+                return JsonResponse("{\"code\":\"200\",\"location\":[{\"id\":\"101010100\",\"lat\":\"39.9\",\"lon\":\"116.4\"}]}");
+            }
+
+            if (path.EndsWith("/weather/now", StringComparison.Ordinal))
+            {
+                return JsonResponse("{\"code\":\"200\",\"now\":{\"temp\":\"25\",\"text\":\"晴\",\"icon\":\"100\",\"humidity\":\"40\"}}");
+            }
+
+            return JsonResponse("{\"code\":\"200\",\"daily\":[{\"tempMax\":\"30\",\"tempMin\":\"20\"}]}");
+        }
+
+        private static HttpResponseMessage JsonResponse(string content) => new(HttpStatusCode.OK)
+        {
+            Content = new StringContent(content)
+        };
     }
 }

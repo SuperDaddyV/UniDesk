@@ -103,7 +103,9 @@ internal sealed class ServicePayloadSecurityVerifier : IServicePayloadSecurityVe
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
         {
-            return new(false, $"ACL verification could not complete: {ex.Message}");
+            return new(
+                false,
+                $"ACL verification could not complete: {ex.GetType().Name} (0x{ex.HResult:X8}).");
         }
     }
 

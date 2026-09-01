@@ -300,10 +300,50 @@ internal sealed class HardwareMaintenanceRunner
             return Complete(HardwareRepairExitCode.ServiceRemoveFailed);
         }
 
+        ownership = _serviceOwnershipVerifier.Verify(ServiceName, _serviceBinaryPath);
+        if (ownership.Status == ServiceOwnershipStatus.Missing)
+        {
+            return Complete(HardwareRepairExitCode.Success);
+        }
+        if (ownership.Status != ServiceOwnershipStatus.Owned)
+        {
+            _logger.Log("Service ownership changed after stop confirmation; delete was not attempted.");
+            return Complete(HardwareRepairExitCode.ServiceOwnershipInvalid);
+        }
+
         var delete = RunSc(["delete", ServiceName]);
-        return Complete(delete.ExitCode is 0 or 1060
+        if (delete.ExitCode is not (0 or 1060))
+        {
+            return Complete(HardwareRepairExitCode.ServiceRemoveFailed);
+        }
+
+        return Complete(WaitForServiceRemoved()
             ? HardwareRepairExitCode.Success
             : HardwareRepairExitCode.ServiceRemoveFailed);
+    }
+
+    private bool WaitForServiceRemoved()
+    {
+        for (var attempt = 0; attempt < ServiceStopWaitAttempts; attempt++)
+        {
+            var ownership = _serviceOwnershipVerifier.Verify(ServiceName, _serviceBinaryPath);
+            if (ownership.Status == ServiceOwnershipStatus.Missing)
+            {
+                return true;
+            }
+
+            if (ownership.Status != ServiceOwnershipStatus.Owned)
+            {
+                return false;
+            }
+
+            if (attempt + 1 < ServiceStopWaitAttempts)
+            {
+                _delay(TimeSpan.FromMilliseconds(500));
+            }
+        }
+
+        return false;
     }
 
     private bool WaitForServiceStopped()

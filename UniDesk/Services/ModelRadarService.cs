@@ -474,9 +474,7 @@ public sealed class ModelRadarService : IModelRadarService, IDisposable
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
-                Logger.LogWarning(
-                    $"无法清理模型雷达临时缓存：{ex.Message}",
-                    "ModelRadarService.WriteCache");
+                Logger.LogError(ex, "ModelRadarService.WriteCache.CleanupTemporaryFile");
             }
         }
     }

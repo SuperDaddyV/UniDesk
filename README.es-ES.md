@@ -117,10 +117,10 @@ Casos de uso habituales:
 
 ## 📦 Instalación
 
-El punto oficial de distribución del instalador estable `v2.2.0` es la [GitHub Release v2.2.0](https://github.com/SuperDaddyV/UniDesk/releases/tag/v2.2.0). Esta versión usa una excepción estable sin firma aprobada por separado y específica para esta versión, e incluye el sistema visual adaptable Calm Glass. Verifica antes de instalar el SHA-256 publicado en la página de la Release; Windows SmartScreen o las políticas empresariales pueden advertir o bloquear la instalación. El nombre del instalador es:
+El punto oficial de distribución del instalador estable `v2.2.1` es la [GitHub Release v2.2.1](https://github.com/SuperDaddyV/UniDesk/releases/tag/v2.2.1). Esta versión exacta usa una excepción estable sin firma aprobada por separado. El instalador es `Authenticode: NotSigned`, por lo que Windows puede mostrar un aviso de SmartScreen o de una política empresarial. Descárgalo desde la Release oficial y verifica el SHA-256 publicado. El nombre del instalador es:
 
 ```powershell
-UniDesk_Setup_2.2.0.exe
+UniDesk_Setup_2.2.1.exe
 ```
 
 Se recomienda cerrar UniDesk antes de instalar o actualizar.
@@ -159,10 +159,10 @@ dotnet run --project UniDesk\UniDesk.csproj
 Crear un candidato local sin firmar desde un árbol de trabajo limpio:
 
 ```powershell
-.\scripts\Build-Release.ps1 -Version 2.2.0
+.\scripts\Build-Release.ps1 -Version 2.2.1
 ```
 
-El script publica la aplicación, el servicio de hardware y la herramienta de reparación en un directorio nuevo con versión, y compila el instalador únicamente desde esas entradas. Un artefacto `v2.2.0` sin firmar creado desde un árbol limpio debe superar `Test-UnsignedReleaseReadiness.ps1`, la matriz manual aplicable y la aprobación final del propietario del proyecto antes de publicarse. El flujo de SignPath se conserva para futuras versiones firmadas y nunca crea una GitHub Release automáticamente.
+El script publica la aplicación, el servicio de hardware y la herramienta de reparación en un directorio nuevo con versión, y compila el instalador únicamente desde esas entradas. Un artefacto `v2.2.1` sin firmar creado desde un árbol limpio debe superar `Test-UnsignedReleaseReadiness.ps1`, la matriz manual aplicable y la aprobación final del propietario del proyecto antes de publicarse. El flujo de SignPath se conserva para futuras versiones firmadas y nunca crea una GitHub Release automáticamente.
 
 ## 🧰 Tecnología
 
@@ -184,7 +184,7 @@ El historial del portapapeles incluye filtrado de contenido sensible para reduci
 
 ## Code signing policy
 
-Los paquetes públicos siguen la [política de firma de código](CODE_SIGNING_POLICY.md) y la [política de privacidad](PRIVACY.md). `v2.2.0` usa una excepción estable sin firma aprobada por separado y específica para esta versión: debe proceder de la revisión pública exacta, recibir aprobación manual, superar las comprobaciones completas de carga y SHA-256, y mostrar de forma destacada `Authenticode: NotSigned` junto con el riesgo de Windows SmartScreen o de las políticas empresariales.
+Los paquetes públicos siguen la [política de firma de código](CODE_SIGNING_POLICY.md) y la [política de privacidad](PRIVACY.md). `v2.2.1` usa una excepción aprobada para esta versión exacta: debe proceder de la revisión pública exacta, recibir aprobación manual, superar las comprobaciones completas de carga y SHA-256, e indicar claramente `Authenticode: NotSigned` y que Windows puede mostrar un aviso de SmartScreen o de una política empresarial.
 
 Free code signing provided by SignPath.io, certificate by SignPath Foundation.
 

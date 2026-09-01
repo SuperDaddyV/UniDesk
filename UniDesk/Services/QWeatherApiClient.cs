@@ -1,6 +1,8 @@
+using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using UniDesk.Helpers;
@@ -12,6 +14,7 @@ namespace UniDesk.Services;
 /// </summary>
 public class QWeatherApiClient : IDisposable
 {
+    private const int MaxResponseBytes = 1024 * 1024;
     private readonly ISettingsService _settingsService;
     private readonly HttpClient _httpClient;
 
@@ -20,6 +23,7 @@ public class QWeatherApiClient : IDisposable
             settingsService,
             new HttpClient(new HttpClientHandler
             {
+                AllowAutoRedirect = false,
                 AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate
             })
             {
@@ -168,29 +172,39 @@ public class QWeatherApiClient : IDisposable
         var url = $"https://{host}{pathPart}{queryPart}";
 
         var headerResult = await SendRequestAsync(url, apiKey, useHeaderAuth: true, cancellationToken);
-        if (ParseCode(headerResult) == "200")
+        if (headerResult.IsRedirect)
         {
-            return headerResult;
+            return null;
+        }
+
+        if (ParseCode(headerResult.Body) == "200")
+        {
+            return headerResult.Body;
         }
 
         if (!allowQueryKeyFallback)
         {
-            return headerResult;
+            return headerResult.Body;
         }
 
         var urlWithKey = queryPart.Contains("key=")
             ? url
             : $"{url}{(queryPart.Contains('?') ? "&" : "?")}key={Uri.EscapeDataString(apiKey)}";
         var queryResult = await SendRequestAsync(urlWithKey, apiKey, useHeaderAuth: false, cancellationToken);
-        if (ParseCode(queryResult) == "200")
+        if (queryResult.IsRedirect)
         {
-            return queryResult;
+            return null;
         }
 
-        return queryResult ?? headerResult;
+        if (ParseCode(queryResult.Body) == "200")
+        {
+            return queryResult.Body;
+        }
+
+        return queryResult.Body ?? headerResult.Body;
     }
 
-    private async Task<string?> SendRequestAsync(
+    private async Task<QWeatherResponse> SendRequestAsync(
         string url,
         string apiKey,
         bool useHeaderAuth,
@@ -204,15 +218,48 @@ public class QWeatherApiClient : IDisposable
             request.Headers.TryAddWithoutValidation("X-QW-Api-Key", apiKey);
         }
 
-        using var response = await _httpClient.SendAsync(request, cancellationToken);
-        var body = await response.Content.ReadAsStringAsync(cancellationToken);
+        using var response = await _httpClient.SendAsync(
+            request,
+            HttpCompletionOption.ResponseHeadersRead,
+            cancellationToken);
+
+        if ((int)response.StatusCode >= 300 && (int)response.StatusCode <= 399)
+        {
+            return new QWeatherResponse(null, true);
+        }
+
+        if (response.Content.Headers.ContentLength > MaxResponseBytes)
+        {
+            return new QWeatherResponse(null, false);
+        }
+
+        await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+        using var buffer = new MemoryStream();
+        var chunk = new byte[81920];
+        while (true)
+        {
+            var bytesRead = await stream.ReadAsync(chunk.AsMemory(), cancellationToken);
+            if (bytesRead == 0)
+            {
+                break;
+            }
+
+            if (buffer.Length + bytesRead > MaxResponseBytes)
+            {
+                return new QWeatherResponse(null, false);
+            }
+
+            await buffer.WriteAsync(chunk.AsMemory(0, bytesRead), cancellationToken);
+        }
+
+        var body = Encoding.UTF8.GetString(buffer.GetBuffer(), 0, checked((int)buffer.Length));
 
         if (!response.IsSuccessStatusCode && string.IsNullOrWhiteSpace(body))
         {
-            return null;
+            return new QWeatherResponse(null, false);
         }
 
-        return body;
+        return new QWeatherResponse(body, false);
     }
 
     private static string? ParseCode(string? json)
@@ -288,6 +335,8 @@ public class QWeatherApiClient : IDisposable
         [JsonPropertyName("code")]
         public string? Code { get; set; }
     }
+
+    private readonly record struct QWeatherResponse(string? Body, bool IsRedirect);
 }
 
 public readonly struct QWeatherValidationResult
