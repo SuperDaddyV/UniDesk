@@ -50,14 +50,12 @@ public class ModelRadarViewModelTests
         Assert.True(viewModel.HasCompactRecommendations);
         Assert.Equal("ModelRadar.CompactOverallLabel", viewModel.CompactOverallLabelText);
         Assert.EndsWith(
-            $"{snapshot.OverallLeader!.Model}/{snapshot.OverallLeader.ReasoningEffort}",
+            "Model-Name/High",
             viewModel.CompactOverallModelText,
             StringComparison.Ordinal);
         Assert.Equal("88.0", viewModel.CompactOverallScoreText);
         Assert.Equal("ModelRadar.CompactValueLabel", viewModel.CompactValueLabelText);
-        Assert.Equal(
-            $"{snapshot.ValueRecommendation!.Model}/{snapshot.ValueRecommendation.ReasoningEffort}",
-            viewModel.CompactValueModelText);
+        Assert.Equal("Model-Name/High", viewModel.CompactValueModelText);
         Assert.Equal("88.0", viewModel.CompactValueScoreText);
         Assert.Contains(snapshot.OverallLeader!.Model, viewModel.CompactOverallText, StringComparison.Ordinal);
         Assert.Contains(snapshot.OverallLeader.ReasoningEffort, viewModel.CompactOverallText, StringComparison.Ordinal);
@@ -74,14 +72,14 @@ public class ModelRadarViewModelTests
     }
 
     [Fact]
-    public async Task CompactSummary_GptModels_ShouldUseCompactDisplayNamesAndKeepRawTooltip()
+    public async Task Presentation_ShouldNormalizeModelAndEffortCasingWithoutChangingRawTooltip()
     {
         var snapshot = CreateSnapshot(
             publishedAt: Now,
             model: "gpt-5.6-sol",
-            reasoningEffort: "max",
-            valueModel: "gpt-5.6-luna",
-            valueReasoningEffort: "high");
+            reasoningEffort: "medium",
+            valueModel: "claude-opus-5",
+            valueReasoningEffort: "xhigh");
         var service = new FakeModelRadarService
         {
             CacheResult = Success(snapshot, Now)
@@ -90,12 +88,23 @@ public class ModelRadarViewModelTests
 
         await viewModel.SetEnabledAsync(true);
 
-        Assert.Equal("GPT5.6-Sol/Max", viewModel.CompactOverallModelText);
-        Assert.Equal("GPT5.6-Luna/High", viewModel.CompactValueModelText);
+        Assert.Equal("GPT5.6-Sol/Medium", viewModel.CompactOverallModelText);
+        Assert.Equal("Claude-Opus-5/XHigh", viewModel.CompactValueModelText);
+        Assert.Equal("GPT5.6-Sol", viewModel.OverallDecision!.ModelName);
+        Assert.Equal("Medium", viewModel.OverallDecision.ReasoningEffort);
+        Assert.Equal("Claude-Opus-5", viewModel.ValueDecision!.ModelName);
+        Assert.Equal("XHigh", viewModel.ValueDecision.ReasoningEffort);
+        var row = Assert.Single(viewModel.VisibleRows);
+        Assert.Equal("GPT5.6-Sol", row.ModelName);
+        Assert.Equal("Medium", row.ReasoningEffort);
         Assert.Contains("gpt-5.6-sol", viewModel.CompactToolTipText, StringComparison.Ordinal);
-        Assert.Contains("gpt-5.6-luna", viewModel.CompactToolTipText, StringComparison.Ordinal);
-        Assert.Contains("max", viewModel.CompactToolTipText, StringComparison.Ordinal);
-        Assert.Contains("high", viewModel.CompactToolTipText, StringComparison.Ordinal);
+        Assert.Contains("claude-opus-5", viewModel.CompactToolTipText, StringComparison.Ordinal);
+        Assert.Contains("medium", viewModel.CompactToolTipText, StringComparison.Ordinal);
+        Assert.Contains("xhigh", viewModel.CompactToolTipText, StringComparison.Ordinal);
+        Assert.Equal("gpt-5.6-sol", snapshot.OverallLeader!.Model);
+        Assert.Equal("medium", snapshot.OverallLeader.ReasoningEffort);
+        Assert.Equal("claude-opus-5", snapshot.ValueRecommendation!.Model);
+        Assert.Equal("xhigh", snapshot.ValueRecommendation.ReasoningEffort);
     }
 
     [Fact]
@@ -135,7 +144,7 @@ public class ModelRadarViewModelTests
         Assert.True(viewModel.HasCompactRecommendations);
         Assert.Equal("ModelRadar.CompactOverallLabel", viewModel.CompactOverallLabelText);
         Assert.EndsWith(
-            $"{snapshot.OverallLeader!.Model}/{snapshot.OverallLeader.ReasoningEffort}",
+            "Model-Name/High",
             viewModel.CompactOverallModelText,
             StringComparison.Ordinal);
         Assert.Equal("88.0", viewModel.CompactOverallScoreText);
@@ -421,8 +430,8 @@ public class ModelRadarViewModelTests
         await viewModel.SetEnabledAsync(true);
 
         var row = Assert.Single(viewModel.VisibleRows);
-        Assert.Equal("full-model-name", row.ModelName);
-        Assert.Equal("max", row.ReasoningEffort);
+        Assert.Equal("Full-Model-Name", row.ModelName);
+        Assert.Equal("Max", row.ReasoningEffort);
         Assert.Equal("91.0", row.ScoreText);
         Assert.Equal("recommended · value", row.DecisionTagsText);
         Assert.Contains("--", row.ToolTipText, StringComparison.Ordinal);

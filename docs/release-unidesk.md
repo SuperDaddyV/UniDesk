@@ -19,7 +19,7 @@ Distribution notice: the installer and UniDesk first-party binaries are `Authent
 - Disabled QWeather redirects, bounded response bodies, prevented stale city requests from overwriting current state, and serialized cache writes and city changes.
 - Removed secrets, coordinates, user content, paths, exception messages, and stack traces from normal-user, elevated-helper, `LocalSystem`, and IPC diagnostics.
 - Revalidated service ownership around stop and delete operations, required confirmed service disappearance, and hardened installer／repair log paths against reparse-point, ACL, and hard-link attacks.
-- Corrected the collapsed todo baseline and added an optional Model Radar summary above it. The summary shows the official overall leader and first official `value` recommendation from the existing enabled snapshot, labels stale／offline data honestly, and never enables Model Radar or starts network activity on its own.
+- Corrected the collapsed todo baseline and added an optional Model Radar summary above it. The compact dashboard uses a balanced two-column layout with unified typography, normalized display casing, full model／reasoning names, and a single subtle center divider. The summary shows the official overall leader and first official `value` recommendation from the existing enabled snapshot, labels stale／offline data honestly, and never enables Model Radar or starts network activity on its own.
 
 ### 中文说明
 
@@ -32,7 +32,7 @@ Distribution notice: the installer and UniDesk first-party binaries are `Authent
 - 禁止 QWeather 重定向并限制响应体，阻止旧城市请求覆盖当前状态，串行化城市切换和缓存写入。
 - 从普通用户程序、提权修复工具、`LocalSystem` 服务和 IPC 诊断中清除密钥、坐标、用户内容、路径、异常消息和堆栈。
 - 在停止和删除服务前后重新验证归属，必须确认服务真正消失，并防御安装器／修复日志路径中的重解析点、ACL 和硬链接攻击。
-- 修正折叠待办的文字基线，并在其上方增加可选模型雷达摘要。摘要只消费已启用模块的现有快照，显示官方综合榜首和首个官方 `value` 推荐，诚实标注过期／离线数据，且不会自行启用模型雷达或发起网络活动。
+- 修正折叠待办的文字基线，并在其上方增加可选模型雷达摘要。收缩仪表盘采用均衡双列布局，统一字体和展示大小写，完整显示模型与推理强度，并仅保留一条低对比度中央竖线。摘要只消费已启用模块的现有快照，显示官方综合榜首和首个官方 `value` 推荐，诚实标注过期／离线数据，且不会自行启用模型雷达或发起网络活动。
 
 ### Installer integrity / 安装包校验
 

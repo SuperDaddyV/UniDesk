@@ -22,8 +22,8 @@ public partial class MainWindow : Window
     private bool _isApplyingMonitorBounds;
     private bool _isDragging;
     private MonitorWorkArea? _currentMonitor;
-    private const double CollapsedPanelHeight = 190;
-    private const double CollapsedPanelMinWidth = 350;
+    private const double CollapsedPanelHeight = 206;
+    private const double CollapsedPanelMinWidth = 320;
     private const double MinimumCompactHeight = CollapsedPanelHeight;
     private const double WorkAreaMargin = 16;
     private const double WindowCornerRadius = 16;
