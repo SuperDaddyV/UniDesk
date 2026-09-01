@@ -72,7 +72,7 @@ public class CalmGlassShellAndModuleTests
 
         Assert.Equal(7, CountOccurrences(hardwareXaml, "FontFamily=\"{DynamicResource BodyFontFamily}\""));
         Assert.DoesNotContain("FontFamily=\"{DynamicResource DataFontFamily}\"", hardwareXaml, StringComparison.Ordinal);
-        Assert.Contains("FontFamily=\"{DynamicResource DataFontFamily}\"", modelRadarXaml, StringComparison.Ordinal);
+        Assert.DoesNotContain("FontFamily=\"{DynamicResource DataFontFamily}\"", modelRadarXaml, StringComparison.Ordinal);
 
         Assert.Contains("TextOptions.TextRenderingMode=\"Grayscale\"", hardwareXaml, StringComparison.Ordinal);
         Assert.Equal(

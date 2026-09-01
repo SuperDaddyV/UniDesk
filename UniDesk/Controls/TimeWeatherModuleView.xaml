@@ -13,7 +13,7 @@
                     <DataTrigger Binding="{Binding DataContext.IsPanelCollapsed, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
                         <Setter Property="Padding" Value="0"/>
                         <Setter Property="Margin" Value="0"/>
-                        <Setter Property="Height" Value="140"/>
+                        <Setter Property="Height" Value="156"/>
                         <Setter Property="Background" Value="Transparent"/>
                         <Setter Property="BorderBrush" Value="Transparent"/>
                         <Setter Property="BorderThickness" Value="0"/>
@@ -446,80 +446,77 @@
 
                     <Grid x:Name="CompactModelRadarSummary"
                           Grid.Row="0"
-                          Height="16"
+                          Height="32"
                           Margin="0,0,0,1"
                           ToolTip="{Binding DataContext.ModelRadar.CompactToolTipText, RelativeSource={RelativeSource AncestorType=Window}}"
                           Visibility="{Binding DataContext.ModelRadar.IsCompactSummaryVisible, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BooleanToVisibilityConverter}}">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="1"/>
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
+                        <Border x:Name="CompactModelRadarVerticalDivider"
+                                Grid.Column="1"
+                                Width="1"
+                                Margin="0,2"
+                                Background="{DynamicResource DividerBrush}"
+                                Opacity="0.45"
+                                Visibility="{Binding DataContext.ModelRadar.HasCompactRecommendations, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                         <Grid x:Name="CompactModelRadarOverallRecommendation"
                               Grid.Column="0"
                               Visibility="{Binding DataContext.ModelRadar.HasCompactRecommendations, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BooleanToVisibilityConverter}}">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock x:Name="CompactModelRadarOverallLabelText"
-                                       Grid.Column="0"
-                                       Width="24"
-                                       Margin="0,0,3,0"
-                                       FontWeight="Medium"
-                                       TextAlignment="Center"
-                                       TextTrimming="None"
-                                       Style="{StaticResource CompactBodyTextStyle}"
-                                       Text="{Binding DataContext.ModelRadar.CompactOverallLabelText, RelativeSource={RelativeSource AncestorType=Window}}"/>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="16"/>
+                                <RowDefinition Height="16"/>
+                            </Grid.RowDefinitions>
+                            <StackPanel Grid.Row="0"
+                                        Orientation="Horizontal"
+                                        HorizontalAlignment="Center">
+                                <TextBlock x:Name="CompactModelRadarOverallLabelText"
+                                           FontWeight="Medium"
+                                           TextTrimming="None"
+                                           Style="{StaticResource CompactBodyTextStyle}"
+                                           Text="{Binding DataContext.ModelRadar.CompactOverallLabelText, RelativeSource={RelativeSource AncestorType=Window}}"/>
+                                <TextBlock x:Name="CompactModelRadarOverallScoreText"
+                                           Margin="6,0,0,0"
+                                           Style="{StaticResource CompactBodyTextStyle}"
+                                           Text="{Binding DataContext.ModelRadar.CompactOverallScoreText, RelativeSource={RelativeSource AncestorType=Window}}"/>
+                            </StackPanel>
                             <TextBlock x:Name="CompactModelRadarOverallModelText"
-                                       Grid.Column="1"
+                                       Grid.Row="1"
+                                       HorizontalAlignment="Center"
+                                       TextAlignment="Center"
                                        TextTrimming="None"
                                        Style="{StaticResource CompactBodyTextStyle}"
                                        Text="{Binding DataContext.ModelRadar.CompactOverallModelText, RelativeSource={RelativeSource AncestorType=Window}}"/>
-                            <TextBlock x:Name="CompactModelRadarOverallScoreText"
-                                       Grid.Column="2"
-                                       Margin="4,0,0,0"
-                                       HorizontalAlignment="Right"
-                                       TextAlignment="Right"
-                                       Style="{StaticResource CompactBodyTextStyle}"
-                                       Text="{Binding DataContext.ModelRadar.CompactOverallScoreText, RelativeSource={RelativeSource AncestorType=Window}}"/>
                         </Grid>
-                        <Border x:Name="CompactModelRadarDivider"
-                                Grid.Column="1"
-                                Width="1"
-                                Margin="6,1"
-                                Background="{DynamicResource DividerBrush}"
-                                Visibility="{Binding DataContext.ModelRadar.HasCompactRecommendations, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                         <Grid x:Name="CompactModelRadarValueRecommendation"
                               Grid.Column="2"
                               Visibility="{Binding DataContext.ModelRadar.HasCompactRecommendations, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BooleanToVisibilityConverter}}">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock x:Name="CompactModelRadarValueLabelText"
-                                       Grid.Column="0"
-                                       Width="24"
-                                       Margin="0,0,3,0"
-                                       FontWeight="Medium"
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="16"/>
+                                <RowDefinition Height="16"/>
+                            </Grid.RowDefinitions>
+                            <StackPanel Grid.Row="0"
+                                        Orientation="Horizontal"
+                                        HorizontalAlignment="Center">
+                                <TextBlock x:Name="CompactModelRadarValueLabelText"
+                                           FontWeight="Medium"
+                                           TextTrimming="None"
+                                           Style="{StaticResource CompactBodyTextStyle}"
+                                           Text="{Binding DataContext.ModelRadar.CompactValueLabelText, RelativeSource={RelativeSource AncestorType=Window}}"/>
+                                <TextBlock x:Name="CompactModelRadarValueScoreText"
+                                           Margin="6,0,0,0"
+                                           Style="{StaticResource CompactBodyTextStyle}"
+                                           Text="{Binding DataContext.ModelRadar.CompactValueScoreText, RelativeSource={RelativeSource AncestorType=Window}}"/>
+                            </StackPanel>
+                            <TextBlock x:Name="CompactModelRadarValueModelText"
+                                       Grid.Row="1"
+                                       HorizontalAlignment="Center"
                                        TextAlignment="Center"
                                        TextTrimming="None"
                                        Style="{StaticResource CompactBodyTextStyle}"
-                                       Text="{Binding DataContext.ModelRadar.CompactValueLabelText, RelativeSource={RelativeSource AncestorType=Window}}"/>
-                            <TextBlock x:Name="CompactModelRadarValueModelText"
-                                       Grid.Column="1"
-                                       TextTrimming="None"
-                                       Style="{StaticResource CompactBodyTextStyle}"
                                        Text="{Binding DataContext.ModelRadar.CompactValueModelText, RelativeSource={RelativeSource AncestorType=Window}}"/>
-                            <TextBlock x:Name="CompactModelRadarValueScoreText"
-                                       Grid.Column="2"
-                                       Margin="4,0,0,0"
-                                       HorizontalAlignment="Right"
-                                       TextAlignment="Right"
-                                       Style="{StaticResource CompactBodyTextStyle}"
-                                       Text="{Binding DataContext.ModelRadar.CompactValueScoreText, RelativeSource={RelativeSource AncestorType=Window}}"/>
                         </Grid>
                         <TextBlock x:Name="CompactModelRadarStatusText"
                                    Grid.ColumnSpan="3"

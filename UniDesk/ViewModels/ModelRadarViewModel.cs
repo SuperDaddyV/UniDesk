@@ -608,26 +608,56 @@ public partial class ModelRadarViewModel : ObservableObject, IDisposable
             FormatScore(entry.OverallScore));
 
     private static string FormatCompactModel(ModelRadarEntry entry)
+        => $"{FormatDisplayModel(entry.Model)}/{FormatDisplayReasoningEffort(entry.ReasoningEffort)}";
+
+    private static string FormatDisplayModel(string value)
     {
-        var model = entry.Model.Trim();
-        var reasoningEffort = entry.ReasoningEffort.Trim();
-        if (model.StartsWith("gpt-", StringComparison.OrdinalIgnoreCase))
+        var segments = value.Trim().Split(
+            '-',
+            StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (segments.Length == 0)
         {
-            model = $"GPT{string.Join(
-                "-",
-                model[4..]
-                    .Split('-', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-                    .Select(FormatCompactIdentifierSegment))}";
-            reasoningEffort = FormatCompactIdentifierSegment(reasoningEffort);
+            return string.Empty;
         }
 
-        return $"{model}/{reasoningEffort}";
+        if (segments[0].Equals("gpt", StringComparison.OrdinalIgnoreCase) && segments.Length > 1)
+        {
+            var suffix = string.Join("-", segments.Skip(2).Select(FormatDisplayIdentifierSegment));
+            var displayName = $"GPT{FormatDisplayIdentifierSegment(segments[1])}";
+            return string.IsNullOrEmpty(suffix) ? displayName : $"{displayName}-{suffix}";
+        }
+
+        return string.Join("-", segments.Select(FormatDisplayIdentifierSegment));
     }
 
-    private static string FormatCompactIdentifierSegment(string value) =>
-        string.IsNullOrEmpty(value)
-            ? value
-            : $"{char.ToUpperInvariant(value[0])}{value[1..].ToLowerInvariant()}";
+    private static string FormatDisplayReasoningEffort(string value)
+    {
+        var normalized = value.Trim().ToLowerInvariant();
+        return normalized switch
+        {
+            "xhigh" or "x-high" => "XHigh",
+            _ => FormatDisplayIdentifierSegment(normalized)
+        };
+    }
+
+    private static string FormatDisplayIdentifierSegment(string value)
+    {
+        if (string.IsNullOrEmpty(value))
+        {
+            return value;
+        }
+
+        return value.ToLowerInvariant() switch
+        {
+            "ai" => "AI",
+            "api" => "API",
+            "deepseek" => "DeepSeek",
+            "glm" => "GLM",
+            "gpt" => "GPT",
+            "minimax" => "MiniMax",
+            _ => $"{char.ToUpperInvariant(value[0])}{value[1..].ToLowerInvariant()}"
+        };
+    }
 
     private void NotifyCompactSummaryChanged()
     {
@@ -648,8 +678,8 @@ public partial class ModelRadarViewModel : ObservableObject, IDisposable
     private ModelRadarDecisionCard CreateDecisionCard(ModelRadarEntry entry, double? score) =>
         new()
         {
-            ModelName = entry.Model,
-            ReasoningEffort = entry.ReasoningEffort,
+            ModelName = FormatDisplayModel(entry.Model),
+            ReasoningEffort = FormatDisplayReasoningEffort(entry.ReasoningEffort),
             ScoreText = FormatScore(score),
             DimensionSummary = _localizationService.Format(
                 "ModelRadar.DimensionSummaryFormat",
@@ -664,8 +694,8 @@ public partial class ModelRadarViewModel : ObservableObject, IDisposable
         return new ModelRadarDisplayRow
         {
             Position = item.Position,
-            ModelName = entry.Model,
-            ReasoningEffort = entry.ReasoningEffort,
+            ModelName = FormatDisplayModel(entry.Model),
+            ReasoningEffort = FormatDisplayReasoningEffort(entry.ReasoningEffort),
             ScoreText = FormatScore(item.Score),
             DecisionTagsText = entry.DecisionTags.Count == 0
                 ? string.Empty

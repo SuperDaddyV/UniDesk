@@ -475,8 +475,8 @@ public class WpfInteractionRegressionTests
         var timeWeatherXaml = ReadProjectFile("UniDesk", "Controls", "TimeWeatherModuleView.xaml");
         var sharedTheme = ReadProjectFile("UniDesk", "Resources", "Themes", "Shared.xaml");
 
-        Assert.Contains("private const double CollapsedPanelHeight = 190;", mainCode, StringComparison.Ordinal);
-        Assert.Contains("private const double CollapsedPanelMinWidth = 350;", mainCode, StringComparison.Ordinal);
+        Assert.Contains("private const double CollapsedPanelHeight = 206;", mainCode, StringComparison.Ordinal);
+        Assert.Contains("private const double CollapsedPanelMinWidth = 320;", mainCode, StringComparison.Ordinal);
         Assert.Contains("GetRequestedPanelWidth()", mainCode, StringComparison.Ordinal);
         Assert.Contains(
             "Math.Max(_viewModel.PanelWidth, CollapsedPanelMinWidth)",
@@ -554,8 +554,27 @@ public class WpfInteractionRegressionTests
             "<Border x:Name=\"CompactStatusStrip\"[\\s\\S]*?</Border>");
         Assert.True(statusStrip.Success);
         Assert.Contains("x:Name=\"CompactModelRadarSummary\"", statusStrip.Value, StringComparison.Ordinal);
-        Assert.Contains("x:Name=\"CompactModelRadarDivider\"", statusStrip.Value, StringComparison.Ordinal);
-        Assert.Contains("Background=\"{DynamicResource DividerBrush}\"", statusStrip.Value, StringComparison.Ordinal);
+        Assert.Contains("Height=\"32\"", statusStrip.Value, StringComparison.Ordinal);
+        Assert.Contains("x:Name=\"CompactModelRadarOverallRecommendation\"", statusStrip.Value, StringComparison.Ordinal);
+        Assert.Contains("x:Name=\"CompactModelRadarValueRecommendation\"", statusStrip.Value, StringComparison.Ordinal);
+        Assert.Matches(
+            "x:Name=\"CompactModelRadarOverallRecommendation\"[\\s\\S]*?Grid.Column=\"0\"",
+            statusStrip.Value);
+        Assert.Matches(
+            "x:Name=\"CompactModelRadarValueRecommendation\"[\\s\\S]*?Grid.Column=\"2\"",
+            statusStrip.Value);
+        Assert.Equal(
+            4,
+            statusStrip.Value.Split(
+                "<RowDefinition Height=\"16\"/>",
+                StringSplitOptions.None).Length - 1);
+        Assert.Contains("x:Name=\"CompactModelRadarVerticalDivider\"", statusStrip.Value, StringComparison.Ordinal);
+        Assert.DoesNotContain("x:Name=\"CompactModelRadarHorizontalDivider\"", statusStrip.Value, StringComparison.Ordinal);
+        Assert.Equal(
+            1,
+            statusStrip.Value.Split(
+                "Background=\"{DynamicResource DividerBrush}\"",
+                StringSplitOptions.None).Length - 1);
         Assert.Contains("ModelRadar.IsCompactSummaryVisible", statusStrip.Value, StringComparison.Ordinal);
         Assert.Contains("ModelRadar.HasCompactRecommendations", statusStrip.Value, StringComparison.Ordinal);
         Assert.Contains("ModelRadar.CompactOverallLabelText", statusStrip.Value, StringComparison.Ordinal);
@@ -601,27 +620,32 @@ public class WpfInteractionRegressionTests
             statusStrip.Value.Split(
                 "FontWeight=\"Medium\"",
                 StringSplitOptions.None).Length - 1);
+        Assert.DoesNotContain("TextAlignment=\"Right\"", statusStrip.Value, StringComparison.Ordinal);
+        Assert.Equal(
+            4,
+            statusStrip.Value.Split(
+                "HorizontalAlignment=\"Center\"",
+                StringSplitOptions.None).Length - 1);
         Assert.Equal(
             2,
             statusStrip.Value.Split(
-                "TextAlignment=\"Right\"",
+                "Margin=\"6,0,0,0\"",
                 StringSplitOptions.None).Length - 1);
         Assert.Equal(
             4,
             statusStrip.Value.Split(
                 "TextTrimming=\"None\"",
                 StringSplitOptions.None).Length - 1);
-        Assert.Equal(
-            2,
-            statusStrip.Value.Split(
-                "Width=\"24\"",
-                StringSplitOptions.None).Length - 1);
+        Assert.DoesNotContain("Width=\"24\"", statusStrip.Value, StringComparison.Ordinal);
         Assert.True(
             statusStrip.Value.IndexOf("CompactModelRadarSummary", StringComparison.Ordinal) <
             statusStrip.Value.IndexOf("CompactTodoSummary", StringComparison.Ordinal));
         Assert.DoesNotContain("HardwareMonitor.", statusStrip.Value, StringComparison.Ordinal);
-        Assert.Contains("<Setter Property=\"Height\" Value=\"140\"/>", timeWeatherXaml, StringComparison.Ordinal);
+        Assert.Contains("<Setter Property=\"Height\" Value=\"156\"/>", timeWeatherXaml, StringComparison.Ordinal);
         Assert.Contains("<Setter Property=\"Background\" Value=\"Transparent\"/>", timeWeatherXaml, StringComparison.Ordinal);
+
+        var radarModule = ReadProjectFile("UniDesk", "Controls", "ModelRadarModuleView.xaml");
+        Assert.DoesNotContain("DataFontFamily", radarModule, StringComparison.Ordinal);
 
         Assert.Contains("<Setter Property=\"FocusVisualStyle\" Value=\"{x:Null}\"/>", sharedTheme, StringComparison.Ordinal);
         Assert.Contains("<Trigger Property=\"IsKeyboardFocused\" Value=\"True\">", sharedTheme, StringComparison.Ordinal);
