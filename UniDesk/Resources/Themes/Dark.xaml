@@ -24,6 +24,9 @@
     <Color x:Key="NoteBackgroundColor">#FFFFF4D6</Color>
     <Color x:Key="NoteTextColor">#FF3D3D3D</Color>
     <Color x:Key="GlassHighlightColor">#26FFFFFF</Color>
+    <Color x:Key="ToolTipSurfaceColor">#FF202936</Color>
+    <Color x:Key="ToolTipTextColor">#FFF8FAFC</Color>
+    <Color x:Key="ToolTipBorderColor">#FF627082</Color>
 
     <SolidColorBrush x:Key="WindowSurfaceBrush" Color="{StaticResource WindowSurfaceColor}"/>
     <SolidColorBrush x:Key="SettingsSurfaceBrush" Color="{StaticResource SettingsSurfaceColor}"/>
@@ -52,6 +55,9 @@
     <SolidColorBrush x:Key="NoteBackgroundBrush" Color="{StaticResource NoteBackgroundColor}"/>
     <SolidColorBrush x:Key="NoteTextBrush" Color="{StaticResource NoteTextColor}"/>
     <SolidColorBrush x:Key="GlassHighlightBrush" Color="{StaticResource GlassHighlightColor}"/>
+    <SolidColorBrush x:Key="ToolTipSurfaceBrush" Color="{StaticResource ToolTipSurfaceColor}"/>
+    <SolidColorBrush x:Key="ToolTipTextBrush" Color="{StaticResource ToolTipTextColor}"/>
+    <SolidColorBrush x:Key="ToolTipBorderBrush" Color="{StaticResource ToolTipBorderColor}"/>
 
     <!-- Legacy color keys are retained for AppColorSchemeCatalog discovery. -->
     <Color x:Key="PrimaryBackgroundColor">#E52F3A47</Color>

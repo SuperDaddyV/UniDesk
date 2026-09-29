@@ -691,26 +691,30 @@ public partial class ModelRadarViewModel : ObservableObject, IDisposable
     private ModelRadarDisplayRow CreateDisplayRow(ModelRadarListItem item)
     {
         var entry = item.Entry;
+        var decisionTagsText = entry.DecisionTags.Count == 0
+            ? string.Empty
+            : string.Join(" · ", entry.DecisionTags);
+        var tooltipLines = new List<string>
+        {
+            $"{L("ModelRadar.OverallScore")}：{FormatScore(entry.OverallScore)}",
+            $"{L("ModelRadar.BackendScore")}：{FormatScore(entry.BackendScore)}",
+            $"{L("ModelRadar.FrontendScore")}：{FormatScore(entry.FrontendScore)}",
+            $"{L("ModelRadar.KnowledgeScore")}：{FormatScore(entry.KnowledgeScore)}",
+            $"{L("ModelRadar.Elapsed")}：{FormatElapsed(entry.ElapsedMilliseconds)}",
+            $"{L("ModelRadar.ReferenceCost")}：{FormatReferenceCost(entry.EstimatedReferenceCostUsd)}",
+            $"{L("ModelRadar.Route")}：{(string.IsNullOrWhiteSpace(entry.Route) ? "--" : entry.Route)}"
+        };
+        if (decisionTagsText.Length > 0)
+            tooltipLines.Add(decisionTagsText);
+
         return new ModelRadarDisplayRow
         {
             Position = item.Position,
             ModelName = FormatDisplayModel(entry.Model),
             ReasoningEffort = FormatDisplayReasoningEffort(entry.ReasoningEffort),
             ScoreText = FormatScore(item.Score),
-            DecisionTagsText = entry.DecisionTags.Count == 0
-                ? string.Empty
-                : string.Join(" · ", entry.DecisionTags),
-            ToolTipText = string.Join(
-                Environment.NewLine,
-                [
-                    $"{L("ModelRadar.OverallScore")}：{FormatScore(entry.OverallScore)}",
-                    $"{L("ModelRadar.BackendScore")}：{FormatScore(entry.BackendScore)}",
-                    $"{L("ModelRadar.FrontendScore")}：{FormatScore(entry.FrontendScore)}",
-                    $"{L("ModelRadar.KnowledgeScore")}：{FormatScore(entry.KnowledgeScore)}",
-                    $"{L("ModelRadar.Elapsed")}：{FormatElapsed(entry.ElapsedMilliseconds)}",
-                    $"{L("ModelRadar.ReferenceCost")}：{FormatReferenceCost(entry.EstimatedReferenceCostUsd)}",
-                    $"{L("ModelRadar.Route")}：{(string.IsNullOrWhiteSpace(entry.Route) ? "--" : entry.Route)}"
-                ])
+            DecisionTagsText = decisionTagsText,
+            ToolTipText = string.Join(Environment.NewLine, tooltipLines)
         };
     }
 

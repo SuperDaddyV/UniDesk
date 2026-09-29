@@ -8,9 +8,10 @@
             <StackPanel>
                 <TextBlock Text="{DynamicResource Settings.Theme}" Style="{StaticResource GlassSectionTitleStyle}"/>
                 <Grid Margin="0,0,0,12">
-                    <TextBlock Text="{DynamicResource Settings.FollowSystemTheme}"
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                    <TextBlock TextWrapping="Wrap" Margin="0,0,12,0" Text="{DynamicResource Settings.FollowSystemTheme}"
                                Foreground="{DynamicResource PrimaryTextBrush}" VerticalAlignment="Center"/>
-                    <CheckBox HorizontalAlignment="Right" IsChecked="{Binding FollowSystemTheme}"/>
+                    <CheckBox Grid.Column="1" MinWidth="28" MinHeight="28" VerticalContentAlignment="Center" AutomationProperties.Name="{DynamicResource Settings.FollowSystemTheme}" HorizontalAlignment="Right" IsChecked="{Binding FollowSystemTheme}"/>
                 </Grid>
                 <Grid Margin="0,0,0,12"
                       Visibility="{Binding FollowSystemTheme, Converter={StaticResource BooleanToVisibilityConverter}}">

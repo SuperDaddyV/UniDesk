@@ -117,10 +117,10 @@ UniDesk は、デスクトップをすっきり保ちながら、情報確認、
 
 ## 📦 インストール
 
-`v2.2.1` 安定版インストーラーの公式配布元は [v2.2.1 GitHub Release](https://github.com/SuperDaddyV/UniDesk/releases/tag/v2.2.1) です。この正確なバージョンには個別に承認された未署名安定版の例外が適用されます。インストーラーは `Authenticode: NotSigned` のため、Windows が SmartScreen または企業ポリシーの確認を表示する場合があります。公式 Release からダウンロードし、公開された SHA-256 を確認してください。インストーラーのファイル名：
+`v2.2.2` 安定版インストーラーの公式配布元は [v2.2.2 GitHub Release](https://github.com/SuperDaddyV/UniDesk/releases/tag/v2.2.2) です。この正確なバージョンには個別に承認された未署名安定版の例外が適用されます。インストーラーは `Authenticode: NotSigned` のため、Windows が SmartScreen または企業ポリシーの確認を表示する場合があります。公式 Release からダウンロードし、公開された SHA-256 を確認してください。インストーラーのファイル名：
 
 ```powershell
-UniDesk_Setup_2.2.1.exe
+UniDesk_Setup_2.2.2.exe
 ```
 
 インストールまたはアップグレード前に、起動中の UniDesk を終了することをおすすめします。
@@ -159,10 +159,10 @@ dotnet run --project UniDesk\UniDesk.csproj
 クリーンなワークツリーからローカルの未署名リリース候補を作成：
 
 ```powershell
-.\scripts\Build-Release.ps1 -Version 2.2.1
+.\scripts\Build-Release.ps1 -Version 2.2.2
 ```
 
-このスクリプトは、アプリ、ハードウェアサービス、修復ツールを新しいバージョン別ディレクトリに発行し、その入力だけからインストーラーを作成します。クリーンなワークツリーから作成した未署名の `v2.2.1` 成果物は、公開前に `Test-UnsignedReleaseReadiness.ps1`、適用される手動テストマトリクス、プロジェクト所有者の最終承認を通過する必要があります。SignPath ワークフローは今後の署名版向けに維持され、GitHub Release を自動作成することはありません。
+このスクリプトは、アプリ、ハードウェアサービス、修復ツールを新しいバージョン別ディレクトリに発行し、その入力だけからインストーラーを作成します。クリーンなワークツリーから作成した未署名の `v2.2.2` 成果物は、公開前に `Test-UnsignedReleaseReadiness.ps1`、適用される手動テストマトリクス、プロジェクト所有者の最終承認を通過する必要があります。SignPath ワークフローは今後の署名版向けに維持され、GitHub Release を自動作成することはありません。
 
 ## 🧰 技術スタック
 
@@ -184,7 +184,7 @@ UniDesk はローカル優先です。設定、ショートカット、ToDo、�
 
 ## Code signing policy
 
-公開パッケージには[コード署名ポリシー](CODE_SIGNING_POLICY.md)と[プライバシーポリシー](PRIVACY.md)が適用されます。`v2.2.1` にはこの正確なバージョンだけを対象とする未署名安定版の例外を適用します。正確な公開コミットから構築し、手動承認、完全なペイロード、SHA-256 の検証に合格したうえで、`Authenticode: NotSigned` と Windows が SmartScreen／企業ポリシーの確認を表示する可能性を明記します。
+公開パッケージには[コード署名ポリシー](CODE_SIGNING_POLICY.md)と[プライバシーポリシー](PRIVACY.md)が適用されます。`v2.2.2` にはこの正確なバージョンだけを対象とする未署名安定版の例外を適用します。正確な公開コミットから構築し、手動承認、完全なペイロード、SHA-256 の検証に合格したうえで、`Authenticode: NotSigned` と Windows が SmartScreen／企業ポリシーの確認を表示する可能性を明記します。
 
 Free code signing provided by SignPath.io, certificate by SignPath Foundation.
 

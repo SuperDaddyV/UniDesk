@@ -181,7 +181,7 @@
                                     <Border Width="47"
                                             Height="47"
                                             CornerRadius="9"
-                                            Background="{DynamicResource GlassHighlightBrush}">
+                                            Background="Transparent">
                                         <Grid>
                                             <Image Width="35"
                                                    Height="35"
@@ -224,8 +224,8 @@
                             </StackPanel>
     
                             <Button Style="{StaticResource GhostButtonStyle}"
-                                    Width="16"
-                                    Height="16"
+                                    Width="28"
+                                    Height="28"
                                     Padding="0"
                                     HorizontalAlignment="Right"
                                     VerticalAlignment="Top"

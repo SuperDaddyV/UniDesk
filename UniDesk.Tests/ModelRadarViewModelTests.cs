@@ -410,7 +410,7 @@ public class ModelRadarViewModelTests
             ReasoningEffort = "max",
             Route = "official_login",
             BackendScore = 91,
-            DecisionTags = ["recommended", "value"]
+            DecisionTags = ["recommended", "lightweight", "speed", "value"]
         };
         var snapshot = new ModelRadarSnapshot
         {
@@ -433,7 +433,8 @@ public class ModelRadarViewModelTests
         Assert.Equal("Full-Model-Name", row.ModelName);
         Assert.Equal("Max", row.ReasoningEffort);
         Assert.Equal("91.0", row.ScoreText);
-        Assert.Equal("recommended · value", row.DecisionTagsText);
+        Assert.Equal("recommended · lightweight · speed · value", row.DecisionTagsText);
+        Assert.Contains("recommended · lightweight · speed · value", row.ToolTipText, StringComparison.Ordinal);
         Assert.Contains("--", row.ToolTipText, StringComparison.Ordinal);
         Assert.Contains("official_login", row.ToolTipText, StringComparison.Ordinal);
     }
@@ -457,7 +458,10 @@ public class ModelRadarViewModelTests
 
         await viewModel.SetEnabledAsync(true);
 
-        Assert.Equal(string.Empty, Assert.Single(viewModel.VisibleRows).DecisionTagsText);
+        var row = Assert.Single(viewModel.VisibleRows);
+        Assert.Equal(string.Empty, row.DecisionTagsText);
+        Assert.DoesNotContain("recommended", row.ToolTipText, StringComparison.Ordinal);
+        Assert.DoesNotContain("value", row.ToolTipText, StringComparison.Ordinal);
     }
 
     [Fact]

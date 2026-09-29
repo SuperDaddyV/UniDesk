@@ -2,9 +2,40 @@
 
 ## Code signing policy
 
-Public packages follow the [UniDesk code signing policy](../CODE_SIGNING_POLICY.md) and [privacy policy](../PRIVACY.md). `v2.1.0`, `v2.2.0`, and `v2.2.1` each use a separately approved, version-specific unsigned-stable exception; each must be rebuilt from its documented public source revision, pass the unsigned readiness gate and applicable manual matrix, and state `Authenticode: NotSigned` with a concise note that Windows may show a SmartScreen or enterprise-policy prompt. No later version inherits these exceptions.
+Public packages follow the [UniDesk code signing policy](../CODE_SIGNING_POLICY.md) and [privacy policy](../PRIVACY.md). `v2.1.0`, `v2.2.0`, `v2.2.1`, and `v2.2.2` each use a separately approved, version-specific unsigned-stable exception; each must be rebuilt from its documented public source revision, pass the unsigned readiness gate and applicable manual matrix, and state `Authenticode: NotSigned` with a concise note that Windows may show a SmartScreen or enterprise-policy prompt. No later version inherits these exceptions.
 
 Free code signing provided by SignPath.io, certificate by SignPath Foundation.
+
+## v2.2.2
+
+This release refines the existing Calm Glass interface and suppresses the WPF tray tooltip path that could leave a white box at the upper-left corner. It retains the existing Windows shell tray name, seven modules, saved appearance settings, and local data behavior.
+
+Distribution notice: the installer and UniDesk first-party binaries are `Authenticode: NotSigned` under the project owner's version-specific approval. Windows may show a SmartScreen or enterprise-policy prompt. Download from the official Release and verify the published SHA-256.
+
+### Changes
+
+- Improved typography, spacing, hover and focus states across the main panel, seven modules, seven settings pages, and reachable dialogs while keeping the existing tinted-glass window and user-selected transparency.
+- Tightened the clock and weather layout at narrow widths, made the QWeather label smaller than the city, and moved the complete AQI source into the weather detail tooltip. The project owner reports separate coordination with QWeather about this presentation; this statement does not assert that the public attribution terms alone permit it.
+- Aligned todo titles and due dates on separate rows, retained the existing completion target, and reduced visual weight in Model Radar ranking rows. Ranking tags remain available in each row's detail tooltip.
+- Reworked application tooltips for contrast against light backgrounds and kept tray menu, double-click, notifications, and shell tooltip text while suppressing the package's WPF tray tooltip opening path.
+
+### 中文说明
+
+本版精修既有 Calm Glass 界面，并阻断可能在桌面左上角留下白框的 WPF 托盘提示开启路径。七个模块、已保存外观设置、托盘菜单与双击操作及本地数据语义保持不变。
+
+分发说明：安装包及 UniDesk 一方二进制文件为 `Authenticode: NotSigned`，适用项目所有者仅对本精确版本批准的例外。Windows 可能显示 SmartScreen 或企业策略提示；请从官方 Release 下载并核对同页 SHA-256。
+
+- 统一主面板、七模块、七个设置页和可达弹窗的字体、间距、悬停与焦点状态，保留原有着色透明玻璃效果和用户透明度设置。
+- 改善窄宽时钟和天气排版；「和风天气」字样小于地名；空气质量来源全文移入天气详情悬停提示。项目所有者表示已就这一呈现方式与和风天气单独沟通；此说明不等于宣称公开署名条款本身允许该方式。
+- 待办标题和日期分行对齐，保留完成操作的命中区；模型雷达榜单行减弱底框，推荐标签仍可在行详情提示中查看。
+- 提高应用内提示在浅色背景上的对比度；保留托盘菜单、双击、通知和 Shell 提示文字，同时阻断依赖包的 WPF 托盘提示开启路径。
+
+### Installer integrity / 安装包校验
+
+- `UniDesk_Setup_2.2.2.exe`
+- SHA-256：以 GitHub Release 同页发布的 `SHA256SUMS.txt` 为准
+- Authenticode：`NotSigned`
+- 源码提交、载荷清单与一方 PE 状态：以同页 `release-manifest.json` 为准
 
 ## v2.2.1
 

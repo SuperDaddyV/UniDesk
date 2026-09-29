@@ -1,6 +1,8 @@
 <Window x:Class="UniDesk.QuickNoteEditorWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        FontFamily="{DynamicResource BodyFontFamily}"
+        TextOptions.TextRenderingMode="Grayscale"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
@@ -21,7 +23,7 @@
             <Setter Property="Margin" Value="0,0,0,4"/>
         </Style>
 
-        <Style x:Key="DlgIconButton" TargetType="Button">
+        <Style x:Key="DlgIconButton" TargetType="Button" BasedOn="{StaticResource CalmButtonStyle}">
             <Setter Property="Width" Value="30"/>
             <Setter Property="Height" Value="30"/>
             <Setter Property="Background" Value="Transparent"/>
@@ -46,7 +48,7 @@
             </Setter>
         </Style>
 
-        <Style x:Key="DlgGhostButton" TargetType="Button">
+        <Style x:Key="DlgGhostButton" TargetType="Button" BasedOn="{StaticResource CalmButtonStyle}">
             <Setter Property="Height" Value="32"/>
             <Setter Property="MinWidth" Value="72"/>
             <Setter Property="Background" Value="{DynamicResource ControlSurfaceBrush}"/>
@@ -109,6 +111,8 @@
                         HorizontalAlignment="Right"
                         Content="&#xE711;"
                         FontSize="11"
+                        AutomationProperties.Name="{DynamicResource Common.Close}"
+                        ToolTip="{DynamicResource Common.Close}"
                         Click="CloseButton_OnClick"/>
             </Grid>
 
@@ -174,21 +178,21 @@
                     BorderBrush="{DynamicResource DividerBrush}"
                     BorderThickness="0,1,0,0"
                     Padding="14,10">
-                <Grid>
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
+                <WrapPanel HorizontalAlignment="Right">
+                    <WrapPanel>
                         <Button Style="{StaticResource DlgGhostButton}"
                                 Content="{DynamicResource QuickNote.CopyContent}"
-                                Margin="0,0,8,0"
+                                Margin="0,0,8,4"
                                 Click="CopyButton_OnClick"/>
                         <Button Style="{StaticResource DlgDangerButton}"
-                                Content="{DynamicResource Common.Delete}"
+                                Content="{DynamicResource Common.Delete}" Margin="0,0,8,4"
                                 Click="DeleteButton_OnClick"/>
-                    </StackPanel>
+                    </WrapPanel>
                     <Button Style="{StaticResource DlgGhostButton}"
-                            Content="{DynamicResource Common.Done}"
+                            Content="{DynamicResource Common.Done}" Margin="0,0,0,4"
                             HorizontalAlignment="Right"
                             Click="CloseButton_OnClick"/>
-                </Grid>
+                </WrapPanel>
             </Border>
         </Grid>
     </Border>

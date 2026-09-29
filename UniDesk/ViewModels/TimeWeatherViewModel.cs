@@ -35,6 +35,7 @@ public partial class TimeWeatherViewModel : ObservableObject, IDisposable
     [ObservableProperty] private string _weatherTemperature = "--";
     [ObservableProperty] private string _weatherDescription = string.Empty;
     [ObservableProperty] private string _weatherDetailLine = string.Empty;
+    [ObservableProperty] private string _weatherAirQualityAttributionText = string.Empty;
     [ObservableProperty] private string _weatherRangeLine = string.Empty;
     [ObservableProperty] private ImageSource? _weatherIconImage;
     [ObservableProperty] private bool _useWeatherIconImage;
@@ -408,6 +409,7 @@ public partial class TimeWeatherViewModel : ObservableObject, IDisposable
             WeatherTemperature = "--";
             WeatherDescription = string.Empty;
             WeatherDetailLine = string.Empty;
+            WeatherAirQualityAttributionText = string.Empty;
             WeatherRangeLine = string.Empty;
             WeatherIconImage = null;
             UseWeatherIconImage = false;
@@ -436,6 +438,10 @@ public partial class TimeWeatherViewModel : ObservableObject, IDisposable
     
         var range = BuildTempRange(info.MinTemp, info.MaxTemp);
         WeatherDetailLine = string.Join("  |  ", details);
+        WeatherAirQualityAttributionText = string.IsNullOrWhiteSpace(info.AirQuality)
+            ? string.Empty
+            : string.Join(" · ", (info.AirQualityAttributions ?? [])
+                .Where(source => !string.IsNullOrWhiteSpace(source)));
         WeatherRangeLine = range;
         WeatherStatusMessage = _weatherService.LastFailure != WeatherFailureReason.None
             ? L(WeatherService.GetFailureResourceKey(_weatherService.LastFailure))

@@ -50,12 +50,21 @@
                 <ItemsControl ItemsSource="{Binding QuickNotes}">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
-                            <Border Background="{DynamicResource GlassHighlightBrush}"
-                                    CornerRadius="8"
+                            <Border CornerRadius="8"
                                     Padding="8,6"
                                     Margin="0,0,0,6"
                                     Cursor="Hand"
                                     Tag="{Binding DataContext, RelativeSource={RelativeSource AncestorType=UserControl}}">
+                                <Border.Style>
+                                    <Style TargetType="Border">
+                                        <Setter Property="Background" Value="Transparent"/>
+                                        <Style.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter Property="Background" Value="{DynamicResource GlassHighlightBrush}"/>
+                                            </Trigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Border.Style>
                                 <Border.InputBindings>
                                     <MouseBinding Gesture="LeftClick"
                                                   Command="{Binding DataContext.EditQuickNoteCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
@@ -72,7 +81,7 @@
                                         <MenuItem Command="{Binding PlacementTarget.Tag.ToggleQuickNotePinnedCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
                                                   CommandParameter="{Binding}">
                                             <MenuItem.Style>
-                                                <Style TargetType="MenuItem">
+                                                <Style TargetType="MenuItem" BasedOn="{StaticResource TrayMenuItemStyle}">
                                                         <Setter Property="Header" Value="{DynamicResource Common.Pin}"/>
                                                     <Style.Triggers>
                                                         <DataTrigger Binding="{Binding IsPinned}" Value="True">
@@ -84,6 +93,7 @@
                                         </MenuItem>
                                         <Separator/>
                                         <MenuItem Header="{DynamicResource Common.Delete}"
+                                                  Tag="Danger"
                                                   Command="{Binding PlacementTarget.Tag.DeleteQuickNoteCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
                                                   CommandParameter="{Binding}"/>
                                     </ContextMenu>
@@ -98,21 +108,24 @@
                                             <ColumnDefinition Width="*"/>
                                             <ColumnDefinition Width="Auto"/>
                                         </Grid.ColumnDefinitions>
-                                        <StackPanel Grid.Column="0"
-                                                    Orientation="Horizontal"
-                                                    VerticalAlignment="Center">
-                                            <TextBlock Text="&#xE840;"
+                                        <Grid Grid.Column="0" VerticalAlignment="Center">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0" Text="&#xE840;"
                                                        FontFamily="Segoe MDL2 Assets"
                                                        FontSize="10"
                                                        Margin="0,0,5,0"
                                                        Foreground="{DynamicResource PrimaryTextBrush}"
                                                        Visibility="{Binding IsPinned, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-                                            <TextBlock Text="{Binding DisplayTitle}"
+                                            <TextBlock Grid.Column="1" Text="{Binding DisplayTitle}"
                                                        FontSize="{Binding DataContext.FontScale, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource ScaledFontSizeConverter}, ConverterParameter=11}"
                                                        FontWeight="SemiBold"
                                                        Foreground="{DynamicResource PrimaryTextBrush}"
-                                                       TextTrimming="CharacterEllipsis"/>
-                                        </StackPanel>
+                                                       TextTrimming="CharacterEllipsis"
+                                                       ToolTip="{Binding DisplayTitle}"/>
+                                        </Grid>
                                         <TextBlock Grid.Column="1"
                                                    Text="{Binding UpdatedAtText}"
                                                    FontSize="{Binding DataContext.FontScale, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource ScaledFontSizeConverter}, ConverterParameter=9}"
