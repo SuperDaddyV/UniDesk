@@ -75,6 +75,34 @@ public class WeatherServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task GetWeatherAsync_WithAirQualityAttributions_PreservesSourcesInResultAndCache()
+    {
+        var settings = new InMemorySettingsService();
+        settings.SetValue("WeatherApiKey", "test-key");
+        settings.SetValue("WeatherApiHost", "test.qweatherapi.com");
+        using var client = new HttpClient(new AttributionResponseHandler());
+        using var apiClient = new QWeatherApiClient(settings, client);
+        using var service = new WeatherService(
+            settings,
+            new NoOpNotificationService(),
+            new StubLocationProvider(),
+            apiClient,
+            _cachePath);
+
+        var result = await service.GetWeatherAsync("北京", notifyUser: false);
+
+        Assert.NotNull(result);
+        using var resultJson = JsonDocument.Parse(JsonSerializer.Serialize(result));
+        var sources = resultJson.RootElement.GetProperty("AirQualityAttributions")
+            .EnumerateArray().Select(item => item.GetString()!).ToArray();
+        Assert.Equal(["Data source example", "https://example.com/source"], sources);
+        using var cacheJson = JsonDocument.Parse(await File.ReadAllTextAsync(_cachePath));
+        var cachedSources = cacheJson.RootElement.GetProperty("AirQualityAttributions")
+            .EnumerateArray().Select(item => item.GetString()!).ToArray();
+        Assert.Equal(sources, cachedSources);
+    }
+
+    [Fact]
     public async Task SetCityAsync_ClearsCachedWeather()
     {
         var settings = new InMemorySettingsService();
@@ -472,6 +500,27 @@ public class WeatherServiceTests : IDisposable
                 "forced transport failure",
                 null,
                 HttpStatusCode.ServiceUnavailable));
+    }
+
+    private sealed class AttributionResponseHandler : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request,
+            CancellationToken cancellationToken)
+        {
+            var path = request.RequestUri?.AbsolutePath ?? string.Empty;
+            var json = path.Contains("/airquality/", StringComparison.Ordinal)
+                ? "{\"metadata\":{\"attributions\":[\"Data source example\",\"https://example.com/source\"]},\"indexes\":[{\"code\":\"cn-mee\",\"aqiDisplay\":\"42\",\"category\":\"优\"}]}"
+                : path.Contains("/geo/", StringComparison.Ordinal)
+                    ? "{\"code\":\"200\",\"location\":[{\"id\":\"101010100\",\"lat\":\"39.9\",\"lon\":\"116.4\"}]}"
+                    : path.EndsWith("/weather/now", StringComparison.Ordinal)
+                        ? "{\"code\":\"200\",\"now\":{\"temp\":\"25\",\"text\":\"晴\",\"icon\":\"100\",\"humidity\":\"40\"}}"
+                        : "{\"code\":\"200\",\"daily\":[{\"tempMax\":\"30\",\"tempMin\":\"20\"}]}";
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(json)
+            });
+        }
     }
 
     private sealed class LateWeatherResponseHandler : HttpMessageHandler

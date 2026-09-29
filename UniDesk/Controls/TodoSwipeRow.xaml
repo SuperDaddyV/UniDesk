@@ -3,7 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:controls="clr-namespace:UniDesk.Controls"
              ClipToBounds="True">
-    <Grid x:Name="RootGrid" Height="46">
+    <Grid x:Name="RootGrid" MinHeight="46">
         <Border x:Name="DeleteStrip"
                 HorizontalAlignment="Right"
                 Width="72"
@@ -27,10 +27,13 @@
                 MouseLeave="SwipeSurface_OnMouseLeave">
             <Border.Style>
                 <Style TargetType="Border">
-                    <Setter Property="Background" Value="{DynamicResource PrimaryBackgroundBrush}"/>
+                    <Setter Property="Background" Value="Transparent"/>
                     <Setter Property="BorderBrush" Value="Transparent"/>
                     <Setter Property="BorderThickness" Value="1"/>
                     <Style.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter Property="Background" Value="{DynamicResource GlassHighlightBrush}"/>
+                        </Trigger>
                         <DataTrigger Binding="{Binding IsSearchHighlighted, RelativeSource={RelativeSource AncestorType=controls:TodoSwipeRow}}" Value="True">
                             <Setter Property="Background" Value="{DynamicResource GlassHighlightBrush}"/>
                             <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
@@ -42,6 +45,7 @@
                 <TranslateTransform x:Name="SwipeTransform"/>
             </Border.RenderTransform>
             <ContentPresenter x:Name="ContentHost"
+                              VerticalAlignment="Center"
                               Content="{Binding RowContent, RelativeSource={RelativeSource AncestorType=controls:TodoSwipeRow}}"/>
         </Border>
     </Grid>

@@ -1,6 +1,8 @@
 <Window x:Class="UniDesk.TodoEditWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        FontFamily="{DynamicResource BodyFontFamily}"
+        TextOptions.TextRenderingMode="Grayscale"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:helpers="clr-namespace:UniDesk.Helpers"
@@ -28,7 +30,7 @@
             <Setter Property="Margin" Value="0,0,0,4"/>
         </Style>
 
-        <Style x:Key="DlgPickerButton" TargetType="Button">
+        <Style x:Key="DlgPickerButton" TargetType="Button" BasedOn="{StaticResource CalmButtonStyle}">
             <Setter Property="Height" Value="34"/>
             <Setter Property="Background" Value="{DynamicResource ControlSurfaceBrush}"/>
             <Setter Property="BorderBrush" Value="{DynamicResource DividerBrush}"/>
@@ -49,7 +51,7 @@
             </Setter>
         </Style>
 
-        <Style x:Key="DlgPresetButton" TargetType="Button">
+        <Style x:Key="DlgPresetButton" TargetType="Button" BasedOn="{StaticResource CalmButtonStyle}">
             <Setter Property="Height" Value="26"/>
             <Setter Property="MinWidth" Value="52"/>
             <Setter Property="Margin" Value="0,0,5,0"/>
@@ -87,7 +89,7 @@
             <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
         </Style>
 
-        <Style x:Key="DlgPriorityButton" TargetType="Button">
+        <Style x:Key="DlgPriorityButton" TargetType="Button" BasedOn="{StaticResource CalmButtonStyle}">
             <Setter Property="Height" Value="32"/>
             <Setter Property="Background" Value="{DynamicResource ControlSurfaceBrush}"/>
             <Setter Property="BorderBrush" Value="{DynamicResource DividerBrush}"/>
@@ -119,7 +121,7 @@
             <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
         </Style>
 
-        <Style x:Key="DlgGhostButton" TargetType="Button">
+        <Style x:Key="DlgGhostButton" TargetType="Button" BasedOn="{StaticResource CalmButtonStyle}">
             <Setter Property="Height" Value="32"/>
             <Setter Property="MinWidth" Value="80"/>
             <Setter Property="Background" Value="{DynamicResource ControlSurfaceBrush}"/>
@@ -142,7 +144,7 @@
             </Setter>
         </Style>
 
-        <Style x:Key="DlgPrimaryButton" TargetType="Button">
+        <Style x:Key="DlgPrimaryButton" TargetType="Button" BasedOn="{StaticResource CalmButtonStyle}">
             <Setter Property="Height" Value="32"/>
             <Setter Property="MinWidth" Value="80"/>
             <Setter Property="Background" Value="{DynamicResource AccentBrush}"/>
@@ -175,7 +177,7 @@
             </Setter>
         </Style>
 
-        <Style x:Key="DlgNavIconButton" TargetType="Button">
+        <Style x:Key="DlgNavIconButton" TargetType="Button" BasedOn="{StaticResource CalmButtonStyle}">
             <Setter Property="Width" Value="28"/>
             <Setter Property="Height" Value="28"/>
             <Setter Property="Background" Value="Transparent"/>
@@ -208,7 +210,7 @@
             <Setter Property="Margin" Value="0,0,0,4"/>
         </Style>
 
-        <Style x:Key="DlgDayButton" TargetType="Button">
+        <Style x:Key="DlgDayButton" TargetType="Button" BasedOn="{StaticResource CalmButtonStyle}">
             <Setter Property="Width" Value="32"/>
             <Setter Property="Height" Value="32"/>
             <Setter Property="Margin" Value="1"/>
@@ -241,7 +243,7 @@
             </Setter>
         </Style>
 
-        <Style x:Key="DlgTimeChip" TargetType="Button">
+        <Style x:Key="DlgTimeChip" TargetType="Button" BasedOn="{StaticResource CalmButtonStyle}">
             <Setter Property="MinWidth" Value="0"/>
             <Setter Property="Height" Value="30"/>
             <Setter Property="Margin" Value="4,0,4,8"/>
@@ -335,6 +337,8 @@
                         Background="Transparent"
                         BorderThickness="0"
                         Cursor="Hand"
+                        AutomationProperties.Name="{DynamicResource Common.Close}"
+                        ToolTip="{DynamicResource Common.Close}"
                         Click="CloseButton_OnClick">
                     <TextBlock Text="&#xE711;"
                                FontFamily="Segoe MDL2 Assets"

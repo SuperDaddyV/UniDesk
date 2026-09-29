@@ -77,6 +77,8 @@
                             Grid.Column="1"
                             Style="{StaticResource HeaderIconButtonStyle}"
                             Width="30" Height="30"
+                            ToolTip="{DynamicResource Common.Close}"
+                            AutomationProperties.Name="{DynamicResource Common.Close}"
                             Click="CloseButton_OnClick">
                         <TextBlock Text="&#xE711;" FontFamily="Segoe MDL2 Assets" FontSize="12"/>
                     </Button>
@@ -94,48 +96,56 @@
                              SelectedIndex="0"
                              Background="Transparent"
                              BorderThickness="0"
-                             ItemContainerStyle="{StaticResource GlassNavigationItemStyle}">
+                             ItemContainerStyle="{StaticResource GlassNavigationItemStyle}"
+                             ScrollViewer.HorizontalScrollBarVisibility="Disabled">
                         <ListBoxItem>
-                            <StackPanel Orientation="Horizontal">
+                            <Grid>
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="26"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
                                 <TextBlock Text="&#xE80F;" FontFamily="Segoe MDL2 Assets" Width="26"/>
-                                <TextBlock Text="{DynamicResource Settings.NavGeneral}"/>
-                            </StackPanel>
+                                <TextBlock Grid.Column="1" Text="{DynamicResource Settings.NavGeneral}" TextWrapping="Wrap"/>
+                            </Grid>
                         </ListBoxItem>
                         <ListBoxItem>
-                            <StackPanel Orientation="Horizontal">
+                            <Grid>
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="26"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
                                 <TextBlock Text="&#xE771;" FontFamily="Segoe MDL2 Assets" Width="26"/>
-                                <TextBlock Text="{DynamicResource Settings.NavAppearance}"/>
-                            </StackPanel>
+                                <TextBlock Grid.Column="1" Text="{DynamicResource Settings.NavAppearance}" TextWrapping="Wrap"/>
+                            </Grid>
                         </ListBoxItem>
                         <ListBoxItem>
-                            <StackPanel Orientation="Horizontal">
+                            <Grid>
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="26"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
                                 <TextBlock Text="&#xECA5;" FontFamily="Segoe MDL2 Assets" Width="26"/>
-                                <TextBlock Text="{DynamicResource Settings.NavModules}"/>
-                            </StackPanel>
+                                <TextBlock Grid.Column="1" Text="{DynamicResource Settings.NavModules}" TextWrapping="Wrap"/>
+                            </Grid>
                         </ListBoxItem>
                         <ListBoxItem>
-                            <StackPanel Orientation="Horizontal">
+                            <Grid>
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="26"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
                                 <TextBlock Text="&#xE7F4;" FontFamily="Segoe MDL2 Assets" Width="26"/>
-                                <TextBlock Text="{DynamicResource Settings.NavDesktop}"/>
-                            </StackPanel>
+                                <TextBlock Grid.Column="1" Text="{DynamicResource Settings.NavDesktop}" TextWrapping="Wrap"/>
+                            </Grid>
                         </ListBoxItem>
                         <ListBoxItem>
-                            <StackPanel Orientation="Horizontal">
+                            <Grid>
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="26"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
                                 <TextBlock Text="&#xE74E;" FontFamily="Segoe MDL2 Assets" Width="26"/>
-                                <TextBlock Text="{DynamicResource Settings.NavData}"/>
-                            </StackPanel>
+                                <TextBlock Grid.Column="1" Text="{DynamicResource Settings.NavData}" TextWrapping="Wrap"/>
+                            </Grid>
                         </ListBoxItem>
                         <ListBoxItem>
-                            <StackPanel Orientation="Horizontal">
+                            <Grid>
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="26"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
                                 <TextBlock Text="&#xE765;" FontFamily="Segoe MDL2 Assets" Width="26"/>
-                                <TextBlock Text="{DynamicResource Settings.NavShortcuts}"/>
-                            </StackPanel>
+                                <TextBlock Grid.Column="1" Text="{DynamicResource Settings.NavShortcuts}" TextWrapping="Wrap"/>
+                            </Grid>
                         </ListBoxItem>
                         <ListBoxItem>
-                            <StackPanel Orientation="Horizontal">
+                            <Grid>
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="26"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
                                 <TextBlock Text="&#xE946;" FontFamily="Segoe MDL2 Assets" Width="26"/>
-                                <TextBlock Text="{DynamicResource Settings.NavAbout}"/>
-                            </StackPanel>
+                                <TextBlock Grid.Column="1" Text="{DynamicResource Settings.NavAbout}" TextWrapping="Wrap"/>
+                            </Grid>
                         </ListBoxItem>
                     </ListBox>
                 </Border>

@@ -354,6 +354,40 @@ public sealed class ModelRadarServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task ReadCacheAsync_ShouldIgnoreRemovedSupplements_AndRefreshShouldWriteOnlyMainPayload()
+    {
+        var cachePath = CachePath();
+        var root = CreateDocument(
+            [Entry("known", "Known Model", "high", overall: 80, backend: 80, frontend: 80, knowledge: 80, rank: 1)]);
+        using var handler = new RecordingHandler(request =>
+        {
+            Assert.Equal("https://modeldial.com/api/v1/radar/latest.json", request.RequestUri!.AbsoluteUri);
+            return Task.FromResult(JsonResponse(root));
+        });
+        using var client = new HttpClient(handler);
+        using var service = CreateService(client, cachePath);
+        AssertStatus(await service.RefreshAsync(CancellationToken.None), "Success");
+        var cache = JsonNode.Parse(await File.ReadAllTextAsync(cachePath))!.AsObject();
+        cache["changesPayload"] = new JsonObject { ["obsolete"] = true };
+        cache["profilesPayload"] = "obsolete";
+        var previousCache = cache.ToJsonString();
+        await File.WriteAllTextAsync(cachePath, previousCache);
+
+        var cached = await service.ReadCacheAsync(CancellationToken.None);
+        AssertStatus(cached, "Success");
+        Assert.Equal("known", cached.Snapshot!.OverallLeader!.Id);
+        Assert.Equal(1, handler.RequestCount);
+        Assert.Equal(previousCache, await File.ReadAllTextAsync(cachePath));
+
+        AssertStatus(await service.RefreshAsync(CancellationToken.None), "Success");
+        Assert.Equal(2, handler.RequestCount);
+        var refreshedCache = JsonNode.Parse(await File.ReadAllTextAsync(cachePath))!.AsObject();
+        Assert.True(refreshedCache.ContainsKey("payload"));
+        Assert.False(refreshedCache.ContainsKey("changesPayload"));
+        Assert.False(refreshedCache.ContainsKey("profilesPayload"));
+    }
+
+    [Fact]
     public async Task RefreshAsync_ShouldAtomicallyLeaveOnlyValidCacheFile()
     {
         var cachePath = CachePath();

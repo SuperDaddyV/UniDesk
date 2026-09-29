@@ -293,12 +293,12 @@ public class CalmGlassThemeContractTests
 
     private static string ExtractStyle(string document, string key)
     {
-        var match = Regex.Match(
-            document,
-            "<Style x:Key=\"" + Regex.Escape(key) + "\"[\\s\\S]*?</Style>",
-            RegexOptions.CultureInvariant);
-        Assert.True(match.Success, $"Missing style: {key}");
-        return match.Value;
+        System.Xml.Linq.XNamespace wpf = "http://schemas.microsoft.com/winfx/2006/xaml/presentation";
+        System.Xml.Linq.XNamespace x = "http://schemas.microsoft.com/winfx/2006/xaml";
+        var style = System.Xml.Linq.XDocument.Parse(document).Root!.Elements(wpf + "Style")
+            .SingleOrDefault(element => (string?)element.Attribute(x + "Key") == key);
+        Assert.NotNull(style);
+        return style.ToString();
     }
 
     private static string ExtractImplicitTextBlockStyle(string document)

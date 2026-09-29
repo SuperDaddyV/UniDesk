@@ -25,10 +25,11 @@
 
         <Border Style="{StaticResource GlassSectionStyle}">
             <Grid>
-                <TextBlock Text="{DynamicResource Settings.Startup}"
+                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                <TextBlock TextWrapping="Wrap" Margin="0,0,12,0" Text="{DynamicResource Settings.Startup}"
                            Foreground="{DynamicResource PrimaryTextBrush}"
                            VerticalAlignment="Center"/>
-                <CheckBox HorizontalAlignment="Right" IsChecked="{Binding StartupEnabled}"/>
+                <CheckBox Grid.Column="1" MinWidth="28" MinHeight="28" VerticalContentAlignment="Center" AutomationProperties.Name="{DynamicResource Settings.Startup}" HorizontalAlignment="Right" IsChecked="{Binding StartupEnabled}"/>
             </Grid>
         </Border>
 
@@ -56,10 +57,11 @@
                     </StackPanel>
                 </Grid>
                 <Grid Margin="0,0,0,8">
-                    <TextBlock Text="{DynamicResource Settings.AutoLocation}"
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                    <TextBlock TextWrapping="Wrap" Margin="0,0,12,0" Text="{DynamicResource Settings.AutoLocation}"
                                Foreground="{DynamicResource PrimaryTextBrush}"
                                VerticalAlignment="Center"/>
-                    <CheckBox HorizontalAlignment="Right" IsChecked="{Binding AutoLocation}"/>
+                    <CheckBox Grid.Column="1" MinWidth="28" MinHeight="28" VerticalContentAlignment="Center" AutomationProperties.Name="{DynamicResource Settings.AutoLocation}" HorizontalAlignment="Right" IsChecked="{Binding AutoLocation}"/>
                 </Grid>
                 <TextBlock Text="{DynamicResource Settings.AutoLocationPrivacyHint}"
                            Foreground="{DynamicResource SecondaryTextBrush}"

@@ -105,6 +105,7 @@
     <sys:String x:Key="Weather.Expired">Data may be outdated</sys:String>
     <sys:String x:Key="Weather.ApiKeyMissing">Configure QWeather API Key in Settings first.</sys:String>
     <sys:String x:Key="Weather.QWeatherAttribution">QWeather</sys:String>
+    <sys:String x:Key="Weather.AirQualityAttributionPrefix">Air quality sources: </sys:String>
     <sys:String x:Key="Weather.CityNotFoundFormat">City not found: {0}</sys:String>
     <sys:String x:Key="Weather.NetworkRequestFailedFormat">Network request failed: {0}</sys:String>
     <sys:String x:Key="Weather.GetWeatherFailedFormat">Failed to get weather: {0}</sys:String>

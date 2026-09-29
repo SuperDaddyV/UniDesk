@@ -75,21 +75,26 @@
                     Padding="0,2"
                     MouseLeftButtonDown="ClockHotspot_OnMouseLeftButtonDown">
                 <StackPanel>
-                    <TextBlock Text="{Binding ClockTimeText}"
-                               FontWeight="SemiBold"
-                               Foreground="{DynamicResource PrimaryTextBrush}">
-                        <TextBlock.Style>
-                            <Style TargetType="TextBlock">
-                                <Setter Property="FontSize" Value="{Binding DataContext.FontScale, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource ScaledFontSizeConverter}, ConverterParameter=43}"/>
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding DataContext.IsPanelCollapsed, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
-                                        <Setter Property="FontSize" Value="30"/>
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </TextBlock.Style>
-                    </TextBlock>
-                    <TextBlock Text="{Binding ClockDateText}">
+                    <Viewbox Stretch="Uniform" StretchDirection="DownOnly"
+                             HorizontalAlignment="Left">
+                        <TextBlock Text="{Binding ClockTimeText}"
+                                   FontWeight="SemiBold"
+                                   Foreground="{DynamicResource PrimaryTextBrush}">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="FontSize" Value="{Binding DataContext.FontScale, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource ScaledFontSizeConverter}, ConverterParameter=43}"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding DataContext.IsPanelCollapsed, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
+                                            <Setter Property="FontSize" Value="30"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </Viewbox>
+                    <TextBlock Text="{Binding ClockDateText}"
+                               TextWrapping="Wrap"
+                               ToolTip="{Binding ClockDateText}">
                         <TextBlock.Style>
                             <Style TargetType="TextBlock" BasedOn="{StaticResource SecondaryTextStyle}">
                                 <Setter Property="FontSize" Value="{Binding DataContext.FontScale, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource ScaledFontSizeConverter}, ConverterParameter=11}"/>
@@ -97,12 +102,16 @@
                                     <DataTrigger Binding="{Binding DataContext.IsPanelCollapsed, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
                                         <Setter Property="FontSize" Value="10"/>
                                         <Setter Property="Margin" Value="0,1,0,0"/>
+                                        <Setter Property="TextWrapping" Value="NoWrap"/>
+                                        <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
                                     </DataTrigger>
                                 </Style.Triggers>
                             </Style>
                         </TextBlock.Style>
                     </TextBlock>
                     <TextBlock Text="{Binding ClockLunarText}"
+                               TextWrapping="Wrap"
+                               ToolTip="{Binding ClockLunarText}"
                                Visibility="{Binding ClockLunarText, Converter={StaticResource StringNotEmptyToVisibilityConverter}}">
                         <TextBlock.Style>
                             <Style TargetType="TextBlock" BasedOn="{StaticResource SecondaryTextStyle}">
@@ -112,6 +121,8 @@
                                     <DataTrigger Binding="{Binding DataContext.IsPanelCollapsed, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
                                         <Setter Property="FontSize" Value="9"/>
                                         <Setter Property="Margin" Value="0,2,0,0"/>
+                                        <Setter Property="MaxHeight" Value="13"/>
+                                        <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
                                     </DataTrigger>
                                 </Style.Triggers>
                             </Style>
@@ -267,8 +278,16 @@
                             </TextBlock.Style>
                         </TextBlock>
                     </Grid>
-                    <StackPanel Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center">
-                        <TextBlock Text="{Binding WeatherTemperature}"
+                    <Grid Grid.Column="1" VerticalAlignment="Center">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <Viewbox Grid.Row="0"
+                                 Stretch="Uniform"
+                                 StretchDirection="DownOnly"
+                                 HorizontalAlignment="Right">
+                            <TextBlock Text="{Binding WeatherTemperature}"
                                    FontWeight="SemiBold"
                                    Foreground="{DynamicResource PrimaryTextBrush}"
                                    HorizontalAlignment="Right">
@@ -282,9 +301,13 @@
                                     </Style.Triggers>
                                 </Style>
                             </TextBlock.Style>
-                        </TextBlock>
-                        <TextBlock Text="{Binding WeatherDescription}"
-                                   HorizontalAlignment="Right">
+                            </TextBlock>
+                        </Viewbox>
+                        <TextBlock Grid.Row="1"
+                                   Text="{Binding WeatherDescription}"
+                                   TextWrapping="Wrap"
+                                   TextAlignment="Right"
+                                   ToolTip="{Binding WeatherDescription}">
                             <TextBlock.Style>
                                 <Style TargetType="TextBlock" BasedOn="{StaticResource SecondaryTextStyle}">
                                     <Setter Property="FontSize" Value="{Binding DataContext.FontScale, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource ScaledFontSizeConverter}, ConverterParameter=12}"/>
@@ -296,7 +319,7 @@
                                 </Style>
                             </TextBlock.Style>
                         </TextBlock>
-                    </StackPanel>
+                    </Grid>
                 </Grid>
     
                 <TextBlock Grid.Row="1"
@@ -308,7 +331,11 @@
                             <Setter Property="FontSize" Value="{Binding DataContext.FontScale, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource ScaledFontSizeConverter}, ConverterParameter=11}"/>
                             <Setter Property="Margin" Value="0,6,0,0"/>
                             <Setter Property="Visibility" Value="Visible"/>
+                            <Setter Property="ToolTip" Value="{Binding WeatherAirQualityAttributionText}"/>
                             <Style.Triggers>
+                                <DataTrigger Binding="{Binding WeatherAirQualityAttributionText}" Value="">
+                                    <Setter Property="ToolTip" Value="{x:Null}"/>
+                                </DataTrigger>
                                 <DataTrigger Binding="{Binding DataContext.IsPanelCollapsed, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
                                     <Setter Property="Visibility" Value="Collapsed"/>
                                 </DataTrigger>
@@ -380,11 +407,20 @@
                 <TextBlock Grid.Row="3"
                            HorizontalAlignment="Stretch"
                            Margin="0,2,0,0"
-                           FontSize="8"
                            TextAlignment="Right"
                            TextWrapping="NoWrap"
                            TextTrimming="CharacterEllipsis"
                            Foreground="{DynamicResource SecondaryTextBrush}">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="FontSize" Value="{Binding DataContext.FontScale, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource ScaledFontSizeConverter}, ConverterParameter=10, FallbackValue=10}"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding DataContext.IsPanelCollapsed, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
+                                    <Setter Property="FontSize" Value="8"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
                     <Hyperlink x:Name="QWeatherAttributionLink"
                                NavigateUri="https://www.qweather.com"
                                RequestNavigate="QWeatherAttributionLink_OnRequestNavigate"
@@ -396,7 +432,7 @@
                     </Hyperlink>
                 </TextBlock>
             </Grid>
-    
+
             <Border x:Name="CompactStatusStrip"
                     Grid.Row="1"
                     Grid.ColumnSpan="3"

@@ -25,32 +25,37 @@
             <StackPanel>
                 <TextBlock Text="{DynamicResource Settings.GlobalHotkey}" Style="{StaticResource GlassSectionTitleStyle}"/>
                 <Grid Margin="0,0,0,12">
-                    <TextBlock Text="{DynamicResource Settings.EnableGlobalHotkey}"
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                    <TextBlock TextWrapping="Wrap" Margin="0,0,12,0" Text="{DynamicResource Settings.EnableGlobalHotkey}"
                                Foreground="{DynamicResource PrimaryTextBrush}"
                                VerticalAlignment="Center"/>
-                    <CheckBox HorizontalAlignment="Right" IsChecked="{Binding GlobalHotkeyEnabled}"/>
+                    <CheckBox Grid.Column="1" MinWidth="28" MinHeight="28" VerticalContentAlignment="Center" AutomationProperties.Name="{DynamicResource Settings.EnableGlobalHotkey}" HorizontalAlignment="Right" IsChecked="{Binding GlobalHotkeyEnabled}"/>
                 </Grid>
                 <TextBlock Text="{DynamicResource Settings.HotkeyValue}"
                            Style="{StaticResource GlassSettingLabelStyle}"
                            Margin="0,0,0,6"/>
                 <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     <TextBox x:Name="HotkeyCaptureBox"
+                             Grid.ColumnSpan="2"
                              Style="{StaticResource GlassTextBoxStyle}"
                              Text="{Binding Hotkey, Mode=OneWay}"
                              IsReadOnly="True"
                              IsEnabled="{Binding GlobalHotkeyEnabled}"
                              PreviewKeyDown="HotkeyCaptureBox_OnPreviewKeyDown"/>
-                    <Button Grid.Column="1" Margin="8,0,0,0"
+                    <Button Grid.Row="1" Margin="0,8,8,0" HorizontalAlignment="Left"
                             Style="{StaticResource GlassPrimaryButtonStyle}"
                             Content="{DynamicResource Settings.RecordHotkey}"
                             IsEnabled="{Binding GlobalHotkeyEnabled}"
                             Click="RecordHotkey_OnClick"/>
-                    <Button Grid.Column="2" Margin="8,0,0,0"
+                    <Button Grid.Row="1" Grid.Column="1" Margin="0,8,0,0"
                             Style="{StaticResource GlassSecondaryButtonStyle}"
                             Content="{DynamicResource Settings.RestoreDefaultHotkey}"
                             Command="{Binding RestoreDefaultHotkeyCommand}"/>

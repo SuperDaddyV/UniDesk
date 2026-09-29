@@ -105,6 +105,7 @@
     <sys:String x:Key="Weather.Expired">データが古い可能性があります</sys:String>
     <sys:String x:Key="Weather.ApiKeyMissing">先に設定で QWeather API Key を設定してください。</sys:String>
     <sys:String x:Key="Weather.QWeatherAttribution">QWeather</sys:String>
+    <sys:String x:Key="Weather.AirQualityAttributionPrefix">大気質の出典：</sys:String>
     <sys:String x:Key="Weather.CityNotFoundFormat">都市が見つかりません: {0}</sys:String>
     <sys:String x:Key="Weather.NetworkRequestFailedFormat">ネットワーク要求に失敗しました: {0}</sys:String>
     <sys:String x:Key="Weather.GetWeatherFailedFormat">天気の取得に失敗しました: {0}</sys:String>

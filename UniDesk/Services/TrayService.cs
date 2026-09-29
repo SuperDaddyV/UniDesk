@@ -1,4 +1,3 @@
-using System.Drawing;
 using System.Windows;
 using System.Windows.Controls;
 using Hardcodet.Wpf.TaskbarNotification;
@@ -28,22 +27,30 @@ public class TrayService : ITrayService, IDisposable
 
     public void Initialize()
     {
-        _notifyIcon = new TaskbarIcon
-        {
-            ToolTipText = GetToolTipText(),
-            Icon = AppIconHelper.GetTrayIcon() ?? AppIconHelper.CreateDefaultTrayIcon(),
-            Visibility = Visibility.Visible
-        };
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        if (_notifyIcon != null) return;
 
-        _notifyIcon.TrayMouseDoubleClick += (_, _) => TrayIconDoubleClick?.Invoke();
-        _notifyIcon.ContextMenu = CreateContextMenu();
+        var menu = CreateContextMenu();
+        _notifyIcon = new TaskbarIcon();
+        // Hardcodet 1.1.0 resolves nonempty ToolTipText to a WPF ToolTip even
+        // without TrayToolTip. Suppress opening before assigning the Shell name.
+        _notifyIcon.PreviewTrayToolTipOpen += (_, e) => e.Handled = true;
+        _notifyIcon.ToolTipText = GetToolTipText();
+        _notifyIcon.Icon = AppIconHelper.GetTrayIcon() ?? AppIconHelper.CreateDefaultTrayIcon();
+        _notifyIcon.Visibility = Visibility.Visible;
+
+        _notifyIcon.TrayMouseDoubleClick += (_, _) =>
+        {
+            TrayIconDoubleClick?.Invoke();
+        };
+        _notifyIcon.ContextMenu = menu;
     }
 
     private ContextMenu CreateContextMenu()
     {
         var resources = new ResourceDictionary
         {
-            Source = new Uri("Resources/TrayMenu.xaml", UriKind.Relative)
+            Source = new Uri("pack://application:,,,/UniDesk;component/Resources/TrayMenu.xaml")
         };
 
         var menu = new ContextMenu

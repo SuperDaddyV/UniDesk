@@ -3,7 +3,7 @@
 ; overrides all source and output directories so historical publish output is never reused.
 
 #define MyAppName "UniDesk"
-#define MyAppVersion "2.2.1"
+#define MyAppVersion "2.2.2"
 #define MyAppPublisher "UniDesk"
 #define MyAppURL "https://github.com/SuperDaddyV/UniDesk"
 #define MyAppExeName "UniDesk.exe"

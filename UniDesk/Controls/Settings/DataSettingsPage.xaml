@@ -5,15 +5,15 @@
         <TextBlock Text="{DynamicResource Settings.NavData}" Style="{StaticResource GlassPageTitleStyle}"/>
         <Border Style="{StaticResource GlassSectionStyle}">
             <StackPanel>
-                <TextBlock Text="{DynamicResource Settings.BackupDescription}" Style="{StaticResource GlassSectionTitleStyle}"/>
+                <TextBlock Text="{DynamicResource Settings.Backup}" Style="{StaticResource GlassSectionTitleStyle}"/>
                 <TextBlock Text="{DynamicResource Settings.BackupDescription}"
                            Foreground="{DynamicResource SecondaryTextBrush}" TextWrapping="Wrap" Margin="0,0,0,14"/>
-                <StackPanel Orientation="Horizontal">
+                <WrapPanel>
                     <Button Style="{StaticResource GlassPrimaryButtonStyle}" Content="{DynamicResource Settings.Backup}"
-                            Margin="0,0,10,0" Command="{Binding BackupTodosCommand}"/>
+                            Margin="0,0,8,8" Command="{Binding BackupTodosCommand}"/>
                     <Button Style="{StaticResource GlassSecondaryButtonStyle}" Content="{DynamicResource Settings.Restore}"
-                            Command="{Binding RestoreTodosCommand}"/>
-                </StackPanel>
+                            Margin="0,0,0,8" Command="{Binding RestoreTodosCommand}"/>
+                </WrapPanel>
             </StackPanel>
         </Border>
 
@@ -27,29 +27,30 @@
                 <TextBlock Text="{Binding HardwareMonitoringStatusText}"
                            Foreground="{DynamicResource SecondaryTextBrush}"
                            TextWrapping="Wrap" Margin="0,0,0,14"/>
-                <StackPanel Orientation="Horizontal">
+                <WrapPanel>
                     <Button Style="{StaticResource GlassSecondaryButtonStyle}"
                             Content="{DynamicResource Settings.ExportHardwareDiagnostics}"
                             Command="{Binding ExportSensorDiagnosticsCommand}"
-                            Margin="0,0,10,0"/>
+                            Margin="0,0,8,8"/>
                     <Button Style="{StaticResource GlassPrimaryButtonStyle}"
                             Content="{DynamicResource Settings.RepairHardwareMonitoring}"
+                            Margin="0,0,0,8"
                             Command="{Binding RepairHardwareMonitoringCommand}"
                             Visibility="{Binding IsHardwareMonitoringRepairVisible, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-                </StackPanel>
+                </WrapPanel>
             </StackPanel>
         </Border>
 
         <Border Style="{StaticResource GlassSectionStyle}">
             <StackPanel>
                 <TextBlock Text="{DynamicResource Settings.QuickTextClipboard}" Style="{StaticResource GlassSectionTitleStyle}"/>
-                <Grid>
+                <StackPanel>
                     <TextBlock Text="{Binding ClipboardHistoryCurrentText}"
                                Foreground="{DynamicResource SecondaryTextBrush}" VerticalAlignment="Center"/>
-                    <Button HorizontalAlignment="Right" Style="{StaticResource GlassSecondaryButtonStyle}"
+                    <Button HorizontalAlignment="Left" Style="{StaticResource GlassDangerButtonStyle}" Margin="0,8,0,0"
                             Content="{DynamicResource QuickText.ClearHistory}"
                             Command="{Binding ClearClipboardHistoryFromSettingsCommand}"/>
-                </Grid>
+                </StackPanel>
             </StackPanel>
         </Border>
 

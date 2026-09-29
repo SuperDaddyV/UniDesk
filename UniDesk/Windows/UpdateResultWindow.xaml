@@ -1,6 +1,8 @@
 <Window x:Class="UniDesk.Windows.UpdateResultWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        FontFamily="{DynamicResource BodyFontFamily}"
+        TextOptions.TextRenderingMode="Grayscale"
         WindowStyle="None"
         AllowsTransparency="True"
         Background="Transparent"

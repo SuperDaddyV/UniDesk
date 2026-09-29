@@ -8,6 +8,7 @@
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="Resources/Themes/Shared.xaml"/>
+                <ResourceDictionary Source="Resources/TrayMenu.xaml"/>
                 <ResourceDictionary Source="Resources/Themes/Dark.xaml"/>
                 <ResourceDictionary Source="Resources/Strings.zh-CN.xaml"/>
             </ResourceDictionary.MergedDictionaries>

@@ -7,9 +7,10 @@
             <StackPanel>
                 <TextBlock Text="{DynamicResource Settings.QuickTextClipboard}" Style="{StaticResource GlassSectionTitleStyle}"/>
                 <Grid Style="{StaticResource GlassToggleRowStyle}">
-                    <TextBlock Text="{DynamicResource Settings.EnableClipboardHistory}"
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                    <TextBlock TextWrapping="Wrap" Margin="0,0,12,0" Text="{DynamicResource Settings.EnableClipboardHistory}"
                                Foreground="{DynamicResource PrimaryTextBrush}" VerticalAlignment="Center"/>
-                    <CheckBox HorizontalAlignment="Right" IsChecked="{Binding ClipboardHistoryEnabled}"/>
+                    <CheckBox Grid.Column="1" MinWidth="28" MinHeight="28" VerticalContentAlignment="Center" AutomationProperties.Name="{DynamicResource Settings.EnableClipboardHistory}" HorizontalAlignment="Right" IsChecked="{Binding ClipboardHistoryEnabled}"/>
                 </Grid>
                 <TextBlock Text="{DynamicResource Settings.ClipboardHistoryPrivacyHint}"
                            Foreground="{DynamicResource SecondaryTextBrush}"
@@ -17,9 +18,10 @@
                            TextWrapping="Wrap"
                            Margin="0,0,0,4"/>
                 <Grid Style="{StaticResource GlassToggleRowStyle}">
-                    <TextBlock Text="{DynamicResource Settings.FilterSensitive}"
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                    <TextBlock TextWrapping="Wrap" Margin="0,0,12,0" Text="{DynamicResource Settings.FilterSensitive}"
                                Foreground="{DynamicResource PrimaryTextBrush}" VerticalAlignment="Center"/>
-                    <CheckBox HorizontalAlignment="Right" IsChecked="{Binding ClipboardSensitiveFilterEnabled}"/>
+                    <CheckBox Grid.Column="1" MinWidth="28" MinHeight="28" VerticalContentAlignment="Center" AutomationProperties.Name="{DynamicResource Settings.FilterSensitive}" HorizontalAlignment="Right" IsChecked="{Binding ClipboardSensitiveFilterEnabled}"/>
                 </Grid>
                 <TextBlock Text="{DynamicResource Settings.MaxSavedCount}" Style="{StaticResource GlassSettingLabelStyle}" Margin="0,4,0,8"/>
                 <ListBox x:Name="ClipboardHistoryLimitList"

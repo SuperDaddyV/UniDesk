@@ -53,8 +53,15 @@
                         </Style>
                     </Border.Style>
                     <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
                         <TextBlock Text="{Binding DisplayTitle}"
-                                   FontWeight="Bold"
+                                   ToolTip="{Binding DisplayTitle}"
+                                   TextTrimming="CharacterEllipsis"
+                                   Margin="0,0,8,0"
+                                   FontWeight="SemiBold"
                                    Foreground="{DynamicResource PrimaryTextBrush}"
                                    VerticalAlignment="Center">
                             <TextBlock.Style>
@@ -68,7 +75,7 @@
                                 </Style>
                             </TextBlock.Style>
                         </TextBlock>
-                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
                             <Button x:Name="SearchButton"
                                     Style="{StaticResource HeaderIconButtonStyle}"
                                     Width="28" Height="28"

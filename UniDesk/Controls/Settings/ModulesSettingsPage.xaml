@@ -5,32 +5,36 @@
         <TextBlock Text="{DynamicResource Settings.NavModules}" Style="{StaticResource GlassPageTitleStyle}"/>
         <Border Style="{StaticResource GlassSectionStyle}">
             <StackPanel>
-                <TextBlock Text="{DynamicResource Settings.ModuleManagement}" Style="{StaticResource GlassSectionTitleStyle}"/>
                 <ItemsControl ItemsSource="{Binding ModuleSettings}">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
-                            <Border Background="{DynamicResource GlassHighlightBrush}"
+                            <Border Background="Transparent"
                                     BorderBrush="{DynamicResource DividerBrush}"
-                                    BorderThickness="1" CornerRadius="9" Padding="12,9" Margin="0,0,0,8">
+                                    BorderThickness="0,0,0,1" Padding="0,8" Margin="0,0,0,4">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="28"/><ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="24"/><ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="Auto"/><ColumnDefinition Width="36"/><ColumnDefinition Width="36"/>
                                     </Grid.ColumnDefinitions>
-                                    <TextBlock Text="&#xE700;" FontFamily="Segoe MDL2 Assets"
+                                    <TextBlock Text="&#xECA5;" FontFamily="Segoe MDL2 Assets" FontSize="12"
                                                Foreground="{DynamicResource SecondaryTextBrush}"
                                                HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                     <TextBlock Grid.Column="1" Text="{Binding DisplayName}"
+                                               TextWrapping="Wrap" Margin="4,0,8,0"
                                                Foreground="{DynamicResource PrimaryTextBrush}"
                                                VerticalAlignment="Center"/>
                                     <CheckBox Grid.Column="2" IsChecked="{Binding IsEnabled, Mode=TwoWay}"
-                                              Margin="10,0" VerticalAlignment="Center"
+                                              MinWidth="28" MinHeight="28" VerticalContentAlignment="Center"
+                                              AutomationProperties.Name="{Binding DisplayName}"
+                                              Margin="4,0" VerticalAlignment="Center"
                                               ToolTip="{DynamicResource Settings.ShowHide}"/>
                                     <Button Grid.Column="3" Style="{StaticResource GhostButtonStyle}" Content="↑"
+                                            Width="28" Height="28" AutomationProperties.Name="{DynamicResource Settings.MoveUp}"
                                             IsEnabled="{Binding CanMoveUp}" ToolTip="{DynamicResource Settings.MoveUp}"
                                             Command="{Binding DataContext.MoveModuleUpCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                             CommandParameter="{Binding}"/>
                                     <Button Grid.Column="4" Style="{StaticResource GhostButtonStyle}" Content="↓"
+                                            Width="28" Height="28" AutomationProperties.Name="{DynamicResource Settings.MoveDown}"
                                             IsEnabled="{Binding CanMoveDown}" ToolTip="{DynamicResource Settings.MoveDown}"
                                             Command="{Binding DataContext.MoveModuleDownCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                             CommandParameter="{Binding}"/>

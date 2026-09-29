@@ -4,11 +4,69 @@
 
     <helpers:ScaledFontSizeConverter x:Key="ScaledFontSizeConverter"/>
 
+    <!-- The adorner never participates in measure/arrange or intercepts input. -->
+    <Style x:Key="{x:Static SystemParameters.FocusVisualStyleKey}" TargetType="Control">
+        <Setter Property="BorderBrush" Value="{DynamicResource PrimaryTextBrush}"/>
+        <Setter Property="IsHitTestVisible" Value="False"/>
+        <Setter Property="Focusable" Value="False"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Control">
+                    <Border BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="2" CornerRadius="8" Margin="1"/>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="AccentButtonFocusVisualStyle" TargetType="Control"
+           BasedOn="{StaticResource {x:Static SystemParameters.FocusVisualStyleKey}}">
+        <Setter Property="BorderBrush" Value="{DynamicResource AccentForegroundBrush}"/>
+    </Style>
+
     <!-- Calm Glass typography defaults. Font resources are supplied by App.xaml. -->
     <Style TargetType="TextBlock">
         <Setter Property="FontFamily" Value="{DynamicResource BodyFontFamily}"/>
         <Setter Property="TextOptions.TextRenderingMode" Value="Grayscale"/>
         <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
+    </Style>
+
+    <Style TargetType="ToolTip">
+        <Setter Property="Background" Value="{DynamicResource ToolTipSurfaceBrush}"/>
+        <Setter Property="Foreground" Value="{DynamicResource ToolTipTextBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource ToolTipBorderBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Padding" Value="10,8"/>
+        <Setter Property="MaxWidth" Value="320"/>
+        <Setter Property="FontFamily" Value="{DynamicResource BodyFontFamily}"/>
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ToolTip">
+                    <Border Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="8"
+                            Padding="{TemplateBinding Padding}"
+                            SnapsToDevicePixels="True">
+                        <ContentPresenter ContentSource="Content"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+        <Setter Property="ContentTemplate">
+            <Setter.Value>
+                <DataTemplate>
+                    <TextBlock Text="{Binding}"
+                               TextWrapping="Wrap"
+                               Foreground="{DynamicResource ToolTipTextBrush}"
+                               FontFamily="{DynamicResource BodyFontFamily}"
+                               FontSize="12"
+                               TextOptions.TextFormattingMode="Display"
+                               TextOptions.TextHintingMode="Fixed"/>
+                </DataTemplate>
+            </Setter.Value>
+        </Setter>
     </Style>
 
     <Style x:Key="DisplayTextStyle" TargetType="TextBlock">
@@ -43,7 +101,7 @@
         <Setter Property="Padding" Value="12,8"/>
         <Setter Property="FontFamily" Value="{DynamicResource BodyFontFamily}"/>
         <Setter Property="FontSize" Value="13"/>
-        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        <Setter Property="FocusVisualStyle" Value="{StaticResource {x:Static SystemParameters.FocusVisualStyleKey}}"/>
         <Setter Property="Cursor" Value="Hand"/>
         <Setter Property="Template">
             <Setter.Value>
@@ -55,7 +113,13 @@
                             Padding="{TemplateBinding Padding}">
                         <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
                                           VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
-                                          RecognizesAccessKey="True"/>
+                                          RecognizesAccessKey="True">
+                            <ContentPresenter.Resources>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Foreground" Value="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"/>
+                                </Style>
+                            </ContentPresenter.Resources>
+                        </ContentPresenter>
                     </Border>
                 </ControlTemplate>
             </Setter.Value>
@@ -70,7 +134,6 @@
             </Trigger>
             <Trigger Property="IsKeyboardFocused" Value="True">
                 <Setter Property="BorderBrush" Value="{DynamicResource FocusRingBrush}"/>
-                <Setter Property="BorderThickness" Value="2"/>
             </Trigger>
             <Trigger Property="IsEnabled" Value="False">
                 <Setter Property="Opacity" Value="0.48"/>
@@ -91,7 +154,7 @@
         <Setter Property="FontFamily" Value="{DynamicResource BodyFontFamily}"/>
         <Setter Property="FontSize" Value="13"/>
         <Setter Property="CaretBrush" Value="{DynamicResource PrimaryTextBrush}"/>
-        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        <Setter Property="FocusVisualStyle" Value="{StaticResource {x:Static SystemParameters.FocusVisualStyleKey}}"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="TextBox">
@@ -112,7 +175,6 @@
             </Trigger>
             <Trigger Property="IsKeyboardFocused" Value="True">
                 <Setter Property="BorderBrush" Value="{DynamicResource FocusRingBrush}"/>
-                <Setter Property="BorderThickness" Value="2"/>
             </Trigger>
             <Trigger Property="IsEnabled" Value="False">
                 <Setter Property="Opacity" Value="0.48"/>
@@ -152,6 +214,7 @@
     </Style>
 
     <Style x:Key="GlassNavigationItemStyle" TargetType="ListBoxItem">
+        <Setter Property="FocusVisualStyle" Value="{StaticResource {x:Static SystemParameters.FocusVisualStyleKey}}"/>
         <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}"/>
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="Padding" Value="12,10"/>
@@ -163,6 +226,7 @@
                 <ControlTemplate TargetType="ListBoxItem">
                     <Border x:Name="NavigationBackground"
                             Background="{TemplateBinding Background}"
+                            BorderBrush="Transparent" BorderThickness="1"
                             CornerRadius="8"
                             Padding="{TemplateBinding Padding}">
                         <ContentPresenter/>
@@ -188,6 +252,7 @@
     </Style>
 
     <Style x:Key="GlassPageTitleStyle" TargetType="TextBlock">
+        <Setter Property="TextWrapping" Value="Wrap"/>
         <Setter Property="FontFamily" Value="{DynamicResource DisplayFontFamily}"/>
         <Setter Property="FontSize" Value="20"/>
         <Setter Property="LineHeight" Value="26"/>
@@ -197,6 +262,7 @@
     </Style>
 
     <Style x:Key="GlassSettingLabelStyle" TargetType="TextBlock">
+        <Setter Property="TextWrapping" Value="Wrap"/>
         <Setter Property="FontFamily" Value="{DynamicResource BodyFontFamily}"/>
         <Setter Property="FontSize" Value="12"/>
         <Setter Property="LineHeight" Value="18"/>
@@ -205,6 +271,7 @@
     </Style>
 
     <Style x:Key="GlassSectionTitleStyle" TargetType="TextBlock">
+        <Setter Property="TextWrapping" Value="Wrap"/>
         <Setter Property="FontFamily" Value="{DynamicResource DisplayFontFamily}"/>
         <Setter Property="FontSize" Value="14"/>
         <Setter Property="LineHeight" Value="20"/>
@@ -232,7 +299,13 @@
                             BorderThickness="{TemplateBinding BorderThickness}"
                             CornerRadius="8"
                             Padding="{TemplateBinding Padding}">
-                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <ContentPresenter.Resources>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Foreground" Value="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"/>
+                                </Style>
+                            </ContentPresenter.Resources>
+                        </ContentPresenter>
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
@@ -240,7 +313,6 @@
                         </Trigger>
                         <Trigger Property="IsKeyboardFocused" Value="True">
                             <Setter TargetName="ChipBorder" Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
-                            <Setter TargetName="ChipBorder" Property="BorderThickness" Value="2"/>
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
@@ -289,7 +361,7 @@
         <Setter Property="BorderBrush" Value="{DynamicResource DividerBrush}"/>
         <Setter Property="BorderThickness" Value="1"/>
         <Setter Property="Cursor" Value="Hand"/>
-        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        <Setter Property="FocusVisualStyle" Value="{StaticResource {x:Static SystemParameters.FocusVisualStyleKey}}"/>
         <Setter Property="HorizontalContentAlignment" Value="Center"/>
         <Setter Property="VerticalContentAlignment" Value="Center"/>
         <Setter Property="Template">
@@ -417,7 +489,7 @@
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="BorderBrush" Value="Transparent"/>
         <Setter Property="BorderThickness" Value="1"/>
-        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        <Setter Property="FocusVisualStyle" Value="{StaticResource {x:Static SystemParameters.FocusVisualStyleKey}}"/>
         <Setter Property="Cursor" Value="Hand"/>
         <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
         <Setter Property="Template">
@@ -542,6 +614,7 @@
     </Style>
 
     <Style x:Key="GlassComboBoxStyle" TargetType="ComboBox">
+        <Setter Property="FocusVisualStyle" Value="{StaticResource {x:Static SystemParameters.FocusVisualStyleKey}}"/>
         <Setter Property="Background" Value="{DynamicResource GlassHighlightBrush}"/>
         <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
         <Setter Property="BorderBrush" Value="{DynamicResource DividerBrush}"/>
@@ -627,6 +700,7 @@
     </Style>
 
     <Style x:Key="GlassPrimaryButtonStyle" TargetType="Button" BasedOn="{StaticResource CalmButtonStyle}">
+        <Setter Property="FocusVisualStyle" Value="{StaticResource AccentButtonFocusVisualStyle}"/>
         <Setter Property="Background" Value="{DynamicResource AccentBrush}"/>
         <Setter Property="Foreground" Value="{DynamicResource AccentForegroundBrush}"/>
         <Setter Property="BorderThickness" Value="0"/>
@@ -641,7 +715,13 @@
                             BorderBrush="{TemplateBinding BorderBrush}"
                             BorderThickness="{TemplateBinding BorderThickness}"
                             CornerRadius="8" Padding="{TemplateBinding Padding}">
-                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <ContentPresenter.Resources>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Foreground" Value="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"/>
+                                </Style>
+                            </ContentPresenter.Resources>
+                        </ContentPresenter>
                     </Border>
                 </ControlTemplate>
             </Setter.Value>
@@ -649,8 +729,15 @@
     </Style>
 
     <Style x:Key="GlassSecondaryButtonStyle" TargetType="Button" BasedOn="{StaticResource GlassPrimaryButtonStyle}">
+        <Setter Property="FocusVisualStyle" Value="{StaticResource {x:Static SystemParameters.FocusVisualStyleKey}}"/>
         <Setter Property="Background" Value="{DynamicResource GlassHighlightBrush}"/>
         <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
+    </Style>
+
+    <Style x:Key="GlassDangerButtonStyle" TargetType="Button" BasedOn="{StaticResource GlassSecondaryButtonStyle}">
+        <Setter Property="Foreground" Value="{DynamicResource DangerBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource DangerBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
     </Style>
 
     <Style x:Key="SettingGroupStyle" TargetType="Border" BasedOn="{StaticResource ModuleCardStyle}"/>

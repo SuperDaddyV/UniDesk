@@ -102,9 +102,9 @@ public class WindowService : IWindowService
         if (opacity < 0.6) opacity = 0.6;
         if (opacity > 1.0) opacity = 1.0;
 
-        if (_mainWindow.FindName("WindowContainer") is FrameworkElement windowContainer)
+        if (_mainWindow.FindName("MainGlassBackground") is FrameworkElement glassBackground)
         {
-            windowContainer.Opacity = opacity;
+            glassBackground.SetCurrentValue(UIElement.OpacityProperty, opacity);
         }
     }
 

@@ -18,6 +18,7 @@ public class ModuleResourceScopeTests
         var applicationResources = new HashSet<string>(StringComparer.Ordinal);
 
         AddResourceKeys(Path.Combine(appRoot, "App.xaml"), applicationResources);
+        AddResourceKeys(Path.Combine(appRoot, "Resources", "TrayMenu.xaml"), applicationResources);
         foreach (var themeFile in Directory.EnumerateFiles(Path.Combine(appRoot, "Resources", "Themes"), "*.xaml"))
         {
             AddResourceKeys(themeFile, applicationResources);

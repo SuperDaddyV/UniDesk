@@ -208,6 +208,8 @@ public class WeatherService : IWeatherService, IDisposable
                 MaxTemp = FormatTemperature(todayForecast?.TempMax),
                 MinTemp = FormatTemperature(todayForecast?.TempMin),
                 AirQuality = FormatAirQuality(airResult),
+                AirQualityAttributions = airResult?.Metadata?.Attributions?
+                    .Where(source => !string.IsNullOrWhiteSpace(source)).ToArray() ?? [],
                 Humidity = FormatHumidity(weatherResult.Now?.Humidity),
                 IconCode = weatherResult.Now?.Icon ?? "",
                 IconUri = string.Empty,
@@ -809,6 +811,9 @@ public class WeatherService : IWeatherService, IDisposable
     {
         [JsonPropertyName("tag")]
         public string? Tag { get; set; }
+
+        [JsonPropertyName("attributions")]
+        public List<string>? Attributions { get; set; }
     }
 
     private class QWeatherAirIndex

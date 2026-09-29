@@ -538,7 +538,7 @@ public sealed class ModelRadarService : IModelRadarService, IDisposable
             return 0;
         }
 
-        if (!value.TryGetInt32(out var result) || result <= 0)
+        if (value.ValueKind != JsonValueKind.Number || !value.TryGetInt32(out var result) || result <= 0)
         {
             throw new SchemaException();
         }

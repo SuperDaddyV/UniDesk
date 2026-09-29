@@ -12,7 +12,12 @@ public class LoggerTests
         Logger.LogInfo(message, "LoggerTests");
 
         var logFile = Assert.Single(Directory.GetFiles(TestAssemblyBootstrap.LogDirectory, "*.log"));
-        Assert.Contains(message, File.ReadAllText(logFile));
+        // Other parallel tests may still append to this process-wide fixture log.
+        using (var stream = new FileStream(logFile, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+        using (var reader = new StreamReader(stream))
+        {
+            Assert.Contains(message, reader.ReadToEnd());
+        }
         var defaultLogFile = Path.Combine(
             DirectoryHelper.LogsDirectory,
             $"{DateTime.Now:yyyy-MM-dd}.log");

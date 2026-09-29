@@ -29,14 +29,40 @@ public class WpfInteractionRegressionTests
 
         Assert.Matches("Tag=\"TodoCheck\"[\\s\\S]{0,120}Width=\"28\" Height=\"28\"", viewXaml);
         Assert.Matches("Tag=\"TodoCheck\"[\\s\\S]{0,260}Background=\"Transparent\"", viewXaml);
-        Assert.Matches("Tag=\"TodoCheck\"[\\s\\S]{0,460}<Ellipse[\\s\\S]{0,160}Width=\"16\" Height=\"16\"", viewXaml);
-        Assert.Matches("Tag=\"TodoCheck\"[\\s\\S]{0,620}StrokeThickness=\"1.5\"", viewXaml);
-        Assert.Matches("<TextBlock Text=\"{Binding Title}\"[\\s\\S]{0,300}ConverterParameter=12", viewXaml);
-        Assert.Contains("<Grid Grid.Column=\"2\" VerticalAlignment=\"Center\" Margin=\"0,3,0,-3\">", viewXaml, StringComparison.Ordinal);
-        Assert.Matches("<TextBlock Grid.Column=\"3\"[\\s\\S]{0,700}Margin=\"8,3,4,-3\"", viewXaml);
+        Assert.Matches("Tag=\"TodoCheck\"[\\s\\S]{0,460}<Ellipse[\\s\\S]{0,160}Width=\"13\" Height=\"13\"", viewXaml);
+        Assert.Matches("Tag=\"TodoCheck\"[\\s\\S]{0,620}StrokeThickness=\"1.25\"", viewXaml);
+        Assert.Contains("Text=\"{Binding Title}\"", viewXaml, StringComparison.Ordinal);
+        Assert.Contains("ConverterParameter=12", viewXaml, StringComparison.Ordinal);
+        Assert.Contains("ToolTip=\"{Binding Title}\"", viewXaml, StringComparison.Ordinal);
+        Assert.Matches("<TextBlock Grid.Column=\"2\"[\\s\\S]{0,100}Grid.Row=\"1\"[\\s\\S]{0,100}HorizontalAlignment=\"Left\"", viewXaml);
+        Assert.Contains("<DataTrigger Binding=\"{Binding DueDate}\" Value=\"{x:Null}\">", viewXaml, StringComparison.Ordinal);
         Assert.Contains("MouseLeftButtonUp=\"TodoCheck_OnMouseLeftButtonUp\"", viewXaml, StringComparison.Ordinal);
         Assert.DoesNotContain("<Ellipse.InputBindings>", viewXaml, StringComparison.Ordinal);
         Assert.Contains("ToggleTodoCommand.Execute", viewCode, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void TrayToolTip_ShouldSuppressWpfPopupWhileKeepingShellName()
+    {
+        var code = ReadProjectFile("UniDesk", "Services", "TrayService.cs");
+        Assert.Contains("PreviewTrayToolTipOpen", code, StringComparison.Ordinal);
+        Assert.Contains("e.Handled = true", code, StringComparison.Ordinal);
+        Assert.Contains("_notifyIcon.ToolTipText = GetToolTipText()", code, StringComparison.Ordinal);
+        Assert.DoesNotContain("TrayToolTip =", code, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ModelRadar_ShouldKeepDecisionCardsAndRankingsWithoutInsightSection()
+    {
+        var xaml = ReadProjectFile("UniDesk", "Controls", "ModelRadarModuleView.xaml");
+        Assert.DoesNotContain("ChangesSummaryText", xaml, StringComparison.Ordinal);
+        Assert.DoesNotContain("RadarInsightsExpander", xaml, StringComparison.Ordinal);
+        Assert.DoesNotContain("SelectProfileCommand", xaml, StringComparison.Ordinal);
+        Assert.Contains("OverallDecision", xaml, StringComparison.Ordinal);
+        Assert.Contains("ValueDecision", xaml, StringComparison.Ordinal);
+        Assert.Equal(4, Regex.Matches(xaml, "Command=\"{Binding SelectCategoryCommand}\"").Count);
+        Assert.Contains("ItemsSource=\"{Binding VisibleRows}\"", xaml, StringComparison.Ordinal);
+        Assert.Contains("x:Name=\"ViewFullRankingLink\"", xaml, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -320,7 +346,7 @@ public class WpfInteractionRegressionTests
     }
 
     [Fact]
-    public void ModelRadarModule_ShouldUseCompactConsistentTypographyAndHideMissingRankingTags()
+    public void ModelRadarModule_ShouldUseCompactConsistentTypographyAndKeepTagsInToolTip()
     {
         var radarXaml = ReadProjectFile("UniDesk", "Controls", "ModelRadarModuleView.xaml");
 
@@ -344,11 +370,9 @@ public class WpfInteractionRegressionTests
                 StringSplitOptions.None).Length - 1);
         Assert.Contains("x:Name=\"OverallConfigurationLine\"", radarXaml, StringComparison.Ordinal);
         Assert.Contains("x:Name=\"ValueConfigurationLine\"", radarXaml, StringComparison.Ordinal);
-        Assert.Contains("x:Name=\"RankingDecisionTags\"", radarXaml, StringComparison.Ordinal);
-        Assert.Contains(
-            "Visibility=\"{Binding DecisionTagsText, Converter={StaticResource StringNotEmptyToVisibilityConverter}}\"",
-            radarXaml,
-            StringComparison.Ordinal);
+        Assert.Contains("ToolTip=\"{Binding ToolTipText}\"", radarXaml, StringComparison.Ordinal);
+        Assert.DoesNotContain("x:Name=\"RankingDecisionTags\"", radarXaml, StringComparison.Ordinal);
+        Assert.DoesNotContain("Text=\"{Binding DecisionTagsText}\"", radarXaml, StringComparison.Ordinal);
 
         var fullRankingLink = Regex.Match(
             radarXaml,
@@ -647,7 +671,8 @@ public class WpfInteractionRegressionTests
         var radarModule = ReadProjectFile("UniDesk", "Controls", "ModelRadarModuleView.xaml");
         Assert.DoesNotContain("DataFontFamily", radarModule, StringComparison.Ordinal);
 
-        Assert.Contains("<Setter Property=\"FocusVisualStyle\" Value=\"{x:Null}\"/>", sharedTheme, StringComparison.Ordinal);
+        Assert.Contains("SystemParameters.FocusVisualStyleKey", sharedTheme, StringComparison.Ordinal);
+        Assert.DoesNotContain("<Setter Property=\"FocusVisualStyle\" Value=\"{x:Null}\"/>", sharedTheme, StringComparison.Ordinal);
         Assert.Contains("<Trigger Property=\"IsKeyboardFocused\" Value=\"True\">", sharedTheme, StringComparison.Ordinal);
     }
 

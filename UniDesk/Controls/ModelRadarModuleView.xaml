@@ -55,9 +55,10 @@
             </StackPanel>
 
             <StackPanel Visibility="{Binding HasSnapshot, Converter={StaticResource BooleanToVisibilityConverter}}">
-                <Border Background="{DynamicResource GlassHighlightBrush}"
-                        CornerRadius="8"
-                        Padding="9,7"
+                <Border Background="Transparent"
+                        BorderBrush="{DynamicResource GlassHighlightBrush}"
+                        BorderThickness="0,0,0,1"
+                        Padding="0,3,0,8"
                         Margin="0,0,0,6">
                     <StackPanel>
                         <TextBlock Text="{DynamicResource ModelRadar.OverallBest}"
@@ -117,9 +118,10 @@
                     </StackPanel>
                 </Border>
 
-                <Border Background="{DynamicResource GlassHighlightBrush}"
-                        CornerRadius="8"
-                        Padding="9,7"
+                <Border Background="Transparent"
+                        BorderBrush="{DynamicResource GlassHighlightBrush}"
+                        BorderThickness="0,0,0,1"
+                        Padding="0,3,0,8"
                         Margin="0,0,0,8">
                     <StackPanel>
                         <TextBlock Text="{DynamicResource ModelRadar.ValueRecommendation}"
@@ -180,6 +182,16 @@
                 </Border>
 
                 <Grid Margin="0,0,0,5">
+                    <Grid.Resources>
+                        <DataTemplate x:Key="RadarCategoryLabelTemplate">
+                            <Viewbox Stretch="Uniform" StretchDirection="DownOnly">
+                                <TextBlock Text="{Binding}"
+                                           FontFamily="{DynamicResource BodyFontFamily}"
+                                           FontSize="10"
+                                           TextWrapping="NoWrap"/>
+                            </Viewbox>
+                        </DataTemplate>
+                    </Grid.Resources>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="*"/>
@@ -190,6 +202,7 @@
                             Height="24"
                             Margin="0,0,3,0"
                             Content="{DynamicResource ModelRadar.OverallCategory}"
+                            ContentTemplate="{StaticResource RadarCategoryLabelTemplate}"
                             Command="{Binding SelectCategoryCommand}"
                             CommandParameter="{x:Static models:ModelRadarCategory.Overall}"
                             IsEnabled="{Binding IsOverallCategoryEnabled}">
@@ -208,6 +221,7 @@
                             Height="24"
                             Margin="1,0,2,0"
                             Content="{DynamicResource ModelRadar.BackendCategory}"
+                            ContentTemplate="{StaticResource RadarCategoryLabelTemplate}"
                             Command="{Binding SelectCategoryCommand}"
                             CommandParameter="{x:Static models:ModelRadarCategory.Backend}"
                             IsEnabled="{Binding IsBackendCategoryEnabled}">
@@ -226,6 +240,7 @@
                             Height="24"
                             Margin="2,0,1,0"
                             Content="{DynamicResource ModelRadar.FrontendCategory}"
+                            ContentTemplate="{StaticResource RadarCategoryLabelTemplate}"
                             Command="{Binding SelectCategoryCommand}"
                             CommandParameter="{x:Static models:ModelRadarCategory.Frontend}"
                             IsEnabled="{Binding IsFrontendCategoryEnabled}">
@@ -244,6 +259,7 @@
                             Height="24"
                             Margin="3,0,0,0"
                             Content="{DynamicResource ModelRadar.KnowledgeCategory}"
+                            ContentTemplate="{StaticResource RadarCategoryLabelTemplate}"
                             Command="{Binding SelectCategoryCommand}"
                             CommandParameter="{x:Static models:ModelRadarCategory.Knowledge}"
                             IsEnabled="{Binding IsKnowledgeCategoryEnabled}">
@@ -268,16 +284,21 @@
                 <ItemsControl ItemsSource="{Binding VisibleRows}">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
-                            <Border Background="{DynamicResource GlassHighlightBrush}"
-                                    CornerRadius="7"
+                            <Border CornerRadius="7"
                                     Padding="7,5"
                                     Margin="0,0,0,4"
                                     ToolTip="{Binding ToolTipText}">
+                                <Border.Style>
+                                    <Style TargetType="Border">
+                                        <Setter Property="Background" Value="Transparent"/>
+                                        <Style.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter Property="Background" Value="{DynamicResource GlassHighlightBrush}"/>
+                                            </Trigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Border.Style>
                                 <Grid>
-                                    <Grid.RowDefinitions>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="Auto"/>
-                                    </Grid.RowDefinitions>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="25"/>
                                         <ColumnDefinition Width="*"/>
@@ -285,7 +306,6 @@
                                         <ColumnDefinition Width="42"/>
                                     </Grid.ColumnDefinitions>
                                     <TextBlock Text="{Binding Position}"
-                                               Grid.RowSpan="2"
                                                Foreground="{DynamicResource SecondaryTextBrush}"
                                                FontSize="10"
                                                FontWeight="SemiBold"
@@ -293,13 +313,13 @@
                                     <TextBlock Grid.Column="1"
                                                Text="{Binding ModelName}"
                                                Foreground="{DynamicResource PrimaryTextBrush}"
-                                               FontSize="9.5"
+                                               FontSize="10"
                                                FontWeight="SemiBold"
                                                TextWrapping="Wrap"/>
                                     <TextBlock Grid.Column="2"
                                                Text="{Binding ReasoningEffort}"
                                                Foreground="{DynamicResource SecondaryTextBrush}"
-                                               FontSize="8.5"
+                                               FontSize="9"
                                                TextAlignment="Right"
                                                TextWrapping="Wrap"
                                                VerticalAlignment="Center"/>
@@ -310,16 +330,6 @@
                                                FontWeight="SemiBold"
                                                TextAlignment="Right"
                                                VerticalAlignment="Center"/>
-                                    <TextBlock x:Name="RankingDecisionTags"
-                                               Grid.Row="1"
-                                               Grid.Column="1"
-                                               Grid.ColumnSpan="3"
-                                               Text="{Binding DecisionTagsText}"
-                                               Foreground="{DynamicResource SecondaryTextBrush}"
-                                               FontSize="8"
-                                               TextWrapping="Wrap"
-                                               Margin="0,1,0,0"
-                                               Visibility="{Binding DecisionTagsText, Converter={StaticResource StringNotEmptyToVisibilityConverter}}"/>
                                 </Grid>
                             </Border>
                         </DataTemplate>
