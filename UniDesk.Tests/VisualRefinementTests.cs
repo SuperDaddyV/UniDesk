@@ -245,18 +245,44 @@ public sealed class VisualRefinementTests
     }
 
     [Theory]
-    [InlineData("zh-CN", 220d)]
-    [InlineData("en-US", 220d)]
-    [InlineData("ja-JP", 220d)]
-    [InlineData("es-ES", 220d)]
-    [InlineData("zh-CN", 260d)]
-    [InlineData("en-US", 260d)]
-    [InlineData("ja-JP", 260d)]
-    [InlineData("es-ES", 260d)]
-    public void RadarDecision_ShouldUseOneTopLine_AlignedToDimensionTextEdges(string language, double width)
+    [InlineData("zh-CN", 220d, "zh-CN", 1d)]
+    [InlineData("zh-CN", 220d, "zh-CN", 1.25d)]
+    [InlineData("en-US", 220d, "zh-CN", 1d)]
+    [InlineData("en-US", 220d, "zh-CN", 1.25d)]
+    [InlineData("ja-JP", 220d, "zh-CN", 1d)]
+    [InlineData("ja-JP", 220d, "zh-CN", 1.25d)]
+    [InlineData("es-ES", 220d, "zh-CN", 1d)]
+    [InlineData("es-ES", 220d, "zh-CN", 1.25d)]
+    [InlineData("zh-CN", 260d, "zh-CN", 1d)]
+    [InlineData("zh-CN", 260d, "zh-CN", 1.25d)]
+    [InlineData("en-US", 260d, "zh-CN", 1d)]
+    [InlineData("en-US", 260d, "zh-CN", 1.25d)]
+    [InlineData("ja-JP", 260d, "zh-CN", 1d)]
+    [InlineData("ja-JP", 260d, "zh-CN", 1.25d)]
+    [InlineData("es-ES", 260d, "zh-CN", 1d)]
+    [InlineData("es-ES", 260d, "zh-CN", 1.25d)]
+    [InlineData("zh-CN", 220d, "en-US", 1d)]
+    [InlineData("zh-CN", 220d, "en-US", 1.25d)]
+    [InlineData("en-US", 220d, "en-US", 1d)]
+    [InlineData("en-US", 220d, "en-US", 1.25d)]
+    [InlineData("ja-JP", 220d, "en-US", 1d)]
+    [InlineData("ja-JP", 220d, "en-US", 1.25d)]
+    [InlineData("es-ES", 220d, "en-US", 1d)]
+    [InlineData("es-ES", 220d, "en-US", 1.25d)]
+    [InlineData("zh-CN", 260d, "en-US", 1d)]
+    [InlineData("zh-CN", 260d, "en-US", 1.25d)]
+    [InlineData("en-US", 260d, "en-US", 1d)]
+    [InlineData("en-US", 260d, "en-US", 1.25d)]
+    [InlineData("ja-JP", 260d, "en-US", 1d)]
+    [InlineData("ja-JP", 260d, "en-US", 1.25d)]
+    [InlineData("es-ES", 260d, "en-US", 1d)]
+    [InlineData("es-ES", 260d, "en-US", 1.25d)]
+    public void RadarDecision_ShouldUseOneTopLine_AlignedToDimensionTextEdges(string language, double width, string hostCulture, double dpi)
     {
         ClockLayoutTests.RunSta(() =>
         {
+            CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo(hostCulture);
+            CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo(hostCulture);
             var strings = XDocument.Load(Path.Combine(Root, "UniDesk", "Resources", "Strings." + language + ".xaml"));
             string Label(string key) => strings.Descendants().Single(element => (string?)element.Attribute(X + "Key") == "ModelRadar." + key + "Category").Value;
             var source = Read("ModelRadarModuleView.xaml").Descendants().Single(element => element.Name.LocalName == "Border" &&
@@ -277,6 +303,7 @@ public sealed class VisualRefinementTests
                 }
             };
             var window = Region(source, state, 1.18, language);
+            VisualTreeHelper.SetRootDpi((Visual)window.Content, new DpiScale(dpi, dpi));
             try
             {
                 Layout(window, width);
@@ -299,7 +326,9 @@ public sealed class VisualRefinementTests
                 var naturalLabel = new FormattedText(firstLabel.Text, CultureInfo.InvariantCulture, FlowDirection.LeftToRight,
                     new Typeface(firstLabel.FontFamily, firstLabel.FontStyle, firstLabel.FontWeight, firstLabel.FontStretch), firstLabel.FontSize, Brushes.White, 1);
                 var firstTextLeft = firstBounds.Left + (firstBounds.Width - naturalLabel.WidthIncludingTrailingWhitespace) / 2;
-                Assert.InRange(Math.Abs(Bounds(top, root).Left - firstTextLeft), 0, 1);
+                var guide = Descendants(window.Content).OfType<TextBlock>().Single(block => block.Name == "OverallBackendAlignmentGuide");
+                var leftError = Math.Abs(Bounds(top, root).Left - firstTextLeft);
+                Assert.True(leftError <= 1, $"Left edge error={leftError:F4}; guide={guide.Text}/{guide.ActualWidth:F4}; label={firstLabel.Text}/{naturalLabel.WidthIncludingTrailingWhitespace:F4}; font={firstLabel.FontFamily}; DPI={VisualTreeHelper.GetDpi(firstLabel).PixelsPerDip:F2}; culture={hostCulture}");
                 var lastBounds = Bounds(lastLabel, root);
                 var scoreBounds = Bounds(score, root);
                 var naturalLast = new FormattedText(lastLabel.Text, CultureInfo.InvariantCulture, FlowDirection.LeftToRight,
