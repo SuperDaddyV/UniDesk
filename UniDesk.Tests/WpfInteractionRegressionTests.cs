@@ -59,8 +59,8 @@ public class WpfInteractionRegressionTests
         Assert.DoesNotContain("RadarInsightsExpander", xaml, StringComparison.Ordinal);
         Assert.DoesNotContain("SelectProfileCommand", xaml, StringComparison.Ordinal);
         Assert.Contains("OverallDecision", xaml, StringComparison.Ordinal);
-        Assert.Contains("ValueDecision", xaml, StringComparison.Ordinal);
-        Assert.Equal(4, Regex.Matches(xaml, "Command=\"{Binding SelectCategoryCommand}\"").Count);
+        Assert.DoesNotContain("ValueDecision", xaml, StringComparison.Ordinal);
+        Assert.Equal(6, Regex.Matches(xaml, "Command=\"{Binding SelectCategoryCommand}\"").Count);
         Assert.Contains("ItemsSource=\"{Binding VisibleRows}\"", xaml, StringComparison.Ordinal);
         Assert.Contains("x:Name=\"ViewFullRankingLink\"", xaml, StringComparison.Ordinal);
     }
@@ -369,7 +369,7 @@ public class WpfInteractionRegressionTests
                 "Text=\"{Binding PublishedText}\"",
                 StringSplitOptions.None).Length - 1);
         Assert.Contains("x:Name=\"OverallConfigurationLine\"", radarXaml, StringComparison.Ordinal);
-        Assert.Contains("x:Name=\"ValueConfigurationLine\"", radarXaml, StringComparison.Ordinal);
+        Assert.DoesNotContain("x:Name=\"ValueConfigurationLine\"", radarXaml, StringComparison.Ordinal);
         Assert.Contains("ToolTip=\"{Binding ToolTipText}\"", radarXaml, StringComparison.Ordinal);
         Assert.DoesNotContain("x:Name=\"RankingDecisionTags\"", radarXaml, StringComparison.Ordinal);
         Assert.DoesNotContain("Text=\"{Binding DecisionTagsText}\"", radarXaml, StringComparison.Ordinal);
@@ -385,12 +385,7 @@ public class WpfInteractionRegressionTests
                      new
                      {
                          Name = "OverallConfigurationLine",
-                         EffortBinding = "{Binding OverallDecision.ReasoningEffort}"
-                     },
-                     new
-                     {
-                         Name = "ValueConfigurationLine",
-                         EffortBinding = "{Binding ValueDecision.ReasoningEffort}"
+                         EffortBinding = "{Binding OverallDecision.ReasoningEffort, Mode=OneWay}"
                      }
                  })
         {
@@ -433,7 +428,8 @@ public class WpfInteractionRegressionTests
             foreach (var semanticPart in new[]
                      {
                          "Overall",
-                         "Value",
+                         "Aesthetic",
+                         "Maintainability",
                          "Backend",
                          "Frontend",
                          "Knowledge",
@@ -463,7 +459,7 @@ public class WpfInteractionRegressionTests
             var resources = ReadProjectFile("UniDesk", "Resources", languageFile);
             Assert.Contains("x:Key=\"ModelRadar.CompactOverallLabel\"", resources, StringComparison.Ordinal);
             Assert.Contains("x:Key=\"ModelRadar.CompactValueLabel\"", resources, StringComparison.Ordinal);
-            Assert.Contains("x:Key=\"ModelRadar.CompactOverallLabel\">TOP</", resources, StringComparison.Ordinal);
+
             Assert.Contains("x:Key=\"ModelRadar.CompactValueLabel\">VAL</", resources, StringComparison.Ordinal);
             Assert.Contains("x:Key=\"ModelRadar.CompactOverallFormat\"", resources, StringComparison.Ordinal);
             Assert.Contains("x:Key=\"ModelRadar.CompactValueFormat\"", resources, StringComparison.Ordinal);
@@ -495,187 +491,38 @@ public class WpfInteractionRegressionTests
     {
         var mainXaml = ReadProjectFile("UniDesk", "MainWindow.xaml");
         var mainCode = ReadProjectFile("UniDesk", "MainWindow.xaml.cs");
-        var mainViewModelCode = ReadProjectFile("UniDesk", "ViewModels", "MainWindowViewModel.cs");
+        var mainViewModel = ReadProjectFile("UniDesk", "ViewModels", "MainWindowViewModel.cs");
         var timeWeatherXaml = ReadProjectFile("UniDesk", "Controls", "TimeWeatherModuleView.xaml");
         var sharedTheme = ReadProjectFile("UniDesk", "Resources", "Themes", "Shared.xaml");
-
-        Assert.Contains("private const double CollapsedPanelHeight = 206;", mainCode, StringComparison.Ordinal);
-        Assert.Contains("private const double CollapsedPanelMinWidth = 320;", mainCode, StringComparison.Ordinal);
-        Assert.Contains("GetRequestedPanelWidth()", mainCode, StringComparison.Ordinal);
-        Assert.Contains(
-            "Math.Max(_viewModel.PanelWidth, CollapsedPanelMinWidth)",
-            mainCode,
-            StringComparison.Ordinal);
-        Assert.Contains("Element = (FrameworkElement?)TimeWeatherModule", mainCode, StringComparison.Ordinal);
-        Assert.DoesNotContain("modules.Take(1)", mainCode, StringComparison.Ordinal);
-        Assert.Contains(
-            "HardwareMonitor.IsEnabled = IsPanelCollapsed || IsModuleEnabled(DashboardModuleIds.HardwareMonitor)",
-            mainViewModelCode,
-            StringComparison.Ordinal);
-        Assert.Contains(
-            "TimeWeather.IsEnabled = IsPanelCollapsed || IsModuleEnabled(DashboardModuleIds.TimeWeather)",
-            mainViewModelCode,
-            StringComparison.Ordinal);
-        Assert.Contains(
-            "ModelRadar.SetEnabledAsync(IsModuleEnabled(DashboardModuleIds.ModelRadar))",
-            mainViewModelCode,
-            StringComparison.Ordinal);
-        Assert.DoesNotContain(
-            "IsPanelCollapsed || IsModuleEnabled(DashboardModuleIds.ModelRadar)",
-            mainViewModelCode,
-            StringComparison.Ordinal);
-        Assert.Contains("x:Name=\"ExpandedHeaderActions\"", mainXaml, StringComparison.Ordinal);
-        Assert.Contains("x:Name=\"CompactMoreButton\"", mainXaml, StringComparison.Ordinal);
-        Assert.Contains("Click=\"CompactMoreButton_OnClick\"", mainXaml, StringComparison.Ordinal);
-        Assert.Contains("CompactMoreButton_OnClick", mainCode, StringComparison.Ordinal);
-        Assert.Contains("ToolTip=\"{DynamicResource Common.More}\"", mainXaml, StringComparison.Ordinal);
-        Assert.Contains("Command=\"{Binding ToggleTopMostCommand}\"", mainXaml, StringComparison.Ordinal);
-        Assert.Contains("Command=\"{Binding ToggleWindowLockCommand}\"", mainXaml, StringComparison.Ordinal);
-
-        Assert.Contains("x:Name=\"CompactStatusStrip\"", timeWeatherXaml, StringComparison.Ordinal);
-        Assert.Contains("x:Name=\"CompactHardwareSummary\"", timeWeatherXaml, StringComparison.Ordinal);
-        Assert.Contains("<Setter Property=\"Width\" Value=\"56\"/>", timeWeatherXaml, StringComparison.Ordinal);
-        var hardwareSummary = Regex.Match(
-            timeWeatherXaml,
-            "<Border x:Name=\"CompactHardwareSummary\"[\\s\\S]*?</Border>");
-        Assert.True(hardwareSummary.Success);
-        Assert.DoesNotContain("Background=", hardwareSummary.Value, StringComparison.Ordinal);
-        Assert.Contains("x:Key=\"CompactHardwareLabelStyle\"", hardwareSummary.Value, StringComparison.Ordinal);
-        Assert.Contains("x:Key=\"CompactHardwareValueStyle\"", hardwareSummary.Value, StringComparison.Ordinal);
-        Assert.Equal(
-            4,
-            hardwareSummary.Value.Split(
-                "Style=\"{StaticResource CompactHardwareLabelStyle}\"",
-                StringSplitOptions.None).Length - 1);
-        Assert.Equal(
-            4,
-            hardwareSummary.Value.Split(
-                "Style=\"{StaticResource CompactHardwareValueStyle}\"",
-                StringSplitOptions.None).Length - 1);
-        Assert.Contains("<Grid.ColumnDefinitions>", hardwareSummary.Value, StringComparison.Ordinal);
-        Assert.Contains("Width=\"52\"", hardwareSummary.Value, StringComparison.Ordinal);
-        Assert.Contains("<ColumnDefinition Width=\"22\"/>", hardwareSummary.Value, StringComparison.Ordinal);
-        Assert.Contains("<ColumnDefinition Width=\"Auto\"/>", hardwareSummary.Value, StringComparison.Ordinal);
-        Assert.Contains("<Setter Property=\"HorizontalAlignment\" Value=\"Left\"/>", hardwareSummary.Value, StringComparison.Ordinal);
-        Assert.Contains("<Setter Property=\"Margin\" Value=\"3,0,0,0\"/>", hardwareSummary.Value, StringComparison.Ordinal);
-        Assert.DoesNotContain("<Setter Property=\"HorizontalAlignment\" Value=\"Right\"/>", hardwareSummary.Value, StringComparison.Ordinal);
-        Assert.Contains("HardwareMonitor.SystemCpuUsageText", hardwareSummary.Value, StringComparison.Ordinal);
-        Assert.Contains("HardwareMonitor.SystemCpuTemperatureValueText", hardwareSummary.Value, StringComparison.Ordinal);
-        Assert.Contains("HardwareMonitor.SystemGpuTemperatureValueText", hardwareSummary.Value, StringComparison.Ordinal);
-        Assert.Contains("HardwareMonitor.SystemMemoryUsageText", hardwareSummary.Value, StringComparison.Ordinal);
-
-        var weatherSummary = Regex.Match(
-            timeWeatherXaml,
-            "<Grid x:Name=\"WeatherSummary\"[\\s\\S]*?x:Name=\"QWeatherAttributionLink\"[\\s\\S]*?</Grid>");
-        Assert.True(weatherSummary.Success);
-        Assert.Contains("ClipToBounds=\"True\"", weatherSummary.Value, StringComparison.Ordinal);
-        Assert.Contains("<Setter Property=\"Margin\" Value=\"6,0,0,0\"/>", weatherSummary.Value, StringComparison.Ordinal);
-        Assert.Contains("x:Name=\"WeatherLocationStrip\"", weatherSummary.Value, StringComparison.Ordinal);
-        Assert.Contains("TextTrimming=\"CharacterEllipsis\"", weatherSummary.Value, StringComparison.Ordinal);
-
-        var statusStrip = Regex.Match(
-            timeWeatherXaml,
-            "<Border x:Name=\"CompactStatusStrip\"[\\s\\S]*?</Border>");
-        Assert.True(statusStrip.Success);
-        Assert.Contains("x:Name=\"CompactModelRadarSummary\"", statusStrip.Value, StringComparison.Ordinal);
-        Assert.Contains("Height=\"32\"", statusStrip.Value, StringComparison.Ordinal);
-        Assert.Contains("x:Name=\"CompactModelRadarOverallRecommendation\"", statusStrip.Value, StringComparison.Ordinal);
-        Assert.Contains("x:Name=\"CompactModelRadarValueRecommendation\"", statusStrip.Value, StringComparison.Ordinal);
-        Assert.Matches(
-            "x:Name=\"CompactModelRadarOverallRecommendation\"[\\s\\S]*?Grid.Column=\"0\"",
-            statusStrip.Value);
-        Assert.Matches(
-            "x:Name=\"CompactModelRadarValueRecommendation\"[\\s\\S]*?Grid.Column=\"2\"",
-            statusStrip.Value);
-        Assert.Equal(
-            4,
-            statusStrip.Value.Split(
-                "<RowDefinition Height=\"16\"/>",
-                StringSplitOptions.None).Length - 1);
-        Assert.Contains("x:Name=\"CompactModelRadarVerticalDivider\"", statusStrip.Value, StringComparison.Ordinal);
-        Assert.DoesNotContain("x:Name=\"CompactModelRadarHorizontalDivider\"", statusStrip.Value, StringComparison.Ordinal);
-        Assert.Equal(
-            1,
-            statusStrip.Value.Split(
-                "Background=\"{DynamicResource DividerBrush}\"",
-                StringSplitOptions.None).Length - 1);
-        Assert.Contains("ModelRadar.IsCompactSummaryVisible", statusStrip.Value, StringComparison.Ordinal);
-        Assert.Contains("ModelRadar.HasCompactRecommendations", statusStrip.Value, StringComparison.Ordinal);
-        Assert.Contains("ModelRadar.CompactOverallLabelText", statusStrip.Value, StringComparison.Ordinal);
-        Assert.Contains("ModelRadar.CompactOverallModelText", statusStrip.Value, StringComparison.Ordinal);
-        Assert.Contains("ModelRadar.CompactOverallScoreText", statusStrip.Value, StringComparison.Ordinal);
-        Assert.Contains("ModelRadar.CompactValueLabelText", statusStrip.Value, StringComparison.Ordinal);
-        Assert.Contains("ModelRadar.CompactValueModelText", statusStrip.Value, StringComparison.Ordinal);
-        Assert.Contains("ModelRadar.CompactValueScoreText", statusStrip.Value, StringComparison.Ordinal);
-        Assert.Contains("ModelRadar.CompactStatusText", statusStrip.Value, StringComparison.Ordinal);
-        Assert.Contains("ModelRadar.CompactToolTipText", statusStrip.Value, StringComparison.Ordinal);
-        Assert.Contains("x:Name=\"CompactTodoSummary\"", statusStrip.Value, StringComparison.Ordinal);
-        Assert.Contains("Todos.CollapsedPanelTodo.Title", statusStrip.Value, StringComparison.Ordinal);
-        Assert.Contains(
-            "x:Key=\"CompactBodyTextStyle\" TargetType=\"TextBlock\" BasedOn=\"{StaticResource BodyTextStyle}\"",
-            statusStrip.Value,
-            StringComparison.Ordinal);
-        Assert.Contains(
-            "x:Key=\"CompactStatusTextStyle\" TargetType=\"TextBlock\" BasedOn=\"{StaticResource CaptionTextStyle}\"",
-            statusStrip.Value,
-            StringComparison.Ordinal);
-        Assert.Contains("Margin=\"0,4,0,0\"", statusStrip.Value, StringComparison.Ordinal);
-        Assert.Contains("Padding=\"8,2\"", statusStrip.Value, StringComparison.Ordinal);
-        Assert.Contains("<Setter Property=\"LineHeight\" Value=\"16\"/>", statusStrip.Value, StringComparison.Ordinal);
-        Assert.Contains(
-            "<Setter Property=\"LineStackingStrategy\" Value=\"BlockLineHeight\"/>",
-            statusStrip.Value,
-            StringComparison.Ordinal);
-        Assert.Contains("<Setter Property=\"Height\" Value=\"16\"/>", statusStrip.Value, StringComparison.Ordinal);
-        Assert.Contains("<Setter Property=\"FontWeight\" Value=\"Normal\"/>", statusStrip.Value, StringComparison.Ordinal);
-        Assert.Contains("x:Name=\"CompactTodoTitleText\"", statusStrip.Value, StringComparison.Ordinal);
-        Assert.Contains("x:Name=\"CompactTodoDueText\"", statusStrip.Value, StringComparison.Ordinal);
-        Assert.Equal(
-            8,
-            statusStrip.Value.Split(
-                "Style=\"{StaticResource CompactBodyTextStyle}\"",
-                StringSplitOptions.None).Length - 1);
-        Assert.DoesNotContain("DataTextStyle", statusStrip.Value, StringComparison.Ordinal);
-        Assert.DoesNotContain("CompactModelRadarTextStyle", statusStrip.Value, StringComparison.Ordinal);
-        Assert.DoesNotContain("CompactTodoTextStyle", statusStrip.Value, StringComparison.Ordinal);
-        Assert.DoesNotContain("FontWeight=\"SemiBold\"", statusStrip.Value, StringComparison.Ordinal);
-        Assert.Equal(
-            2,
-            statusStrip.Value.Split(
-                "FontWeight=\"Medium\"",
-                StringSplitOptions.None).Length - 1);
-        Assert.DoesNotContain("TextAlignment=\"Right\"", statusStrip.Value, StringComparison.Ordinal);
-        Assert.Equal(
-            4,
-            statusStrip.Value.Split(
-                "HorizontalAlignment=\"Center\"",
-                StringSplitOptions.None).Length - 1);
-        Assert.Equal(
-            2,
-            statusStrip.Value.Split(
-                "Margin=\"6,0,0,0\"",
-                StringSplitOptions.None).Length - 1);
-        Assert.Equal(
-            4,
-            statusStrip.Value.Split(
-                "TextTrimming=\"None\"",
-                StringSplitOptions.None).Length - 1);
-        Assert.DoesNotContain("Width=\"24\"", statusStrip.Value, StringComparison.Ordinal);
-        Assert.True(
-            statusStrip.Value.IndexOf("CompactModelRadarSummary", StringComparison.Ordinal) <
-            statusStrip.Value.IndexOf("CompactTodoSummary", StringComparison.Ordinal));
-        Assert.DoesNotContain("HardwareMonitor.", statusStrip.Value, StringComparison.Ordinal);
-        Assert.Contains("<Setter Property=\"Height\" Value=\"156\"/>", timeWeatherXaml, StringComparison.Ordinal);
-        Assert.Contains("<Setter Property=\"Background\" Value=\"Transparent\"/>", timeWeatherXaml, StringComparison.Ordinal);
-
-        var radarModule = ReadProjectFile("UniDesk", "Controls", "ModelRadarModuleView.xaml");
-        Assert.DoesNotContain("DataFontFamily", radarModule, StringComparison.Ordinal);
-
-        Assert.Contains("SystemParameters.FocusVisualStyleKey", sharedTheme, StringComparison.Ordinal);
-        Assert.DoesNotContain("<Setter Property=\"FocusVisualStyle\" Value=\"{x:Null}\"/>", sharedTheme, StringComparison.Ordinal);
-        Assert.Contains("<Trigger Property=\"IsKeyboardFocused\" Value=\"True\">", sharedTheme, StringComparison.Ordinal);
+        // Geometry for all 16 selections is exercised by CompactDashboardLayoutTests.
+        Assert.Contains("CollapsedPanelHeight => _viewModel.CompactLayout.WindowHeight", mainCode);
+        Assert.Contains("PanelSizePolicy.GetBounds(monitor.WorkArea)", mainCode);
+        Assert.Contains("PanelSizePolicy.GetRequestedWidth(_viewModel.PanelWidth)", mainCode);
+        Assert.Contains("Element = (FrameworkElement?)TimeWeatherModule", mainCode);
+        Assert.DoesNotContain("modules.Take(1)", mainCode);
+        foreach (var module in new[] { "HardwareMonitor", "TimeWeather", "ModelRadar" })
+            Assert.Contains($"IsModuleActive(DashboardModuleIds.{module})", mainViewModel);
+        Assert.DoesNotContain("IsPanelCollapsed || IsModuleEnabled", mainViewModel);
+        Assert.Contains("x:Name=\"ExpandedHeaderActions\"", mainXaml);
+        Assert.Contains("x:Name=\"CompactMoreButton\"", mainXaml);
+        Assert.Contains("Click=\"CompactMoreButton_OnClick\"", mainXaml);
+        Assert.Contains("CompactMoreButton_OnClick", mainCode);
+        Assert.Contains("Command=\"{Binding ToggleTopMostCommand}\"", mainXaml);
+        Assert.Contains("Command=\"{Binding ToggleWindowLockCommand}\"", mainXaml);
+        Assert.Contains("SystemCpuUsageText", timeWeatherXaml);
+        Assert.Contains("SystemMemoryUsageText", timeWeatherXaml);
+        Assert.Contains("SystemGpuUsageText", timeWeatherXaml);
+        Assert.Contains("ClockDateText", timeWeatherXaml);
+        Assert.Contains("WeatherRangeLine", timeWeatherXaml);
+        Assert.Contains("CompactWeatherDetailLine", timeWeatherXaml);
+        Assert.Contains("CompactToolTipText", timeWeatherXaml);
+        Assert.Contains("Todos.CollapsedPanelTodo.Title", timeWeatherXaml);
+        Assert.DoesNotContain("CompactValue", timeWeatherXaml);
+        Assert.DoesNotContain("DataFontFamily", timeWeatherXaml);
+        Assert.Contains("SystemParameters.FocusVisualStyleKey", sharedTheme);
+        Assert.DoesNotContain("<Setter Property=\"FocusVisualStyle\" Value=\"{x:Null}\"/>", sharedTheme);
+        Assert.Contains("<Trigger Property=\"IsKeyboardFocused\" Value=\"True\">", sharedTheme);
     }
-
     [Fact]
     public void TransparentWindows_ShouldCapHeightToTheLogicalWorkArea()
     {
@@ -886,39 +733,31 @@ public class WpfInteractionRegressionTests
     }
 
     [Fact]
-    public void WeatherPanel_ShouldExposeQWeatherAttributionInEveryDisplayModeAndLanguage()
+    public void WeatherSources_ShouldBeAvailableInSettingsInEveryLanguage()
     {
         var timeWeatherXaml = ReadProjectFile("UniDesk", "Controls", "TimeWeatherModuleView.xaml");
+        var settingsXaml = ReadProjectFile("UniDesk", "Controls", "Settings", "GeneralSettingsPage.xaml");
 
-        Assert.Contains("x:Name=\"QWeatherAttributionLink\"", timeWeatherXaml, StringComparison.Ordinal);
-        Assert.Contains("NavigateUri=\"https://www.qweather.com\"", timeWeatherXaml, StringComparison.Ordinal);
+        Assert.DoesNotContain("QWeatherAttributionLink", timeWeatherXaml, StringComparison.Ordinal);
+        Assert.DoesNotContain("Weather.QWeatherAttribution", timeWeatherXaml, StringComparison.Ordinal);
+        Assert.Contains("NavigateUri=\"https://www.qweather.com\"", settingsXaml, StringComparison.Ordinal);
+        Assert.Contains("NavigateUri=\"https://developer.qweather.com/attribution.html\"", settingsXaml, StringComparison.Ordinal);
         Assert.Contains(
-            "RequestNavigate=\"QWeatherAttributionLink_OnRequestNavigate\"",
-            timeWeatherXaml,
+            "RequestNavigate=\"WeatherSourceLink_OnRequestNavigate\"",
+            settingsXaml,
             StringComparison.Ordinal);
-        Assert.Contains("{DynamicResource Weather.QWeatherAttribution}", timeWeatherXaml, StringComparison.Ordinal);
-
-        var attributionLink = Regex.Match(
-            timeWeatherXaml,
-            "<Hyperlink x:Name=\"QWeatherAttributionLink\"[\\s\\S]*?</Hyperlink>");
-        Assert.True(attributionLink.Success);
-        Assert.Contains(
-            "<Run Text=\"&#xE707;\" FontFamily=\"Segoe MDL2 Assets\" FontSize=\"8\"/>",
-            attributionLink.Value,
-            StringComparison.Ordinal);
-
-        var weatherLocationStrip = Regex.Match(
-            timeWeatherXaml,
-            "<Grid x:Name=\"WeatherLocationStrip\"[\\s\\S]*?</Grid>");
-        Assert.True(weatherLocationStrip.Success);
-        Assert.DoesNotContain("Text=\"&#xE707;\"", weatherLocationStrip.Value, StringComparison.Ordinal);
+        Assert.Contains("{DynamicResource Weather.QWeatherAttribution}", settingsXaml, StringComparison.Ordinal);
+        Assert.Contains("{DynamicResource Settings.WeatherDataSources}", settingsXaml, StringComparison.Ordinal);
+        var settingsCode = ReadProjectFile("UniDesk", "Controls", "Settings", "GeneralSettingsPage.xaml.cs");
+        Assert.Contains("UseShellExecute = true", settingsCode, StringComparison.Ordinal);
+        Assert.Contains("e.Handled = true", settingsCode, StringComparison.Ordinal);
 
         foreach (var (languageFile, attribution, providerHint) in new[]
                  {
-                     ("Strings.zh-CN.xaml", "和风天气", "天气数据由和风天气提供。"),
-                     ("Strings.en-US.xaml", "QWeather", "Weather data is provided by QWeather."),
-                     ("Strings.ja-JP.xaml", "QWeather", "天気データは QWeather から提供されます。"),
-                     ("Strings.es-ES.xaml", "QWeather", "Los datos meteorológicos son proporcionados por QWeather.")
+                     ("Strings.zh-CN.xaml", "和风天气", "天气及空气质量数据由和风天气提供。"),
+                     ("Strings.en-US.xaml", "QWeather", "Weather and air quality data are provided by QWeather."),
+                     ("Strings.ja-JP.xaml", "QWeather", "天気と大気質のデータは QWeather から提供されます。"),
+                     ("Strings.es-ES.xaml", "QWeather", "Los datos meteorológicos y de calidad del aire son proporcionados por QWeather.")
                  })
         {
             var resources = ReadProjectFile("UniDesk", "Resources", languageFile);
@@ -927,6 +766,7 @@ public class WpfInteractionRegressionTests
                 resources,
                 StringComparison.Ordinal);
             Assert.Contains("x:Key=\"Settings.WeatherApiHint\"", resources, StringComparison.Ordinal);
+            Assert.Contains("x:Key=\"Settings.WeatherDataSources\"", resources, StringComparison.Ordinal);
             Assert.Contains(providerHint, resources, StringComparison.Ordinal);
         }
     }

@@ -15,6 +15,11 @@ public partial class ModuleSettingOptionViewModel : ObservableObject
     private bool _isEnabled = true;
 
     [ObservableProperty]
+    private bool _isCompactEnabled;
+
+    public bool SupportsCompact => DashboardModuleCatalog.SupportsCompact(ModuleId);
+
+    [ObservableProperty]
     private int _sortOrder;
 
     [ObservableProperty]
@@ -28,6 +33,7 @@ public partial class ModuleSettingOptionViewModel : ObservableObject
         ModuleId = module.ModuleId,
         DisplayName = module.DisplayName,
         IsEnabled = module.IsEnabled,
+        IsCompactEnabled = DashboardModuleCatalog.IsCompactEnabled(module),
         SortOrder = module.SortOrder
     };
 
@@ -36,6 +42,7 @@ public partial class ModuleSettingOptionViewModel : ObservableObject
         ModuleId = ModuleId,
         DisplayName = DisplayName,
         IsEnabled = IsEnabled,
+        IsCompactEnabled = IsCompactEnabled,
         SortOrder = SortOrder
     };
 }

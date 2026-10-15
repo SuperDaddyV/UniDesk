@@ -8,12 +8,12 @@
         <Border.Style>
             <Style TargetType="Border" BasedOn="{StaticResource ModuleCardStyle}">
                 <Setter Property="Margin" Value="0,0,0,6"/>
-                <Setter Property="Padding" Value="14,10"/>
+                <Setter Property="Padding" Value="12"/>
                 <Style.Triggers>
                     <DataTrigger Binding="{Binding DataContext.IsPanelCollapsed, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
                         <Setter Property="Padding" Value="0"/>
                         <Setter Property="Margin" Value="0"/>
-                        <Setter Property="Height" Value="156"/>
+                        <Setter Property="Height" Value="{Binding DataContext.CompactLayout.ContentHeight, RelativeSource={RelativeSource AncestorType=Window}}"/>
                         <Setter Property="Background" Value="Transparent"/>
                         <Setter Property="BorderBrush" Value="Transparent"/>
                         <Setter Property="BorderThickness" Value="0"/>
@@ -24,41 +24,52 @@
         </Border.Style>
         <Grid>
             <Grid.RowDefinitions>
-                <RowDefinition Height="*"/>
+                <RowDefinition>
+                    <RowDefinition.Style>
+                        <Style TargetType="RowDefinition">
+                            <Setter Property="Height" Value="*"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding DataContext.IsPanelCollapsed, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
+                                    <Setter Property="Height" Value="{Binding DataContext.CompactLayout.TopHeight, RelativeSource={RelativeSource AncestorType=Window}}"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </RowDefinition.Style>
+                </RowDefinition>
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition>
                     <ColumnDefinition.Style>
                         <Style TargetType="ColumnDefinition">
+                            <Setter Property="Width" Value="1.15*"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding DataContext.IsPanelCollapsed, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
+                                    <Setter Property="Width" Value="{Binding DataContext.CompactLayout.ClockColumn, RelativeSource={RelativeSource AncestorType=Window}}"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </ColumnDefinition.Style>
+                </ColumnDefinition>
+                <ColumnDefinition>
+                    <ColumnDefinition.Style>
+                        <Style TargetType="ColumnDefinition">
+                            <Setter Property="Width" Value="8"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding DataContext.IsPanelCollapsed, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
+                                    <Setter Property="Width" Value="{Binding DataContext.CompactLayout.HardwareColumn, RelativeSource={RelativeSource AncestorType=Window}}"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </ColumnDefinition.Style>
+                </ColumnDefinition>
+                <ColumnDefinition>
+                    <ColumnDefinition.Style>
+                        <Style TargetType="ColumnDefinition">
                             <Setter Property="Width" Value="*"/>
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding DataContext.IsPanelCollapsed, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
-                                    <Setter Property="Width" Value="5*"/>
-                                </DataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </ColumnDefinition.Style>
-                </ColumnDefinition>
-                <ColumnDefinition>
-                    <ColumnDefinition.Style>
-                        <Style TargetType="ColumnDefinition">
-                            <Setter Property="Width" Value="0"/>
-                            <Style.Triggers>
-                                <DataTrigger Binding="{Binding DataContext.IsPanelCollapsed, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
-                                    <Setter Property="Width" Value="56"/>
-                                </DataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </ColumnDefinition.Style>
-                </ColumnDefinition>
-                <ColumnDefinition>
-                    <ColumnDefinition.Style>
-                        <Style TargetType="ColumnDefinition">
-                            <Setter Property="Width" Value="142"/>
-                            <Style.Triggers>
-                                <DataTrigger Binding="{Binding DataContext.IsPanelCollapsed, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
-                                    <Setter Property="Width" Value="5*"/>
+                                    <Setter Property="Width" Value="{Binding DataContext.CompactLayout.WeatherColumn, RelativeSource={RelativeSource AncestorType=Window}}"/>
                                 </DataTrigger>
                             </Style.Triggers>
                         </Style>
@@ -72,17 +83,45 @@
                     VerticalAlignment="Center"
                     Background="Transparent"
                     Cursor="Hand"
-                    Padding="0,2"
                     MouseLeftButtonDown="ClockHotspot_OnMouseLeftButtonDown">
-                <StackPanel>
-                    <Viewbox Stretch="Uniform" StretchDirection="DownOnly"
-                             HorizontalAlignment="Left">
+                <Border.Style>
+                    <Style TargetType="Border">
+                        <Style.Triggers>
+                            <MultiDataTrigger>
+                                <MultiDataTrigger.Conditions>
+                                    <Condition Binding="{Binding DataContext.IsPanelCollapsed, RelativeSource={RelativeSource AncestorType=Window}}" Value="True"/>
+                                    <Condition Binding="{Binding DataContext.CompactLayout.ShowTimeWeather, RelativeSource={RelativeSource AncestorType=Window}}" Value="False"/>
+                                </MultiDataTrigger.Conditions>
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                            </MultiDataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Border.Style>
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <Viewbox Grid.Row="0" Stretch="Uniform" StretchDirection="DownOnly"
+                             VerticalAlignment="Center"
+                             >
+                        <Viewbox.Style>
+                            <Style TargetType="Viewbox">
+                                <Setter Property="HorizontalAlignment" Value="Left"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding DataContext.IsPanelCollapsed, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
+                                        <Setter Property="HorizontalAlignment" Value="Center"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Viewbox.Style>
                         <TextBlock Text="{Binding ClockTimeText}"
                                    FontWeight="SemiBold"
                                    Foreground="{DynamicResource PrimaryTextBrush}">
                             <TextBlock.Style>
                                 <Style TargetType="TextBlock">
-                                    <Setter Property="FontSize" Value="{Binding DataContext.FontScale, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource ScaledFontSizeConverter}, ConverterParameter=43}"/>
+                                    <Setter Property="FontSize" Value="{Binding DataContext.FontScale, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource ScaledFontSizeConverter}, ConverterParameter=40}"/>
                                     <Style.Triggers>
                                         <DataTrigger Binding="{Binding DataContext.IsPanelCollapsed, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
                                             <Setter Property="FontSize" Value="30"/>
@@ -92,16 +131,20 @@
                             </TextBlock.Style>
                         </TextBlock>
                     </Viewbox>
-                    <TextBlock Text="{Binding ClockDateText}"
-                               TextWrapping="Wrap"
+                    <TextBlock Grid.Row="1" Text="{Binding ClockShortDateText}"
+                               VerticalAlignment="Top"
+                               TextWrapping="NoWrap"
+                               TextTrimming="CharacterEllipsis"
                                ToolTip="{Binding ClockDateText}">
                         <TextBlock.Style>
                             <Style TargetType="TextBlock" BasedOn="{StaticResource SecondaryTextStyle}">
-                                <Setter Property="FontSize" Value="{Binding DataContext.FontScale, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource ScaledFontSizeConverter}, ConverterParameter=11}"/>
+                                <Setter Property="FontSize" Value="{Binding DataContext.FontScale, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource ScaledFontSizeConverter}, ConverterParameter=12}"/>
+                                <Setter Property="Margin" Value="0,6,0,0"/>
                                 <Style.Triggers>
                                     <DataTrigger Binding="{Binding DataContext.IsPanelCollapsed, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
                                         <Setter Property="FontSize" Value="10"/>
                                         <Setter Property="Margin" Value="0,1,0,0"/>
+                                        <Setter Property="TextAlignment" Value="Center"/>
                                         <Setter Property="TextWrapping" Value="NoWrap"/>
                                         <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
                                     </DataTrigger>
@@ -109,41 +152,48 @@
                             </Style>
                         </TextBlock.Style>
                     </TextBlock>
-                    <TextBlock Text="{Binding ClockLunarText}"
-                               TextWrapping="Wrap"
+                    <TextBlock Grid.Row="2" Text="{Binding ClockLunarText}"
+                               VerticalAlignment="Top"
                                ToolTip="{Binding ClockLunarText}"
                                Visibility="{Binding ClockLunarText, Converter={StaticResource StringNotEmptyToVisibilityConverter}}">
                         <TextBlock.Style>
                             <Style TargetType="TextBlock" BasedOn="{StaticResource SecondaryTextStyle}">
+                                <Setter Property="TextWrapping" Value="Wrap"/>
                                 <Setter Property="FontSize" Value="{Binding DataContext.FontScale, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource ScaledFontSizeConverter}, ConverterParameter=11}"/>
-                                <Setter Property="Margin" Value="0,5,0,0"/>
+                                <Setter Property="Margin" Value="0,4,0,0"/>
                                 <Style.Triggers>
                                     <DataTrigger Binding="{Binding DataContext.IsPanelCollapsed, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
                                         <Setter Property="FontSize" Value="9"/>
+                                        <Setter Property="TextAlignment" Value="Center"/>
                                         <Setter Property="Margin" Value="0,2,0,0"/>
                                         <Setter Property="MaxHeight" Value="13"/>
+                                        <Setter Property="TextWrapping" Value="NoWrap"/>
                                         <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
                                     </DataTrigger>
                                 </Style.Triggers>
                             </Style>
                         </TextBlock.Style>
                     </TextBlock>
-                </StackPanel>
+                </Grid>
             </Border>
 
             <Border x:Name="CompactHardwareSummary"
                     Grid.Row="0"
                     Grid.Column="1"
-                    Width="52"
+                    Width="50"
                     VerticalAlignment="Center"
                     HorizontalAlignment="Center">
                 <Border.Style>
                     <Style TargetType="Border">
                         <Setter Property="Visibility" Value="Collapsed"/>
                         <Style.Triggers>
-                            <DataTrigger Binding="{Binding DataContext.IsPanelCollapsed, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
+                            <MultiDataTrigger>
+                                <MultiDataTrigger.Conditions>
+                                    <Condition Binding="{Binding DataContext.IsPanelCollapsed, RelativeSource={RelativeSource AncestorType=Window}}" Value="True"/>
+                                    <Condition Binding="{Binding DataContext.CompactLayout.ShowHardware, RelativeSource={RelativeSource AncestorType=Window}}" Value="True"/>
+                                </MultiDataTrigger.Conditions>
                                 <Setter Property="Visibility" Value="Visible"/>
-                            </DataTrigger>
+                            </MultiDataTrigger>
                         </Style.Triggers>
                     </Style>
                 </Border.Style>
@@ -158,22 +208,21 @@
                         <Setter Property="FontSize" Value="9"/>
                         <Setter Property="FontWeight" Value="SemiBold"/>
                         <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
-                        <Setter Property="HorizontalAlignment" Value="Left"/>
+                        <Setter Property="HorizontalAlignment" Value="Right"/>
                         <Setter Property="VerticalAlignment" Value="Center"/>
                         <Setter Property="Margin" Value="3,0,0,0"/>
                         <Setter Property="Typography.NumeralAlignment" Value="Tabular"/>
                     </Style>
                 </Border.Resources>
-                <Grid Width="52" HorizontalAlignment="Center">
+                <Grid Width="50" HorizontalAlignment="Center">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="22"/>
-                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="14"/>
-                        <RowDefinition Height="14"/>
-                        <RowDefinition Height="14"/>
-                        <RowDefinition Height="14"/>
+                        <RowDefinition Height="16"/>
+                        <RowDefinition Height="16"/>
+                        <RowDefinition Height="16"/>
                     </Grid.RowDefinitions>
 
                     <TextBlock Grid.Row="0" Grid.Column="0" Text="CPU" Style="{StaticResource CompactHardwareLabelStyle}"/>
@@ -181,19 +230,14 @@
                                Text="{Binding DataContext.HardwareMonitor.SystemCpuUsageText, RelativeSource={RelativeSource AncestorType=Window}}"
                                ToolTip="{Binding DataContext.HardwareMonitor.SystemCpuUsageToolTip, RelativeSource={RelativeSource AncestorType=Window}}"
                                Style="{StaticResource CompactHardwareValueStyle}"/>
-                    <TextBlock Grid.Row="1" Grid.Column="0" Text="MEM" Style="{StaticResource CompactHardwareLabelStyle}"/>
-                    <TextBlock Grid.Row="1" Grid.Column="1"
+                    <TextBlock Grid.Row="2" Grid.Column="0" Text="MEM" Style="{StaticResource CompactHardwareLabelStyle}"/>
+                    <TextBlock Grid.Row="2" Grid.Column="1"
                                Text="{Binding DataContext.HardwareMonitor.SystemMemoryUsageText, RelativeSource={RelativeSource AncestorType=Window}}"
                                Style="{StaticResource CompactHardwareValueStyle}"/>
-                    <TextBlock Grid.Row="2" Grid.Column="0" Text="CPU" Style="{StaticResource CompactHardwareLabelStyle}"/>
-                    <TextBlock Grid.Row="2" Grid.Column="1"
-                               Text="{Binding DataContext.HardwareMonitor.SystemCpuTemperatureValueText, RelativeSource={RelativeSource AncestorType=Window}}"
-                               ToolTip="{Binding DataContext.HardwareMonitor.SystemCpuTemperatureToolTip, RelativeSource={RelativeSource AncestorType=Window}}"
-                               Style="{StaticResource CompactHardwareValueStyle}"/>
-                    <TextBlock Grid.Row="3" Grid.Column="0" Text="GPU" Style="{StaticResource CompactHardwareLabelStyle}"/>
-                    <TextBlock Grid.Row="3" Grid.Column="1"
-                               Text="{Binding DataContext.HardwareMonitor.SystemGpuTemperatureValueText, RelativeSource={RelativeSource AncestorType=Window}}"
-                               ToolTip="{Binding DataContext.HardwareMonitor.SystemGpuTemperatureToolTip, RelativeSource={RelativeSource AncestorType=Window}}"
+                    <TextBlock Grid.Row="1" Grid.Column="0" Text="GPU" Style="{StaticResource CompactHardwareLabelStyle}"/>
+                    <TextBlock Grid.Row="1" Grid.Column="1"
+                               Text="{Binding DataContext.HardwareMonitor.SystemGpuUsageText, RelativeSource={RelativeSource AncestorType=Window}}"
+                               ToolTip="{Binding DataContext.HardwareMonitor.SystemGpuUsageToolTip, RelativeSource={RelativeSource AncestorType=Window}}"
                                Style="{StaticResource CompactHardwareValueStyle}"/>
                 </Grid>
             </Border>
@@ -209,7 +253,7 @@
                         <Setter Property="Margin" Value="0"/>
                         <Style.Triggers>
                             <DataTrigger Binding="{Binding DataContext.IsPanelCollapsed, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
-                                <Setter Property="Margin" Value="6,0,0,0"/>
+                                <Setter Property="Visibility" Value="Collapsed"/>
                             </DataTrigger>
                         </Style.Triggers>
                     </Style>
@@ -218,18 +262,28 @@
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
     
                 <Grid Grid.Row="0">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="58"/>
+                        <ColumnDefinition>
+                            <ColumnDefinition.Style>
+                                <Style TargetType="ColumnDefinition">
+                                    <Setter Property="Width" Value="50"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding DataContext.IsPanelCollapsed, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
+                                            <Setter Property="Width" Value="36"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </ColumnDefinition.Style>
+                        </ColumnDefinition>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
                     <Grid Grid.Column="0"
                           HorizontalAlignment="Right"
                           VerticalAlignment="Center"
-                          Margin="4,0,2,0"
+                          Margin="0,0,2,0"
                           Visibility="{Binding HasWeatherData, Converter={StaticResource BooleanToVisibilityConverter}}">
                         <Grid.Style>
                             <Style TargetType="Grid">
@@ -305,15 +359,17 @@
                         </Viewbox>
                         <TextBlock Grid.Row="1"
                                    Text="{Binding WeatherDescription}"
-                                   TextWrapping="Wrap"
                                    TextAlignment="Right"
                                    ToolTip="{Binding WeatherDescription}">
                             <TextBlock.Style>
                                 <Style TargetType="TextBlock" BasedOn="{StaticResource SecondaryTextStyle}">
+                                    <Setter Property="TextWrapping" Value="Wrap"/>
                                     <Setter Property="FontSize" Value="{Binding DataContext.FontScale, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource ScaledFontSizeConverter}, ConverterParameter=12}"/>
                                     <Style.Triggers>
                                         <DataTrigger Binding="{Binding DataContext.IsPanelCollapsed, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
                                             <Setter Property="FontSize" Value="10"/>
+                                            <Setter Property="TextWrapping" Value="NoWrap"/>
+                                            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
                                         </DataTrigger>
                                     </Style.Triggers>
                                 </Style>
@@ -324,12 +380,13 @@
     
                 <TextBlock Grid.Row="1"
                            Text="{Binding WeatherDetailLine}"
+                           VerticalAlignment="Top"
                            HorizontalAlignment="Right"
                            TextWrapping="Wrap">
                     <TextBlock.Style>
                         <Style TargetType="TextBlock" BasedOn="{StaticResource SecondaryTextStyle}">
                             <Setter Property="FontSize" Value="{Binding DataContext.FontScale, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource ScaledFontSizeConverter}, ConverterParameter=11}"/>
-                            <Setter Property="Margin" Value="0,6,0,0"/>
+                            <Setter Property="Margin" Value="0,4,0,0"/>
                             <Setter Property="Visibility" Value="Visible"/>
                             <Setter Property="ToolTip" Value="{Binding WeatherAirQualityAttributionText}"/>
                             <Style.Triggers>
@@ -346,14 +403,15 @@
     
                 <Grid x:Name="WeatherLocationStrip"
                       Grid.Row="2"
-                      Margin="0,6,0,0"
+                      VerticalAlignment="Top"
                       ClipToBounds="True">
                     <Grid.Style>
                         <Style TargetType="Grid">
                             <Setter Property="Visibility" Value="Visible"/>
+                            <Setter Property="Margin" Value="0,4,0,0"/>
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding DataContext.IsPanelCollapsed, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
-                                    <Setter Property="Margin" Value="0,3,0,0"/>
+                                    <Setter Property="Margin" Value="0,2,0,0"/>
                                 </DataTrigger>
                             </Style.Triggers>
                         </Style>
@@ -368,6 +426,12 @@
                                TextWrapping="NoWrap"
                                TextTrimming="CharacterEllipsis"
                                TextAlignment="Right">
+                        <TextBlock.ToolTip>
+                            <MultiBinding StringFormat="{}{0}  {1}">
+                                <Binding Path="WeatherCity"/>
+                                <Binding Path="WeatherRangeLine"/>
+                            </MultiBinding>
+                        </TextBlock.ToolTip>
                         <TextBlock.Style>
                             <Style TargetType="TextBlock" BasedOn="{StaticResource SecondaryTextStyle}">
                                 <Setter Property="FontSize" Value="{Binding DataContext.FontScale, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource ScaledFontSizeConverter}, ConverterParameter=11}"/>
@@ -381,21 +445,31 @@
                     </TextBlock>
                     <TextBlock Grid.Column="1"
                                Text=" | "
-                               Style="{StaticResource SecondaryTextStyle}"
                                FontSize="11"
                                Margin="4,0"
-                               VerticalAlignment="Center"
-                               Visibility="{Binding WeatherRangeLine, Converter={StaticResource StringNotEmptyToVisibilityConverter}}"/>
+                               VerticalAlignment="Center">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock" BasedOn="{StaticResource SecondaryTextStyle}">
+                                <Setter Property="Visibility" Value="{Binding WeatherRangeLine, Converter={StaticResource StringNotEmptyToVisibilityConverter}}"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding DataContext.IsPanelCollapsed, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
                     <TextBlock Grid.Column="2"
                                Text="{Binding WeatherRangeLine}"
                                VerticalAlignment="Center"
-                               TextAlignment="Right"
-                               Visibility="{Binding WeatherRangeLine, Converter={StaticResource StringNotEmptyToVisibilityConverter}}">
+                               TextAlignment="Right">
                         <TextBlock.Style>
                             <Style TargetType="TextBlock" BasedOn="{StaticResource SecondaryTextStyle}">
+                                <Setter Property="Visibility" Value="{Binding WeatherRangeLine, Converter={StaticResource StringNotEmptyToVisibilityConverter}}"/>
                                 <Setter Property="FontSize" Value="{Binding DataContext.FontScale, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource ScaledFontSizeConverter}, ConverterParameter=11}"/>
                                 <Style.Triggers>
                                     <DataTrigger Binding="{Binding DataContext.IsPanelCollapsed, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
                                         <Setter Property="FontSize" Value="9"/>
                                     </DataTrigger>
                                 </Style.Triggers>
@@ -403,214 +477,134 @@
                         </TextBlock.Style>
                     </TextBlock>
                 </Grid>
-
-                <TextBlock Grid.Row="3"
-                           HorizontalAlignment="Stretch"
-                           Margin="0,2,0,0"
-                           TextAlignment="Right"
-                           TextWrapping="NoWrap"
-                           TextTrimming="CharacterEllipsis"
-                           Foreground="{DynamicResource SecondaryTextBrush}">
-                    <TextBlock.Style>
-                        <Style TargetType="TextBlock">
-                            <Setter Property="FontSize" Value="{Binding DataContext.FontScale, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource ScaledFontSizeConverter}, ConverterParameter=10, FallbackValue=10}"/>
-                            <Style.Triggers>
-                                <DataTrigger Binding="{Binding DataContext.IsPanelCollapsed, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
-                                    <Setter Property="FontSize" Value="8"/>
-                                </DataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </TextBlock.Style>
-                    <Hyperlink x:Name="QWeatherAttributionLink"
-                               NavigateUri="https://www.qweather.com"
-                               RequestNavigate="QWeatherAttributionLink_OnRequestNavigate"
-                               Foreground="{DynamicResource SecondaryTextBrush}"
-                               TextDecorations="{x:Null}">
-                        <Run Text="&#xE707;" FontFamily="Segoe MDL2 Assets" FontSize="8"/>
-                        <Run Text=" "/>
-                        <Run Text="{DynamicResource Weather.QWeatherAttribution}"/>
-                    </Hyperlink>
-                </TextBlock>
             </Grid>
 
-            <Border x:Name="CompactStatusStrip"
-                    Grid.Row="1"
-                    Grid.ColumnSpan="3"
-                    Margin="0,4,0,0"
-                    Padding="8,2"
-                    CornerRadius="8"
+            <Grid x:Name="CompactWeatherSummary" Grid.Row="0" Grid.Column="2" VerticalAlignment="Center" ClipToBounds="True">
+                <Grid.Style>
+                    <Style TargetType="Grid">
+                        <Setter Property="Visibility" Value="Collapsed"/>
+                        <Style.Triggers>
+                            <MultiDataTrigger>
+                                <MultiDataTrigger.Conditions>
+                                    <Condition Binding="{Binding DataContext.IsPanelCollapsed, RelativeSource={RelativeSource AncestorType=Window}}" Value="True"/>
+                                    <Condition Binding="{Binding DataContext.CompactLayout.ShowTimeWeather, RelativeSource={RelativeSource AncestorType=Window}}" Value="True"/>
+                                </MultiDataTrigger.Conditions>
+                                <Setter Property="Visibility" Value="Visible"/>
+                            </MultiDataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Grid.Style>
+                <Grid.ToolTip>
+                    <StackPanel>
+                        <TextBlock Text="{Binding CompactWeatherLocationLine}"/>
+                        <TextBlock Text="{Binding WeatherRangeLine}" Visibility="{Binding WeatherRangeLine, Converter={StaticResource StringNotEmptyToVisibilityConverter}}"/>
+                        <TextBlock Text="{Binding CompactWeatherDetailLine}" Visibility="{Binding CompactWeatherDetailLine, Converter={StaticResource StringNotEmptyToVisibilityConverter}}"/>
+                        <TextBlock Text="{Binding WeatherAirQualityAttributionText}" Visibility="{Binding WeatherAirQualityAttributionText, Converter={StaticResource StringNotEmptyToVisibilityConverter}}"/>
+                    </StackPanel>
+                </Grid.ToolTip>
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                        <Grid Width="32" Height="32" Margin="0,0,5,0" Visibility="{Binding HasWeatherData, Converter={StaticResource BooleanToVisibilityConverter}}">
+                            <Image Source="{Binding WeatherIconImage}" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality"
+                                   Visibility="{Binding UseWeatherIconImage, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                            <TextBlock Text="{Binding WeatherIconGlyph}" FontFamily="{StaticResource QWeatherIconsFont}" FontSize="28"
+                                       Foreground="{Binding WeatherIconForeground}" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                       Visibility="{Binding UseWeatherIconImage, Converter={StaticResource InverseBooleanToVisibilityConverter}}"/>
+                        </Grid>
+                        <TextBlock Text="{Binding WeatherTemperature}" FontSize="21" FontWeight="SemiBold" VerticalAlignment="Center"
+                                   Foreground="{DynamicResource PrimaryTextBrush}"/>
+                    </StackPanel>
+                    <TextBlock Text="{Binding CompactWeatherLocationLine}" FontSize="10" Margin="0,3,0,0" TextAlignment="Center"
+                               TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" Foreground="{DynamicResource SecondaryTextBrush}"/>
+                    <TextBlock Text="{Binding CompactWeatherDetailLine}" FontSize="9" Margin="0,4,0,0" TextAlignment="Center"
+                               TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" Foreground="{DynamicResource SecondaryTextBrush}"
+                               Visibility="{Binding CompactWeatherDetailLine, Converter={StaticResource StringNotEmptyToVisibilityConverter}}"/>
+                </StackPanel>
+            </Grid>
+
+            <Border x:Name="CompactStatusStrip" Grid.Row="1" Grid.ColumnSpan="3" Padding="8,2" CornerRadius="8"
                     Background="{DynamicResource CardSurfaceBrush}">
                 <Border.Style>
                     <Style TargetType="Border">
                         <Setter Property="Visibility" Value="Collapsed"/>
+                        <Setter Property="Margin" Value="{Binding DataContext.CompactLayout.StatusMargin, RelativeSource={RelativeSource AncestorType=Window}}"/>
                         <Style.Triggers>
-                            <DataTrigger Binding="{Binding DataContext.IsPanelCollapsed, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
+                            <MultiDataTrigger>
+                                <MultiDataTrigger.Conditions>
+                                    <Condition Binding="{Binding DataContext.IsPanelCollapsed, RelativeSource={RelativeSource AncestorType=Window}}" Value="True"/>
+                                    <Condition Binding="{Binding DataContext.CompactLayout.HasStatus, RelativeSource={RelativeSource AncestorType=Window}}" Value="True"/>
+                                </MultiDataTrigger.Conditions>
                                 <Setter Property="Visibility" Value="Visible"/>
-                            </DataTrigger>
+                            </MultiDataTrigger>
                         </Style.Triggers>
                     </Style>
                 </Border.Style>
                 <Border.Resources>
-                    <Style x:Key="CompactBodyTextStyle" TargetType="TextBlock" BasedOn="{StaticResource BodyTextStyle}">
+                    <Style x:Key="CompactBodyTextStyle" TargetType="TextBlock">
                         <Setter Property="FontSize" Value="10"/>
-                        <Setter Property="LineHeight" Value="16"/>
-                        <Setter Property="LineStackingStrategy" Value="BlockLineHeight"/>
-                        <Setter Property="Height" Value="16"/>
                         <Setter Property="FontWeight" Value="Normal"/>
                         <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
                         <Setter Property="VerticalAlignment" Value="Center"/>
                         <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
                         <Setter Property="TextWrapping" Value="NoWrap"/>
-                        <Setter Property="TextOptions.TextFormattingMode" Value="Display"/>
-                    </Style>
-                    <Style x:Key="CompactStatusTextStyle" TargetType="TextBlock" BasedOn="{StaticResource CaptionTextStyle}">
-                        <Setter Property="FontSize" Value="10"/>
-                        <Setter Property="LineHeight" Value="16"/>
-                        <Setter Property="LineStackingStrategy" Value="BlockLineHeight"/>
-                        <Setter Property="Height" Value="16"/>
-                        <Setter Property="VerticalAlignment" Value="Center"/>
-                        <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
-                        <Setter Property="TextWrapping" Value="NoWrap"/>
-                        <Setter Property="TextOptions.TextFormattingMode" Value="Display"/>
                     </Style>
                 </Border.Resources>
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                    </Grid.RowDefinitions>
-
-                    <Grid x:Name="CompactModelRadarSummary"
-                          Grid.Row="0"
-                          Height="32"
-                          Margin="0,0,0,1"
+                <StackPanel>
+                    <Grid x:Name="CompactModelRadarSummary" Height="24"
                           ToolTip="{Binding DataContext.ModelRadar.CompactToolTipText, RelativeSource={RelativeSource AncestorType=Window}}"
-                          Visibility="{Binding DataContext.ModelRadar.IsCompactSummaryVisible, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BooleanToVisibilityConverter}}">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="1"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-                        <Border x:Name="CompactModelRadarVerticalDivider"
-                                Grid.Column="1"
-                                Width="1"
-                                Margin="0,2"
-                                Background="{DynamicResource DividerBrush}"
-                                Opacity="0.45"
-                                Visibility="{Binding DataContext.ModelRadar.HasCompactRecommendations, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                          Visibility="{Binding DataContext.CompactLayout.ShowModelRadar, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BooleanToVisibilityConverter}}">
                         <Grid x:Name="CompactModelRadarOverallRecommendation"
-                              Grid.Column="0"
+                              HorizontalAlignment="Center"
                               Visibility="{Binding DataContext.ModelRadar.HasCompactRecommendations, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BooleanToVisibilityConverter}}">
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="16"/>
-                                <RowDefinition Height="16"/>
-                            </Grid.RowDefinitions>
-                            <StackPanel Grid.Row="0"
-                                        Orientation="Horizontal"
-                                        HorizontalAlignment="Center">
-                                <TextBlock x:Name="CompactModelRadarOverallLabelText"
-                                           FontWeight="Medium"
-                                           TextTrimming="None"
-                                           Style="{StaticResource CompactBodyTextStyle}"
-                                           Text="{Binding DataContext.ModelRadar.CompactOverallLabelText, RelativeSource={RelativeSource AncestorType=Window}}"/>
-                                <TextBlock x:Name="CompactModelRadarOverallScoreText"
-                                           Margin="6,0,0,0"
-                                           Style="{StaticResource CompactBodyTextStyle}"
-                                           Text="{Binding DataContext.ModelRadar.CompactOverallScoreText, RelativeSource={RelativeSource AncestorType=Window}}"/>
-                            </StackPanel>
-                            <TextBlock x:Name="CompactModelRadarOverallModelText"
-                                       Grid.Row="1"
-                                       HorizontalAlignment="Center"
-                                       TextAlignment="Center"
-                                       TextTrimming="None"
-                                       Style="{StaticResource CompactBodyTextStyle}"
-                                       Text="{Binding DataContext.ModelRadar.CompactOverallModelText, RelativeSource={RelativeSource AncestorType=Window}}"/>
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                            <TextBlock Text="{Binding DataContext.ModelRadar.CompactOverallLabelText, RelativeSource={RelativeSource AncestorType=Window}}"
+                                       Style="{StaticResource CompactBodyTextStyle}" FontSize="9" MaxWidth="52"
+                                       Foreground="{DynamicResource SecondaryTextBrush}" Margin="0,0,6,0"/>
+                            <TextBlock Grid.Column="1" Text="{Binding DataContext.ModelRadar.CompactOverallModelNameText, RelativeSource={RelativeSource AncestorType=Window}}"
+                                       Style="{StaticResource CompactBodyTextStyle}" FontSize="11" FontWeight="SemiBold"/>
+                            <Border Grid.Column="2" CornerRadius="4" Padding="4,1" Margin="4,0,0,0" VerticalAlignment="Center"
+                                    Background="{DynamicResource GlassHighlightBrush}">
+                                <TextBlock Text="{Binding DataContext.ModelRadar.CompactOverallEffortText, RelativeSource={RelativeSource AncestorType=Window}}"
+                                           Style="{StaticResource CompactBodyTextStyle}" FontSize="9"/>
+                            </Border>
+                            <TextBlock Grid.Column="3" Text="{Binding DataContext.ModelRadar.CompactOverallScoreText, RelativeSource={RelativeSource AncestorType=Window}}"
+                                       Style="{StaticResource CompactBodyTextStyle}" FontSize="11" FontWeight="SemiBold" Margin="6,0,0,0"/>
                         </Grid>
-                        <Grid x:Name="CompactModelRadarValueRecommendation"
-                              Grid.Column="2"
-                              Visibility="{Binding DataContext.ModelRadar.HasCompactRecommendations, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BooleanToVisibilityConverter}}">
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="16"/>
-                                <RowDefinition Height="16"/>
-                            </Grid.RowDefinitions>
-                            <StackPanel Grid.Row="0"
-                                        Orientation="Horizontal"
-                                        HorizontalAlignment="Center">
-                                <TextBlock x:Name="CompactModelRadarValueLabelText"
-                                           FontWeight="Medium"
-                                           TextTrimming="None"
-                                           Style="{StaticResource CompactBodyTextStyle}"
-                                           Text="{Binding DataContext.ModelRadar.CompactValueLabelText, RelativeSource={RelativeSource AncestorType=Window}}"/>
-                                <TextBlock x:Name="CompactModelRadarValueScoreText"
-                                           Margin="6,0,0,0"
-                                           Style="{StaticResource CompactBodyTextStyle}"
-                                           Text="{Binding DataContext.ModelRadar.CompactValueScoreText, RelativeSource={RelativeSource AncestorType=Window}}"/>
-                            </StackPanel>
-                            <TextBlock x:Name="CompactModelRadarValueModelText"
-                                       Grid.Row="1"
-                                       HorizontalAlignment="Center"
-                                       TextAlignment="Center"
-                                       TextTrimming="None"
-                                       Style="{StaticResource CompactBodyTextStyle}"
-                                       Text="{Binding DataContext.ModelRadar.CompactValueModelText, RelativeSource={RelativeSource AncestorType=Window}}"/>
-                        </Grid>
-                        <TextBlock x:Name="CompactModelRadarStatusText"
-                                   Grid.ColumnSpan="3"
-                                   Style="{StaticResource CompactStatusTextStyle}"
-                                   Foreground="{DynamicResource SecondaryTextBrush}"
-                                   Text="{Binding DataContext.ModelRadar.CompactStatusText, RelativeSource={RelativeSource AncestorType=Window}}"
+                        <TextBlock Text="{Binding DataContext.ModelRadar.CompactStatusText, RelativeSource={RelativeSource AncestorType=Window}}"
+                                   Style="{StaticResource CompactBodyTextStyle}"
                                    Visibility="{Binding DataContext.ModelRadar.HasCompactRecommendations, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource InverseBooleanToVisibilityConverter}}"/>
                     </Grid>
-
-                    <Border Grid.Row="1">
+                    <Border x:Name="CompactTodoStrip" Height="24"
+                            Visibility="{Binding DataContext.CompactLayout.ShowTodos, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BooleanToVisibilityConverter}}">
                         <Border.Style>
                             <Style TargetType="Border">
-                                <Setter Property="BorderThickness" Value="0"/>
-                                <Setter Property="Padding" Value="0"/>
+                                <Setter Property="BorderBrush" Value="{DynamicResource DividerBrush}"/>
                                 <Style.Triggers>
-                                    <DataTrigger Binding="{Binding DataContext.ModelRadar.IsCompactSummaryVisible, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
-                                        <Setter Property="BorderBrush" Value="{DynamicResource DividerBrush}"/>
+                                    <DataTrigger Binding="{Binding DataContext.CompactLayout.ShowModelRadar, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
                                         <Setter Property="BorderThickness" Value="0,1,0,0"/>
-                                        <Setter Property="Padding" Value="0,1,0,0"/>
                                     </DataTrigger>
                                 </Style.Triggers>
                             </Style>
                         </Border.Style>
-                        <Grid x:Name="CompactTodoSummary" Height="16">
-                            <Grid Height="16"
-                                  Visibility="{Binding DataContext.Todos.HasCollapsedPanelTodo, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BooleanToVisibilityConverter}}">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                </Grid.ColumnDefinitions>
-                                <Ellipse Grid.Column="0"
-                                         Width="7"
-                                         Height="7"
-                                         Fill="{Binding DataContext.Todos.CollapsedPanelTodo.Priority, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource TodoPriorityBrush}}"
-                                         VerticalAlignment="Center"
-                                         Margin="0,0,7,0"/>
-                                <TextBlock x:Name="CompactTodoTitleText"
-                                           Grid.Column="1"
-                                           Style="{StaticResource CompactBodyTextStyle}"
+                        <Grid x:Name="CompactTodoSummary" ToolTip="{Binding DataContext.Todos.CollapsedPanelTodo.Title, RelativeSource={RelativeSource AncestorType=Window}}">
+                            <Grid Visibility="{Binding DataContext.Todos.HasCollapsedPanelTodo, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                <Ellipse Width="7" Height="7" Margin="0,0,7,0" VerticalAlignment="Center"
+                                         Fill="{Binding DataContext.Todos.CollapsedPanelTodo.Priority, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource TodoPriorityBrush}}"/>
+                                <TextBlock x:Name="CompactTodoTitleText" Grid.Column="1" Style="{StaticResource CompactBodyTextStyle}"
                                            Text="{Binding DataContext.Todos.CollapsedPanelTodo.Title, RelativeSource={RelativeSource AncestorType=Window}}"/>
-                                <TextBlock x:Name="CompactTodoDueText"
-                                           Grid.Column="2"
-                                           Style="{StaticResource CompactBodyTextStyle}"
-                                           Foreground="{DynamicResource AccentBrush}"
-                                           Margin="8,0,0,0"
+                                <TextBlock x:Name="CompactTodoDueText" Grid.Column="2" Style="{StaticResource CompactBodyTextStyle}"
+                                           Foreground="{DynamicResource AccentBrush}" Margin="8,0,0,0"
                                            Text="{Binding DataContext.Todos.CollapsedPanelTodoDueText, RelativeSource={RelativeSource AncestorType=Window}}"
                                            Visibility="{Binding DataContext.Todos.CollapsedPanelTodoDueText, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource StringNotEmptyToVisibilityConverter}}"/>
                             </Grid>
-                            <TextBlock Text="{DynamicResource Todo.NoData}"
-                                       Style="{StaticResource CompactStatusTextStyle}"
+                            <TextBlock Text="{DynamicResource Todo.NoData}" Style="{StaticResource CompactBodyTextStyle}"
                                        Foreground="{DynamicResource SecondaryTextBrush}"
                                        Visibility="{Binding DataContext.Todos.HasCollapsedPanelTodo, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource InverseBooleanToVisibilityConverter}}"/>
                         </Grid>
                     </Border>
-                </Grid>
+                </StackPanel>
             </Border>
-    
             <Popup PlacementTarget="{Binding ElementName=ClockHotspot}"
                    Placement="Left"
                    AllowsTransparency="True"

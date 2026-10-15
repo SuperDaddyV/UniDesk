@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Controls;
+using System.Runtime.InteropServices;
 using Hardcodet.Wpf.TaskbarNotification;
 using UniDesk.Helpers;
 
@@ -10,6 +11,9 @@ public class TrayService : ITrayService, IDisposable
     private TaskbarIcon? _notifyIcon;
     private readonly INotificationService _notificationService;
     private readonly ILocalizationService _localizationService;
+    private readonly Func<Point?> _getPhysicalCursorPosition;
+    private Point? _rightClickPosition;
+    private bool _rightClickCaptured;
     private bool _disposed;
 
     public event Action? TrayIconDoubleClick;
@@ -19,9 +23,18 @@ public class TrayService : ITrayService, IDisposable
     public TrayService(
         INotificationService notificationService,
         ILocalizationService localizationService)
+        : this(notificationService, localizationService, GetPhysicalCursorPosition)
+    {
+    }
+
+    internal TrayService(
+        INotificationService notificationService,
+        ILocalizationService localizationService,
+        Func<Point?> getPhysicalCursorPosition)
     {
         _notificationService = notificationService;
         _localizationService = localizationService;
+        _getPhysicalCursorPosition = getPhysicalCursorPosition;
         _localizationService.LanguageChanged += LocalizationService_OnLanguageChanged;
     }
 
@@ -35,6 +48,22 @@ public class TrayService : ITrayService, IDisposable
         // Hardcodet 1.1.0 resolves nonempty ToolTipText to a WPF ToolTip even
         // without TrayToolTip. Suppress opening before assigning the Shell name.
         _notifyIcon.PreviewTrayToolTipOpen += (_, e) => e.Handled = true;
+        _notifyIcon.TrayRightMouseUp += (_, _) =>
+        {
+            // Raised before Hardcodet converts the cursor point to logical coordinates.
+            _rightClickPosition = _getPhysicalCursorPosition();
+            _rightClickCaptured = true;
+        };
+        _notifyIcon.PreviewTrayContextMenuOpen += (_, e) =>
+        {
+            var position = _rightClickCaptured ? _rightClickPosition : _getPhysicalCursorPosition();
+            _rightClickCaptured = false;
+            _rightClickPosition = null;
+            if (position is not { } point ||
+                _notifyIcon.ContextMenu is not UniDesk.Controls.TrayContextMenu contextMenu ||
+                !contextMenu.TryPrepareOpening(point))
+                e.Handled = true;
+        };
         _notifyIcon.ToolTipText = GetToolTipText();
         _notifyIcon.Icon = AppIconHelper.GetTrayIcon() ?? AppIconHelper.CreateDefaultTrayIcon();
         _notifyIcon.Visibility = Visibility.Visible;
@@ -53,7 +82,7 @@ public class TrayService : ITrayService, IDisposable
             Source = new Uri("pack://application:,,,/UniDesk;component/Resources/TrayMenu.xaml")
         };
 
-        var menu = new ContextMenu
+        var menu = new UniDesk.Controls.TrayContextMenu
         {
             Style = resources["TrayContextMenuStyle"] as Style
         };
@@ -101,6 +130,20 @@ public class TrayService : ITrayService, IDisposable
     private string GetToolTipText() => $"UniDesk - {L("Common.AppDescription")}";
 
     private string L(string key) => _localizationService.GetString(key);
+
+    private static Point? GetPhysicalCursorPosition() =>
+        GetPhysicalCursorPos(out var point) ? new Point(point.X, point.Y) : null;
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool GetPhysicalCursorPos(out NativePoint point);
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct NativePoint
+    {
+        public int X;
+        public int Y;
+    }
 
     public void Dispose()
     {

@@ -3,7 +3,7 @@
 ; overrides all source and output directories so historical publish output is never reused.
 
 #define MyAppName "UniDesk"
-#define MyAppVersion "2.2.2"
+#define MyAppVersion "2.2.3"
 #define MyAppPublisher "UniDesk"
 #define MyAppURL "https://github.com/SuperDaddyV/UniDesk"
 #define MyAppExeName "UniDesk.exe"
@@ -28,6 +28,7 @@
 #define MyAppIconSourceDir "UniDesk\icon"
 #define MyAppIconName "unidesk1-removebg-preview.ico"
 #define MyAppMutex "UniDesk_SingleInstance_Mutex_6B9BD6F1-8E3A-4C5D-9F2B-1A7C8D3E5F9A"
+#define MyRuntimeAppMutex "UniDesk.SingleInstance.6B9BD6F1-8E3A-4C5D-9F2B-1A7C8D3E5F9A.Mutex"
 #define HardwareServiceName "UniDeskHardwareService"
 
 [Setup]
@@ -65,7 +66,7 @@ ShowLanguageDialog=yes
 CloseApplications=yes
 RestartApplications=no
 UsePreviousTasks=no
-AppMutex={#MyAppMutex}
+AppMutex={code:GetApplicationMutex}
 SetupIconFile={#MyAppIconSourceDir}\{#MyAppIconName}
 UninstallDisplayIcon={app}\icon\{#MyAppIconName}
 
@@ -76,6 +77,10 @@ Name: "japanese"; MessagesFile: "compiler:Languages\Japanese.isl"
 Name: "spanish"; MessagesFile: "compiler:Languages\Spanish.isl"
 
 [CustomMessages]
+chinesesimp.ApplicationExitFailed=旧版 UniDesk 未能正常退出，安装已停止，尚未替换程序文件。请保存正在编辑的内容，从托盘退出 UniDesk 后重试。安装日志：%1
+english.ApplicationExitFailed=The previous UniDesk could not exit normally. Setup stopped before replacing application files. Save your edits, exit UniDesk from the tray, and retry. Setup log: %1
+japanese.ApplicationExitFailed=以前の UniDesk を正常に終了できませんでした。ファイルを置き換える前にインストールを停止しました。編集中の内容を保存し、トレイから UniDesk を終了して再試行してください。ログ：%1
+spanish.ApplicationExitFailed=La versión anterior de UniDesk no pudo cerrarse normalmente. La instalación se detuvo antes de reemplazar archivos. Guarde los cambios, salga de UniDesk desde la bandeja y reintente. Registro: %1
 chinesesimp.LaunchProgram=启动 %1
 chinesesimp.CompleteHardwareTask=安装完整硬件监控组件（推荐，将安装 PawnIO 驱动和以 LocalSystem 运行的只读硬件监控服务）
 chinesesimp.HardwareMonitoringGroup=硬件监控
@@ -159,6 +164,8 @@ Name: "{commonappdata}\UniDesk"; Permissions: admins-full system-full
 Name: "{commonappdata}\UniDesk\logs"; Permissions: admins-full system-full
 
 [Files]
+; Extract the new maintenance tool into Setup's private temporary directory before copying payloads.
+Source: "{#MyHardwareRepairSourceDir}\*"; DestDir: "{tmp}\UniDeskUpdate"; Excludes: "*.pdb"; Flags: dontcopy recursesubdirs createallsubdirs
 ; Package the release output, including dlls, runtimeconfig, deps and native runtimes.
 Source: "{#MyAppSourceDir}\*"; DestDir: "{app}"; Excludes: "icon\*;*.pdb"; Flags: ignoreversion recursesubdirs createallsubdirs
 ; Package the complete icon assets from the project source directory.
@@ -213,6 +220,59 @@ var
   ValidatedAclTarget: String;
   StoppedOwnedHardwareService: Boolean;
   HardwareCompatibilityMode: Boolean;
+  ShutdownLegacyApplicationPath: String;
+  UpdatePreflightExtracted: Boolean;
+
+function GetApplicationMutex(Param: String): String;
+begin
+  Result := '';
+  if IsUninstaller then
+    Result := '{#MyRuntimeAppMutex},{#MyAppMutex}';
+end;
+
+function RunApplicationPreflight(ApplicationDirectory, Operation: String): Boolean;
+var
+  ResultCode: Integer;
+  HelperPath: String;
+begin
+  Result := False;
+  if ApplicationDirectory = '' then
+  begin
+    Result := True;
+    Exit;
+  end;
+  try
+    if not UpdatePreflightExtracted then
+    begin
+      ExtractTemporaryFiles('{tmp}\UniDeskUpdate\*');
+      UpdatePreflightExtracted := True;
+    end;
+    HelperPath := ExpandConstant('{tmp}\UniDeskUpdate\UniDesk.HardwareRepair.exe');
+    Result := Exec(HelperPath,
+      Operation + ' "' + AddBackslash(ApplicationDirectory) + '{#MyAppExeName}"',
+      ExtractFileDir(HelperPath), SW_HIDE, ewWaitUntilTerminated, ResultCode);
+    Result := Result and (ResultCode = 0);
+    Log('Application preflight ' + Operation + ' for ' + ApplicationDirectory +
+      ' returned ' + IntToStr(ResultCode) + '.');
+  except
+    Log('Could not extract or execute the bundled application preflight: ' + GetExceptionMessage);
+    Result := False;
+  end;
+end;
+
+function CloseInstalledApplications: Boolean;
+begin
+  Result := RunApplicationPreflight(ExpandConstant('{app}'), '--close-application');
+  if Result then
+    Result := RunApplicationPreflight(ShutdownLegacyApplicationPath, '--close-application');
+end;
+
+function VerifyInstalledApplicationsExited: Boolean;
+begin
+  Result := RunApplicationPreflight(ExpandConstant('{app}'), '--check-application');
+  if Result then
+    Result := RunApplicationPreflight(ShutdownLegacyApplicationPath, '--check-application');
+end;
 
 function CleanupOwnedStartupEntries: Boolean; forward;
 function SetEnvironmentVariable(Name, Value: String): Boolean;
@@ -1537,6 +1597,7 @@ begin
   Result := '';
   LegacyUninstallerCleanupPath := '';
   LegacyRegisteredUninstallerPath := '';
+  ShutdownLegacyApplicationPath := '';
   PreviousInstallationExists := GetPreviousUniDeskApplicationDirectory(
     LegacyInstallPath);
   if LegacyRegisteredPathInvalid then
@@ -1582,7 +1643,10 @@ begin
     end;
 
     if not IsSameDirectory(LegacyInstallPath, ExpandConstant('{app}')) then
+    begin
+      ShutdownLegacyApplicationPath := LegacyInstallPath;
       ReleaseApplicationPathLocks;
+    end;
   end;
 
   if (not ForceDirectories(ExpandConstant('{app}'))) or
@@ -1621,6 +1685,12 @@ begin
   begin
     Result := FmtMessage(
       ExpandConstant('{cm:HardwareAclFailed}'), [ExpandConstant('{log}')]);
+    Exit;
+  end;
+
+  if not CloseInstalledApplications then
+  begin
+    Result := FmtMessage(ExpandConstant('{cm:ApplicationExitFailed}'), [ExpandConstant('{log}')]);
     Exit;
   end;
 
@@ -1749,6 +1819,9 @@ end;
 
 procedure CurStepChanged(CurStep: TSetupStep);
 begin
+  if (CurStep = ssInstall) and (not VerifyInstalledApplicationsExited) then
+    RaiseException(FmtMessage(ExpandConstant('{cm:ApplicationExitFailed}'), [ExpandConstant('{log}')]));
+
   if CurStep <> ssPostInstall then
     Exit;
 

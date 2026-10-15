@@ -11,7 +11,11 @@ public sealed record ModelRadarDecisionCard
     public string ReasoningEffort { get; init; } = string.Empty;
     public string ScoreText { get; init; } = "--";
     public string DimensionSummary { get; init; } = string.Empty;
+    public IReadOnlyList<ModelRadarDimension> Dimensions { get; init; } = [];
+    public string ToolTipText { get; init; } = string.Empty;
 }
+
+public sealed record ModelRadarDimension(string Label, string ScoreText);
 
 public sealed record ModelRadarDisplayRow
 {
@@ -83,13 +87,20 @@ public partial class ModelRadarViewModel : ObservableObject, IDisposable
 
     public bool CanRefresh => IsEnabled && !IsRefreshing;
 
-    public bool IsOverallCategoryEnabled => Snapshot is { IsPending: false };
+    public bool IsOverallCategoryEnabled => Snapshot?.OverallTop.Count > 0;
 
-    public bool IsBackendCategoryEnabled => Snapshot != null;
+    public bool IsBackendCategoryEnabled => Snapshot?.BackendTop.Count > 0;
 
-    public bool IsFrontendCategoryEnabled => Snapshot is { IsPending: false };
+    public bool IsFrontendCategoryEnabled => Snapshot?.FrontendTop.Count > 0;
 
-    public bool IsKnowledgeCategoryEnabled => Snapshot is { IsPending: false };
+    public bool IsKnowledgeCategoryEnabled => Snapshot?.KnowledgeTop.Count > 0;
+
+    public bool IsAestheticCategoryEnabled => Snapshot?.AestheticTop.Count > 0;
+
+    public bool IsMaintainabilityCategoryEnabled => Snapshot?.MaintainabilityTop.Count > 0;
+
+    public string ScoreBasisText => Snapshot == null ? string.Empty : L(
+        Snapshot.IsLegacySnapshot ? "ModelRadar.LegacyBasis" : "ModelRadar.FiveAxisBasis");
 
     public bool HasSnapshot => Snapshot != null;
 
@@ -111,8 +122,16 @@ public partial class ModelRadarViewModel : ObservableObject, IDisposable
 
     public string CompactOverallLabelText =>
         HasCompactRecommendations
-            ? L("ModelRadar.CompactOverallLabel")
+            ? string.IsNullOrEmpty(CompactFreshnessPrefix)
+                ? L("ModelRadar.CompactOverallLabel")
+                : CompactFreshnessPrefix.TrimEnd(' ', '·')
             : string.Empty;
+
+    public string CompactOverallModelNameText =>
+        HasCompactRecommendations && Snapshot?.OverallLeader is { } leader ? DisplayModel(leader) : string.Empty;
+
+    public string CompactOverallEffortText =>
+        HasCompactRecommendations && Snapshot?.OverallLeader is { } leader ? FormatDisplayReasoningEffort(leader.ReasoningEffort) : string.Empty;
 
     public string CompactOverallModelText =>
         HasCompactRecommendations && Snapshot?.OverallLeader is { } leader
@@ -121,7 +140,7 @@ public partial class ModelRadarViewModel : ObservableObject, IDisposable
 
     public string CompactOverallScoreText =>
         HasCompactRecommendations && Snapshot?.OverallLeader is { } leader
-            ? FormatScore(leader.OverallScore)
+            ? FormatOverallScore(leader.OverallScore)
             : string.Empty;
 
     public string CompactValueLabelText =>
@@ -138,7 +157,7 @@ public partial class ModelRadarViewModel : ObservableObject, IDisposable
 
     public string CompactValueScoreText =>
         HasCompactRecommendations && Snapshot?.ValueRecommendation is { } value
-            ? FormatScore(value.OverallScore)
+            ? FormatOverallScore(value.OverallScore)
             : string.Empty;
 
     public string CompactOverallText =>
@@ -164,11 +183,6 @@ public partial class ModelRadarViewModel : ObservableObject, IDisposable
                 return string.Empty;
             }
 
-            if (Snapshot is { IsPending: false, ValueRecommendation: null })
-            {
-                return $"{CompactFreshnessPrefix}{L("ModelRadar.NoValueRecommendation")}";
-            }
-
             return $"{CompactFreshnessPrefix}{StatusText}";
         }
     }
@@ -183,14 +197,10 @@ public partial class ModelRadarViewModel : ObservableObject, IDisposable
             }
 
             var lines = new List<string>();
+            lines.Add(ScoreBasisText);
             if (HasCompactRecommendations)
             {
                 lines.Add(CompactOverallText);
-                lines.Add(CompactValueText);
-            }
-            else if (Snapshot is { IsPending: false, ValueRecommendation: null })
-            {
-                lines.Add(CompactValueText);
             }
 
             if (!string.IsNullOrWhiteSpace(PublishedText))
@@ -245,14 +255,9 @@ public partial class ModelRadarViewModel : ObservableObject, IDisposable
             "ModelRadar.PublishedFormat",
             Snapshot.PublishedAt.ToLocalTime().ToString("g", _localizationService.CurrentCulture));
 
-    public string RankingDescription => SelectedCategory switch
-    {
-        ModelRadarCategory.Overall => L("ModelRadar.OverallRankingDescription"),
-        ModelRadarCategory.Backend => L("ModelRadar.BackendRankingDescription"),
-        ModelRadarCategory.Frontend => L("ModelRadar.FrontendRankingDescription"),
-        ModelRadarCategory.Knowledge => L("ModelRadar.KnowledgeRankingDescription"),
-        _ => string.Empty
-    };
+    public string RankingDescription => Snapshot is { IsLegacySnapshot: true }
+        ? L("ModelRadar.LegacyRankingDescription")
+        : L("ModelRadar.RankingDescription");
 
     internal bool IsAutomaticRefreshScheduled { get; private set; }
 
@@ -363,7 +368,8 @@ public partial class ModelRadarViewModel : ObservableObject, IDisposable
                     CachedAtUtc: { } cachedAtUtc
                 })
             {
-                var isStale = _timeProvider.GetUtcNow() - cachedAtUtc >= _refreshInterval;
+                var isStale = cachedSnapshot.IsLegacySnapshot ||
+                              _timeProvider.GetUtcNow() - cachedAtUtc >= _refreshInterval;
                 ApplySnapshot(cachedSnapshot, isStale ? ModelRadarCacheState.Stale : ModelRadarCacheState.Fresh);
                 _nextAutomaticRefreshUtc = isStale
                     ? _timeProvider.GetUtcNow()
@@ -483,18 +489,14 @@ public partial class ModelRadarViewModel : ObservableObject, IDisposable
         Snapshot = snapshot;
         IsOfflineCache = false;
         State = snapshot.IsPending ? ModelRadarCacheState.Pending : state;
-        SelectedCategory = snapshot.IsPending ? ModelRadarCategory.Backend : SelectedCategory;
+        SelectedCategory = snapshot.IsPending && snapshot.BackendTop.Count > 0 ? ModelRadarCategory.Backend : SelectedCategory;
         if (!IsCategoryEnabled(SelectedCategory))
         {
-            SelectedCategory = ModelRadarCategory.Overall;
+            SelectedCategory = Enum.GetValues<ModelRadarCategory>().FirstOrDefault(IsCategoryEnabled);
         }
 
         RefreshVisibleRankings();
         RefreshPresentation();
-        OnPropertyChanged(nameof(IsOverallCategoryEnabled));
-        OnPropertyChanged(nameof(IsBackendCategoryEnabled));
-        OnPropertyChanged(nameof(IsFrontendCategoryEnabled));
-        OnPropertyChanged(nameof(IsKnowledgeCategoryEnabled));
     }
 
     private void ApplyFailure(ModelRadarServiceStatus status)
@@ -537,6 +539,8 @@ public partial class ModelRadarViewModel : ObservableObject, IDisposable
         ModelRadarCategory.Backend => IsBackendCategoryEnabled,
         ModelRadarCategory.Frontend => IsFrontendCategoryEnabled,
         ModelRadarCategory.Knowledge => IsKnowledgeCategoryEnabled,
+        ModelRadarCategory.Aesthetic => IsAestheticCategoryEnabled,
+        ModelRadarCategory.Maintainability => IsMaintainabilityCategoryEnabled,
         _ => false
     };
 
@@ -550,6 +554,8 @@ public partial class ModelRadarViewModel : ObservableObject, IDisposable
                 ModelRadarCategory.Backend => Snapshot.BackendTop,
                 ModelRadarCategory.Frontend => Snapshot.FrontendTop,
                 ModelRadarCategory.Knowledge => Snapshot.KnowledgeTop,
+                ModelRadarCategory.Aesthetic => Snapshot.AestheticTop,
+                ModelRadarCategory.Maintainability => Snapshot.MaintainabilityTop,
                 _ => []
             };
     }
@@ -573,6 +579,7 @@ public partial class ModelRadarViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(StatusText));
         OnPropertyChanged(nameof(PublishedText));
         OnPropertyChanged(nameof(RankingDescription));
+        OnPropertyChanged(nameof(ScoreBasisText));
         NotifyCompactSummaryChanged();
     }
 
@@ -591,6 +598,11 @@ public partial class ModelRadarViewModel : ObservableObject, IDisposable
                 ? string.Empty
                 : $"{localPublishedAt.ToString("MM/dd", _localizationService.CurrentCulture)} · ";
 
+            if (snapshot.IsLegacySnapshot)
+            {
+                prefix += $"{L("ModelRadar.CompactLegacyBasis")} · ";
+            }
+
             if (IsOfflineCache || State == ModelRadarCacheState.Stale)
             {
                 prefix += $"{L("ModelRadar.CompactCached")} · ";
@@ -605,13 +617,33 @@ public partial class ModelRadarViewModel : ObservableObject, IDisposable
             key,
             entry.Model,
             entry.ReasoningEffort,
-            FormatScore(entry.OverallScore));
+            FormatOverallScore(entry.OverallScore));
 
     private static string FormatCompactModel(ModelRadarEntry entry)
-        => $"{FormatDisplayModel(entry.Model)}/{FormatDisplayReasoningEffort(entry.ReasoningEffort)}";
+        => $"{DisplayModel(entry)}/{FormatDisplayReasoningEffort(entry.ReasoningEffort)}";
+
+    private static string DisplayModel(ModelRadarEntry entry) => FormatDisplayModel(
+        string.IsNullOrWhiteSpace(entry.ModelDisplayName) ? entry.Model : entry.ModelDisplayName);
 
     private static string FormatDisplayModel(string value)
     {
+        var words = value.Trim().Split(['-', ' '], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (words.Length > 0 && words[0].Equals("claude", StringComparison.OrdinalIgnoreCase))
+        {
+            var display = new List<string>();
+            var previousWasVersion = false;
+            foreach (var word in words)
+            {
+                var isVersion = word.Length <= 2 && word.All(char.IsAsciiDigit);
+                if (isVersion && previousWasVersion)
+                    display[^1] += "." + word;
+                else
+                    display.Add(FormatDisplayIdentifierSegment(word));
+                previousWasVersion = isVersion;
+            }
+            return string.Join(" ", display);
+        }
+
         var segments = value.Trim().Split(
             '-',
             StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
@@ -665,6 +697,8 @@ public partial class ModelRadarViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(HasCompactRecommendations));
         OnPropertyChanged(nameof(CompactOverallLabelText));
         OnPropertyChanged(nameof(CompactOverallModelText));
+        OnPropertyChanged(nameof(CompactOverallModelNameText));
+        OnPropertyChanged(nameof(CompactOverallEffortText));
         OnPropertyChanged(nameof(CompactOverallScoreText));
         OnPropertyChanged(nameof(CompactValueLabelText));
         OnPropertyChanged(nameof(CompactValueModelText));
@@ -678,14 +712,25 @@ public partial class ModelRadarViewModel : ObservableObject, IDisposable
     private ModelRadarDecisionCard CreateDecisionCard(ModelRadarEntry entry, double? score) =>
         new()
         {
-            ModelName = FormatDisplayModel(entry.Model),
+            ModelName = DisplayModel(entry),
             ReasoningEffort = FormatDisplayReasoningEffort(entry.ReasoningEffort),
-            ScoreText = FormatScore(score),
+            ScoreText = Snapshot is { IsPending: true } ? FormatScore(score) : FormatOverallScore(score),
+            ToolTipText = CreateDisplayRow(new ModelRadarListItem(0, entry, score)).ToolTipText,
+            Dimensions =
+            [
+                new(L("ModelRadar.BackendCategory"), FormatScore(entry.BackendScore)),
+                new(L("ModelRadar.FrontendCategory"), FormatScore(entry.FrontendScore)),
+                new(L("ModelRadar.KnowledgeCategory"), FormatScore(entry.KnowledgeScore)),
+                new(L("ModelRadar.AestheticCategory"), FormatScore(entry.AestheticScore)),
+                new(L("ModelRadar.MaintainabilityCategory"), FormatScore(entry.MaintainabilityScore))
+            ],
             DimensionSummary = _localizationService.Format(
                 "ModelRadar.DimensionSummaryFormat",
                 FormatScore(entry.BackendScore),
                 FormatScore(entry.FrontendScore),
-                FormatScore(entry.KnowledgeScore))
+                FormatScore(entry.KnowledgeScore),
+                FormatScore(entry.AestheticScore),
+                FormatScore(entry.MaintainabilityScore))
         };
 
     private ModelRadarDisplayRow CreateDisplayRow(ModelRadarListItem item)
@@ -696,10 +741,14 @@ public partial class ModelRadarViewModel : ObservableObject, IDisposable
             : string.Join(" · ", entry.DecisionTags);
         var tooltipLines = new List<string>
         {
-            $"{L("ModelRadar.OverallScore")}：{FormatScore(entry.OverallScore)}",
+            $"{entry.Model} / {entry.ReasoningEffort}",
+            ScoreBasisText,
+            $"{L("ModelRadar.OverallScore")}：{FormatOverallScore(entry.OverallScore)}",
             $"{L("ModelRadar.BackendScore")}：{FormatScore(entry.BackendScore)}",
             $"{L("ModelRadar.FrontendScore")}：{FormatScore(entry.FrontendScore)}",
             $"{L("ModelRadar.KnowledgeScore")}：{FormatScore(entry.KnowledgeScore)}",
+            $"{L("ModelRadar.AestheticScore")}：{FormatScore(entry.AestheticScore)}",
+            $"{L("ModelRadar.MaintainabilityScore")}：{FormatScore(entry.MaintainabilityScore)}",
             $"{L("ModelRadar.Elapsed")}：{FormatElapsed(entry.ElapsedMilliseconds)}",
             $"{L("ModelRadar.ReferenceCost")}：{FormatReferenceCost(entry.EstimatedReferenceCostUsd)}",
             $"{L("ModelRadar.Route")}：{(string.IsNullOrWhiteSpace(entry.Route) ? "--" : entry.Route)}"
@@ -710,9 +759,9 @@ public partial class ModelRadarViewModel : ObservableObject, IDisposable
         return new ModelRadarDisplayRow
         {
             Position = item.Position,
-            ModelName = FormatDisplayModel(entry.Model),
+            ModelName = DisplayModel(entry),
             ReasoningEffort = FormatDisplayReasoningEffort(entry.ReasoningEffort),
-            ScoreText = FormatScore(item.Score),
+            ScoreText = SelectedCategory == ModelRadarCategory.Overall ? FormatOverallScore(item.Score) : FormatScore(item.Score),
             DecisionTagsText = decisionTagsText,
             ToolTipText = string.Join(Environment.NewLine, tooltipLines)
         };
@@ -721,6 +770,10 @@ public partial class ModelRadarViewModel : ObservableObject, IDisposable
     private string FormatScore(double? value) => value is null
         ? "--"
         : value.Value.ToString("0.0", _localizationService.CurrentCulture);
+
+    private string FormatOverallScore(double? value) => value is null
+        ? "--"
+        : value.Value.ToString("0.00", _localizationService.CurrentCulture);
 
     private string FormatElapsed(long? value) => value is null
         ? "--"
@@ -796,6 +849,12 @@ public partial class ModelRadarViewModel : ObservableObject, IDisposable
 
     partial void OnSnapshotChanged(ModelRadarSnapshot? value)
     {
+        OnPropertyChanged(nameof(IsOverallCategoryEnabled));
+        OnPropertyChanged(nameof(IsBackendCategoryEnabled));
+        OnPropertyChanged(nameof(IsFrontendCategoryEnabled));
+        OnPropertyChanged(nameof(IsKnowledgeCategoryEnabled));
+        OnPropertyChanged(nameof(IsAestheticCategoryEnabled));
+        OnPropertyChanged(nameof(IsMaintainabilityCategoryEnabled));
         OnPropertyChanged(nameof(HasSnapshot));
         OnPropertyChanged(nameof(HasNoSnapshot));
         OnPropertyChanged(nameof(HasOverallLeader));

@@ -10,6 +10,57 @@ namespace UniDesk.Tests;
 public class TimeWeatherViewModelTests
 {
     [Fact]
+    public async Task DeferredWeather_ShouldNotFetchBeforeModuleSettingsEnableIt()
+    {
+        var weather = new FakeWeatherService { ApiKey = "test-fixture", RefreshResult = new WeatherInfo { City = "Fixture" } };
+        using var viewModel = new TimeWeatherViewModel(new FakeClockService(), weather,
+            new NoOpNotificationService(), new TestLocalizationService(), startWeatherTimer: false, initializeWeather: false);
+        Assert.Equal(0, weather.RefreshCalls);
+        viewModel.IsEnabled = false;
+        await viewModel.RefreshAfterSettingsAsync();
+        Assert.Equal(0, weather.RefreshCalls);
+        viewModel.IsEnabled = true;
+        await viewModel.InitializeAsync();
+        Assert.Equal(1, weather.RefreshCalls);
+    }
+
+    [Theory]
+    [InlineData("空气优", "湿度52%", "空气优 · 湿度52%")]
+    [InlineData("", "湿度52%", "湿度52%")]
+    [InlineData("空气优", "", "空气优")]
+    [InlineData("", "", "")]
+    public async Task CompactWeather_ShouldIncludeOnlyAvailableEnvironmentalData(string air, string humidity, string expected)
+    {
+        var weather = new FakeWeatherService
+        {
+            Cached = new WeatherInfo { City = "福州", Temperature = "26°C", WeatherDesc = "多云", AirQuality = air, Humidity = humidity },
+            ApiKey = string.Empty
+        };
+        using var viewModel = CreateViewModel(new FakeClockService(), weather);
+        await viewModel.InitializeAsync();
+        Assert.Equal(expected, viewModel.CompactWeatherDetailLine);
+        Assert.Equal("福州 · 多云", viewModel.CompactWeatherLocationLine);
+    }
+
+    [Theory]
+    [InlineData("zh-CN", "2026/10/14 周三", "2026年10月14日 星期三")]
+    [InlineData("en-US", "2026/10/14 Wed", "Oct 14, 2026")]
+    [InlineData("ja-JP", "2026/10/14 水", "2026年10月14日（水）")]
+    [InlineData("es-ES", "2026/10/14 mié", "14 oct 2026")]
+    public void Clock_ShouldKeepShortSingleLineDateAndFullCalendarDate(string language, string shortDate, string fullDate)
+    {
+        var clock = new FakeClockService { CurrentTime = new DateTime(2026, 10, 14) };
+        using var viewModel = new TimeWeatherViewModel(clock, new FakeWeatherService(),
+            new NoOpNotificationService(), new TestLocalizationService(language), startWeatherTimer: false);
+
+        Assert.Equal(shortDate, viewModel.ClockShortDateText);
+        Assert.Equal(fullDate, viewModel.ClockDateText);
+        clock.CurrentTime = clock.CurrentTime.AddDays(1);
+        clock.Raise();
+        Assert.StartsWith("2026/10/15", viewModel.ClockShortDateText);
+    }
+
+    [Fact]
     public void CancelRefreshSafely_WhenSourceIsAlreadyDisposed_ShouldNotThrow()
     {
         var method = typeof(TimeWeatherViewModel).GetMethod(
@@ -178,6 +229,7 @@ public class TimeWeatherViewModelTests
         public WeatherInfo? Cached { get; set; }
         public WeatherInfo? RefreshResult { get; set; }
         public string ApiKey { get; set; } = string.Empty;
+        public int RefreshCalls { get; private set; }
         public WeatherFailureReason LastFailure { get; set; } = WeatherFailureReason.LocationUnavailable;
         public Task<WeatherInfo?> GetWeatherAsync(string city, CancellationToken cancellationToken = default, bool notifyUser = true) => Task.FromResult(RefreshResult);
         public Task<WeatherInfo?> GetCachedWeatherAsync() => Task.FromResult(Cached);
@@ -188,8 +240,11 @@ public class TimeWeatherViewModelTests
             return response;
         }
 
-        public Task<WeatherInfo?> RefreshWeatherAsync(CancellationToken cancellationToken = default, bool notifyUser = true) =>
-            _queuedRefreshes.Count > 0 ? _queuedRefreshes.Dequeue().Task : Task.FromResult(RefreshResult);
+        public Task<WeatherInfo?> RefreshWeatherAsync(CancellationToken cancellationToken = default, bool notifyUser = true)
+        {
+            RefreshCalls++;
+            return _queuedRefreshes.Count > 0 ? _queuedRefreshes.Dequeue().Task : Task.FromResult(RefreshResult);
+        }
         public void CancelRefresh() { }
         public Task SetCityAsync(string city) => Task.CompletedTask;
         public Task<QWeatherValidationResult> ValidateApiKeyAsync(string apiKey, string? apiHost = null, CancellationToken cancellationToken = default) =>
@@ -206,11 +261,11 @@ public class TimeWeatherViewModelTests
         public bool ShowConfirmDialog(string message, string? title = null) => false;
     }
 
-    private sealed class TestLocalizationService : ILocalizationService
+    private sealed class TestLocalizationService(string language = "en-US") : ILocalizationService
     {
         public event EventHandler? LanguageChanged;
-        public string CurrentLanguage => "en-US";
-        public CultureInfo CurrentCulture => CultureInfo.GetCultureInfo("en-US");
+        public string CurrentLanguage => language;
+        public CultureInfo CurrentCulture => CultureInfo.GetCultureInfo(language);
         public IReadOnlyList<LanguageOption> SupportedLanguages => [];
         public void Initialize(ISettingsService settingsService) { }
         public string NormalizeLanguage(string? language) => "en-US";

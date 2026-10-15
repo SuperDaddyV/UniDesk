@@ -11,6 +11,38 @@ public class TodoBackupServiceTests
     private readonly string _testDbFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "test_backup.db");
     private readonly string _backupFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "test_backup.json");
 
+    [Theory]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    public async Task CompactModuleSelection_ShouldSurviveSavingReopeningAndBackupRestore(bool expanded, bool compact)
+    {
+        var (db, _, _, _, _, settings, backup) = await InitAsync();
+        try
+        {
+            var modules = DashboardModuleCatalog.CreateDefaultModules();
+            var radar = modules.Single(module => module.ModuleId == DashboardModuleIds.ModelRadar);
+            radar.IsEnabled = expanded;
+            radar.IsCompactEnabled = compact;
+            var options = new JsonSerializerOptions(JsonSerializerDefaults.Web);
+            var json = JsonSerializer.Serialize(DashboardModuleCatalog.Normalize(modules), options);
+            await settings.SaveBatchAsync(new Dictionary<string, string?> { [DashboardModuleCatalog.SettingsKey] = json });
+            using (var reopened = new SettingsService(db))
+            {
+                await reopened.InitializeAsync();
+                Assert.Equal(json, reopened.GetValue(DashboardModuleCatalog.SettingsKey, ""));
+            }
+            await backup.ExportToFileAsync(_backupFile, new BackupExportOptions(false));
+            await settings.SaveBatchAsync(new Dictionary<string, string?> { [DashboardModuleCatalog.SettingsKey] = "[]" });
+            await ImportAsync(backup, _backupFile);
+            await settings.ReloadCacheAsync();
+            var restored = JsonSerializer.Deserialize<List<ModuleSetting>>(settings.GetValue(DashboardModuleCatalog.SettingsKey, ""), options)!;
+            radar = restored.Single(module => module.ModuleId == DashboardModuleIds.ModelRadar);
+            Assert.Equal(expanded, radar.IsEnabled);
+            Assert.Equal(compact, radar.IsCompactEnabled);
+        }
+        finally { settings.Dispose(); Cleanup(); }
+    }
+
     [Fact]
     public async Task ExportAndImport_ShouldIncludeQuickNotes()
     {

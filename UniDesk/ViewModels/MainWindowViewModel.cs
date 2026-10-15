@@ -74,6 +74,9 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
 
     public ObservableCollection<ModuleSetting> ModuleSettings { get; } = new();
 
+    [ObservableProperty]
+    private CompactPanelLayout _compactLayout = CompactPanelLayout.FromModules(DashboardModuleCatalog.CreateDefaultModules());
+
     public string WindowLockToolTip => L(IsWindowLocked ? "Header.UnlockWindow" : "Header.LockWindow");
 
     public string PanelCollapseToolTip => L(IsPanelCollapsed ? "Header.ExpandPanel" : "Header.CollapsePanel");
@@ -140,7 +143,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         _monitorWorkAreas = monitorWorkAreas ?? Win32MonitorWorkAreaProvider.Instance;
         _localizationService.LanguageChanged += LocalizationService_OnLanguageChanged;
 
-        HardwareMonitor = new HardwareMonitorViewModel(systemMetricsMonitor, localizationService);
+        HardwareMonitor = new HardwareMonitorViewModel(systemMetricsMonitor, localizationService, initiallyEnabled: false);
         Todos = new TodosViewModel(
             todoService,
             todoDeletionHandler,
@@ -168,7 +171,8 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
             clockService,
             weatherService,
             notificationService,
-            localizationService);
+            localizationService,
+            initializeWeather: false);
         ModelRadar = new ModelRadarViewModel(modelRadarService, localizationService);
         Search = new SearchViewModel(searchService, localizationService, ActivateSearchResultAsync);
         LoadSettings();
@@ -307,6 +311,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
             ModuleSettings.Add(module);
         }
 
+        CompactLayout = CompactPanelLayout.FromModules(normalized);
         ModuleLayoutVersion++;
 
         if (persist)
@@ -342,6 +347,10 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
 
     public bool IsModuleEnabled(string moduleId) =>
         ModuleSettings.FirstOrDefault(module => module.ModuleId == moduleId)?.IsEnabled ?? true;
+
+    public bool IsModuleActive(string moduleId) => IsPanelCollapsed
+        ? ModuleSettings.Any(module => module.ModuleId == moduleId && DashboardModuleCatalog.IsCompactEnabled(module))
+        : IsModuleEnabled(moduleId);
 
     public void UpdatePanelWidth(double width)
     {
@@ -412,9 +421,9 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
 
     private void ApplyModuleRuntimeState()
     {
-        HardwareMonitor.IsEnabled = IsPanelCollapsed || IsModuleEnabled(DashboardModuleIds.HardwareMonitor);
-        TimeWeather.IsEnabled = IsPanelCollapsed || IsModuleEnabled(DashboardModuleIds.TimeWeather);
-        _ = ModelRadar.SetEnabledAsync(IsModuleEnabled(DashboardModuleIds.ModelRadar));
+        HardwareMonitor.IsEnabled = IsModuleActive(DashboardModuleIds.HardwareMonitor);
+        TimeWeather.IsEnabled = IsModuleActive(DashboardModuleIds.TimeWeather);
+        _ = ModelRadar.SetEnabledAsync(IsModuleActive(DashboardModuleIds.ModelRadar));
         if (TimeWeather.IsEnabled && !TimeWeather.HasWeatherData)
         {
             _ = TimeWeather.InitializeAsync();

@@ -5,6 +5,15 @@
         <TextBlock Text="{DynamicResource Settings.NavModules}" Style="{StaticResource GlassPageTitleStyle}"/>
         <Border Style="{StaticResource GlassSectionStyle}">
             <StackPanel>
+                <TextBlock Text="{DynamicResource Settings.ModuleDisplayHint}" Style="{StaticResource SecondaryTextStyle}" TextWrapping="Wrap" Margin="0,0,0,8"/>
+                <Grid Margin="0,0,0,4">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="24"/><ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="64"/><ColumnDefinition Width="64"/><ColumnDefinition Width="72"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="2" Text="{DynamicResource Settings.ExpandedDisplay}" TextAlignment="Center" TextWrapping="Wrap" Style="{StaticResource SecondaryTextStyle}"/>
+                    <TextBlock Grid.Column="3" Text="{DynamicResource Settings.CompactDisplay}" TextAlignment="Center" TextWrapping="Wrap" Style="{StaticResource SecondaryTextStyle}"/>
+                </Grid>
                 <ItemsControl ItemsSource="{Binding ModuleSettings}">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
@@ -14,7 +23,7 @@
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="24"/><ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="Auto"/><ColumnDefinition Width="36"/><ColumnDefinition Width="36"/>
+                                        <ColumnDefinition Width="64"/><ColumnDefinition Width="64"/><ColumnDefinition Width="36"/><ColumnDefinition Width="36"/>
                                     </Grid.ColumnDefinitions>
                                     <TextBlock Text="&#xECA5;" FontFamily="Segoe MDL2 Assets" FontSize="12"
                                                Foreground="{DynamicResource SecondaryTextBrush}"
@@ -26,14 +35,23 @@
                                     <CheckBox Grid.Column="2" IsChecked="{Binding IsEnabled, Mode=TwoWay}"
                                               MinWidth="28" MinHeight="28" VerticalContentAlignment="Center"
                                               AutomationProperties.Name="{Binding DisplayName}"
-                                              Margin="4,0" VerticalAlignment="Center"
-                                              ToolTip="{DynamicResource Settings.ShowHide}"/>
-                                    <Button Grid.Column="3" Style="{StaticResource GhostButtonStyle}" Content="↑"
+                                              HorizontalAlignment="Center" VerticalAlignment="Center"
+                                              ToolTip="{DynamicResource Settings.ExpandedDisplay}"/>
+                                    <CheckBox Grid.Column="3" IsChecked="{Binding IsCompactEnabled, Mode=TwoWay}"
+                                              MinWidth="28" MinHeight="28" VerticalContentAlignment="Center"
+                                              AutomationProperties.Name="{Binding DisplayName}"
+                                              HorizontalAlignment="Center" VerticalAlignment="Center"
+                                              Visibility="{Binding SupportsCompact, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                              ToolTip="{DynamicResource Settings.CompactDisplay}"/>
+                                    <TextBlock Grid.Column="3" Text="—" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                               Foreground="{DynamicResource SecondaryTextBrush}"
+                                               Visibility="{Binding SupportsCompact, Converter={StaticResource InverseBooleanToVisibilityConverter}}"/>
+                                    <Button Grid.Column="4" Style="{StaticResource GhostButtonStyle}" Content="↑"
                                             Width="28" Height="28" AutomationProperties.Name="{DynamicResource Settings.MoveUp}"
                                             IsEnabled="{Binding CanMoveUp}" ToolTip="{DynamicResource Settings.MoveUp}"
                                             Command="{Binding DataContext.MoveModuleUpCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                             CommandParameter="{Binding}"/>
-                                    <Button Grid.Column="4" Style="{StaticResource GhostButtonStyle}" Content="↓"
+                                    <Button Grid.Column="5" Style="{StaticResource GhostButtonStyle}" Content="↓"
                                             Width="28" Height="28" AutomationProperties.Name="{DynamicResource Settings.MoveDown}"
                                             IsEnabled="{Binding CanMoveDown}" ToolTip="{DynamicResource Settings.MoveDown}"
                                             Command="{Binding DataContext.MoveModuleDownCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"

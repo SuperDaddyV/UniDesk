@@ -15,6 +15,14 @@ internal static class Program
                 return (int)HardwareRepairExitCode.NotElevated;
             }
 
+            if (args.Length == 2 && args[0] is "--close-application" or "--check-application")
+            {
+                var result = new ApplicationShutdownRunner(new WindowsApplicationShutdownPlatform())
+                    .Run(args[1], checkOnly: args[0] == "--check-application");
+                logger.Log($"Application update preflight {args[0]} completed with code {(int)result}.");
+                return (int)result;
+            }
+
             if (args.Length != 1)
             {
                 return (int)HardwareRepairExitCode.InvalidArguments;

@@ -54,9 +54,9 @@ UniDesk is a lightweight, customizable, and clean Windows desktop sidebar that b
 
 ### Model Radar
 
-- Leads with Overall leader and Value recommendation decision cards, followed by Overall / Backend / Frontend / Knowledge Top 5 reference lists.
-- Data comes from [ModelDial Radar](https://modeldial.com/radar) public evaluations ([CC BY 4.0](https://modeldial.com/data-license)). Value recommendation uses only the publisher's official `value` tag; UniDesk does not recompute scores or costs.
-- Disabled by default and makes no network requests while disabled. While UniDesk is running and the module is enabled, it loads local cache first, checks for updates at most once every six hours through `https://modeldial.com/api/v1/radar/latest.json`, and also supports manual refresh.
+- Shows the overall leader and six Top 5 lists: Overall / Knowledge / Backend / Aesthetics / Frontend / Maintainability. Each category selects the best measured effort per model before taking five; all category tabs share one row.
+- Data comes from [ModelDial Radar](https://modeldial.com/radar) public evaluations ([CC BY 4.0](https://modeldial.com/data-license)). UniDesk does not recompute scores or costs.
+- Disabled by default and makes no network requests while disabled. While UniDesk is running and the module is enabled, it loads local cache first, checks for updates at most once every six hours through `https://modeldial.com/data/overview.json`, and also supports manual refresh.
 - This is a read-only decision reference: UniDesk does not call models, run local evaluations, or change model-tool configuration. Public evaluation data does not imply partnership or endorsement; actual performance may vary by account, route, and endpoint.
 
 ### Module Management
@@ -92,7 +92,7 @@ Collapsed mode keeps the time, weather, hardware status, and next todo visible w
 
 ### Model Radar
 
-Two decision cards identify the current overall leader and ModelDial's official value recommendation before the task-specific Top 5 lists.
+The overall leader and six Top 5 lists retain model, effort and score. Module settings independently control expanded and compact visibility for time/weather, hardware, Model Radar and todos; compact height follows visible content.
 
 ![UniDesk Model Radar showcase](images/unidesk-model-radar.png)
 
@@ -117,10 +117,10 @@ Common use cases:
 
 ## 📦 Installation
 
-The official distribution point for the `v2.2.2` stable installer is the [v2.2.2 GitHub Release](https://github.com/SuperDaddyV/UniDesk/releases/tag/v2.2.2). This exact version uses a separately approved unsigned-stable exception. The installer is `Authenticode: NotSigned`, so Windows may show a SmartScreen or enterprise-policy prompt. Download it from the official Release and verify the published SHA-256. The installer filename is:
+The official distribution point for the `v2.2.3` stable installer is the [v2.2.3 GitHub Release](https://github.com/SuperDaddyV/UniDesk/releases/tag/v2.2.3). This exact version uses a separately approved unsigned-stable exception. The installer is `Authenticode: NotSigned`, so Windows may show a SmartScreen or enterprise-policy prompt. Download it from the official Release and verify the published SHA-256. The installer filename is:
 
 ```powershell
-UniDesk_Setup_2.2.2.exe
+UniDesk_Setup_2.2.3.exe
 ```
 
 It is recommended to exit any running UniDesk instance before installing or upgrading.
@@ -159,10 +159,10 @@ dotnet run --project UniDesk\UniDesk.csproj
 Build an unsigned local release candidate from a clean worktree:
 
 ```powershell
-.\scripts\Build-Release.ps1 -Version 2.2.2
+.\scripts\Build-Release.ps1 -Version 2.2.3
 ```
 
-The script publishes the application, hardware service, and repair helper into a fresh versioned directory before compiling the installer from those exact inputs. An unsigned `v2.2.2` artifact built from a clean worktree must pass `Test-UnsignedReleaseReadiness.ps1`, the applicable manual matrix, and final project-owner approval before publication. The SignPath workflow remains available for future signed releases and never creates a GitHub Release automatically.
+The script publishes the application, hardware service, and repair helper into a fresh versioned directory before compiling the installer from those exact inputs. An unsigned `v2.2.3` artifact built from a clean worktree must pass `Test-UnsignedReleaseReadiness.ps1`, the applicable manual matrix, and final project-owner approval before publication. The SignPath workflow remains available for future signed releases and never creates a GitHub Release automatically.
 
 ## 🧰 Tech Stack
 
@@ -184,7 +184,7 @@ Clipboard history includes sensitive-content filtering to reduce accidental stor
 
 ## Code signing policy
 
-Public packages follow the [code signing policy](CODE_SIGNING_POLICY.md) and [privacy policy](PRIVACY.md). `v2.2.2` uses a separately approved exception for this exact version: it must come from the exact public revision, receive manual approval, pass complete payload and SHA-256 checks, and clearly state `Authenticode: NotSigned` plus the possibility of a Windows SmartScreen or enterprise-policy prompt.
+Public packages follow the [code signing policy](CODE_SIGNING_POLICY.md) and [privacy policy](PRIVACY.md). `v2.2.3` uses a separately approved exception for this exact version: it must come from the exact public revision, receive manual approval, pass complete payload and SHA-256 checks, and clearly state `Authenticode: NotSigned` plus the possibility of a Windows SmartScreen or enterprise-policy prompt.
 
 Free code signing provided by SignPath.io, certificate by SignPath Foundation.
 
@@ -192,7 +192,10 @@ Free code signing provided by SignPath.io, certificate by SignPath Foundation.
 
 Recent versions include:
 
-- Model Radar with the overall leader, official value recommendation, and Overall / Backend / Frontend / Knowledge Top 5 lists.
+- Model Radar with a single-row overall leader and six Top 5 categories, keeping the best tier per model; the value recommendation display was removed.
+- Separate expanded / compact module preferences, adaptive compact height, and refined title, hardware, and Quick Text alignment.
+- Fixed tray menu DPI positioning and shutdown-save deadlock; upgrades request normal shutdown and stop before replacement on refusal or timeout.
+- Final-artifact manual installation / upgrade / uninstall, physical multi-monitor / DPI, and elevated hardware scenarios remain unverified; see the [release matrix](docs/release-test-matrix-2.2.3.md).
 - Module management with show / hide and ordering.
 - Shortcut drag-to-add and free ordering.
 - Quick Notes with multiple notes, auto save, pinning, and copy.

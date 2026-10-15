@@ -109,14 +109,15 @@
                 <TextBlock Text="{DynamicResource Common.Title}" Style="{StaticResource DlgLabel}"/>
                 <TextBox Grid.Row="1"
                          Text="{Binding Title, UpdateSourceTrigger=PropertyChanged}"
-                         Height="32"
+                         MinHeight="32"
                          MaxLength="80"
                          FontSize="12"
                          Foreground="{DynamicResource PrimaryTextBrush}"
                          Background="{DynamicResource ControlSurfaceBrush}"
                          BorderBrush="{DynamicResource DividerBrush}"
                          BorderThickness="1"
-                         Padding="9,5"
+                         Padding="9,3"
+                         VerticalContentAlignment="Center"
                          Margin="0,0,0,8"/>
 
                 <Grid Grid.Row="2" Margin="0,0,0,8">

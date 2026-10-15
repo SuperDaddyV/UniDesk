@@ -8,6 +8,19 @@ namespace UniDesk.Tests;
 public class HardwareMonitorViewModelTests
 {
     [Fact]
+    public void DeferredMonitor_ShouldStartDisabledUntilModuleSettingsEnableIt()
+    {
+        var monitor = new FakeMonitor();
+        using var viewModel = new HardwareMonitorViewModel(monitor, initiallyEnabled: false);
+        Assert.False(monitor.EnabledAtStart);
+        monitor.Raise(new SystemMetricsSnapshot { CpuUsage = 42 });
+        Assert.Equal("--", viewModel.SystemCpuUsageText);
+        viewModel.IsEnabled = true;
+        monitor.Raise(new SystemMetricsSnapshot { CpuUsage = 42 });
+        Assert.Equal("42%", viewModel.SystemCpuUsageText);
+    }
+
+    [Fact]
     public void Snapshot_ShouldFormatAllDisplayedValues()
     {
         var monitor = new FakeMonitor();
@@ -96,7 +109,8 @@ public class HardwareMonitorViewModelTests
         public event EventHandler<SystemMetricsSnapshot>? SnapshotAvailable;
         public bool IsEnabled { get; set; } = true;
         public bool Disposed { get; private set; }
-        public void Start() { }
+        public bool EnabledAtStart { get; private set; }
+        public void Start() => EnabledAtStart = IsEnabled;
         public void Stop() { }
         public void Dispose() => Disposed = true;
         public void Raise(SystemMetricsSnapshot snapshot) => SnapshotAvailable?.Invoke(this, snapshot);

@@ -74,7 +74,12 @@ public class InstallerHardwareComponentTests
         Assert.Contains("HardwareRepairFailed", script, StringComparison.Ordinal);
         Assert.Contains("Log(", script, StringComparison.Ordinal);
         Assert.Contains("MsgBox(", script, StringComparison.Ordinal);
-        Assert.DoesNotContain("RaiseException", script, StringComparison.Ordinal);
+        var postInstall = script[script.IndexOf("  if CurStep <> ssPostInstall", StringComparison.Ordinal)..
+            script.IndexOf("procedure DeinitializeSetup", StringComparison.Ordinal)];
+        Assert.DoesNotContain("RaiseException", postInstall, StringComparison.Ordinal);
+        var hardwareFailure = script[script.IndexOf("procedure ReportHardwareComponentFailure", StringComparison.Ordinal)..
+            script.IndexOf("procedure InstallHardwareComponent", StringComparison.Ordinal)];
+        Assert.DoesNotContain("RaiseException", hardwareFailure, StringComparison.Ordinal);
     }
 
     [Fact]
