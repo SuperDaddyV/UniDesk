@@ -86,10 +86,10 @@ public class SettingsService : ISettingsService, IDisposable
             _pendingWrites.Remove(key);
         }
 
-        await _saveLock.WaitAsync();
+        await _saveLock.WaitAsync().ConfigureAwait(false);
         try
         {
-            await SaveSettingToDatabaseAsync(key, value);
+            await SaveSettingToDatabaseAsync(key, value).ConfigureAwait(false);
             lock (_stateLock)
             {
                 if (IsLatestWrite(key, version))
@@ -228,7 +228,8 @@ public class SettingsService : ISettingsService, IDisposable
 
     public async Task FlushPendingSavesAsync()
     {
-        await _saveLock.WaitAsync();
+        // OnExit synchronously waits for this operation; no write continuation may require the UI context.
+        await _saveLock.WaitAsync().ConfigureAwait(false);
         try
         {
             Dictionary<string, PendingWrite> batch;
@@ -244,7 +245,7 @@ public class SettingsService : ISettingsService, IDisposable
                 var values = GetLatestValues(batch);
                 if (values.Count > 0)
                 {
-                    await SaveSettingsBatchToDatabaseAsync(values);
+                    await SaveSettingsBatchToDatabaseAsync(values).ConfigureAwait(false);
                     UpdateCacheFromSuccessfulWrites(batch);
                 }
             }
@@ -274,7 +275,7 @@ public class SettingsService : ISettingsService, IDisposable
     public async Task SaveBatchAsync(IReadOnlyDictionary<string, string?> values)
     {
         ArgumentNullException.ThrowIfNull(values);
-        await _saveLock.WaitAsync();
+        await _saveLock.WaitAsync().ConfigureAwait(false);
         try
         {
             Dictionary<string, PendingWrite> pendingBeforeSave;
@@ -299,7 +300,7 @@ public class SettingsService : ISettingsService, IDisposable
                 var latestValues = GetLatestValues(batch);
                 if (latestValues.Count > 0)
                 {
-                    await SaveSettingsBatchToDatabaseAsync(latestValues);
+                    await SaveSettingsBatchToDatabaseAsync(latestValues).ConfigureAwait(false);
                     UpdateCacheFromSuccessfulWrites(batch);
                 }
             }
@@ -335,14 +336,14 @@ public class SettingsService : ISettingsService, IDisposable
                 {
                     await session.ExecuteNonQueryAsync(
                         "DELETE FROM Settings WHERE Key = @p0",
-                        key);
+                        key).ConfigureAwait(false);
                 }
                 else
                 {
                     await session.ExecuteNonQueryAsync(
                         "INSERT OR REPLACE INTO Settings (Key, Value) VALUES (@p0, @p1)",
                         key,
-                        EncodeForStorage(key, value));
+                        EncodeForStorage(key, value)).ConfigureAwait(false);
                 }
             }
 
@@ -469,14 +470,14 @@ public class SettingsService : ISettingsService, IDisposable
             {
                 await _databaseService.ExecuteNonQueryAsync(
                     "DELETE FROM Settings WHERE Key = @p0",
-                    key);
+                    key).ConfigureAwait(false);
             }
             else
             {
                 var storedValue = EncodeForStorage(key, value);
                 await _databaseService.ExecuteNonQueryAsync(
                     "INSERT OR REPLACE INTO Settings (Key, Value) VALUES (@p0, @p1)",
-                    key, storedValue);
+                    key, storedValue).ConfigureAwait(false);
             }
         }
         catch (Exception ex)

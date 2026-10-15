@@ -93,25 +93,14 @@ public sealed class CalmGlassReadabilityTests
     }
 
     [Fact]
-    public void WeatherAttribution_ShouldStaySmallerThanCityWithOriginalIcon()
+    public void WeatherAttribution_ShouldLeaveNoProviderLabelOrDecorativeIconOnPanel()
     {
         var weather = XDocument.Load(Path.Combine(ProjectRoot, "UniDesk", "Controls", "TimeWeatherModuleView.xaml"));
-        var link = weather.Descendants(Wpf + "Hyperlink")
-            .Single(element => (string?)element.Attribute(Xaml + "Name") == "QWeatherAttributionLink");
-        var label = Assert.IsType<XElement>(link.Parent);
-        var style = label.Element(Wpf + "TextBlock.Style")!.Element(Wpf + "Style")!;
-        var normalFont = style.Elements(Wpf + "Setter")
-            .Single(element => (string?)element.Attribute("Property") == "FontSize");
-        Assert.Contains("ConverterParameter=10", (string?)normalFont.Attribute("Value"), StringComparison.Ordinal);
-        var collapsedFont = style.Descendants(Wpf + "DataTrigger")
-            .Single(element => (string?)element.Attribute("Value") == "True")
-            .Elements(Wpf + "Setter")
-            .Single(element => (string?)element.Attribute("Property") == "FontSize");
-        Assert.Equal("8", (string?)collapsedFont.Attribute("Value"));
-        Assert.Equal("https://www.qweather.com", (string?)link.Attribute("NavigateUri"));
-        var icon = link.Elements(Wpf + "Run").First();
-        Assert.Equal("8", (string?)icon.Attribute("FontSize"));
-        Assert.Equal("\uE707", (string?)icon.Attribute("Text"));
+        Assert.Empty(weather.Descendants(Wpf + "Hyperlink"));
+        Assert.DoesNotContain(weather.Descendants().Attributes("Text"),
+            attribute => attribute.Value == "\uE707" || attribute.Value.Contains("Weather.QWeatherAttribution", StringComparison.Ordinal));
+        Assert.Contains(weather.Descendants(Wpf + "TextBlock"),
+            element => (string?)element.Attribute("Text") == "{Binding WeatherIconGlyph}");
     }
 
     [Fact]

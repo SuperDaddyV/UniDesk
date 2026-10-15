@@ -15,6 +15,8 @@ public static class PanelSizePolicy
     private const double WorkAreaHeightMargin = 16;
     private const double HeightRounding = 20;
 
+    public static double GetRequestedWidth(double preferredWidth) => ClampPreferredWidth(preferredWidth);
+
     public static PanelSize GetRecommendedSize(LogicalRect workArea)
     {
         ValidateWorkArea(workArea);

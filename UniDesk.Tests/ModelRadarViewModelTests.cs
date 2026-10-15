@@ -7,7 +7,64 @@ namespace UniDesk.Tests;
 
 public class ModelRadarViewModelTests
 {
+    [Fact]
+    public async Task LegacyCache_ShouldRefreshImmediatelyAndMarkItsBasis_ThenExposeFiveAxisCategories()
+    {
+        var legacy = CreateSnapshot("legacy") with { IsLegacySnapshot = true };
+        var fresh = CreateSnapshot("five-axis");
+        var entry = fresh.OverallLeader! with { AestheticScore = 75, MaintainabilityScore = 61, OverallScore = 88.8 };
+        fresh = fresh with
+        {
+            OverallLeader = entry, OverallTop = [new ModelRadarListItem(1, entry, entry.OverallScore)],
+            AestheticTop = [new ModelRadarListItem(1, entry, entry.AestheticScore)],
+            MaintainabilityTop = [new ModelRadarListItem(1, entry, entry.MaintainabilityScore)]
+        };
+        var response = new TaskCompletionSource<ModelRadarServiceResult>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var service = new FakeModelRadarService { CacheResult = Success(legacy, Now), RefreshHandler = _ => response.Task };
+        using var viewModel = CreateViewModel(service);
+        var enable = viewModel.SetEnabledAsync(true);
+        await service.RefreshStarted.Task.WaitAsync(TimeSpan.FromSeconds(3));
+        Assert.Equal(1, service.RefreshCallCount);
+        Assert.Equal("ModelRadar.LegacyBasis", viewModel.ScoreBasisText);
+        Assert.Contains("ModelRadar.CompactLegacyBasis", viewModel.CompactOverallModelText);
+        Assert.False(viewModel.IsAestheticCategoryEnabled);
+        response.SetResult(Success(fresh, Now));
+        await enable;
+        Assert.Equal("ModelRadar.FiveAxisBasis", viewModel.ScoreBasisText);
+        Assert.Equal("88.80", viewModel.CompactOverallScoreText);
+        Assert.True(viewModel.IsAestheticCategoryEnabled);
+        Assert.True(viewModel.IsMaintainabilityCategoryEnabled);
+        viewModel.SelectCategoryCommand.Execute(ModelRadarCategory.Aesthetic);
+        Assert.Equal("75.0", Assert.Single(viewModel.VisibleRows).ScoreText);
+        viewModel.SelectCategoryCommand.Execute(ModelRadarCategory.Maintainability);
+        Assert.Equal("61.0", Assert.Single(viewModel.VisibleRows).ScoreText);
+        Assert.Contains("75.0", viewModel.OverallDecision!.DimensionSummary);
+        Assert.Contains("61.0", viewModel.OverallDecision.ToolTipText);
+        await viewModel.SetEnabledAsync(false);
+        Assert.False(viewModel.IsAestheticCategoryEnabled);
+        Assert.False(viewModel.IsMaintainabilityCategoryEnabled);
+    }
+
     private static readonly DateTimeOffset Now = new(2026, 8, 30, 8, 0, 0, TimeSpan.Zero);
+
+    [Fact]
+    public async Task PendingFiveAxisSnapshot_ShouldAllowAvailableDimensions()
+    {
+        var snapshot = CreateSnapshot(isPending: true);
+        var entry = snapshot.BackendTop[0].Entry with { AestheticScore = 75, FrontendScore = 80 };
+        snapshot = snapshot with
+        {
+            AestheticTop = [new ModelRadarListItem(1, entry, 75)],
+            FrontendTop = [new ModelRadarListItem(1, entry, 80)]
+        };
+        using var viewModel = CreateViewModel(new FakeModelRadarService { CacheResult = Success(snapshot, Now) });
+        await viewModel.SetEnabledAsync(true);
+        Assert.False(viewModel.IsOverallCategoryEnabled);
+        Assert.True(viewModel.IsFrontendCategoryEnabled);
+        viewModel.SelectCategoryCommand.Execute(ModelRadarCategory.Frontend);
+        Assert.Equal("80.0", Assert.Single(viewModel.VisibleRows).ScoreText);
+        Assert.True(viewModel.IsAestheticCategoryEnabled);
+    }
 
     [Fact]
     public void DisabledViewModel_ShouldNotReadCacheOrStartNetwork()
@@ -53,10 +110,10 @@ public class ModelRadarViewModelTests
             "Model-Name/High",
             viewModel.CompactOverallModelText,
             StringComparison.Ordinal);
-        Assert.Equal("88.0", viewModel.CompactOverallScoreText);
+        Assert.Equal("88.00", viewModel.CompactOverallScoreText);
         Assert.Equal("ModelRadar.CompactValueLabel", viewModel.CompactValueLabelText);
         Assert.Equal("Model-Name/High", viewModel.CompactValueModelText);
-        Assert.Equal("88.0", viewModel.CompactValueScoreText);
+        Assert.Equal("88.00", viewModel.CompactValueScoreText);
         Assert.Contains(snapshot.OverallLeader!.Model, viewModel.CompactOverallText, StringComparison.Ordinal);
         Assert.Contains(snapshot.OverallLeader.ReasoningEffort, viewModel.CompactOverallText, StringComparison.Ordinal);
         Assert.Contains("88.0", viewModel.CompactOverallText, StringComparison.Ordinal);
@@ -66,7 +123,7 @@ public class ModelRadarViewModelTests
         Assert.Contains("88.0", viewModel.CompactValueText, StringComparison.Ordinal);
         Assert.Contains("ModelRadar.CompactValueFormat", viewModel.CompactValueText, StringComparison.Ordinal);
         Assert.Contains(viewModel.CompactOverallText, viewModel.CompactToolTipText, StringComparison.Ordinal);
-        Assert.Contains(viewModel.CompactValueText, viewModel.CompactToolTipText, StringComparison.Ordinal);
+        Assert.DoesNotContain("ModelRadar.CompactValueFormat", viewModel.CompactToolTipText, StringComparison.Ordinal);
         Assert.Contains(viewModel.PublishedText, viewModel.CompactToolTipText, StringComparison.Ordinal);
         Assert.Contains(viewModel.StatusText, viewModel.CompactToolTipText, StringComparison.Ordinal);
     }
@@ -89,22 +146,45 @@ public class ModelRadarViewModelTests
         await viewModel.SetEnabledAsync(true);
 
         Assert.Equal("GPT5.6-Sol/Medium", viewModel.CompactOverallModelText);
-        Assert.Equal("Claude-Opus-5/XHigh", viewModel.CompactValueModelText);
+        Assert.Equal("GPT5.6-Sol", viewModel.CompactOverallModelNameText);
+        Assert.Equal("Medium", viewModel.CompactOverallEffortText);
+        Assert.Equal("Claude Opus 5/XHigh", viewModel.CompactValueModelText);
         Assert.Equal("GPT5.6-Sol", viewModel.OverallDecision!.ModelName);
         Assert.Equal("Medium", viewModel.OverallDecision.ReasoningEffort);
-        Assert.Equal("Claude-Opus-5", viewModel.ValueDecision!.ModelName);
+        Assert.Equal("Claude Opus 5", viewModel.ValueDecision!.ModelName);
         Assert.Equal("XHigh", viewModel.ValueDecision.ReasoningEffort);
         var row = Assert.Single(viewModel.VisibleRows);
         Assert.Equal("GPT5.6-Sol", row.ModelName);
         Assert.Equal("Medium", row.ReasoningEffort);
         Assert.Contains("gpt-5.6-sol", viewModel.CompactToolTipText, StringComparison.Ordinal);
-        Assert.Contains("claude-opus-5", viewModel.CompactToolTipText, StringComparison.Ordinal);
+        Assert.DoesNotContain("claude-opus-5", viewModel.CompactToolTipText, StringComparison.Ordinal);
         Assert.Contains("medium", viewModel.CompactToolTipText, StringComparison.Ordinal);
-        Assert.Contains("xhigh", viewModel.CompactToolTipText, StringComparison.Ordinal);
+        Assert.DoesNotContain("xhigh", viewModel.CompactToolTipText, StringComparison.Ordinal);
         Assert.Equal("gpt-5.6-sol", snapshot.OverallLeader!.Model);
         Assert.Equal("medium", snapshot.OverallLeader.ReasoningEffort);
         Assert.Equal("claude-opus-5", snapshot.ValueRecommendation!.Model);
         Assert.Equal("xhigh", snapshot.ValueRecommendation.ReasoningEffort);
+    }
+
+    [Theory]
+    [InlineData("claude-opus-5-5", "Claude Opus 5.5")]
+    [InlineData("Claude-Fable-5-1", "Claude Fable 5.1")]
+    [InlineData("claude-sonnet-5-5", "Claude Sonnet 5.5")]
+    [InlineData("Claude Opus 5.5", "Claude Opus 5.5")]
+    [InlineData("claude-3-7-sonnet", "Claude 3.7 Sonnet")]
+    public async Task ClaudePresentation_ShouldFormatEveryVisibleName_WithoutChangingIdentity(string raw, string display)
+    {
+        var snapshot = CreateSnapshot(publishedAt: Now, model: raw);
+        var service = new FakeModelRadarService { CacheResult = Success(snapshot, Now) };
+        using var viewModel = CreateViewModel(service);
+        await viewModel.SetEnabledAsync(true);
+        Assert.Equal(display, viewModel.CompactOverallModelNameText);
+        Assert.Equal(display, viewModel.OverallDecision!.ModelName);
+        Assert.Equal(display, Assert.Single(viewModel.VisibleRows).ModelName);
+        viewModel.SelectCategoryCommand.Execute(ModelRadarCategory.Backend);
+        Assert.Equal(display, Assert.Single(viewModel.VisibleRows).ModelName);
+        Assert.Equal(raw, snapshot.OverallLeader!.Model);
+        Assert.Contains(raw, viewModel.OverallDecision.ToolTipText, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -129,7 +209,7 @@ public class ModelRadarViewModelTests
     }
 
     [Fact]
-    public async Task CompactSummary_WithoutValueRecommendation_ShouldUseNoValueStatus()
+    public async Task CompactSummary_WithoutValueRecommendation_ShouldShowOnlyOverallLeader()
     {
         var snapshot = CreateSnapshot() with { ValueRecommendation = null };
         var service = new FakeModelRadarService
@@ -142,12 +222,14 @@ public class ModelRadarViewModelTests
 
         Assert.True(viewModel.IsCompactSummaryVisible);
         Assert.True(viewModel.HasCompactRecommendations);
-        Assert.Equal("ModelRadar.CompactOverallLabel", viewModel.CompactOverallLabelText);
+        Assert.Equal(snapshot.PublishedAt.ToLocalTime().ToString("MM/dd"), viewModel.CompactOverallLabelText);
+        Assert.Equal("Model-Name", viewModel.CompactOverallModelNameText);
+        Assert.Equal("High", viewModel.CompactOverallEffortText);
         Assert.EndsWith(
             "Model-Name/High",
             viewModel.CompactOverallModelText,
             StringComparison.Ordinal);
-        Assert.Equal("88.0", viewModel.CompactOverallScoreText);
+        Assert.Equal("88.00", viewModel.CompactOverallScoreText);
         Assert.Equal("ModelRadar.CompactValueLabel", viewModel.CompactValueLabelText);
         Assert.Equal("ModelRadar.NoValueRecommendation", viewModel.CompactValueModelText);
         Assert.Equal(string.Empty, viewModel.CompactValueScoreText);
@@ -155,7 +237,7 @@ public class ModelRadarViewModelTests
         Assert.Equal("ModelRadar.NoValueRecommendation", viewModel.CompactValueText);
         Assert.Equal(string.Empty, viewModel.CompactStatusText);
         Assert.Contains(viewModel.CompactOverallText, viewModel.CompactToolTipText, StringComparison.Ordinal);
-        Assert.Contains("ModelRadar.NoValueRecommendation", viewModel.CompactToolTipText, StringComparison.Ordinal);
+        Assert.DoesNotContain("ModelRadar.NoValueRecommendation", viewModel.CompactToolTipText, StringComparison.Ordinal);
     }
 
     [Fact]

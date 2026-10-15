@@ -11,6 +11,92 @@ namespace UniDesk.Tests;
 [Collection("Database Tests")]
 public class SettingsServiceTests
 {
+    [Theory]
+    [InlineData("queued", false)]
+    [InlineData("single", false)]
+    [InlineData("batch", false)]
+    [InlineData("queued", true)]
+    [InlineData("single", true)]
+    [InlineData("batch", true)]
+    public async Task ExitDuringSave_DoesNotRequireUiContext_AndPersistsValues(string mode, bool dispose)
+    {
+        var file = Path.Combine(Path.GetTempPath(), $"unidesk-exit-{Guid.NewGuid():N}.db");
+        var database = new DatabaseService($"Data Source={file};Pooling=False",
+            monitorWorkAreas: new FixedMonitorWorkAreaProvider(1366, 768));
+        using var settings = new SettingsService(database);
+        await settings.InitializeAsync();
+        var saveLock = (SemaphoreSlim)typeof(SettingsService)
+            .GetField("_saveLock", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(settings)!;
+        await saveLock.WaitAsync();
+        var context = new ExitSynchronizationContext();
+        Exception? error = null;
+        Task? write = null;
+        var thread = new Thread(() =>
+        {
+            SynchronizationContext.SetSynchronizationContext(context);
+            try
+            {
+                switch (mode)
+                {
+                    case "queued": settings.SetSetting("ExitSaveProbe", "saved"); break;
+                    case "single": write = settings.SetSettingAsync("ExitSaveProbe", "saved"); break;
+                    case "batch": write = settings.SaveBatchAsync(new Dictionary<string, string?> { ["ExitSaveProbe"] = "saved" }); break;
+                }
+                if (dispose) settings.Dispose();
+                else settings.FlushPendingSaves();
+            }
+            catch (Exception ex) { error = ex; }
+            finally { SynchronizationContext.SetSynchronizationContext(null); }
+        }) { IsBackground = true };
+        thread.SetApartmentState(ApartmentState.STA);
+        thread.Start();
+        // Release only after the UI-like thread has synchronously entered its exit wait.
+        var enteredWait = SpinWait.SpinUntil(() =>
+            (thread.ThreadState & ThreadState.WaitSleepJoin) != 0, TimeSpan.FromSeconds(5));
+        saveLock.Release();
+        var completedWithoutUiPump = thread.Join(TimeSpan.FromSeconds(3));
+        // Unblock the old implementation after recording failure, so a red test leaves no hung threads.
+        context.DrainOnThreadPool();
+        Assert.True(thread.Join(TimeSpan.FromSeconds(5)), "Exit thread did not finish after test cleanup.");
+        if (mode == "batch" && dispose)
+            await Assert.ThrowsAsync<ObjectDisposedException>(() => write!.WaitAsync(TimeSpan.FromSeconds(5)));
+        else if (write != null)
+            await write.WaitAsync(TimeSpan.FromSeconds(5));
+        settings.Dispose();
+        var persisted = await database.QuerySingleAsync("SELECT Value FROM Settings WHERE Key = @p0",
+            reader => reader.GetString(0), "ExitSaveProbe");
+        File.Delete(file);
+        Assert.Null(error);
+        Assert.True(enteredWait, "Test did not establish a pending save during exit.");
+        Assert.True(completedWithoutUiPump, "Exit deadlocked waiting for a continuation posted to the blocked UI context.");
+        // A batch still waiting to enter the service when it is disposed is rejected as before.
+        Assert.Equal(mode == "batch" && dispose ? null : "saved", persisted);
+    }
+
+    private sealed class ExitSynchronizationContext : SynchronizationContext
+    {
+        private readonly object _gate = new();
+        private readonly Queue<(SendOrPostCallback Callback, object? State)> _pending = new();
+        private bool _draining;
+        public override void Post(SendOrPostCallback callback, object? state)
+        {
+            lock (_gate)
+            {
+                if (!_draining) { _pending.Enqueue((callback, state)); return; }
+            }
+            ThreadPool.QueueUserWorkItem(_ => callback(state));
+        }
+        public void DrainOnThreadPool()
+        {
+            lock (_gate)
+            {
+                _draining = true;
+                while (_pending.TryDequeue(out var item))
+                    ThreadPool.QueueUserWorkItem(_ => item.Callback(item.State));
+            }
+        }
+    }
+
     private string _testDbFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "test_settings.db");
 
     private DatabaseService GetDb()

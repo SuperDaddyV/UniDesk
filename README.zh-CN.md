@@ -54,9 +54,9 @@ UniDesk 是一个轻量、个性化、清爽好用的 Windows 桌面侧边栏工
 
 ### 模型雷达
 
-- 先用「综合最高」与「性价比推荐」给出决策结论，再提供综合、后端、前端、知识四类 Top 5 参考。
-- 数据来自 [ModelDial Radar](https://modeldial.com/zh-CN/radar) 公开评测（[CC BY 4.0](https://modeldial.com/data-license)）；「性价比推荐」只采用发布方的官方 `value` 标签，UniDesk 不重新计算评分或费用。
-- 模块默认关闭，关闭时不发起网络请求。UniDesk 运行且模块启用期间，优先读取本地缓存，每 6 小时最多自动检查一次，并只通过固定接口 `https://modeldial.com/api/v1/radar/latest.json` 刷新；也可随时手动刷新。
+- 展示「综合最高」及综合、知识、后端、审美、前端、维护六类 Top 5。每类从完整数据中选出每模型最高分档位，再取前五；六个分类单行显示。
+- 数据来自 [ModelDial Radar](https://modeldial.com/zh-CN/radar) 公开评测（[CC BY 4.0](https://modeldial.com/data-license)）；UniDesk 不重新计算评分或费用。
+- 模块默认关闭，关闭时不发起网络请求。UniDesk 运行且模块启用期间，优先读取本地缓存，每 6 小时最多自动检查一次，并只通过固定接口 `https://modeldial.com/data/overview.json` 刷新；也可随时手动刷新。
 - 这是只读决策参考，不调用模型、不执行本地评测，也不修改模型工具配置。公开评测不代表合作或背书，实际表现可能因账号、路由和端点而异。
 
 ### 模块管理
@@ -92,7 +92,7 @@ UniDesk 是一个轻量、个性化、清爽好用的 Windows 桌面侧边栏工
 
 ### 模型雷达
 
-两张决策卡先回答当前综合最高配置和 ModelDial 官方性价比推荐，再查看不同任务维度的 Top 5。
+综合最高卡与六类 Top 5 保留模型、推理档位和得分。模块管理可分别选择展开／收起时显示的时间天气、硬件、模型雷达和待办，收起高度随可见内容调整。
 
 ![UniDesk 模型雷达展示](images/unidesk-model-radar.png)
 
@@ -117,10 +117,10 @@ UniDesk 适合希望桌面保持清爽，但又想快速查看信息、打开常
 
 ## 📦 安装与使用
 
-`v2.2.2` 正式安装包的官方分发入口是 [v2.2.2 GitHub Release](https://github.com/SuperDaddyV/UniDesk/releases/tag/v2.2.2)。该版本采用仅适用于此精确版本的未签名正式发布例外；安装包为 `Authenticode: NotSigned`，Windows 可能显示 SmartScreen 或企业策略提示。请从官方 Release 下载并核对 SHA-256。安装包文件名为：
+`v2.2.3` 正式安装包的官方分发入口是 [v2.2.3 GitHub Release](https://github.com/SuperDaddyV/UniDesk/releases/tag/v2.2.3)。该版本采用仅适用于此精确版本的未签名正式发布例外；安装包为 `Authenticode: NotSigned`，Windows 可能显示 SmartScreen 或企业策略提示。请从官方 Release 下载并核对 SHA-256。安装包文件名为：
 
 ```powershell
-UniDesk_Setup_2.2.2.exe
+UniDesk_Setup_2.2.3.exe
 ```
 
 建议安装或升级前先退出正在运行的 UniDesk。
@@ -159,10 +159,10 @@ dotnet run --project UniDesk\UniDesk.csproj
 从干净工作区构建本地未签名候选包：
 
 ```powershell
-.\scripts\Build-Release.ps1 -Version 2.2.2
+.\scripts\Build-Release.ps1 -Version 2.2.3
 ```
 
-脚本会将主程序、硬件服务和修复工具发布到全新的版本目录，再从这些确定输入编译安装包。干净工作区生成的未签名 `v2.2.2` 制品必须通过 `Test-UnsignedReleaseReadiness.ps1`，完成适用人工矩阵并由项目所有者最终批准后才能公开；SignPath 签名工作流继续保留给未来签名版本，且不会自动创建 GitHub Release。
+脚本会将主程序、硬件服务和修复工具发布到全新的版本目录，再从这些确定输入编译安装包。干净工作区生成的未签名 `v2.2.3` 制品必须通过 `Test-UnsignedReleaseReadiness.ps1`，完成适用人工矩阵并由项目所有者最终批准后才能公开；SignPath 签名工作流继续保留给未来签名版本，且不会自动创建 GitHub Release。
 
 ## 🧰 技术栈
 
@@ -184,7 +184,7 @@ UniDesk 优先使用本地存储，用户数据保存在本机。当前主要数
 
 ## Code signing policy
 
-公开发布包遵循[代码签名政策](CODE_SIGNING_POLICY.md)和[隐私政策](PRIVACY.md)。`v2.2.2` 采用单独批准、仅适用于该精确版本的未签名正式版例外：必须来自精确公开提交，通过人工、完整载荷和 SHA-256 校验，并清晰标注 `Authenticode: NotSigned` 及 Windows 可能显示的 SmartScreen／企业策略提示。
+公开发布包遵循[代码签名政策](CODE_SIGNING_POLICY.md)和[隐私政策](PRIVACY.md)。`v2.2.3` 采用单独批准、仅适用于该精确版本的未签名正式版例外：必须来自精确公开提交，通过人工、完整载荷和 SHA-256 校验，并清晰标注 `Authenticode: NotSigned` 及 Windows 可能显示的 SmartScreen／企业策略提示。
 
 Free code signing provided by SignPath.io, certificate by SignPath Foundation.
 
@@ -192,8 +192,11 @@ Free code signing provided by SignPath.io, certificate by SignPath Foundation.
 
 当前版本已补充以下能力：
 
-- 新增模型雷达：展示综合最高、官方性价比推荐及综合、后端、前端、知识四类 Top 5。
-- 新增模块管理：支持模块显示 / 隐藏和排序。
+- 模型雷达更新为综合最高与六类 Top 5，每模型保留最佳档位；首位单行显示，移除性价比推荐。
+- 展开与收起分别配置模块显示内容，收起高度随组合调整；优化标题、硬件间距和快捷文本对齐。
+- 修复托盘菜单 DPI 定位、退出保存死锁，升级时先请求正常关闭，拒绝或超时则停止替换文件。
+- 本版最终安装包的手动安装／升级／卸载、多屏及提权场景未验证，详见[发布测试矩阵](docs/release-test-matrix-2.2.3.md)。
+- 模块管理支持显示 / 隐藏和排序。
 - 新增快捷方式拖拽添加与自由排序。
 - 新增快速便签：支持多条便签、自动保存、置顶和复制。
 - 新增快捷文本：支持剪贴板历史、常用短语和敏感内容过滤。

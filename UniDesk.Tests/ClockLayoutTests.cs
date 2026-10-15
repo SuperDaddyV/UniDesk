@@ -35,8 +35,10 @@ public sealed class ClockLayoutTests
             {
                 var binding = (string?)block.Attribute("Text");
                 var isTime = binding == "{Binding ClockTimeText}";
-                block.SetAttributeValue("Text", isTime ? "08:43" : binding == "{Binding ClockDateText}" ? "miércoles, 30 de septiembre de 2026" : "Lunar August twentieth");
-                block.SetAttributeValue("FontSize", (collapsed ? (isTime ? 30 : 10) : Math.Round((isTime ? 43 : 11) * fontScale, 1)).ToString(CultureInfo.InvariantCulture));
+                var isDate = binding == "{Binding ClockShortDateText}";
+                block.SetAttributeValue("Text", isTime ? "08:43" : isDate ? "miércoles, 30 de septiembre de 2026" : "Lunar August twentieth");
+                block.SetAttributeValue("FontSize", (collapsed ? (isTime ? 30 : 10) : Math.Round((isTime ? 40 : isDate ? 12 : 11) * fontScale, 1)).ToString(CultureInfo.InvariantCulture));
+                block.SetAttributeValue("TextWrapping", isTime || isDate || collapsed ? "NoWrap" : "Wrap");
                 block.SetAttributeValue("Foreground", "White");
                 block.Attribute("Visibility")?.Remove();
                 block.Elements().Where(e => e.Name.LocalName == "TextBlock.Style").Remove();

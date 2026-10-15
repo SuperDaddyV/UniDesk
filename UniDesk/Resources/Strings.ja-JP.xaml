@@ -67,22 +67,32 @@
     <sys:String x:Key="ModelRadar.SchemaError">データ形式が変更され、このバージョンでは対応していません</sys:String>
     <sys:String x:Key="ModelRadar.SchemaErrorCached">最新の形式には未対応のため、オフラインキャッシュを表示しています</sys:String>
     <sys:String x:Key="ModelRadar.PublishedFormat">公開日時：{0}</sys:String>
-    <sys:String x:Key="ModelRadar.DimensionSummaryFormat">バックエンド {0} · フロントエンド {1} · 知識 {2}</sys:String>
-    <sys:String x:Key="ModelRadar.OverallRankingDescription">公開元の総合ランキング</sys:String>
+    <sys:String x:Key="ModelRadar.AestheticCategory">審美</sys:String>
+    <sys:String x:Key="ModelRadar.MaintainabilityCategory">保守</sys:String>
+    <sys:String x:Key="ModelRadar.AestheticScore">視覚的審美性</sys:String>
+    <sys:String x:Key="ModelRadar.MaintainabilityScore">保守性</sys:String>
+    <sys:String x:Key="ModelRadar.FiveAxisBasis">五軸評価</sys:String>
+    <sys:String x:Key="ModelRadar.CompactLegacyBasis">旧三軸</sys:String>
+    <sys:String x:Key="ModelRadar.LegacyRankingDescription">旧キャッシュ順位 · 五軸更新待ち</sys:String>
+    <sys:String x:Key="ModelRadar.LegacyBasis">旧三軸評価 · 更新待ち</sys:String>
+    <sys:String x:Key="ModelRadar.AestheticRankingDescription">審美得点順 · 各モデルの最高設定</sys:String>
+    <sys:String x:Key="ModelRadar.MaintainabilityRankingDescription">保守性得点順 · 各モデルの最高設定</sys:String>
+    <sys:String x:Key="ModelRadar.DimensionSummaryFormat" xml:space="preserve">バックエンド {0} · フロントエンド {1} · 知識 {2}&#x0a;審美 {3} · 保守性 {4}</sys:String>
+    <sys:String x:Key="ModelRadar.OverallRankingDescription">総合得点順 · 各モデルの最高設定</sys:String>
     <sys:String x:Key="ModelRadar.BackendRankingDescription">バックエンド得点順</sys:String>
     <sys:String x:Key="ModelRadar.FrontendRankingDescription">フロントエンド得点順</sys:String>
     <sys:String x:Key="ModelRadar.KnowledgeRankingDescription">知識得点順</sys:String>
     <sys:String x:Key="ModelRadar.OverallBest">総合トップ</sys:String>
     <sys:String x:Key="ModelRadar.ValueRecommendation">コストパフォーマンス推薦</sys:String>
     <sys:String x:Key="ModelRadar.NoValueRecommendation">このバッチにはコストパフォーマンス推薦がありません</sys:String>
-    <sys:String x:Key="ModelRadar.CompactOverallLabel">TOP</sys:String>
+    <sys:String x:Key="ModelRadar.CompactOverallLabel">総合</sys:String>
     <sys:String x:Key="ModelRadar.CompactValueLabel">VAL</sys:String>
     <sys:String x:Key="ModelRadar.CompactOverallFormat">総合：{0} / {1} · {2}</sys:String>
     <sys:String x:Key="ModelRadar.CompactValueFormat">コスパ：{0} / {1} · {2}</sys:String>
     <sys:String x:Key="ModelRadar.CompactCached">キャッシュ</sys:String>
     <sys:String x:Key="ModelRadar.OverallCategory">総合</sys:String>
-    <sys:String x:Key="ModelRadar.BackendCategory">バックエンド</sys:String>
-    <sys:String x:Key="ModelRadar.FrontendCategory">フロントエンド</sys:String>
+    <sys:String x:Key="ModelRadar.BackendCategory">後端</sys:String>
+    <sys:String x:Key="ModelRadar.FrontendCategory">前端</sys:String>
     <sys:String x:Key="ModelRadar.KnowledgeCategory">知識</sys:String>
     <sys:String x:Key="ModelRadar.OverallScore">総合得点</sys:String>
     <sys:String x:Key="ModelRadar.BackendScore">バックエンド得点</sys:String>
@@ -296,7 +306,8 @@
     <sys:String x:Key="Settings.OpenLocationSettings">Windows の位置情報設定を開く</sys:String>
     <sys:String x:Key="Settings.OpenLocationSettingsFailed">Windows の位置情報設定を開けませんでした。Windows 設定から位置情報へのアクセスを手動で変更してください。</sys:String>
     <sys:String x:Key="Settings.WeatherApi">天気 API</sys:String>
-    <sys:String x:Key="Settings.WeatherApiHint">天気データは QWeather から提供されます。API Host と API Key は同じ QWeather プロジェクトのものを使用し、パネルの QWeather リンクから公式サイトを開けます。</sys:String>
+    <sys:String x:Key="Settings.WeatherApiHint">天気と大気質のデータは QWeather から提供されます。API Host と API Key は同じ QWeather プロジェクトのものを使用してください。</sys:String>
+    <sys:String x:Key="Settings.WeatherDataSources">大気質の出典</sys:String>
     <sys:String x:Key="Settings.WeatherCredentialsRequired">API Host と API Key は両方入力するか、両方空欄にしてください。</sys:String>
     <sys:String x:Key="Settings.WeatherApiHostInvalid">API Host が無効です。QWeather コンソールが提供する HTTPS の専用 qweatherapi.com サブドメインのみ使用できます。</sys:String>
     <sys:String x:Key="Settings.About">情報</sys:String>
@@ -372,4 +383,8 @@
     <sys:String x:Key="Dialog.DatabaseError">データベースエラー</sys:String>
     <sys:String x:Key="Dialog.NetworkError">ネットワークエラー</sys:String>
     <sys:String x:Key="App.FatalErrorFormat">UniDesk で回復不能なエラーが発生したため終了します。&#10;ログ：{0}</sys:String>
+    <sys:String x:Key="Settings.ExpandedDisplay">展開時</sys:String>
+    <sys:String x:Key="Settings.CompactDisplay">折りたたみ時</sys:String>
+    <sys:String x:Key="Settings.ModuleDisplayHint">各表示モードのモジュールを選択します。高さは表示内容に合わせて調整されます。</sys:String>
+    <sys:String x:Key="ModelRadar.RankingDescription">五軸評価・各モデルの最良設定</sys:String>
 </ResourceDictionary>

@@ -30,20 +30,21 @@ UniDesk 是一款面向 Windows 的桌面侧边栏工具。展开时，它把信
 
 ## 下载与安装
 
-**[下载 UniDesk v2.2.2（Windows x64）](https://github.com/SuperDaddyV/UniDesk/releases/download/v2.2.2/UniDesk_Setup_2.2.2.exe)**
+**[下载 UniDesk v2.2.3（Windows x64）](https://github.com/SuperDaddyV/UniDesk/releases/download/v2.2.3/UniDesk_Setup_2.2.3.exe)**
 
-[查看 v2.2.2 Release](https://github.com/SuperDaddyV/UniDesk/releases/tag/v2.2.2) ·
-[SHA256SUMS.txt](https://github.com/SuperDaddyV/UniDesk/releases/download/v2.2.2/SHA256SUMS.txt) ·
-[release-manifest.json](https://github.com/SuperDaddyV/UniDesk/releases/download/v2.2.2/release-manifest.json)
+[查看 v2.2.3 Release](https://github.com/SuperDaddyV/UniDesk/releases/tag/v2.2.3) ·
+[SHA256SUMS.txt](https://github.com/SuperDaddyV/UniDesk/releases/download/v2.2.3/SHA256SUMS.txt) ·
+[release-manifest.json](https://github.com/SuperDaddyV/UniDesk/releases/download/v2.2.3/release-manifest.json)
 
 > [!NOTE]
-> `v2.2.2` 安装包和 UniDesk 一方二进制文件为 `Authenticode: NotSigned`。Windows 可能显示 SmartScreen 或企业策略提示；请从本仓库 Release 下载并核对 SHA-256。
+> `v2.2.3` 安装包和 UniDesk 一方二进制文件为 `Authenticode: NotSigned`。Windows 可能显示 SmartScreen 或企业策略提示；请从本仓库 Release 下载并核对 SHA-256。
+> 本版尚未完成最终安装包的手动安装、升级、卸载及多屏／提权验收，覆盖边界见[发布测试矩阵](docs/release-test-matrix-2.2.3.md)。
 
 | 项目 | 支持范围 |
 | --- | --- |
 | 系统 | 仍在 Microsoft 支持周期内的 Windows 11 x64 |
 | 长期服务版本 | Windows 10 Enterprise／IoT Enterprise LTSC 2021 或更新版本 x64 |
-| 安装包 | `UniDesk_Setup_2.2.2.exe` |
+| 安装包 | `UniDesk_Setup_2.2.3.exe` |
 | SHA-256 | 以 Release 同页的 `SHA256SUMS.txt` 为准 |
 
 <details>
@@ -59,13 +60,15 @@ UniDesk 是一款面向 Windows 的桌面侧边栏工具。展开时，它把信
 
 ## 功能概览
 
+v2.2.3 更新：展开／收起模块分别配置，收起布局随组合调整；雷达更新为六类 Top 5，首位合为一行；精修文本和标题对齐，并修复托盘菜单 DPI 定位、退出保存死锁及升级正常关闭预检。详见[发布说明](docs/release-unidesk.md#v223)。
+
 | 能力 | 主要内容 |
 | --- | --- |
 | 信息一览 | 时间、日期、农历、天气、空气质量、湿度和桌面日历 |
 | 硬件状态 | CPU／内存／GPU 使用率、CPU／GPU 温度、整机 RX／TX 网速；不可用数据安全显示为 `--` |
 | 任务记录 | 待办事项、优先级、时间提醒、多条自动保存便签、本地备份与还原 |
 | 快捷操作 | 拖拽添加应用、文件和文件夹，自由排序；剪贴板历史、常用短语和一键复制 |
-| 模型雷达 | 综合最高、官方 `value` 性价比推荐，以及综合／后端／前端／知识四类 Top 5 |
+| 模型雷达 | 综合最高，以及综合／知识／后端／审美／前端／维护六类 Top 5，每类仅保留每模型最佳档位 |
 | 自由组合 | 模块显示、隐藏与排序，主题配色、透明度、尺寸、字体、置顶、锁定、收缩和开机自启 |
 
 全新安装默认启用时间天气、硬件监视、待办事项和快速便签；快捷方式、快捷文本和模型雷达默认关闭。升级会保留已有模块开关和排序。
@@ -74,7 +77,7 @@ UniDesk 是一款面向 Windows 的桌面侧边栏工具。展开时，它把信
 <summary><strong>模型雷达的数据来源与边界</strong></summary>
 
 - 数据来自 [ModelDial Radar](https://modeldial.com/zh-CN/radar) 公开评测，并遵循其 [CC BY 4.0 数据许可](https://modeldial.com/data-license)。
-- “性价比推荐”只采用发布方的官方 `value` 标签，UniDesk 不重新计算评分或费用。
+- UniDesk 直接使用发布方评分，不重新计算评分或费用；模块设置支持分别选择展开和收起时的显示内容。
 - 模块关闭时不发起网络请求；启用后优先读取本地缓存，每 6 小时最多自动检查一次，也可以手动刷新。
 - 该模块只提供决策参考，不调用模型、不执行本地评测、不修改模型工具配置，也不代表合作或背书。
 
@@ -98,7 +101,7 @@ UniDesk 是一款面向 Windows 的桌面侧边栏工具。展开时，它把信
 
 ## Code signing policy
 
-公开发布包遵循[代码签名政策](CODE_SIGNING_POLICY.md)。`v2.2.2` 使用单独批准、仅适用于该精确版本的未签名正式版例外，安装包状态为 `Authenticode: NotSigned`；SignPath 签名流程保留给未来版本。
+公开发布包遵循[代码签名政策](CODE_SIGNING_POLICY.md)。`v2.2.3` 使用单独批准、仅适用于该精确版本的未签名正式版例外，安装包状态为 `Authenticode: NotSigned`；SignPath 签名流程保留给未来版本。
 
 Free code signing provided by SignPath.io, certificate by SignPath Foundation.
 
@@ -123,7 +126,7 @@ dotnet run --project UniDesk\UniDesk.csproj
 制作安装包还需要 Inno Setup 6。请从干净工作区运行：
 
 ```powershell
-.\scripts\Build-Release.ps1 -Version 2.2.2
+.\scripts\Build-Release.ps1 -Version 2.2.3
 ```
 
 公开发布前必须通过未签名发布就绪门禁、人工矩阵和项目所有者批准；构建脚本不会自动创建 GitHub Release。完整规则见[发布说明](docs/release-unidesk.md)。

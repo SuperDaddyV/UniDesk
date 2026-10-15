@@ -95,7 +95,23 @@
                 </Grid>
                 <TextBlock Text="{DynamicResource Settings.WeatherApiHint}"
                            Foreground="{DynamicResource SecondaryTextBrush}"
-                           TextWrapping="Wrap" Margin="0,0,0,12"/>
+                           TextWrapping="Wrap" Margin="0,0,0,8"/>
+                <TextBlock Style="{StaticResource SecondaryTextStyle}"
+                           TextWrapping="Wrap" Margin="0,0,0,12">
+                    <Hyperlink x:Name="QWeatherAttributionLink"
+                               NavigateUri="https://www.qweather.com"
+                               RequestNavigate="WeatherSourceLink_OnRequestNavigate"
+                               Foreground="{DynamicResource SecondaryTextBrush}">
+                        <Run Text="{DynamicResource Weather.QWeatherAttribution}"/>
+                    </Hyperlink>
+                    <Run Text=" · "/>
+                    <Hyperlink x:Name="QWeatherSourcesLink"
+                               NavigateUri="https://developer.qweather.com/attribution.html"
+                               RequestNavigate="WeatherSourceLink_OnRequestNavigate"
+                               Foreground="{DynamicResource SecondaryTextBrush}">
+                        <Run Text="{DynamicResource Settings.WeatherDataSources}"/>
+                    </Hyperlink>
+                </TextBlock>
                 <Grid Margin="0,0,0,10">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="76"/><ColumnDefinition Width="*"/>

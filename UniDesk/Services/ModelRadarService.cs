@@ -14,7 +14,7 @@ public sealed class ModelRadarService : IModelRadarService, IDisposable
     private const int MaximumResponseBytes = 1024 * 1024;
     private const int MaximumCacheBytes = MaximumResponseBytes + (64 * 1024);
     private static readonly Uri LatestRadarUri = new(
-        "https://modeldial.com/api/v1/radar/latest.json",
+        "https://modeldial.com/data/overview.json",
         UriKind.Absolute);
 
     private readonly HttpClient _httpClient;
@@ -253,6 +253,11 @@ public sealed class ModelRadarService : IModelRadarService, IDisposable
     {
         RequireKind(root, JsonValueKind.Object);
 
+        if (root.TryGetProperty("snapshot", out _))
+        {
+            return ParsePublication(root);
+        }
+
         var schemaVersion = RequireString(root, "schemaVersion");
         if (!schemaVersion.StartsWith("1.", StringComparison.Ordinal) ||
             !Version.TryParse(schemaVersion, out var version) ||
@@ -303,6 +308,7 @@ public sealed class ModelRadarService : IModelRadarService, IDisposable
                 BatchId = backendBatchId,
                 PublishedAt = backendPublishedAt,
                 IsPending = true,
+                IsLegacySnapshot = true,
                 ValueRecommendation = backendEntries.FirstOrDefault(HasValueTag),
                 BackendTop = backendTop
             };
@@ -315,6 +321,7 @@ public sealed class ModelRadarService : IModelRadarService, IDisposable
             SchemaVersion = schemaVersion,
             BatchId = overallBatchId,
             PublishedAt = overallPublishedAt,
+            IsLegacySnapshot = true,
             OverallLeader = overallEntries[0],
             ValueRecommendation = overallEntries.FirstOrDefault(HasValueTag),
             OverallTop = CreatePublisherOrderTop(overallEntries, entry => entry.OverallScore),
@@ -323,6 +330,107 @@ public sealed class ModelRadarService : IModelRadarService, IDisposable
             KnowledgeTop = CreateDerivedTop(overallEntries, entry => entry.KnowledgeScore)
         };
     }
+
+    private static ModelRadarSnapshot ParsePublication(JsonElement root)
+    {
+        var publicationKey = RequireString(root, "publicationKey");
+        var quality = RequireObject(root, "qualityScores");
+        const string supportedPolicy = "five-axis-b20-f20-k35-a15-m10-cube-half_up-v2";
+        if (RequirePositiveInt32(quality, "schema_version") != 1 ||
+            RequireString(quality, "policy_id") != supportedPolicy ||
+            RequireString(quality, "base_publication_key") != publicationKey)
+        {
+            throw new SchemaException();
+        }
+
+        var weights = RequireObject(quality, "weights");
+        foreach (var (name, expected) in new[]
+                 { ("backend", 20), ("frontend", 20), ("knowledge", 35), ("aesthetic", 15), ("maintainability", 10) })
+        {
+            if (RequirePositiveInt32(weights, name) != expected) throw new SchemaException();
+        }
+
+        var source = RequireObject(root, "snapshot");
+        var batchId = RequireString(source, "batch_id");
+        var publishedAt = RequireDateTimeOffset(source, "published_at");
+        var hiddenIds = ReadStringArray(root, "hiddenModelIds").ToHashSet(StringComparer.Ordinal);
+        var names = root.TryGetProperty("displayNames", out var displayNames) ? displayNames : default;
+        var metrics = root.TryGetProperty("metrics", out var metricValues) ? metricValues : default;
+        if (names.ValueKind is not (JsonValueKind.Undefined or JsonValueKind.Object) ||
+            metrics.ValueKind is not (JsonValueKind.Undefined or JsonValueKind.Object)) throw new SchemaException();
+        var entries = new List<ModelRadarEntry>();
+        var ids = new HashSet<string>(StringComparer.Ordinal);
+        var position = 0;
+        foreach (var element in RequireArray(source, "entries").EnumerateArray())
+        {
+            RequireKind(element, JsonValueKind.Object);
+            var id = RequireString(element, "candidate_id");
+            var model = RequireString(element, "model_id");
+            var effort = RequireString(element, "reasoning_effort");
+            if (!ids.Add(id) || RequireString(element, "score_policy") != "five-axis") throw new SchemaException();
+            var overall = ReadScore(element, "overall_score");
+            var backend = ReadScore(element, "backend_score");
+            var frontend = ReadScore(element, "frontend_score");
+            var knowledge = ReadScore(element, "knowledge_score");
+            var aesthetic = ReadScore(element, "aesthetic_score");
+            var maintainability = ReadScore(element, "maintainability_score");
+            if (overall != null && (backend == null || frontend == null || knowledge == null ||
+                                    aesthetic == null || maintainability == null)) throw new SchemaException();
+
+            position++;
+            if (hiddenIds.Contains(id) || hiddenIds.Contains(model) ||
+                TryGetOptionalString(element, "product_kind") == "bot") continue;
+
+            var displayName = names.ValueKind == JsonValueKind.Object
+                ? TryGetOptionalString(names, model) ?? model : model;
+            long? elapsed = null;
+            double? cost = null;
+            if (metrics.ValueKind == JsonValueKind.Object && metrics.TryGetProperty(id, out var configurationMetrics))
+            {
+                RequireKind(configurationMetrics, JsonValueKind.Object);
+                if (configurationMetrics.TryGetProperty("overall", out var overallMetrics))
+                {
+                    RequireKind(overallMetrics, JsonValueKind.Object);
+                    elapsed = ReadOptionalNonNegativeInt64(overallMetrics, "elapsed_ms");
+                    var referenceCost = ReadOptionalNonNegativeDouble(overallMetrics, "estimated_api_cost_usd");
+                    if (TryGetOptionalString(overallMetrics, "cost_coverage") == "complete") cost = referenceCost;
+                }
+            }
+
+            entries.Add(new ModelRadarEntry
+            {
+                Id = id, Model = model, DisplayName = displayName, ModelDisplayName = displayName, ReasoningEffort = effort,
+                PublishedPosition = position, OverallScore = overall, BackendScore = backend,
+                FrontendScore = frontend, KnowledgeScore = knowledge, AestheticScore = aesthetic,
+                MaintainabilityScore = maintainability, ElapsedMilliseconds = elapsed,
+                EstimatedReferenceCostUsd = cost, DecisionTags = ReadStringArray(element, "decisionTags")
+            });
+        }
+
+        var overallTop = CreateModelTop(entries, entry => entry.OverallScore);
+        return new ModelRadarSnapshot
+        {
+            SchemaVersion = "publication-1", BatchId = batchId, PublishedAt = publishedAt,
+            IsPending = overallTop.Count == 0, OverallLeader = overallTop.FirstOrDefault()?.Entry,
+            ValueRecommendation = entries.FirstOrDefault(entry => entry.OverallScore != null && HasValueTag(entry)),
+            OverallTop = overallTop,
+            BackendTop = CreateModelTop(entries, entry => entry.BackendScore),
+            FrontendTop = CreateModelTop(entries, entry => entry.FrontendScore),
+            KnowledgeTop = CreateModelTop(entries, entry => entry.KnowledgeScore),
+            AestheticTop = CreateModelTop(entries, entry => entry.AestheticScore),
+            MaintainabilityTop = CreateModelTop(entries, entry => entry.MaintainabilityScore)
+        };
+    }
+
+    private static IReadOnlyList<ModelRadarListItem> CreateModelTop(
+        IReadOnlyList<ModelRadarEntry> entries, Func<ModelRadarEntry, double?> scoreSelector) =>
+        entries.Where(entry => scoreSelector(entry) != null)
+            .OrderByDescending(scoreSelector)
+            .ThenBy(entry => entry.PublishedPosition)
+            .DistinctBy(entry => entry.Model, StringComparer.Ordinal)
+            .Take(5)
+            .Select((entry, index) => new ModelRadarListItem(index + 1, entry, scoreSelector(entry)))
+            .ToArray();
 
     private static IReadOnlyList<ModelRadarEntry> ParseEntries(JsonElement array)
     {

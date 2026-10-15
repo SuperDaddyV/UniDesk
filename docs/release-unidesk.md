@@ -2,9 +2,42 @@
 
 ## Code signing policy
 
-Public packages follow the [UniDesk code signing policy](../CODE_SIGNING_POLICY.md) and [privacy policy](../PRIVACY.md). `v2.1.0`, `v2.2.0`, `v2.2.1`, and `v2.2.2` each use a separately approved, version-specific unsigned-stable exception; each must be rebuilt from its documented public source revision, pass the unsigned readiness gate and applicable manual matrix, and state `Authenticode: NotSigned` with a concise note that Windows may show a SmartScreen or enterprise-policy prompt. No later version inherits these exceptions.
+Public packages follow the [UniDesk code signing policy](../CODE_SIGNING_POLICY.md) and [privacy policy](../PRIVACY.md). `v2.1.0`, `v2.2.0`, `v2.2.1`, `v2.2.2`, and `v2.2.3` each have a separately approved, version-specific unsigned-stable exception. Each must be rebuilt from its documented public source revision, pass the unsigned readiness gate, satisfy its recorded approval and manual-matrix boundary, and state `Authenticode: NotSigned` with a concise note that Windows may show a SmartScreen or enterprise-policy prompt. No later version inherits these exceptions. Unrun manual scenarios stay explicitly unverified.
 
 Free code signing provided by SignPath.io, certificate by SignPath Foundation.
+
+## v2.2.3
+
+This release consolidates the accepted compact-panel refinements, Model Radar data and layout updates, tray positioning correction, and shutdown / upgrade repair.
+
+Distribution notice: the installer and UniDesk first-party binaries are `Authenticode: NotSigned` under a new approval for this exact version. Windows may show a SmartScreen or enterprise-policy prompt. Verify the official Release's SHA-256. Final-artifact manual installation, upgrade, uninstall, physical multi-monitor / DPI, tray overflow, and elevated hardware scenarios remain unverified; see the [release matrix](release-test-matrix-2.2.3.md).
+
+### Changes
+
+- Added separate expanded and compact module display preferences, with legacy settings preserved. Compact height follows the enabled modules while width retains the saved preference. Compact hardware shows three usage-only rows; expanded temperature readings remain available.
+- Updated Model Radar to the publisher's overview JSON: five scoring dimensions and six Top 5 categories, retaining the best tier per model. Removed the value recommendation display. The expanded leader is one aligned `TOP.1 / model / reasoning / score` row; compact Radar keeps its four-field summary.
+- Refined title position, hardware spacing, weather, todos, and Quick Text. Quick Text entries align left and center vertically while the History / Snippets tabs retain their existing alignment.
+- Corrected the tray menu's 125% DPI position by capturing physical coordinates once per right-click, avoiding the dependency's repeated coordinate conversion and later refresh drift.
+- Fixed synchronous shutdown waiting on a UI-bound settings continuation. Installer update preflight requests normal shutdown of the exact installed application; refusal or timeout stops before file replacement. It does not force-terminate the app.
+
+### 中文说明
+
+本版汇总已确认的收起界面调整、模型雷达数据与排版更新，以及托盘定位、退出保存和升级关闭修复。
+
+- 展开与收起分别设置模块内容，兼容原设置；收起高度随模块组合调整，宽度沿用已保存偏好。收起硬件仅显示 CPU／GPU／MEM 使用率，展开温度功能保留。
+- 雷达适配发布方 overview JSON，显示五维分数和综合／知识／后端／审美／前端／维护六类 Top 5，每模型保留最佳档位，移除性价比显示。展开首位合为一行，`TOP.1` 和综合分对齐下方两端文字；收起保留四项摘要。
+- 调整标题位置、硬件间距、天气、待办和快捷文本排版。文本条目左对齐、上下居中，「历史／常用」页签保持原对齐。
+- 托盘菜单在每次右键时只捕获一次物理坐标，修正 125% DPI 下的偏位，菜单打开期间的刷新不再推动位置漂移。
+- 修复退出保存等待 UI 线程续体导致的死锁。升级预检只请求精确安装路径对应的应用正常关闭；拒绝或超时会在替换文件前终止，不强制结束程序。
+
+分发说明：安装器及一方二进制为 `Authenticode: NotSigned`，Windows 可能显示 SmartScreen 或企业策略提示。真实安装／升级／卸载、多屏物理 DPI、托盘溢出区和硬件提权场景未验证；自动测试和 WPF 夹具不等于人工验收。详见[本版测试矩阵](release-test-matrix-2.2.3.md)。
+
+### Installer integrity / 安装包校验
+
+- `UniDesk_Setup_2.2.3.exe`
+- SHA-256：以 GitHub Release 同页 `SHA256SUMS.txt` 为准
+- Authenticode：`NotSigned`
+- 精确源码、SDK、载荷清单和一方 PE 状态：以同页 `release-manifest.json` 为准
 
 ## v2.2.2
 

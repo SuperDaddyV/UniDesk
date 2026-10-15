@@ -67,15 +67,25 @@
     <sys:String x:Key="ModelRadar.SchemaError">数据结构已变化，当前版本暂不兼容</sys:String>
     <sys:String x:Key="ModelRadar.SchemaErrorCached">最新数据结构不兼容，当前继续显示离线缓存</sys:String>
     <sys:String x:Key="ModelRadar.PublishedFormat">发布时间：{0}</sys:String>
-    <sys:String x:Key="ModelRadar.DimensionSummaryFormat">后端 {0} · 前端 {1} · 知识 {2}</sys:String>
-    <sys:String x:Key="ModelRadar.OverallRankingDescription">发布方综合排名</sys:String>
+    <sys:String x:Key="ModelRadar.AestheticCategory">审美</sys:String>
+    <sys:String x:Key="ModelRadar.MaintainabilityCategory">维护</sys:String>
+    <sys:String x:Key="ModelRadar.AestheticScore">视觉审美</sys:String>
+    <sys:String x:Key="ModelRadar.MaintainabilityScore">可维护性</sys:String>
+    <sys:String x:Key="ModelRadar.FiveAxisBasis">五维评分</sys:String>
+    <sys:String x:Key="ModelRadar.CompactLegacyBasis">旧三维</sys:String>
+    <sys:String x:Key="ModelRadar.LegacyRankingDescription">旧缓存榜单 · 等待五维更新</sys:String>
+    <sys:String x:Key="ModelRadar.LegacyBasis">三维旧口径 · 等待更新</sys:String>
+    <sys:String x:Key="ModelRadar.AestheticRankingDescription">按审美得分 · 每模型最佳档位</sys:String>
+    <sys:String x:Key="ModelRadar.MaintainabilityRankingDescription">按维护得分 · 每模型最佳档位</sys:String>
+    <sys:String x:Key="ModelRadar.DimensionSummaryFormat" xml:space="preserve">后端 {0} · 前端 {1} · 知识 {2}&#x0a;审美 {3} · 维护 {4}</sys:String>
+    <sys:String x:Key="ModelRadar.OverallRankingDescription">按综合得分 · 每模型最佳档位</sys:String>
     <sys:String x:Key="ModelRadar.BackendRankingDescription">按后端得分</sys:String>
     <sys:String x:Key="ModelRadar.FrontendRankingDescription">按前端得分</sys:String>
     <sys:String x:Key="ModelRadar.KnowledgeRankingDescription">按知识得分</sys:String>
     <sys:String x:Key="ModelRadar.OverallBest">综合最高</sys:String>
     <sys:String x:Key="ModelRadar.ValueRecommendation">性价比推荐</sys:String>
     <sys:String x:Key="ModelRadar.NoValueRecommendation">本批次暂无性价比推荐</sys:String>
-    <sys:String x:Key="ModelRadar.CompactOverallLabel">TOP</sys:String>
+    <sys:String x:Key="ModelRadar.CompactOverallLabel">综合最高</sys:String>
     <sys:String x:Key="ModelRadar.CompactValueLabel">VAL</sys:String>
     <sys:String x:Key="ModelRadar.CompactOverallFormat">综合：{0} / {1} · {2}</sys:String>
     <sys:String x:Key="ModelRadar.CompactValueFormat">性价比：{0} / {1} · {2}</sys:String>
@@ -296,7 +306,8 @@
     <sys:String x:Key="Settings.OpenLocationSettings">打开 Windows 位置设置</sys:String>
     <sys:String x:Key="Settings.OpenLocationSettingsFailed">无法打开 Windows 位置设置，请手动前往系统设置调整定位权限。</sys:String>
     <sys:String x:Key="Settings.WeatherApi">天气 API 设置</sys:String>
-    <sys:String x:Key="Settings.WeatherApiHint">天气数据由和风天气提供。API Host 与 API Key 需来自同一和风天气项目；主面板中的“和风天气”可点击查看官网。</sys:String>
+    <sys:String x:Key="Settings.WeatherApiHint">天气及空气质量数据由和风天气提供。API Host 与 API Key 需来自同一和风天气项目。</sys:String>
+    <sys:String x:Key="Settings.WeatherDataSources">空气质量来源</sys:String>
     <sys:String x:Key="Settings.WeatherCredentialsRequired">API Host 与 API Key 必须同时填写或同时留空。</sys:String>
     <sys:String x:Key="Settings.WeatherApiHostInvalid">API Host 无效，仅允许和风控制台提供的 HTTPS 专属 qweatherapi.com 子域名。</sys:String>
     <sys:String x:Key="Settings.About">关于</sys:String>
@@ -372,4 +383,8 @@
     <sys:String x:Key="Dialog.DatabaseError">数据库错误</sys:String>
     <sys:String x:Key="Dialog.NetworkError">网络错误</sys:String>
     <sys:String x:Key="App.FatalErrorFormat">UniDesk 遇到无法恢复的错误，即将退出。&#10;日志：{0}</sys:String>
+    <sys:String x:Key="Settings.ExpandedDisplay">展开显示</sys:String>
+    <sys:String x:Key="Settings.CompactDisplay">收起显示</sys:String>
+    <sys:String x:Key="Settings.ModuleDisplayHint">分别选择展开与收起时显示的模块；收起高度随内容自动调整。</sys:String>
+    <sys:String x:Key="ModelRadar.RankingDescription">五维评分，按每模型最佳档位</sys:String>
 </ResourceDictionary>

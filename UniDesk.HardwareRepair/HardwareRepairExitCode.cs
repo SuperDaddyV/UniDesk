@@ -23,5 +23,6 @@ public enum HardwareRepairExitCode
     HardwareCompatibilityMode = 31,
     ServiceRemoveFailed = 40,
     StartupCleanupFailed = 50,
+    ApplicationExitFailed = 60,
     UnexpectedError = 100
 }

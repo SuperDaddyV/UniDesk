@@ -103,9 +103,9 @@
                     <ItemsControl ItemsSource="{Binding ClipboardHistory}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Border CornerRadius="8"
-                                        Padding="8,6"
-                                        Margin="0,0,0,6"
+                                <Border CornerRadius="8" MinHeight="32"
+                                        Padding="8,4"
+                                        Margin="0,0,0,2"
                                         Cursor="Hand"
                                         Tag="{Binding DataContext, RelativeSource={RelativeSource AncestorType=UserControl}}">
                                     <Border.Style>
@@ -138,6 +138,7 @@
                                         </ContextMenu>
                                     </Border.ContextMenu>
                                     <TextBlock Text="{Binding Summary}"
+                                               TextAlignment="Left" VerticalAlignment="Center"
                                                FontSize="{Binding DataContext.FontScale, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource ScaledFontSizeConverter}, ConverterParameter=10}"
                                                Foreground="{DynamicResource PrimaryTextBrush}"
                                                TextTrimming="CharacterEllipsis"
@@ -160,9 +161,9 @@
                     <ItemsControl ItemsSource="{Binding TextSnippets}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Border CornerRadius="8"
-                                        Padding="8,6"
-                                        Margin="0,0,0,6"
+                                <Border CornerRadius="8" MinHeight="32"
+                                        Padding="8,4"
+                                        Margin="0,0,0,2"
                                         Cursor="Hand"
                                         Tag="{Binding DataContext, RelativeSource={RelativeSource AncestorType=UserControl}}">
                                     <Border.Style>
@@ -194,7 +195,7 @@
                                                       CommandParameter="{Binding}"/>
                                         </ContextMenu>
                                     </Border.ContextMenu>
-                                    <Grid>
+                                    <Grid VerticalAlignment="Center">
                                         <Grid.RowDefinitions>
                                             <RowDefinition Height="Auto"/>
                                             <RowDefinition Height="Auto"/>
@@ -211,6 +212,7 @@
                                                        Foreground="{DynamicResource PrimaryTextBrush}"
                                                        Visibility="{Binding IsPinned, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                                             <TextBlock Grid.Column="1" Text="{Binding DisplayTitle}"
+                                                       TextAlignment="Left"
                                                        FontSize="{Binding DataContext.FontScale, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource ScaledFontSizeConverter}, ConverterParameter=10}"
                                                        FontWeight="SemiBold"
                                                        Foreground="{DynamicResource PrimaryTextBrush}"
@@ -219,6 +221,7 @@
                                         </Grid>
                                         <TextBlock Grid.Row="1"
                                                    Text="{Binding Summary}"
+                                                   TextAlignment="Left"
                                                    FontSize="{Binding DataContext.FontScale, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource ScaledFontSizeConverter}, ConverterParameter=9}"
                                                    Foreground="{DynamicResource SecondaryTextBrush}"
                                                    TextTrimming="CharacterEllipsis"

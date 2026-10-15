@@ -7,6 +7,26 @@ namespace UniDesk.Tests;
 
 public sealed class ModelRadarRankingLayoutTests
 {
+    [Theory]
+    [InlineData("zh-CN")]
+    [InlineData("en-US")]
+    [InlineData("ja-JP")]
+    [InlineData("es-ES")]
+    public void FiveAxisSummary_ShouldRetainTwoLinesInCompiledResources(string language)
+    {
+        ClockLayoutTests.RunSta(() =>
+        {
+            var dictionary = new ResourceDictionary
+            {
+                Source = new Uri($"pack://application:,,,/UniDesk;component/Resources/Strings.{language}.xaml")
+            };
+            var format = Assert.IsType<string>(dictionary["ModelRadar.DimensionSummaryFormat"]);
+            Assert.Equal(2, format.Split('\n').Length);
+            Assert.Contains("{2}", format.Split('\n')[0]);
+            Assert.Contains("{4}", format.Split('\n')[1]);
+        });
+    }
+
     [Fact]
     public void DecisionTags_ShouldNotIncreaseRankingRowHeight()
     {

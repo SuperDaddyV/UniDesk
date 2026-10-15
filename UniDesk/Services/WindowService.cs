@@ -67,9 +67,7 @@ public class WindowService : IWindowService
     public void SetWidth(double width)
     {
         if (_mainWindow == null) return;
-        _mainWindow.Width = PanelSizePolicy.ClampActualWidth(
-            width,
-            GetCurrentMonitor().WorkArea);
+        _mainWindow.ApplyPreferredPanelWidth(width);
     }
 
     public void SetHeight(double height)

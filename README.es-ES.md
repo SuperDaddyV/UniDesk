@@ -54,9 +54,9 @@ UniDesk es una barra lateral ligera, personalizable y limpia para el escritorio 
 
 ### Radar de modelos
 
-- Primero muestra las tarjetas Líder general y Recomendación de valor; después ofrece listas de referencia Top 5 de General / Backend / Frontend / Conocimiento.
-- Los datos proceden de evaluaciones públicas de [ModelDial Radar](https://modeldial.com/radar) ([CC BY 4.0](https://modeldial.com/data-license)). Recomendación de valor usa únicamente la etiqueta oficial `value` del publicador; UniDesk no recalcula puntuaciones ni costes.
-- Está desactivado de forma predeterminada y no realiza solicitudes de red mientras está desactivado. Mientras UniDesk se ejecuta y el módulo está activado, primero lee la caché local, comprueba actualizaciones como máximo una vez cada seis horas desde `https://modeldial.com/api/v1/radar/latest.json` y también permite actualizar manualmente.
+- Muestra el líder general y seis listas Top 5: General / Conocimiento / Backend / Estética / Frontend / Mantenibilidad. Cada categoría elige el nivel mejor puntuado de cada modelo antes de tomar los cinco primeros; las seis pestañas ocupan una fila.
+- Los datos proceden de evaluaciones públicas de [ModelDial Radar](https://modeldial.com/radar) ([CC BY 4.0](https://modeldial.com/data-license)). UniDesk no recalcula puntuaciones ni costes.
+- Está desactivado de forma predeterminada y no realiza solicitudes de red mientras está desactivado. Mientras UniDesk se ejecuta y el módulo está activado, primero lee la caché local, comprueba actualizaciones como máximo una vez cada seis horas desde `https://modeldial.com/data/overview.json` y también permite actualizar manualmente.
 - Es una referencia de decisión de solo lectura: UniDesk no ejecuta modelos, no realiza evaluaciones locales ni modifica la configuración de las herramientas de modelos. Los datos públicos no implican colaboración ni respaldo; el rendimiento real puede variar según la cuenta, la ruta y el endpoint.
 
 ### Gestión de módulos
@@ -92,7 +92,7 @@ Al contraerse, UniDesk mantiene visibles la hora, el clima, el estado del hardwa
 
 ### Radar de modelos
 
-Dos tarjetas de decisión muestran primero el líder general actual y la recomendación de valor oficial de ModelDial; después puedes consultar los Top 5 por tipo de tarea.
+El líder general y las seis listas Top 5 conservan el modelo, nivel y puntuación. Los ajustes permiten elegir por separado la visibilidad expandida y compacta de hora/clima, hardware, radar y tareas; la altura compacta sigue el contenido visible.
 
 ![Presentación del radar de modelos de UniDesk](images/unidesk-model-radar.png)
 
@@ -117,10 +117,10 @@ Casos de uso habituales:
 
 ## 📦 Instalación
 
-El punto oficial de distribución del instalador estable `v2.2.2` es la [GitHub Release v2.2.2](https://github.com/SuperDaddyV/UniDesk/releases/tag/v2.2.2). Esta versión exacta usa una excepción estable sin firma aprobada por separado. El instalador es `Authenticode: NotSigned`, por lo que Windows puede mostrar un aviso de SmartScreen o de una política empresarial. Descárgalo desde la Release oficial y verifica el SHA-256 publicado. El nombre del instalador es:
+El punto oficial de distribución del instalador estable `v2.2.3` es la [GitHub Release v2.2.3](https://github.com/SuperDaddyV/UniDesk/releases/tag/v2.2.3). Esta versión exacta usa una excepción estable sin firma aprobada por separado. El instalador es `Authenticode: NotSigned`, por lo que Windows puede mostrar un aviso de SmartScreen o de una política empresarial. Descárgalo desde la Release oficial y verifica el SHA-256 publicado. El nombre del instalador es:
 
 ```powershell
-UniDesk_Setup_2.2.2.exe
+UniDesk_Setup_2.2.3.exe
 ```
 
 Se recomienda cerrar UniDesk antes de instalar o actualizar.
@@ -159,10 +159,10 @@ dotnet run --project UniDesk\UniDesk.csproj
 Crear un candidato local sin firmar desde un árbol de trabajo limpio:
 
 ```powershell
-.\scripts\Build-Release.ps1 -Version 2.2.2
+.\scripts\Build-Release.ps1 -Version 2.2.3
 ```
 
-El script publica la aplicación, el servicio de hardware y la herramienta de reparación en un directorio nuevo con versión, y compila el instalador únicamente desde esas entradas. Un artefacto `v2.2.2` sin firmar creado desde un árbol limpio debe superar `Test-UnsignedReleaseReadiness.ps1`, la matriz manual aplicable y la aprobación final del propietario del proyecto antes de publicarse. El flujo de SignPath se conserva para futuras versiones firmadas y nunca crea una GitHub Release automáticamente.
+El script publica la aplicación, el servicio de hardware y la herramienta de reparación en un directorio nuevo con versión, y compila el instalador únicamente desde esas entradas. Un artefacto `v2.2.3` sin firmar creado desde un árbol limpio debe superar `Test-UnsignedReleaseReadiness.ps1`, la matriz manual aplicable y la aprobación final del propietario del proyecto antes de publicarse. El flujo de SignPath se conserva para futuras versiones firmadas y nunca crea una GitHub Release automáticamente.
 
 ## 🧰 Tecnología
 
@@ -184,7 +184,7 @@ El historial del portapapeles incluye filtrado de contenido sensible para reduci
 
 ## Code signing policy
 
-Los paquetes públicos siguen la [política de firma de código](CODE_SIGNING_POLICY.md) y la [política de privacidad](PRIVACY.md). `v2.2.2` usa una excepción aprobada para esta versión exacta: debe proceder de la revisión pública exacta, recibir aprobación manual, superar las comprobaciones completas de carga y SHA-256, e indicar claramente `Authenticode: NotSigned` y que Windows puede mostrar un aviso de SmartScreen o de una política empresarial.
+Los paquetes públicos siguen la [política de firma de código](CODE_SIGNING_POLICY.md) y la [política de privacidad](PRIVACY.md). `v2.2.3` usa una excepción aprobada para esta versión exacta: debe proceder de la revisión pública exacta, recibir aprobación manual, superar las comprobaciones completas de carga y SHA-256, e indicar claramente `Authenticode: NotSigned` y que Windows puede mostrar un aviso de SmartScreen o de una política empresarial.
 
 Free code signing provided by SignPath.io, certificate by SignPath Foundation.
 
@@ -192,7 +192,10 @@ Free code signing provided by SignPath.io, certificate by SignPath Foundation.
 
 Las versiones recientes incluyen:
 
-- Radar de modelos con líder general, recomendación de valor oficial y listas Top 5 de General / Backend / Frontend / Conocimiento.
+- Radar con líder general en una fila y seis categorías Top 5, conservando el mejor nivel de cada modelo; se retira la recomendación de valor.
+- Preferencias separadas para módulos expandidos y compactos, altura adaptable y ajustes de título, hardware y textos rápidos.
+- Corregidos la posición DPI del menú de bandeja y el bloqueo al guardar durante el cierre; la actualización solicita un cierre normal y se detiene ante rechazo o tiempo agotado.
+- La instalación / actualización / desinstalación manual del artefacto final, varios monitores / DPI físicos y la elevación de hardware siguen sin verificar; véase la [matriz](docs/release-test-matrix-2.2.3.md).
 - Gestión de módulos con mostrar / ocultar y ordenación.
 - Arrastrar para añadir accesos directos y ordenación libre.
 - Notas rápidas con varias notas, guardado automático, fijar y copiar.

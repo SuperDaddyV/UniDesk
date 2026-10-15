@@ -242,7 +242,7 @@ public sealed class ModelRadarServiceTests : IDisposable
         using var handler = new RecordingHandler(request =>
         {
             Assert.Equal(HttpMethod.Get, request.Method);
-            Assert.Equal("https://modeldial.com/api/v1/radar/latest.json", request.RequestUri!.AbsoluteUri);
+            Assert.Equal("https://modeldial.com/data/overview.json", request.RequestUri!.AbsoluteUri);
             Assert.StartsWith("UniDesk/", request.Headers.UserAgent.ToString(), StringComparison.Ordinal);
             return Task.FromResult(JsonResponse(root));
         });
@@ -361,7 +361,7 @@ public sealed class ModelRadarServiceTests : IDisposable
             [Entry("known", "Known Model", "high", overall: 80, backend: 80, frontend: 80, knowledge: 80, rank: 1)]);
         using var handler = new RecordingHandler(request =>
         {
-            Assert.Equal("https://modeldial.com/api/v1/radar/latest.json", request.RequestUri!.AbsoluteUri);
+            Assert.Equal("https://modeldial.com/data/overview.json", request.RequestUri!.AbsoluteUri);
             return Task.FromResult(JsonResponse(root));
         });
         using var client = new HttpClient(handler);

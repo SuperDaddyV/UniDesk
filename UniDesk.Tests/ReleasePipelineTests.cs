@@ -84,8 +84,8 @@ public class ReleasePipelineTests
             "Test-UnsignedReleaseReadiness.ps1"));
 
         Assert.Contains("[string]$ExpectedSourceRevision", script, StringComparison.Ordinal);
-        Assert.Contains("[string]$ExpectedVersion = '2.2.2'", script, StringComparison.Ordinal);
-        Assert.Contains("@('2.1.0', '2.2.0', '2.2.1', '2.2.2')", script, StringComparison.Ordinal);
+        Assert.Contains("[string]$ExpectedVersion = '2.2.3'", script, StringComparison.Ordinal);
+        Assert.Contains("@('2.1.0', '2.2.0', '2.2.1', '2.2.2', '2.2.3')", script, StringComparison.Ordinal);
         Assert.Contains("-cnotcontains $ExpectedVersion", script, StringComparison.Ordinal);
         Assert.Contains("Test-ReleasePayloadIntegrity.ps1", script, StringComparison.Ordinal);
         Assert.Contains("-isnot [bool]", script, StringComparison.Ordinal);
@@ -150,7 +150,7 @@ public class ReleasePipelineTests
                 JsonSerializer.Serialize(new
                 {
                     schema = 3,
-                    version = "2.2.2",
+                    version = "2.2.3",
                     isDirty = 0,
                     sourceRevision,
                     runtime = "win-x64"
@@ -180,7 +180,7 @@ public class ReleasePipelineTests
                 JsonSerializer.Serialize(new
                 {
                     schema = 3,
-                    version = "2.2.2",
+                    version = "2.2.3",
                     isDirty = false,
                     sourceRevision = expectedRevision,
                     runtime = "win-x64"
@@ -212,7 +212,7 @@ public class ReleasePipelineTests
                 JsonSerializer.Serialize(new
                 {
                     schema = 3,
-                    version = "2.2.2",
+                    version = "2.2.3",
                     isDirty = false,
                     sourceRevision,
                     runtime = "win-x64"
@@ -230,7 +230,7 @@ public class ReleasePipelineTests
 
     [Theory]
     [InlineData("2.1.1")]
-    [InlineData("2.2.3")]
+    [InlineData("2.2.4")]
     [InlineData("2.3.0")]
     [InlineData("2.2.0-rc.1")]
     public void UnsignedReleaseReadinessGate_ShouldRejectVersionsWithoutExplicitException(
@@ -269,7 +269,8 @@ public class ReleasePipelineTests
     [InlineData("2.2.0")]
     [InlineData("2.2.1")]
     [InlineData("2.2.2")]
-    public void UnsignedReleaseReadinessGate_ShouldRecognizeOnlyTheFourApprovedStableVersions(
+    [InlineData("2.2.3")]
+    public void UnsignedReleaseReadinessGate_ShouldRecognizeOnlyTheFiveApprovedStableVersions(
         string version)
     {
         var sourceRevision = GetCurrentSourceRevision();
@@ -780,7 +781,7 @@ public class ReleasePipelineTests
         Assert.Contains("https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement", privacyPolicy, StringComparison.Ordinal);
         Assert.Contains("Clipboard history is enabled by default for fresh installations", privacyPolicy, StringComparison.Ordinal);
         Assert.Contains("全新安装默认启用剪贴板历史", privacyPolicy, StringComparison.Ordinal);
-        Assert.Contains("https://modeldial.com/api/v1/radar/latest.json", privacyPolicy, StringComparison.Ordinal);
+        Assert.Contains("https://modeldial.com/data/overview.json", privacyPolicy, StringComparison.Ordinal);
         Assert.Contains("Model Radar is disabled by default", privacyPolicy, StringComparison.Ordinal);
         Assert.Contains("模型雷达默认关闭", privacyPolicy, StringComparison.Ordinal);
         Assert.Contains("cache\\modeldial-radar.json", privacyPolicy, StringComparison.Ordinal);
@@ -807,6 +808,7 @@ public class ReleasePipelineTests
         Assert.Contains("v2.2.0 unsigned release exception", codeSigningPolicy, StringComparison.Ordinal);
         Assert.Contains("v2.2.1 unsigned release exception", codeSigningPolicy, StringComparison.Ordinal);
         Assert.Contains("v2.2.2 unsigned release exception", codeSigningPolicy, StringComparison.Ordinal);
+        Assert.Contains("v2.2.3 unsigned release exception", codeSigningPolicy, StringComparison.Ordinal);
         Assert.Contains("Test-UnsignedReleaseReadiness.ps1", File.ReadAllText(Path.Combine(
             ProjectRoot,
             "docs",
@@ -823,6 +825,10 @@ public class ReleasePipelineTests
             ProjectRoot,
             "docs",
             "release-test-matrix-2.2.2.md")), StringComparison.Ordinal);
+        Assert.Contains("Test-UnsignedReleaseReadiness.ps1", File.ReadAllText(Path.Combine(
+            ProjectRoot,
+            "docs",
+            "release-test-matrix-2.2.3.md")), StringComparison.Ordinal);
     }
 
     [Fact]

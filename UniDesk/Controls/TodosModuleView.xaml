@@ -53,7 +53,7 @@
                 <ItemsControl ItemsSource="{Binding Todos}">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
-                        <controls:TodoSwipeRow Margin="0,0,0,2"
+                        <controls:TodoSwipeRow Margin="0,0,0,4"
                                                DeleteCommand="{Binding DataContext.DeleteTodoCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                EditCommand="{Binding DataContext.EditTodoCommand, RelativeSource={RelativeSource AncestorType=UserControl}}">
                             <controls:TodoSwipeRow.IsSearchHighlighted>
@@ -114,6 +114,10 @@
                                            HorizontalAlignment="Left"
                                            ToolTip="{Binding Title}"
                                            TextTrimming="CharacterEllipsis"
+                                           TextWrapping="Wrap"
+                                           LineStackingStrategy="BlockLineHeight"
+                                           LineHeight="{Binding DataContext.FontScale, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource ScaledFontSizeConverter}, ConverterParameter=16}"
+                                           MaxHeight="{Binding DataContext.FontScale, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource ScaledFontSizeConverter}, ConverterParameter=32}"
                                            FontSize="{Binding DataContext.FontScale, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource ScaledFontSizeConverter}, ConverterParameter=12}">
                                     <TextBlock.Style>
                                         <Style TargetType="TextBlock" BasedOn="{StaticResource BodyTextStyle}">
@@ -139,14 +143,14 @@
                                 <TextBlock Grid.Column="2"
                                            Grid.Row="1"
                                            HorizontalAlignment="Left"
-                                           FontSize="{Binding DataContext.FontScale, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource ScaledFontSizeConverter}, ConverterParameter=11}"
-                                           Margin="0,1,0,0">
+                                           FontSize="{Binding DataContext.FontScale, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource ScaledFontSizeConverter}, ConverterParameter=10}"
+                                           Margin="0,3,0,0">
                                     <TextBlock.Text>
                                         <Binding Path="." Converter="{StaticResource TodoDueTextConverter}"/>
                                     </TextBlock.Text>
                                     <TextBlock.Style>
                                         <Style TargetType="TextBlock">
-                                            <Setter Property="Foreground" Value="{DynamicResource AccentBrush}"/>
+                                            <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}"/>
                                             <Style.Triggers>
                                                 <DataTrigger Binding="{Binding DueDate}" Value="{x:Null}">
                                                     <Setter Property="Visibility" Value="Collapsed"/>

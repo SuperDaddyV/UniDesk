@@ -22,9 +22,8 @@ public partial class MainWindow : Window
     private bool _isApplyingMonitorBounds;
     private bool _isDragging;
     private MonitorWorkArea? _currentMonitor;
-    private const double CollapsedPanelHeight = 206;
-    private const double CollapsedPanelMinWidth = 320;
-    private const double MinimumCompactHeight = CollapsedPanelHeight;
+    private double CollapsedPanelHeight => _viewModel.CompactLayout.WindowHeight;
+    private const double MinimumCompactHeight = 48;
     private const double WorkAreaMargin = 16;
     private const double WindowCornerRadius = 16;
 
@@ -79,7 +78,7 @@ public partial class MainWindow : Window
         }
         else if (e.PropertyName == nameof(MainWindowViewModel.ModuleLayoutVersion))
         {
-            ApplyModuleLayout();
+            ApplyPanelCollapseState();
         }
     }
 
@@ -502,9 +501,7 @@ public partial class MainWindow : Window
     {
         var bounds = PanelSizePolicy.GetBounds(monitor.WorkArea);
         MaxWidth = double.PositiveInfinity;
-        MinWidth = _viewModel.IsPanelCollapsed
-            ? Math.Min(CollapsedPanelMinWidth, bounds.MaxWidth)
-            : bounds.MinWidth;
+        MinWidth = bounds.MinWidth;
         MaxWidth = bounds.MaxWidth;
 
         var usableWorkAreaHeight = GetUsableWorkAreaHeight(monitor);
@@ -520,9 +517,16 @@ public partial class MainWindow : Window
     }
 
     private double GetRequestedPanelWidth() =>
-        _viewModel.IsPanelCollapsed
-            ? Math.Max(_viewModel.PanelWidth, CollapsedPanelMinWidth)
-            : _viewModel.PanelWidth;
+        PanelSizePolicy.GetRequestedWidth(_viewModel.PanelWidth);
+
+    internal void ApplyPreferredPanelWidth(double preferredWidth)
+    {
+        var monitor = _monitorWorkAreas.GetForWindow(new WindowInteropHelper(this).Handle);
+        ApplyPanelSizeConstraints(monitor);
+        Width = PanelSizePolicy.ClampActualSize(
+            PanelSizePolicy.GetRequestedWidth(preferredWidth),
+            _viewModel.PanelHeight, monitor.WorkArea).Width;
+    }
 
     private double GetUsableWorkAreaHeight() =>
         GetUsableWorkAreaHeight(_monitorWorkAreas.GetForWindow(

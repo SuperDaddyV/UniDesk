@@ -5,6 +5,7 @@ public sealed class ModuleSetting
     public string ModuleId { get; set; } = string.Empty;
     public string DisplayName { get; set; } = string.Empty;
     public bool IsEnabled { get; set; } = true;
+    public bool? IsCompactEnabled { get; set; }
     public int SortOrder { get; set; }
 
     public ModuleSetting Clone() => new()
@@ -12,6 +13,7 @@ public sealed class ModuleSetting
         ModuleId = ModuleId,
         DisplayName = DisplayName,
         IsEnabled = IsEnabled,
+        IsCompactEnabled = IsCompactEnabled,
         SortOrder = SortOrder
     };
 }
@@ -93,6 +95,13 @@ public static class DashboardModuleCatalog
     public static string GetDisplayName(string moduleId) =>
         DefaultModules.FirstOrDefault(module => module.ModuleId == moduleId)?.DisplayName ?? moduleId;
 
+    public static bool SupportsCompact(string moduleId) => moduleId is
+        DashboardModuleIds.TimeWeather or DashboardModuleIds.HardwareMonitor or
+        DashboardModuleIds.ModelRadar or DashboardModuleIds.Todos;
+
+    public static bool IsCompactEnabled(ModuleSetting module) => SupportsCompact(module.ModuleId) &&
+        (module.IsCompactEnabled ?? (module.ModuleId == DashboardModuleIds.ModelRadar ? module.IsEnabled : true));
+
     public static List<ModuleSetting> Normalize(IEnumerable<ModuleSetting>? modules)
     {
         var incoming = (modules ?? [])
@@ -117,6 +126,7 @@ public static class DashboardModuleCatalog
                                   ? moduleId
                                   : module.DisplayName.Trim()),
                 IsEnabled = module.IsEnabled,
+                IsCompactEnabled = IsCompactEnabled(module),
                 SortOrder = normalized.Count
             });
         }
@@ -129,6 +139,7 @@ public static class DashboardModuleCatalog
             if (!existingIds.Contains(defaultModule.ModuleId))
             {
                 var missing = defaultModule.Clone();
+                missing.IsCompactEnabled = IsCompactEnabled(missing);
                 missing.SortOrder = normalized.Count;
                 normalized.Add(missing);
             }

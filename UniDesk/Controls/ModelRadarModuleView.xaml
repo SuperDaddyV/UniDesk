@@ -1,6 +1,7 @@
 <UserControl x:Class="UniDesk.Controls.ModelRadarModuleView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:helpers="clr-namespace:UniDesk.Helpers"
              xmlns:models="clr-namespace:UniDesk.Models">
     <Border x:Name="ModelRadarModule"
             Style="{StaticResource ModuleCardStyle}"
@@ -55,50 +56,83 @@
             </StackPanel>
 
             <StackPanel Visibility="{Binding HasSnapshot, Converter={StaticResource BooleanToVisibilityConverter}}">
-                <Border Background="Transparent"
+                <Border ToolTip="{Binding OverallDecision.ToolTipText}" Background="Transparent"
                         BorderBrush="{DynamicResource GlassHighlightBrush}"
                         BorderThickness="0,0,0,1"
                         Padding="0,3,0,8"
                         Margin="0,0,0,6">
                     <StackPanel>
-                        <TextBlock Text="{DynamicResource ModelRadar.OverallBest}"
-                                   Foreground="{DynamicResource SecondaryTextBrush}"
-                                   FontSize="9"
-                                   FontWeight="SemiBold"/>
-                        <Grid Visibility="{Binding HasOverallLeader, Converter={StaticResource BooleanToVisibilityConverter}}"
+                        <Grid x:Name="OverallDecisionGrid" Visibility="{Binding HasOverallLeader, Converter={StaticResource BooleanToVisibilityConverter}}"
                               Margin="0,3,0,0">
+                            <Grid.Resources>
+                                <helpers:RadarHeaderInsetConverter x:Key="RadarHeaderInset"/>
+                            </Grid.Resources>
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="Auto"/>
                             </Grid.RowDefinitions>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
-                            <TextBlock x:Name="OverallConfigurationLine"
+                            <TextBlock x:Name="OverallBackendAlignmentGuide" Text="{DynamicResource ModelRadar.BackendCategory}"
+                                       Visibility="Hidden" FontSize="9" HorizontalAlignment="Center"/>
+                            <TextBlock x:Name="OverallMaintenanceAlignmentGuide" Grid.Column="4" Text="{DynamicResource ModelRadar.MaintainabilityCategory}"
+                                       Visibility="Hidden" FontSize="9" HorizontalAlignment="Center"/>
+                            <Grid Grid.ColumnSpan="5">
+                                <Grid.Margin>
+                                    <MultiBinding Converter="{StaticResource RadarHeaderInset}">
+                                        <Binding ElementName="OverallDecisionGrid" Path="ActualWidth"/>
+                                        <Binding ElementName="OverallBackendAlignmentGuide" Path="ActualWidth"/>
+                                        <Binding ElementName="OverallMaintenanceAlignmentGuide" Path="ActualWidth"/>
+                                    </MultiBinding>
+                                </Grid.Margin>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="TOP.1" FontSize="10" FontWeight="SemiBold" Margin="0,0,6,0"
+                                           Foreground="{DynamicResource SecondaryTextBrush}" VerticalAlignment="Center"/>
+                                <TextBlock x:Name="OverallConfigurationLine" Grid.Column="1" Margin="0,0,4,0"
                                        Foreground="{DynamicResource PrimaryTextBrush}"
-                                       FontSize="11"
+                                       FontSize="{Binding DataContext.FontScale, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource ScaledFontSizeConverter}, ConverterParameter=12}"
                                        FontWeight="Bold"
-                                       TextWrapping="Wrap"
+                                       TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"
                                        VerticalAlignment="Center">
-                                <Run Text="{Binding OverallDecision.ModelName}"/>
-                                <Run Text="  "/>
-                                <Run Text="{Binding OverallDecision.ReasoningEffort}"/>
-                            </TextBlock>
-                            <TextBlock Grid.Column="1"
+                                    <Run Text="{Binding OverallDecision.ModelName, Mode=OneWay}"/>
+                                    <Run Text="  "/>
+                                    <Run Text="{Binding OverallDecision.ReasoningEffort, Mode=OneWay}" FontSize="10" FontWeight="Normal"/>
+                                </TextBlock>
+                                <TextBlock x:Name="OverallLeaderScore" Grid.Column="2"
                                        Text="{Binding OverallDecision.ScoreText}"
                                        Foreground="{DynamicResource PrimaryTextBrush}"
-                                       FontSize="17"
+                                       FontSize="{Binding DataContext.FontScale, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource ScaledFontSizeConverter}, ConverterParameter=15}"
                                        FontWeight="Bold"
-                                       Margin="8,0,0,0"
+                                       HorizontalAlignment="Right"
                                        VerticalAlignment="Center"/>
-                            <TextBlock Grid.Row="1"
-                                       Grid.ColumnSpan="2"
-                                       Text="{Binding OverallDecision.DimensionSummary}"
-                                       Foreground="{DynamicResource SecondaryTextBrush}"
-                                       FontSize="8.5"
-                                       Margin="0,3,0,0"
-                                       TextWrapping="Wrap"/>
+                            </Grid>
+                            <ItemsControl Grid.Row="1" Grid.ColumnSpan="5" Margin="0,5,0,0"
+                                          ItemsSource="{Binding OverallDecision.Dimensions}"
+                                          ToolTip="{Binding OverallDecision.DimensionSummary}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate><UniformGrid Rows="1" Columns="5"/></ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid Margin="2,2" ToolTip="{Binding Label}">
+                                            <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                                            <TextBlock Text="{Binding Label}" TextTrimming="CharacterEllipsis" TextAlignment="Center" ToolTip="{Binding Label}"
+                                                       FontSize="9" Foreground="{DynamicResource SecondaryTextBrush}"/>
+                                            <TextBlock Grid.Row="1" Text="{Binding ScoreText}" FontSize="10" Margin="0,3,0,0" TextAlignment="Center"
+                                                       Typography.NumeralAlignment="Tabular" Foreground="{DynamicResource PrimaryTextBrush}"/>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
                         </Grid>
                         <TextBlock Text="{DynamicResource ModelRadar.Pending}"
                                    Foreground="{DynamicResource SecondaryTextBrush}"
@@ -118,89 +152,20 @@
                     </StackPanel>
                 </Border>
 
-                <Border Background="Transparent"
-                        BorderBrush="{DynamicResource GlassHighlightBrush}"
-                        BorderThickness="0,0,0,1"
-                        Padding="0,3,0,8"
-                        Margin="0,0,0,8">
-                    <StackPanel>
-                        <TextBlock Text="{DynamicResource ModelRadar.ValueRecommendation}"
-                                   Foreground="{DynamicResource SecondaryTextBrush}"
-                                   FontSize="9"
-                                   FontWeight="SemiBold"/>
-                        <Grid Visibility="{Binding HasValueRecommendation, Converter={StaticResource BooleanToVisibilityConverter}}"
-                              Margin="0,3,0,0">
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="Auto"/>
-                            </Grid.RowDefinitions>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock x:Name="ValueConfigurationLine"
-                                       Foreground="{DynamicResource PrimaryTextBrush}"
-                                       FontSize="11"
-                                       FontWeight="Bold"
-                                       TextWrapping="Wrap"
-                                       VerticalAlignment="Center">
-                                <Run Text="{Binding ValueDecision.ModelName}"/>
-                                <Run Text="  "/>
-                                <Run Text="{Binding ValueDecision.ReasoningEffort}"/>
-                            </TextBlock>
-                            <TextBlock Grid.Column="1"
-                                       Text="{Binding ValueDecision.ScoreText}"
-                                       Foreground="{DynamicResource PrimaryTextBrush}"
-                                       FontSize="17"
-                                       FontWeight="Bold"
-                                       Margin="8,0,0,0"
-                                       VerticalAlignment="Center"/>
-                            <TextBlock Grid.Row="1"
-                                       Grid.ColumnSpan="2"
-                                       Text="{Binding ValueDecision.DimensionSummary}"
-                                       Foreground="{DynamicResource SecondaryTextBrush}"
-                                       FontSize="8.5"
-                                       Margin="0,3,0,0"
-                                       TextWrapping="Wrap"/>
-                        </Grid>
-                        <TextBlock Text="{DynamicResource ModelRadar.NoValueRecommendation}"
-                                   Foreground="{DynamicResource SecondaryTextBrush}"
-                                   FontSize="10"
-                                   Margin="0,5,0,0">
-                            <TextBlock.Style>
-                                <Style TargetType="TextBlock">
-                                    <Setter Property="Visibility" Value="Collapsed"/>
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding HasValueRecommendation}" Value="False">
-                                            <Setter Property="Visibility" Value="Visible"/>
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </TextBlock.Style>
-                        </TextBlock>
-                    </StackPanel>
-                </Border>
-
-                <Grid Margin="0,0,0,5">
+                <Grid x:Name="RadarCategories" Margin="0,0,0,5">
                     <Grid.Resources>
                         <DataTemplate x:Key="RadarCategoryLabelTemplate">
-                            <Viewbox Stretch="Uniform" StretchDirection="DownOnly">
-                                <TextBlock Text="{Binding}"
+                            <TextBlock Text="{Binding}"
                                            FontFamily="{DynamicResource BodyFontFamily}"
-                                           FontSize="10"
+                                           FontSize="10" TextTrimming="CharacterEllipsis"
                                            TextWrapping="NoWrap"/>
-                            </Viewbox>
                         </DataTemplate>
                     </Grid.Resources>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
                     <Button Grid.Column="0"
-                            Height="24"
-                            Margin="0,0,3,0"
+                            ToolTip="{DynamicResource ModelRadar.OverallScore}" Height="24" Padding="2,0"
+                            Margin="0,0,2,0"
                             Content="{DynamicResource ModelRadar.OverallCategory}"
                             ContentTemplate="{StaticResource RadarCategoryLabelTemplate}"
                             Command="{Binding SelectCategoryCommand}"
@@ -218,46 +183,8 @@
                         </Button.Style>
                     </Button>
                     <Button Grid.Column="1"
-                            Height="24"
-                            Margin="1,0,2,0"
-                            Content="{DynamicResource ModelRadar.BackendCategory}"
-                            ContentTemplate="{StaticResource RadarCategoryLabelTemplate}"
-                            Command="{Binding SelectCategoryCommand}"
-                            CommandParameter="{x:Static models:ModelRadarCategory.Backend}"
-                            IsEnabled="{Binding IsBackendCategoryEnabled}">
-                        <Button.Style>
-                            <Style TargetType="Button" BasedOn="{StaticResource GhostButtonStyle}">
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding SelectedCategory}" Value="{x:Static models:ModelRadarCategory.Backend}">
-                                        <Setter Property="Background" Value="{DynamicResource GlassHighlightBrush}"/>
-                                        <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </Button.Style>
-                    </Button>
-                    <Button Grid.Column="2"
-                            Height="24"
-                            Margin="2,0,1,0"
-                            Content="{DynamicResource ModelRadar.FrontendCategory}"
-                            ContentTemplate="{StaticResource RadarCategoryLabelTemplate}"
-                            Command="{Binding SelectCategoryCommand}"
-                            CommandParameter="{x:Static models:ModelRadarCategory.Frontend}"
-                            IsEnabled="{Binding IsFrontendCategoryEnabled}">
-                        <Button.Style>
-                            <Style TargetType="Button" BasedOn="{StaticResource GhostButtonStyle}">
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding SelectedCategory}" Value="{x:Static models:ModelRadarCategory.Frontend}">
-                                        <Setter Property="Background" Value="{DynamicResource GlassHighlightBrush}"/>
-                                        <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </Button.Style>
-                    </Button>
-                    <Button Grid.Column="3"
-                            Height="24"
-                            Margin="3,0,0,0"
+                            ToolTip="{DynamicResource ModelRadar.KnowledgeScore}" Height="24" Padding="2,0"
+                            Margin="0,0,2,0"
                             Content="{DynamicResource ModelRadar.KnowledgeCategory}"
                             ContentTemplate="{StaticResource RadarCategoryLabelTemplate}"
                             Command="{Binding SelectCategoryCommand}"
@@ -274,9 +201,88 @@
                             </Style>
                         </Button.Style>
                     </Button>
+                    <Button Grid.Column="2"
+                            ToolTip="{DynamicResource ModelRadar.BackendScore}" Height="24" Padding="2,0"
+                            Margin="0,0,2,0"
+                            Content="{DynamicResource ModelRadar.BackendCategory}"
+                            ContentTemplate="{StaticResource RadarCategoryLabelTemplate}"
+                            Command="{Binding SelectCategoryCommand}"
+                            CommandParameter="{x:Static models:ModelRadarCategory.Backend}"
+                            IsEnabled="{Binding IsBackendCategoryEnabled}">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource GhostButtonStyle}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding SelectedCategory}" Value="{x:Static models:ModelRadarCategory.Backend}">
+                                        <Setter Property="Background" Value="{DynamicResource GlassHighlightBrush}"/>
+                                        <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+                    <Button Grid.Column="3"
+                            ToolTip="{DynamicResource ModelRadar.AestheticScore}"
+                            Height="24" Padding="2,0"
+                            Margin="0,0,2,0"
+                            Content="{DynamicResource ModelRadar.AestheticCategory}"
+                            ContentTemplate="{StaticResource RadarCategoryLabelTemplate}"
+                            Command="{Binding SelectCategoryCommand}"
+                            CommandParameter="{x:Static models:ModelRadarCategory.Aesthetic}"
+                            IsEnabled="{Binding IsAestheticCategoryEnabled}">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource GhostButtonStyle}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding SelectedCategory}" Value="{x:Static models:ModelRadarCategory.Aesthetic}">
+                                        <Setter Property="Background" Value="{DynamicResource GlassHighlightBrush}"/>
+                                        <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+                    <Button Grid.Column="4"
+                            ToolTip="{DynamicResource ModelRadar.FrontendScore}" Height="24" Padding="2,0"
+                            Margin="0,0,2,0"
+                            Content="{DynamicResource ModelRadar.FrontendCategory}"
+                            ContentTemplate="{StaticResource RadarCategoryLabelTemplate}"
+                            Command="{Binding SelectCategoryCommand}"
+                            CommandParameter="{x:Static models:ModelRadarCategory.Frontend}"
+                            IsEnabled="{Binding IsFrontendCategoryEnabled}">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource GhostButtonStyle}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding SelectedCategory}" Value="{x:Static models:ModelRadarCategory.Frontend}">
+                                        <Setter Property="Background" Value="{DynamicResource GlassHighlightBrush}"/>
+                                        <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+                    <Button Grid.Column="5"
+                            ToolTip="{DynamicResource ModelRadar.MaintainabilityScore}"
+                            Height="24" Padding="2,0"
+                            Margin="0,0,2,0"
+                            Content="{DynamicResource ModelRadar.MaintainabilityCategory}"
+                            ContentTemplate="{StaticResource RadarCategoryLabelTemplate}"
+                            Command="{Binding SelectCategoryCommand}"
+                            CommandParameter="{x:Static models:ModelRadarCategory.Maintainability}"
+                            IsEnabled="{Binding IsMaintainabilityCategoryEnabled}">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource GhostButtonStyle}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding SelectedCategory}" Value="{x:Static models:ModelRadarCategory.Maintainability}">
+                                        <Setter Property="Background" Value="{DynamicResource GlassHighlightBrush}"/>
+                                        <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
                 </Grid>
 
-                <TextBlock Text="{Binding RankingDescription}"
+<TextBlock Text="{Binding RankingDescription}"
+                           TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" ToolTip="{Binding RankingDescription}"
                            Foreground="{DynamicResource SecondaryTextBrush}"
                            FontSize="8.5"
                            Margin="1,0,0,5"/>
@@ -375,12 +381,7 @@
                             <Run Text="{DynamicResource ModelRadar.ViewFullRanking}"/>
                         </Hyperlink>
                     </TextBlock>
-                    <TextBlock Text="{DynamicResource ModelRadar.PublicBenchmarkDisclaimer}"
-                               Foreground="{DynamicResource SecondaryTextBrush}"
-                               FontSize="8"
-                               TextWrapping="Wrap"
-                               Margin="0,3,0,0"/>
-                </StackPanel>
+</StackPanel>
             </StackPanel>
         </StackPanel>
     </Border>

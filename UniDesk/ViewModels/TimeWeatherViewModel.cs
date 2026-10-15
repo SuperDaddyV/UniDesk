@@ -27,6 +27,7 @@ public partial class TimeWeatherViewModel : ObservableObject, IDisposable
 
     [ObservableProperty] private string _clockTimeText = "--:--";
     [ObservableProperty] private string _clockDateText = "--";
+    [ObservableProperty] private string _clockShortDateText = "--";
     [ObservableProperty] private string _clockLunarText = string.Empty;
     [ObservableProperty] private bool _isCalendarPopupOpen;
     [ObservableProperty] private string _calendarMonthTitle = string.Empty;
@@ -35,6 +36,8 @@ public partial class TimeWeatherViewModel : ObservableObject, IDisposable
     [ObservableProperty] private string _weatherTemperature = "--";
     [ObservableProperty] private string _weatherDescription = string.Empty;
     [ObservableProperty] private string _weatherDetailLine = string.Empty;
+    [ObservableProperty] private string _compactWeatherDetailLine = string.Empty;
+    [ObservableProperty] private string _compactWeatherLocationLine = string.Empty;
     [ObservableProperty] private string _weatherAirQualityAttributionText = string.Empty;
     [ObservableProperty] private string _weatherRangeLine = string.Empty;
     [ObservableProperty] private ImageSource? _weatherIconImage;
@@ -55,7 +58,8 @@ public partial class TimeWeatherViewModel : ObservableObject, IDisposable
         IWeatherService weatherService,
         INotificationService notificationService,
         ILocalizationService localizationService,
-        bool startWeatherTimer = true)
+        bool startWeatherTimer = true,
+        bool initializeWeather = true)
     {
         _clockService = clockService;
         _weatherService = weatherService;
@@ -70,7 +74,7 @@ public partial class TimeWeatherViewModel : ObservableObject, IDisposable
         _weatherRefreshTimer = new DispatcherTimer { Interval = TimeSpan.FromMinutes(30) };
         _weatherRefreshTimer.Tick += WeatherRefreshTimer_OnTick;
         if (startWeatherTimer) _weatherRefreshTimer.Start();
-        _ = InitializeAsync();
+        if (initializeWeather) _ = InitializeAsync();
     }
 
     private void WeatherRefreshTimer_OnTick(object? sender, EventArgs e)
@@ -87,6 +91,9 @@ public partial class TimeWeatherViewModel : ObservableObject, IDisposable
             var now = _clockService.CurrentTime;
             ClockTimeText = now.ToString("HH:mm", CultureInfo.InvariantCulture);
             ClockDateText = FormatDateText(now);
+            ClockShortDateText = _localizationService.CurrentLanguage == "zh-CN"
+                ? $"{now:yyyy/MM/dd} {ToChineseDayOfWeek(now.DayOfWeek).Replace("星期", "周", StringComparison.Ordinal)}"
+                : now.ToString("yyyy/MM/dd ddd", _localizationService.CurrentCulture);
             ClockLunarText = IsChineseLanguage ? ToChineseLunarText(now) : string.Empty;
             if (_calendarSelectedDate.Date == now.Date)
             {
@@ -97,6 +104,7 @@ public partial class TimeWeatherViewModel : ObservableObject, IDisposable
         {
             ClockTimeText = "--:--";
             ClockDateText = "--";
+            ClockShortDateText = "--";
             ClockLunarText = string.Empty;
         }
     }
@@ -409,6 +417,8 @@ public partial class TimeWeatherViewModel : ObservableObject, IDisposable
             WeatherTemperature = "--";
             WeatherDescription = string.Empty;
             WeatherDetailLine = string.Empty;
+            CompactWeatherDetailLine = string.Empty;
+            CompactWeatherLocationLine = L(failureKey);
             WeatherAirQualityAttributionText = string.Empty;
             WeatherRangeLine = string.Empty;
             WeatherIconImage = null;
@@ -438,6 +448,10 @@ public partial class TimeWeatherViewModel : ObservableObject, IDisposable
     
         var range = BuildTempRange(info.MinTemp, info.MaxTemp);
         WeatherDetailLine = string.Join("  |  ", details);
+        CompactWeatherDetailLine = string.Join(" · ", new[] { info.AirQuality, info.Humidity }
+            .Where(value => !string.IsNullOrWhiteSpace(value)));
+        CompactWeatherLocationLine = string.Join(" · ", new[] { info.City, info.WeatherDesc }
+            .Where(value => !string.IsNullOrWhiteSpace(value)));
         WeatherAirQualityAttributionText = string.IsNullOrWhiteSpace(info.AirQuality)
             ? string.Empty
             : string.Join(" · ", (info.AirQualityAttributions ?? [])

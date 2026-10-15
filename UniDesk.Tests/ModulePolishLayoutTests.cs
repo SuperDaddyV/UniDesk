@@ -28,6 +28,9 @@ public sealed class ModulePolishLayoutTests
             temperature.SetAttributeValue("FontSize", (24 * fontScale).ToString(CultureInfo.InvariantCulture));
             description.SetAttributeValue("Text", "Intermittent sunshine");
             description.SetAttributeValue("FontSize", (12 * fontScale).ToString(CultureInfo.InvariantCulture));
+            // This isolated row test strips styles; retain the expanded-mode values.
+            row.Descendants().First(element => element.Name.LocalName == "ColumnDefinition").SetAttributeValue("Width", "50");
+            description.SetAttributeValue("TextWrapping", "Wrap");
             RemoveBindingsAndEvents(row);
             var host = (Grid)XamlReader.Parse(row.ToString());
             host.Measure(new Size(width, 160));
@@ -38,9 +41,9 @@ public sealed class ModulePolishLayoutTests
             var renderedDescription = blocks.Single(block => block.Text == "Intermittent sunshine");
             var temperatureBounds = Bounds(renderedTemperature, host);
             var descriptionBounds = Bounds(renderedDescription, host);
-            Assert.True(temperatureBounds.Left >= 57.5, $"Negative temperature intrudes into icon column: {temperatureBounds}");
+            Assert.True(temperatureBounds.Left >= 49.5, $"Negative temperature intrudes into icon column: {temperatureBounds}");
             Assert.True(temperatureBounds.Right <= width + 0.5, $"Negative temperature exceeds summary: {temperatureBounds}");
-            Assert.True(descriptionBounds.Left >= 57.5, $"Weather description is clipped from the left: {descriptionBounds}");
+            Assert.True(descriptionBounds.Left >= 49.5, $"Weather description is clipped from the left: {descriptionBounds}");
             Assert.True(descriptionBounds.Right <= width + 0.5);
             Assert.True(renderedDescription.ActualHeight > renderedDescription.FontSize * 1.5,
                 "Long weather description should wrap within its own column.");

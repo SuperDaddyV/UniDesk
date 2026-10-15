@@ -53,7 +53,8 @@ public partial class HardwareMonitorViewModel : ObservableObject, IDisposable
 
     public HardwareMonitorViewModel(
         ISystemMetricsMonitor monitor,
-        ILocalizationService? localizationService = null)
+        ILocalizationService? localizationService = null,
+        bool initiallyEnabled = true)
     {
         _monitor = monitor;
         _localizationService = localizationService;
@@ -62,6 +63,7 @@ public partial class HardwareMonitorViewModel : ObservableObject, IDisposable
         {
             _localizationService.LanguageChanged += LocalizationService_OnLanguageChanged;
         }
+        _monitor.IsEnabled = initiallyEnabled;
         _monitor.Start();
     }
 

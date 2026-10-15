@@ -575,7 +575,8 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
 
     private void ModuleSetting_OnPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (_isLoading || e.PropertyName != nameof(ModuleSettingOptionViewModel.IsEnabled))
+        if (_isLoading || e.PropertyName is not (nameof(ModuleSettingOptionViewModel.IsEnabled) or
+            nameof(ModuleSettingOptionViewModel.IsCompactEnabled)))
         {
             return;
         }

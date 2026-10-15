@@ -28,7 +28,7 @@ Automatic location is enabled by default for fresh installations and can be disa
 
 ### Model Radar
 
-Model Radar is disabled by default for fresh installations and upgrades. While the user has enabled the module, UniDesk reads its local cache first and accesses only the fixed ModelDial HTTPS endpoint `https://modeldial.com/api/v1/radar/latest.json` when a refresh is due or the user manually refreshes. The request uses the system proxy and identifies the application version; it does not include clipboard history, notes, todos, shortcuts, weather location, hardware readings, model-tool configuration, or model prompts. Disabling the module stops scheduled refreshes and cancels any request in progress. UniDesk does not run models or perform local evaluation. The downloaded public evaluation data is provided under [CC BY 4.0](https://modeldial.com/data-license), and leaderboard links open only after a user action.
+Model Radar is disabled by default for fresh installations and upgrades. While the user has enabled the module, UniDesk reads its local cache first and accesses only the fixed ModelDial HTTPS endpoint `https://modeldial.com/data/overview.json` when a refresh is due or the user manually refreshes. The request uses the system proxy and identifies the application version; it does not include clipboard history, notes, todos, shortcuts, weather location, hardware readings, model-tool configuration, or model prompts. Disabling the module stops scheduled refreshes and cancels any request in progress. UniDesk does not run models or perform local evaluation. The downloaded public evaluation data is provided under [CC BY 4.0](https://modeldial.com/data-license), and leaderboard links open only after a user action.
 
 ### Update checks
 
@@ -78,7 +78,7 @@ UniDesk 将设置、快捷方式、待办事项、快速便签、快捷文本、
 
 ### 模型雷达
 
-模型雷达默认关闭，包括全新安装和覆盖升级。只有用户启用模块后，UniDesk 才会先读取本地缓存，并在到期刷新或用户手动刷新时访问固定的 ModelDial HTTPS 接口 `https://modeldial.com/api/v1/radar/latest.json`。请求使用系统代理并标识应用版本，不会附带剪贴板历史、便签、待办事项、快捷方式、天气位置、硬件读数、模型工具配置或模型提示词。关闭模块会停止计划刷新并取消在途请求。UniDesk 不调用模型，也不执行本地评测。下载的公共评测数据依据 [CC BY 4.0](https://modeldial.com/data-license)提供，完整榜单链接只在用户主动点击后打开。
+模型雷达默认关闭，包括全新安装和覆盖升级。只有用户启用模块后，UniDesk 才会先读取本地缓存，并在到期刷新或用户手动刷新时访问固定的 ModelDial HTTPS 接口 `https://modeldial.com/data/overview.json`。请求使用系统代理并标识应用版本，不会附带剪贴板历史、便签、待办事项、快捷方式、天气位置、硬件读数、模型工具配置或模型提示词。关闭模块会停止计划刷新并取消在途请求。UniDesk 不调用模型，也不执行本地评测。下载的公共评测数据依据 [CC BY 4.0](https://modeldial.com/data-license)提供，完整榜单链接只在用户主动点击后打开。
 
 ### 更新检查
 
