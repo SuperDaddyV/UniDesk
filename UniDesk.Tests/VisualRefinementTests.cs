@@ -303,9 +303,11 @@ public sealed class VisualRefinementTests
                 }
             };
             var window = Region(source, state, 1.18, language);
-            VisualTreeHelper.SetRootDpi((Visual)window.Content, new DpiScale(dpi, dpi));
             try
             {
+                Layout(window, width);
+                // Populate the DataTemplate visual tree before propagating the requested DPI.
+                VisualTreeHelper.SetRootDpi((Visual)window.Content, new DpiScale(dpi, dpi));
                 Layout(window, width);
                 var blocks = Descendants(window.Content).OfType<TextBlock>().Where(block => block.Visibility == Visibility.Visible).ToArray();
                 var model = blocks.Single(block => block.Name == "OverallConfigurationLine");
@@ -327,6 +329,8 @@ public sealed class VisualRefinementTests
                     new Typeface(firstLabel.FontFamily, firstLabel.FontStyle, firstLabel.FontWeight, firstLabel.FontStretch), firstLabel.FontSize, Brushes.White, 1);
                 var firstTextLeft = firstBounds.Left + (firstBounds.Width - naturalLabel.WidthIncludingTrailingWhitespace) / 2;
                 var guide = Descendants(window.Content).OfType<TextBlock>().Single(block => block.Name == "OverallBackendAlignmentGuide");
+                Assert.Equal(guide.FontFamily.Source, firstLabel.FontFamily.Source);
+                Assert.Equal(dpi, VisualTreeHelper.GetDpi(firstLabel).PixelsPerDip);
                 var leftError = Math.Abs(Bounds(top, root).Left - firstTextLeft);
                 Assert.True(leftError <= 1, $"Left edge error={leftError:F4}; guide={guide.Text}/{guide.ActualWidth:F4}; label={firstLabel.Text}/{naturalLabel.WidthIncludingTrailingWhitespace:F4}; font={firstLabel.FontFamily}; DPI={VisualTreeHelper.GetDpi(firstLabel).PixelsPerDip:F2}; culture={hostCulture}");
                 var lastBounds = Bounds(lastLabel, root);
@@ -349,6 +353,8 @@ public sealed class VisualRefinementTests
                     var label = blocks.Single(block => block.Text == dimension.Label);
                     var value = blocks.Single(block => block.Text == dimension.ScoreText &&
                         ReferenceEquals(VisualTreeHelper.GetParent(block), VisualTreeHelper.GetParent(label)));
+                    Assert.Equal(guide.FontFamily.Source, label.FontFamily.Source);
+                    Assert.Equal(guide.FontFamily.Source, value.FontFamily.Source);
                     var labelBounds = Bounds(label, root);
                     var valueBounds = Bounds(value, root);
                     Assert.True(valueBounds.Top >= labelBounds.Bottom);

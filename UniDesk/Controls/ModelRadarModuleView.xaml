@@ -126,9 +126,9 @@
                                         <Grid Margin="2,2" ToolTip="{Binding Label}">
                                             <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
                                             <TextBlock Text="{Binding Label}" TextTrimming="CharacterEllipsis" TextAlignment="Center" ToolTip="{Binding Label}"
-                                                       FontSize="9" Foreground="{DynamicResource SecondaryTextBrush}"/>
+                                                       FontFamily="{DynamicResource BodyFontFamily}" FontSize="9" Foreground="{DynamicResource SecondaryTextBrush}"/>
                                             <TextBlock Grid.Row="1" Text="{Binding ScoreText}" FontSize="10" Margin="0,3,0,0" TextAlignment="Center"
-                                                       Typography.NumeralAlignment="Tabular" Foreground="{DynamicResource PrimaryTextBrush}"/>
+                                                       FontFamily="{DynamicResource BodyFontFamily}" Typography.NumeralAlignment="Tabular" Foreground="{DynamicResource PrimaryTextBrush}"/>
                                         </Grid>
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
