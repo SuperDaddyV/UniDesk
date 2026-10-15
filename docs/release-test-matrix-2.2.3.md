@@ -1,21 +1,31 @@
-# UniDesk 2.2.3 发布测试矩阵
+# UniDesk 2.2.3 正式发布测试矩阵
 
 本表只适用于 `v2.2.3`。项目所有者于 2026-10-15 在获知最新候选未签名、完整手动安装验收未完成后明确要求“发布到GitHub吧”；[签名政策](../CODE_SIGNING_POLICY.md)记录本版本独立授权。旧版本和本地 dirty 候选的通过结果不自动继承到最终制品。
 
 - 发布入口：[v2.2.3](https://github.com/SuperDaddyV/UniDesk/releases/tag/v2.2.3)
-- 安装包：`UniDesk_Setup_2.2.3.exe`，`Authenticode: NotSigned`；Windows 可能显示 SmartScreen 或企业策略提示。
-- 最终精确源码提交、SDK、载荷文件／目录清单、安装包 SHA-256 和一方 PE 状态，以 Release 同页 `release-manifest.json`、`SHA256SUMS.txt` 和 CI 链接为准。此源码文档在最终合并和构建前建立，不预填未知提交或哈希。
+- 精确源码／标签指向：[`e3c2b4ed6629e2936aedbf5d5cc8de04b9f0a10d`](https://github.com/SuperDaddyV/UniDesk/commit/e3c2b4ed6629e2936aedbf5d5cc8de04b9f0a10d)，[PR #21](https://github.com/SuperDaddyV/UniDesk/pull/21)。本次文档回填不改变该提交构建的既有制品。
+- 安装包：`UniDesk_Setup_2.2.3.exe`，147,440,775 bytes，`Authenticode: NotSigned`；Windows 可能显示 SmartScreen 或企业策略提示。
+- 安装包 SHA-256：`c562f360dc79a16b3345835e5ac9e190bcb351ddcdcdc84147b3c9e39f1e7900`。
+- 载荷来源清单 SHA-256：`98e1c3628c39423473dba10c1b2de2cd2832ca68c9878e4a0f413e814cfa21c6`；schema 3、`isDirty=false`、SDK `10.0.302`、`win-x64`、1,431 个文件、20 个目录。
+- Release 同页 `release-manifest.json`、`SHA256SUMS.txt` 提供最终制品身份；v2.2.2 的资产 ID、大小与更新时间均已复核保持不变。
 
 ## 自动化与制品门禁
 
-| ID | 要求 | 记录规则 |
+| ID | 要求 | 最终证据 |
 | --- | --- | --- |
-| AU-01 | SDK `10.0.302`、`win-x64` 锁定还原、版本一致性、依赖漏洞检查 | 发布前对最终源码运行，结果列入 Release |
-| AU-02 | 零警告／零错误 Release 构建；`dotnet test UniDesk.sln -c Release --no-restore` | 发布前重新运行完整测试，精确计数列入 Release |
-| AU-03 | 精确公开 `main` 提交的 GitHub CI 成功 | Release 提供对应 CI 链接 |
-| RS-01 | 干净源码、schema 3 来源清单、载荷目录和文件哈希 | 发布前校验，`isDirty=false`，不允许本地候选代替 |
-| RS-02 | 安装器和全部一方 PE `NotSigned`；PawnIO 固定哈希与上游 `Valid` 签名 | `Test-UnsignedReleaseReadiness.ps1` 必须通过 |
-| RS-03 | 三个 Release 资产的大小与 SHA-256 下载复核 | 草稿上传后和公开后分别核对 |
+| AU-01 | SDK `10.0.302`、`win-x64` 锁定还原、版本一致性、依赖漏洞检查 | 通过；最终干净源码重新执行，无依赖或锁文件变更 |
+| AU-02 | 零警告／零错误 Release 构建；`dotnet test UniDesk.sln -c Release --no-restore` | 通过；0 警告／0 错误，968 通过、0 失败、0 跳过 |
+| AU-03 | 精确公开 `main` 提交的 GitHub CI 成功 | 通过；[CI 38765718414](https://github.com/SuperDaddyV/UniDesk/actions/runs/38765718414) 对应 `e3c2b4ed…` |
+| RS-01 | 干净源码、schema 3 来源清单、载荷目录和文件哈希 | 通过；1,431 个文件和 20 个目录完整性一致，版本资源绑定来源清单 |
+| RS-02 | 安装器和全部一方 PE `NotSigned`；PawnIO 固定哈希与上游 `Valid` 签名 | 通过；`Test-UnsignedReleaseReadiness.ps1` 验证安装器及 8 个一方载荷项目为 `NotSigned`，PawnIO 为 `Valid` 且哈希与固定值一致 |
+| RS-03 | 三个 Release 资产的大小与 SHA-256 下载复核 | 通过；草稿和公开阶段分别下载三个资产，大小与 SHA-256 全部一致；公开安装器版本、来源清单指纹及 `NotSigned` 状态复核通过 |
+
+## 最终载荷的补充布局证据
+
+- CI 首次发现英语／西班牙语维度标签回退到系统字体，造成 1.3267 DIP 横向偏差。保持原有 1 DIP 对齐容差，显式统一既有 `BodyFontFamily`，字体一致性回归先确认 32 项失败，修复后 32 项全部通过。
+- 最终回归覆盖四种界面语言、220／260 DIP、中英文宿主文化和实际传播到控件的 96／120 DPI；另检查首位、分数完整、五维同排、文字不重叠及左右文字边缘。
+- 最终载荷与原 TopLine 候选在同日分别重绘：四语言、亮暗主题、320／380／520 DIP、字体缩放 1.18，共 120 张 PNG 逐张 SHA-256 一致。先前跨日缓存对比的 24 张收起图含日期敏感摘要变化，该差异记录保留；同日对照避免把日期变化误判为布局变化。
+- 以上为实际编译控件和独立夹具的证据，未运行完整 App 启动或操作真实用户数据，不等于人工安装或物理多屏验收。
 
 ## 候选阶段的补充证据
 
