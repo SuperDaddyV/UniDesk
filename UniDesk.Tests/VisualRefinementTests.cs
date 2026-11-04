@@ -1,11 +1,13 @@
 using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Documents;
 using System.Windows.Markup;
 using System.Windows.Media;
 using System.Windows.Threading;
 using System.Xml.Linq;
 using UniDesk.Models;
+using UniDesk.ViewModels;
 
 namespace UniDesk.Tests;
 
@@ -389,6 +391,80 @@ public sealed class VisualRefinementTests
                 Assert.Equal("VsirDesk", title.ToolTip);
             }
             finally { window.Close(); }
+        });
+    }
+
+    [Theory]
+    [InlineData("zh-CN")]
+    [InlineData("en-US")]
+    [InlineData("ja-JP")]
+    [InlineData("es-ES")]
+    public void RadarModelLinksAndRecentBadges_ShouldFitNarrowRowsAndDisableInvalidDestinations(string language)
+    {
+        ClockLayoutTests.RunSta(() =>
+        {
+            const double width = 220;
+            var strings = new ResourceDictionary
+            {
+                Source = new Uri($"pack://application:,,,/UniDesk;component/Resources/Strings.{language}.xaml")
+            };
+            var recentText = Assert.IsType<string>(strings["ModelRadar.New"]);
+            var detailUri = new Uri("https://modeldial.com/models/claude-sonnet-5-5?axis=overall&config=claude-sonnet-5-5~high");
+            var source = Read("ModelRadarModuleView.xaml");
+            var fullRankingLink = source.Descendants().Single(element => (string?)element.Attribute(X + "Name") == "ViewFullRankingLink");
+            Assert.Equal("{Binding FullRankingUri}", (string?)fullRankingLink.Attribute("NavigateUri"));
+
+            foreach (var overall in new[] { true, false })
+            foreach (var validLink in new[] { true, false })
+            {
+                var region = source.Descendants().Single(element => element.Name.LocalName == "Border" &&
+                    (string?)element.Attribute("ToolTip") == (overall ? "{Binding OverallDecision.ToolTipText}" : "{Binding ToolTipText}"));
+                var card = new ModelRadarDecisionCard
+                {
+                    ModelName = "Claude-Sonnet-5-5-Long-Edition", ReasoningEffort = "XHigh", ScoreText = "88.80",
+                    ModelDetailUri = validLink ? detailUri : null, IsRecentHighlight = true, RecentHighlightText = recentText
+                };
+                object state = overall ? new { HasOverallLeader = true, OverallDecision = card } : new ModelRadarDisplayRow
+                {
+                    Position = 1, ModelName = card.ModelName, ReasoningEffort = card.ReasoningEffort, ScoreText = card.ScoreText,
+                    ModelDetailUri = card.ModelDetailUri, IsRecentHighlight = true, RecentHighlightText = recentText
+                };
+                var window = Region(region, state, 1.18, language);
+                try
+                {
+                    Layout(window, width);
+                    var root = (FrameworkElement)window.Content;
+                    var blocks = Descendants(root).OfType<TextBlock>().Where(block => block.IsVisible || block.Visibility == Visibility.Visible).ToArray();
+                    var model = Assert.Single(blocks, block => block.Inlines.OfType<Hyperlink>().Any());
+                    var link = Assert.Single(model.Inlines.OfType<Hyperlink>());
+                    Assert.Equal(card.ModelDetailUri, link.NavigateUri);
+                    Assert.Equal(validLink, link.IsEnabled);
+                    var badge = Assert.Single(blocks, block => block.Text == recentText);
+                    var score = Assert.Single(blocks, block => block.Text == card.ScoreText);
+                    var badgeBounds = Bounds(badge, root);
+                    var modelBounds = Bounds(model, root);
+                    var scoreBounds = Bounds(score, root);
+                    Assert.True(badgeBounds.Width > 0 && modelBounds.Width > 0);
+                    Assert.True(badgeBounds.Right <= modelBounds.Left + 0.5, $"Recent badge overlaps model name in {language}.");
+                    Assert.True(modelBounds.Right <= scoreBounds.Left + 0.5, $"Model name overlaps score in {language}.");
+                    Assert.True(scoreBounds.Right <= width + 0.5);
+                    var naturalBadge = new FormattedText(recentText, CultureInfo.InvariantCulture, FlowDirection.LeftToRight,
+                        new Typeface(badge.FontFamily, badge.FontStyle, badge.FontWeight, badge.FontStretch), badge.FontSize, Brushes.White, 1);
+                    Assert.True(badge.ActualWidth + 0.5 >= naturalBadge.WidthIncludingTrailingWhitespace);
+                    if (overall)
+                    {
+                        Assert.Equal(TextWrapping.NoWrap, model.TextWrapping);
+                        Assert.Equal(TextTrimming.CharacterEllipsis, model.TextTrimming);
+                    }
+                    else
+                    {
+                        Assert.Equal(TextWrapping.Wrap, model.TextWrapping);
+                        Assert.True(model.ActualHeight > model.FontSize * 1.5);
+                        Assert.True(modelBounds.Bottom <= root.ActualHeight + 0.5);
+                    }
+                }
+                finally { window.Close(); }
+            }
         });
     }
 

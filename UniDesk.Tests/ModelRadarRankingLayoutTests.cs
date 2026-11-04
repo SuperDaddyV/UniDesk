@@ -56,6 +56,7 @@ public sealed class ModelRadarRankingLayoutTests
             switch (binding)
             {
                 case "{Binding ModelName}": element.SetAttributeValue("Text", "GPT5.6-Sol"); break;
+                case "{Binding ModelName, Mode=OneWay}": element.SetAttributeValue("Text", "GPT5.6-Sol"); break;
                 case "{Binding ReasoningEffort}": element.SetAttributeValue("Text", "Medium"); break;
                 case "{Binding ScoreText}": element.SetAttributeValue("Text", "95.2"); break;
                 case "{Binding DecisionTagsText}":
@@ -69,7 +70,8 @@ public sealed class ModelRadarRankingLayoutTests
         {
             element.Elements().Where(child => child.Name.LocalName.EndsWith(".Style", StringComparison.Ordinal)).Remove();
             foreach (var attribute in element.Attributes().Where(attribute =>
-                attribute.Value.StartsWith("{", StringComparison.Ordinal)).ToArray())
+                attribute.Value.StartsWith("{", StringComparison.Ordinal) ||
+                attribute.Name.LocalName == "RequestNavigate").ToArray())
                 attribute.Remove();
         }
 

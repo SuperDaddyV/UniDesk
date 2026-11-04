@@ -87,7 +87,7 @@ public sealed class ModelRadarPublicationTests : IDisposable
         Assert.Null(result.Snapshot.OverallLeader.EstimatedReferenceCostUsd);
         var cached = await service.ReadCacheAsync();
         Assert.Equal(ModelRadarServiceStatus.Success, cached.Status);
-        Assert.Equal(result.Snapshot.AestheticTop, cached.Snapshot!.AestheticTop);
+        Assert.Equivalent(result.Snapshot.AestheticTop, cached.Snapshot!.AestheticTop, strict: true);
         Assert.False(cached.Snapshot.IsLegacySnapshot);
     }
 

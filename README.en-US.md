@@ -55,7 +55,7 @@ UniDesk is a lightweight, customizable, and clean Windows desktop sidebar that b
 ### Model Radar
 
 - Shows the overall leader and six Top 5 lists: Overall / Knowledge / Backend / Aesthetics / Frontend / Maintainability. Each category selects the best measured effort per model before taking five; all category tabs share one row.
-- Data comes from [ModelDial Radar](https://modeldial.com/radar) public evaluations ([CC BY 4.0](https://modeldial.com/data-license)). UniDesk does not recompute scores or costs.
+- Data comes from [ModelDial Radar](https://modeldial.com/radar) public evaluations ([CC BY 4.0](https://modeldial.com/data-license)). UniDesk does not recompute scores or costs. The v3 weights, tier selection and tie ranks follow the publisher's rules; duration, cost, source and newly evaluated entries are shown with links to official details and category leaderboards.
 - Disabled by default and makes no network requests while disabled. While UniDesk is running and the module is enabled, it loads local cache first, checks for updates at most once every six hours through `https://modeldial.com/data/overview.json`, and also supports manual refresh.
 - This is a read-only decision reference: UniDesk does not call models, run local evaluations, or change model-tool configuration. Public evaluation data does not imply partnership or endorsement; actual performance may vary by account, route, and endpoint.
 
@@ -117,17 +117,17 @@ Common use cases:
 
 ## 📦 Installation
 
-The official distribution point for the `v2.2.3` stable installer is the [v2.2.3 GitHub Release](https://github.com/SuperDaddyV/UniDesk/releases/tag/v2.2.3). This exact version uses a separately approved unsigned-stable exception. The installer is `Authenticode: NotSigned`, so Windows may show a SmartScreen or enterprise-policy prompt. Download it from the official Release and verify the published SHA-256. The installer filename is:
+The official distribution point for the `v2.2.4` stable installer is the [v2.2.4 GitHub Release](https://github.com/SuperDaddyV/UniDesk/releases/tag/v2.2.4). This exact version uses a separately approved unsigned-stable exception. The installer is `Authenticode: NotSigned`, so Windows may show a SmartScreen or enterprise-policy prompt. Download it from the official Release and verify the published SHA-256. The installer filename is:
 
 ```powershell
-UniDesk_Setup_2.2.3.exe
+UniDesk_Setup_2.2.4.exe
 ```
 
 It is recommended to exit any running UniDesk instance before installing or upgrading.
 
 Double-click the installer normally and approve the Windows UAC prompt; a standard user must supply administrator credentials, with no need to use **Run as administrator**. The main application can be installed in a safe directory on any local drive, and an upgrade reuses the previous location by default. The hardware service, repair tool, and uninstaller remain in the protected Windows `Common Program Files\UniDesk` directory. Network paths, drive roots, reparse-point paths, and unrelated non-empty directories are not accepted.
 
-The installer selects both the desktop shortcut and complete hardware monitoring by default and clearly discloses that it installs the shared PawnIO driver and a read-only Windows service running as `LocalSystem`. `UniDesk.exe` itself remains a normal-user process. The completion page selects launching UniDesk by default and starts it with the original normal-user identity. Clearing the component or a component installation failure leaves weather, notes, shortcuts, and other base features available, but low-level metrics such as CPU temperature may be unavailable; diagnostics and repair remain available from Settings.
+The installer selects both the desktop shortcut and complete hardware monitoring by default and clearly discloses that it installs the shared PawnIO driver and a read-only Windows service running as `LocalSystem`. `UniDesk.exe` itself remains a normal-user process. The completion page selects launching UniDesk by default and starts it with the original normal-user identity. Clearing the hardware task skips installation when no component exists; an upgrade still retains and maintains an existing UniDesk-owned component. If the component is unavailable, weather, notes, shortcuts, and other base features remain available, but low-level metrics such as CPU temperature may be unavailable; diagnostics and repair remain available from Settings.
 
 System requirements:
 
@@ -159,10 +159,10 @@ dotnet run --project UniDesk\UniDesk.csproj
 Build an unsigned local release candidate from a clean worktree:
 
 ```powershell
-.\scripts\Build-Release.ps1 -Version 2.2.3
+.\scripts\Build-Release.ps1 -Version 2.2.4
 ```
 
-The script publishes the application, hardware service, and repair helper into a fresh versioned directory before compiling the installer from those exact inputs. An unsigned `v2.2.3` artifact built from a clean worktree must pass `Test-UnsignedReleaseReadiness.ps1`, the applicable manual matrix, and final project-owner approval before publication. The SignPath workflow remains available for future signed releases and never creates a GitHub Release automatically.
+The script publishes the application, hardware service, and repair helper into a fresh versioned directory before compiling the installer from those exact inputs. An unsigned `v2.2.4` artifact built from a clean worktree must pass `Test-UnsignedReleaseReadiness.ps1`, the applicable manual matrix, and final project-owner approval before publication. The SignPath workflow remains available for future signed releases and never creates a GitHub Release automatically.
 
 ## 🧰 Tech Stack
 
@@ -184,7 +184,7 @@ Clipboard history includes sensitive-content filtering to reduce accidental stor
 
 ## Code signing policy
 
-Public packages follow the [code signing policy](CODE_SIGNING_POLICY.md) and [privacy policy](PRIVACY.md). `v2.2.3` uses a separately approved exception for this exact version: it must come from the exact public revision, receive manual approval, pass complete payload and SHA-256 checks, and clearly state `Authenticode: NotSigned` plus the possibility of a Windows SmartScreen or enterprise-policy prompt.
+Public packages follow the [code signing policy](CODE_SIGNING_POLICY.md) and [privacy policy](PRIVACY.md). `v2.2.4` uses a separately approved exception for this exact version: it must come from the exact public revision, receive manual approval, pass complete payload and SHA-256 checks, and clearly state `Authenticode: NotSigned` plus the possibility of a Windows SmartScreen or enterprise-policy prompt.
 
 Free code signing provided by SignPath.io, certificate by SignPath Foundation.
 
@@ -195,7 +195,7 @@ Recent versions include:
 - Model Radar with a single-row overall leader and six Top 5 categories, keeping the best tier per model; the value recommendation display was removed.
 - Separate expanded / compact module preferences, adaptive compact height, and refined title, hardware, and Quick Text alignment.
 - Fixed tray menu DPI positioning and shutdown-save deadlock; upgrades request normal shutdown and stop before replacement on refusal or timeout.
-- Final-artifact manual installation / upgrade / uninstall, physical multi-monitor / DPI, and elevated hardware scenarios remain unverified; see the [release matrix](docs/release-test-matrix-2.2.3.md).
+- Final-artifact manual installation / upgrade / uninstall, physical multi-monitor / DPI, and elevated hardware scenarios remain unverified; see the [release matrix](docs/release-test-matrix-2.2.4.md).
 - Module management with show / hide and ordering.
 - Shortcut drag-to-add and free ordering.
 - Quick Notes with multiple notes, auto save, pinning, and copy.

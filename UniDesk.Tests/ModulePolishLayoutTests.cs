@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Documents;
 using System.Windows.Markup;
 using System.Windows.Media;
 using System.Xml.Linq;
@@ -86,7 +87,7 @@ public sealed class ModulePolishLayoutTests
             var source = LoadModule("ModelRadarModuleView.xaml");
             var row = new XElement(source.Descendants().Single(element => element.Name.LocalName == "Border" &&
                 (string?)element.Attribute("ToolTip") == "{Binding ToolTipText}"));
-            var model = row.Descendants().Single(element => (string?)element.Attribute("Text") == "{Binding ModelName}");
+            var model = row.Descendants().Single(element => (string?)element.Attribute("Text") == "{Binding ModelName, Mode=OneWay}");
             var reasoning = row.Descendants().Single(element => (string?)element.Attribute("Text") == "{Binding ReasoningEffort}");
             var score = row.Descendants().Single(element => (string?)element.Attribute("Text") == "{Binding ScoreText}");
             model.SetAttributeValue("Text", "Claude-Opus-5-Long-Edition");
@@ -98,7 +99,8 @@ public sealed class ModulePolishLayoutTests
             host.Arrange(new Rect(0, 0, width, host.DesiredSize.Height));
             host.UpdateLayout();
             var rendered = Descendants(host).OfType<TextBlock>().ToArray();
-            var renderedModel = rendered.Single(block => block.Text == "Claude-Opus-5-Long-Edition");
+            var renderedModel = rendered.Single(block => block.Inlines.OfType<Hyperlink>().Any(link =>
+                new TextRange(link.ContentStart, link.ContentEnd).Text == "Claude-Opus-5-Long-Edition"));
             var renderedReasoning = rendered.Single(block => block.Text == "XHigh");
             var renderedScore = rendered.Single(block => block.Text == "95.2");
             var modelBounds = Bounds(renderedModel, host);
@@ -218,6 +220,7 @@ public sealed class ModulePolishLayoutTests
             element.Elements().Where(child => child.Name.LocalName.EndsWith(".Style", StringComparison.Ordinal)).Remove();
             foreach (var attribute in element.Attributes().Where(attribute =>
                 attribute.Value.StartsWith("{", StringComparison.Ordinal) ||
+                attribute.Name.LocalName == "RequestNavigate" ||
                 attribute.Name.LocalName.StartsWith("Mouse", StringComparison.Ordinal)).ToArray())
             {
                 if (attribute.Name.LocalName == "FontSize") attribute.Value = "12";

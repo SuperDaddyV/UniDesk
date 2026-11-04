@@ -30,21 +30,21 @@ UniDesk 是一款面向 Windows 的桌面侧边栏工具。展开时，它把信
 
 ## 下载与安装
 
-**[下载 UniDesk v2.2.3（Windows x64）](https://github.com/SuperDaddyV/UniDesk/releases/download/v2.2.3/UniDesk_Setup_2.2.3.exe)**
+**[下载 UniDesk v2.2.4（Windows x64）](https://github.com/SuperDaddyV/UniDesk/releases/download/v2.2.4/UniDesk_Setup_2.2.4.exe)**
 
-[查看 v2.2.3 Release](https://github.com/SuperDaddyV/UniDesk/releases/tag/v2.2.3) ·
-[SHA256SUMS.txt](https://github.com/SuperDaddyV/UniDesk/releases/download/v2.2.3/SHA256SUMS.txt) ·
-[release-manifest.json](https://github.com/SuperDaddyV/UniDesk/releases/download/v2.2.3/release-manifest.json)
+[查看 v2.2.4 Release](https://github.com/SuperDaddyV/UniDesk/releases/tag/v2.2.4) ·
+[SHA256SUMS.txt](https://github.com/SuperDaddyV/UniDesk/releases/download/v2.2.4/SHA256SUMS.txt) ·
+[release-manifest.json](https://github.com/SuperDaddyV/UniDesk/releases/download/v2.2.4/release-manifest.json)
 
 > [!NOTE]
-> `v2.2.3` 安装包和 UniDesk 一方二进制文件为 `Authenticode: NotSigned`。Windows 可能显示 SmartScreen 或企业策略提示；请从本仓库 Release 下载并核对 SHA-256。
-> 本版尚未完成最终安装包的手动安装、升级、卸载及多屏／提权验收，覆盖边界见[发布测试矩阵](docs/release-test-matrix-2.2.3.md)。
+> `v2.2.4` 安装包和 UniDesk 一方二进制文件为 `Authenticode: NotSigned`。Windows 可能显示 SmartScreen 或企业策略提示；请从本仓库 Release 下载并核对 SHA-256。
+> 本地候选已获用户验收；最终正式包的手动安装、升级、卸载及多屏／提权场景仍未验证，覆盖边界见[发布测试矩阵](docs/release-test-matrix-2.2.4.md)。
 
 | 项目 | 支持范围 |
 | --- | --- |
 | 系统 | 仍在 Microsoft 支持周期内的 Windows 11 x64 |
 | 长期服务版本 | Windows 10 Enterprise／IoT Enterprise LTSC 2021 或更新版本 x64 |
-| 安装包 | `UniDesk_Setup_2.2.3.exe` |
+| 安装包 | `UniDesk_Setup_2.2.4.exe` |
 | SHA-256 | 以 Release 同页的 `SHA256SUMS.txt` 为准 |
 
 <details>
@@ -53,14 +53,14 @@ UniDesk 是一款面向 Windows 的桌面侧边栏工具。展开时，它把信
 - 安装或升级前建议先退出正在运行的 UniDesk，然后直接双击安装包并确认 UAC；标准用户需要输入管理员凭据，无需右键选择“以管理员身份运行”。
 - 主程序可以安装到本地固定 NTFS／ReFS 磁盘的安全目录；覆盖安装默认沿用上次位置。安装器会拒绝网络路径、可移动磁盘、磁盘根目录、重解析路径和无法确认归属的非空目录。
 - “完整硬件监控组件”默认勾选，会安装固定版本 PawnIO 和以 `LocalSystem` 运行的只读硬件服务；`UniDesk.exe` 始终按普通用户权限运行，受保护组件位于 `Common Program Files\UniDesk`。
-- 取消硬件组件或组件安装失败不会影响天气、待办、便签和快捷方式等基础功能，但部分底层温度可能显示为 `--`，可稍后在设置中导出诊断并重试修复。
+- 没有既有硬件组件时，取消勾选会跳过安装；覆盖升级时仍保留并维护已确认归属 UniDesk 的硬件组件。组件不可用不会影响天气、待办、便签和快捷方式等基础功能，但部分底层温度可能显示为 `--`，可稍后在设置中导出诊断并重试修复。
 - 项目保留 Windows `10.0.18362` API 兼容基线；LTSC 2019 低于该基线，已停止支持的普通 Windows 10 版本也不属于正式支持范围。
 
 </details>
 
 ## 功能概览
 
-v2.2.3 更新：展开／收起模块分别配置，收起布局随组合调整；雷达更新为六类 Top 5，首位合为一行；精修文本和标题对齐，并修复托盘菜单 DPI 定位、退出保存死锁及升级正常关闭预检。详见[发布说明](docs/release-unidesk.md#v223)。
+v2.2.4 更新：修复覆盖升级时取消勾选硬件组件导致既有服务被移除的问题；雷达适配 v3 权重与同分排名，补充耗时、费用、评测来源、新测标记及官方详情／分类榜单链接。详见[发布说明](docs/release-unidesk.md#v224)。
 
 | 能力 | 主要内容 |
 | --- | --- |
@@ -101,7 +101,7 @@ v2.2.3 更新：展开／收起模块分别配置，收起布局随组合调整�
 
 ## Code signing policy
 
-公开发布包遵循[代码签名政策](CODE_SIGNING_POLICY.md)。`v2.2.3` 使用单独批准、仅适用于该精确版本的未签名正式版例外，安装包状态为 `Authenticode: NotSigned`；SignPath 签名流程保留给未来版本。
+公开发布包遵循[代码签名政策](CODE_SIGNING_POLICY.md)。`v2.2.4` 使用单独批准、仅适用于该精确版本的未签名正式版例外，安装包状态为 `Authenticode: NotSigned`；SignPath 签名流程保留给未来版本。
 
 Free code signing provided by SignPath.io, certificate by SignPath Foundation.
 
@@ -126,7 +126,7 @@ dotnet run --project UniDesk\UniDesk.csproj
 制作安装包还需要 Inno Setup 6。请从干净工作区运行：
 
 ```powershell
-.\scripts\Build-Release.ps1 -Version 2.2.3
+.\scripts\Build-Release.ps1 -Version 2.2.4
 ```
 
 公开发布前必须通过未签名发布就绪门禁、人工矩阵和项目所有者批准；构建脚本不会自动创建 GitHub Release。完整规则见[发布说明](docs/release-unidesk.md)。

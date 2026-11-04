@@ -2,9 +2,29 @@
 
 ## Code signing policy
 
-Public packages follow the [UniDesk code signing policy](../CODE_SIGNING_POLICY.md) and [privacy policy](../PRIVACY.md). `v2.1.0`, `v2.2.0`, `v2.2.1`, `v2.2.2`, and `v2.2.3` each have a separately approved, version-specific unsigned-stable exception. Each must be rebuilt from its documented public source revision, pass the unsigned readiness gate, satisfy its recorded approval and manual-matrix boundary, and state `Authenticode: NotSigned` with a concise note that Windows may show a SmartScreen or enterprise-policy prompt. No later version inherits these exceptions. Unrun manual scenarios stay explicitly unverified.
+Public packages follow the [UniDesk code signing policy](../CODE_SIGNING_POLICY.md) and [privacy policy](../PRIVACY.md). `v2.1.0`, `v2.2.0`, `v2.2.1`, `v2.2.2`, `v2.2.3`, and `v2.2.4` each have a separately approved, version-specific unsigned-stable exception. Each must be rebuilt from its documented public source revision, pass the unsigned readiness gate, satisfy its recorded approval and manual-matrix boundary, and state `Authenticode: NotSigned` with a concise note that Windows may show a SmartScreen or enterprise-policy prompt. No later version inherits these exceptions. Unrun manual scenarios stay explicitly unverified.
 
 Free code signing provided by SignPath.io, certificate by SignPath Foundation.
+
+## v2.2.4
+
+This release preserves installed hardware monitoring across upgrades and updates Model Radar for the publisher's v3 data and ranking rules.
+
+Distribution notice: the installer and UniDesk first-party binaries are `Authenticode: NotSigned` under a separate approval for this exact version. Windows may show a SmartScreen or enterprise-policy prompt. Verify the official Release's SHA-256. The owner accepted the local candidate, including an upgrade with the hardware task unchecked and the existing service retained; this does not certify the rebuilt public artifact. Unrun final-artifact scenarios remain unverified in the [release matrix](release-test-matrix-2.2.4.md).
+
+### Changes
+
+- Upgrading with complete hardware monitoring unchecked now retains and maintains an existing UniDesk-owned component. With no existing component, the unchecked task still skips installation. Preparation retries retain the stopped-service state for cancellation recovery, and legacy migration failures remain visible.
+- Model Radar reads the publisher's v3 weights while recognizing and refreshing older v2 cache data. Model tier selection, tie handling, and competition ranks follow the publisher's rules; official aliases affect display only.
+- Radar shows category-specific duration, cost and evaluation source, marks newly evaluated entries, and opens validated official model details or the currently selected category's leaderboard. Namespaced and tagged model identifiers are encoded in links.
+- Preserved the v2.2.3 font-alignment correction and its four-language layout regression coverage.
+
+### 中文说明
+
+- 覆盖升级时，即使未勾选「完整硬件监控组件」，也会保留并维护已确认归属 UniDesk 的既有组件；没有既有组件时仍跳过安装。安装准备重试保留停服状态供取消恢复，旧布局迁移失败会明确记录。
+- 模型雷达适配发布方 v3 权重，识别并刷新旧 v2 缓存；选档、同分处理和竞争排名与发布方规则一致，官方别名仅用于显示。
+- 补充各分类耗时、费用、评测来源和新测标记；模型详情及分类榜单只打开校验后的官方链接，并正确编码带命名空间或标签的模型标识。
+- 保留 v2.2.3 已发布的字体对齐修复及四语言布局回归。本地候选已获用户验收，正式重建安装包未运行的人工场景仍明确标为未验证。
 
 ## v2.2.3
 

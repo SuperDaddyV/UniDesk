@@ -21,7 +21,7 @@ param(
     [string]$ExpectedUnsignedInstallerAuthenticodeContentSha256,
     [string]$PawnIoPath = (Join-Path (Split-Path -Parent $PSScriptRoot) 'installer-assets\PawnIO_setup.exe'),
     [string]$ExpectedPawnIoSignerSubject = 'E=admin@namazso.eu, CN=namazso.eu, O=namazso, L=Debrecen, C=HU',
-    [string]$ExpectedVersion = '2.2.3',
+    [string]$ExpectedVersion = '2.2.4',
     [string]$ManifestOutputPath
 )
 
