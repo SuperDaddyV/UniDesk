@@ -373,29 +373,64 @@ public class HardwareServiceIntegrationTests
         var directory = Path.Combine(Path.GetTempPath(), "UniDeskTests", Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(directory);
         var helperPath = Path.Combine(directory, "UniDesk.HardwareRepair.cmd");
+        var scriptPath = Path.Combine(directory, "wait-for-release.ps1");
+        var startedMarker = Path.Combine(directory, "started.txt");
+        var releaseMarker = Path.Combine(directory, "release.txt");
         var completionMarker = Path.Combine(directory, "completed.txt");
         await File.WriteAllTextAsync(
             helperPath,
-            $"@echo off\r\n%SystemRoot%\\System32\\timeout.exe /t 1 /nobreak >nul\r\necho completed>\"{completionMarker}\"\r\n");
+            "@echo off\r\n\"%SystemRoot%\\System32\\WindowsPowerShell\\v1.0\\powershell.exe\" -NoLogo -NoProfile -NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass -File \"%~dp0wait-for-release.ps1\"\r\nexit /b %ERRORLEVEL%\r\n");
+        await File.WriteAllTextAsync(scriptPath, """
+            $ErrorActionPreference = 'Stop'
+            [IO.File]::WriteAllText((Join-Path $PSScriptRoot 'started.txt'), 'started')
+            $deadline = [Diagnostics.Stopwatch]::StartNew()
+            while (-not [IO.File]::Exists((Join-Path $PSScriptRoot 'release.txt'))) {
+                if ($deadline.Elapsed.TotalSeconds -gt 30) { exit 1 }
+                Start-Sleep -Milliseconds 20
+            }
+            [IO.File]::WriteAllText((Join-Path $PSScriptRoot 'completed.txt'), 'completed')
+            exit 0
+            """);
+        Task<HardwareRepairLaunchResult>? repairTask = null;
+
+        static async Task WaitForMarkerAsync(string path)
+        {
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+            while (!File.Exists(path))
+                await Task.Delay(20, timeout.Token);
+        }
 
         try
         {
             var service = new HardwareMonitoringMaintenanceService(
                 new FakeDiagnosticsSource(CreateUnavailableDiagnosticsSnapshot()),
                 helperPath);
-            using var cancellation = new CancellationTokenSource(TimeSpan.FromMilliseconds(100));
-            var stopwatch = Stopwatch.StartNew();
+            using var cancellation = new CancellationTokenSource();
+            repairTask = service.RepairAsync(cancellation.Token);
+            await WaitForMarkerAsync(startedMarker);
 
-            var result = await service.RepairAsync(cancellation.Token);
+            cancellation.Cancel();
+            Assert.True(cancellation.IsCancellationRequested);
+            // The helper is blocked on our release marker, so cancellation must not
+            // complete RepairAsync before the real child process reaches its terminal result.
+            var firstCompleted = await Task.WhenAny(repairTask, Task.Delay(200));
+            Assert.NotSame(repairTask, firstCompleted);
+            Assert.False(File.Exists(completionMarker));
+
+            await File.WriteAllTextAsync(releaseMarker, "release");
+            var result = await repairTask.WaitAsync(TimeSpan.FromSeconds(15));
 
             Assert.Equal(HardwareRepairLaunchStatus.Succeeded, result.Status);
             Assert.Equal(0, result.ExitCode);
-            Assert.True(stopwatch.Elapsed >= TimeSpan.FromMilliseconds(700));
             Assert.True(File.Exists(completionMarker));
         }
         finally
         {
-            await Task.Delay(1200);
+            await File.WriteAllTextAsync(releaseMarker, "release");
+            if (File.Exists(startedMarker))
+                await WaitForMarkerAsync(completionMarker);
+            if (repairTask is not null)
+                await repairTask.WaitAsync(TimeSpan.FromSeconds(15));
             Directory.Delete(directory, recursive: true);
         }
     }
