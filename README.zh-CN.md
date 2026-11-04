@@ -55,7 +55,7 @@ UniDesk 是一个轻量、个性化、清爽好用的 Windows 桌面侧边栏工
 ### 模型雷达
 
 - 展示「综合最高」及综合、知识、后端、审美、前端、维护六类 Top 5。每类从完整数据中选出每模型最高分档位，再取前五；六个分类单行显示。
-- 数据来自 [ModelDial Radar](https://modeldial.com/zh-CN/radar) 公开评测（[CC BY 4.0](https://modeldial.com/data-license)）；UniDesk 不重新计算评分或费用。
+- 数据来自 [ModelDial Radar](https://modeldial.com/zh-CN/radar) 公开评测（[CC BY 4.0](https://modeldial.com/data-license)）；UniDesk 不重新计算评分或费用。v3 权重、选档与同分排名遵循发布方规则，并显示耗时、费用、评测来源、新测标记和官方详情／分类榜单链接。
 - 模块默认关闭，关闭时不发起网络请求。UniDesk 运行且模块启用期间，优先读取本地缓存，每 6 小时最多自动检查一次，并只通过固定接口 `https://modeldial.com/data/overview.json` 刷新；也可随时手动刷新。
 - 这是只读决策参考，不调用模型、不执行本地评测，也不修改模型工具配置。公开评测不代表合作或背书，实际表现可能因账号、路由和端点而异。
 
@@ -117,17 +117,17 @@ UniDesk 适合希望桌面保持清爽，但又想快速查看信息、打开常
 
 ## 📦 安装与使用
 
-`v2.2.3` 正式安装包的官方分发入口是 [v2.2.3 GitHub Release](https://github.com/SuperDaddyV/UniDesk/releases/tag/v2.2.3)。该版本采用仅适用于此精确版本的未签名正式发布例外；安装包为 `Authenticode: NotSigned`，Windows 可能显示 SmartScreen 或企业策略提示。请从官方 Release 下载并核对 SHA-256。安装包文件名为：
+`v2.2.4` 正式安装包的官方分发入口是 [v2.2.4 GitHub Release](https://github.com/SuperDaddyV/UniDesk/releases/tag/v2.2.4)。该版本采用仅适用于此精确版本的未签名正式发布例外；安装包为 `Authenticode: NotSigned`，Windows 可能显示 SmartScreen 或企业策略提示。请从官方 Release 下载并核对 SHA-256。安装包文件名为：
 
 ```powershell
-UniDesk_Setup_2.2.3.exe
+UniDesk_Setup_2.2.4.exe
 ```
 
 建议安装或升级前先退出正在运行的 UniDesk。
 
 请直接双击安装包并在 Windows 提示时确认 UAC；标准用户需要输入管理员凭据，无需右键选择「以管理员身份运行」。主程序可以安装到 D／E 等任意本地磁盘的安全目录，覆盖安装会默认沿用上次位置；硬件服务、修复工具和卸载组件仍固定安装到 Windows 的 `Common Program Files\UniDesk` 受保护目录。安装器不接受网络路径、磁盘根目录、重解析路径或无法确认属于 UniDesk 的非空目录。
 
-安装器默认勾选桌面快捷方式和「完整硬件监控组件」，并明确说明它会安装共享的 PawnIO 驱动和以 `LocalSystem` 运行的只读 Windows 服务；`UniDesk.exe` 本身始终保持普通用户权限。安装完成页默认勾选启动 UniDesk，并以安装前的普通用户身份自动启动。取消该组件或组件安装失败不会影响天气、便签、快捷方式等基础功能，但 CPU 温度等底层指标可能不可用，可稍后在设置中导出诊断并重试修复。
+安装器默认勾选桌面快捷方式和「完整硬件监控组件」，并明确说明它会安装共享的 PawnIO 驱动和以 `LocalSystem` 运行的只读 Windows 服务；`UniDesk.exe` 本身始终保持普通用户权限。安装完成页默认勾选启动 UniDesk，并以安装前的普通用户身份自动启动。没有既有硬件组件时，取消勾选会跳过安装；覆盖升级时仍保留并维护已确认归属 UniDesk 的硬件组件。组件不可用不会影响天气、便签、快捷方式等基础功能，但 CPU 温度等底层指标可能不可用，可稍后在设置中导出诊断并重试修复。
 
 系统要求：
 
@@ -159,10 +159,10 @@ dotnet run --project UniDesk\UniDesk.csproj
 从干净工作区构建本地未签名候选包：
 
 ```powershell
-.\scripts\Build-Release.ps1 -Version 2.2.3
+.\scripts\Build-Release.ps1 -Version 2.2.4
 ```
 
-脚本会将主程序、硬件服务和修复工具发布到全新的版本目录，再从这些确定输入编译安装包。干净工作区生成的未签名 `v2.2.3` 制品必须通过 `Test-UnsignedReleaseReadiness.ps1`，完成适用人工矩阵并由项目所有者最终批准后才能公开；SignPath 签名工作流继续保留给未来签名版本，且不会自动创建 GitHub Release。
+脚本会将主程序、硬件服务和修复工具发布到全新的版本目录，再从这些确定输入编译安装包。干净工作区生成的未签名 `v2.2.4` 制品必须通过 `Test-UnsignedReleaseReadiness.ps1`，完成适用人工矩阵并由项目所有者最终批准后才能公开；SignPath 签名工作流继续保留给未来签名版本，且不会自动创建 GitHub Release。
 
 ## 🧰 技术栈
 
@@ -184,7 +184,7 @@ UniDesk 优先使用本地存储，用户数据保存在本机。当前主要数
 
 ## Code signing policy
 
-公开发布包遵循[代码签名政策](CODE_SIGNING_POLICY.md)和[隐私政策](PRIVACY.md)。`v2.2.3` 采用单独批准、仅适用于该精确版本的未签名正式版例外：必须来自精确公开提交，通过人工、完整载荷和 SHA-256 校验，并清晰标注 `Authenticode: NotSigned` 及 Windows 可能显示的 SmartScreen／企业策略提示。
+公开发布包遵循[代码签名政策](CODE_SIGNING_POLICY.md)和[隐私政策](PRIVACY.md)。`v2.2.4` 采用单独批准、仅适用于该精确版本的未签名正式版例外：必须来自精确公开提交，通过人工、完整载荷和 SHA-256 校验，并清晰标注 `Authenticode: NotSigned` 及 Windows 可能显示的 SmartScreen／企业策略提示。
 
 Free code signing provided by SignPath.io, certificate by SignPath Foundation.
 
@@ -195,7 +195,7 @@ Free code signing provided by SignPath.io, certificate by SignPath Foundation.
 - 模型雷达更新为综合最高与六类 Top 5，每模型保留最佳档位；首位单行显示，移除性价比推荐。
 - 展开与收起分别配置模块显示内容，收起高度随组合调整；优化标题、硬件间距和快捷文本对齐。
 - 修复托盘菜单 DPI 定位、退出保存死锁，升级时先请求正常关闭，拒绝或超时则停止替换文件。
-- 本版最终安装包的手动安装／升级／卸载、多屏及提权场景未验证，详见[发布测试矩阵](docs/release-test-matrix-2.2.3.md)。
+- 本版最终安装包的手动安装／升级／卸载、多屏及提权场景未验证，详见[发布测试矩阵](docs/release-test-matrix-2.2.4.md)。
 - 模块管理支持显示 / 隐藏和排序。
 - 新增快捷方式拖拽添加与自由排序。
 - 新增快速便签：支持多条便签、自动保存、置顶和复制。

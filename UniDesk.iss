@@ -3,7 +3,7 @@
 ; overrides all source and output directories so historical publish output is never reused.
 
 #define MyAppName "UniDesk"
-#define MyAppVersion "2.2.3"
+#define MyAppVersion "2.2.4"
 #define MyAppPublisher "UniDesk"
 #define MyAppURL "https://github.com/SuperDaddyV/UniDesk"
 #define MyAppExeName "UniDesk.exe"
@@ -219,6 +219,8 @@ var
   LastApplicationLocationError: String;
   ValidatedAclTarget: String;
   StoppedOwnedHardwareService: Boolean;
+  PreserveExistingHardwareComponent: Boolean;
+  LegacyHardwareServiceMigrationPending: Boolean;
   HardwareCompatibilityMode: Boolean;
   ShutdownLegacyApplicationPath: String;
   UpdatePreflightExtracted: Boolean;
@@ -349,19 +351,16 @@ var
 begin
   HelperPath := GetHardwareRepairHelperPath;
   ResultCode := -1;
-  if not WizardIsTaskSelected('completehardware') then
+  if (not WizardIsTaskSelected('completehardware')) and
+    (not PreserveExistingHardwareComponent) then
   begin
-    if HardwareServiceExists then
-      if (not Exec(
-        HelperPath,
-        '--remove-service',
-        '',
-        SW_HIDE,
-        ewWaitUntilTerminated,
-        ResultCode)) or (ResultCode <> 0) then
-        ReportHardwareComponentFailure(ResultCode);
+    Log('Complete hardware monitoring was not selected; no existing owned component requires maintenance.');
     Exit;
   end;
+
+  if PreserveExistingHardwareComponent and
+    (not WizardIsTaskSelected('completehardware')) then
+    Log('The existing UniDesk hardware component will be preserved and updated although optional installation is unchecked.');
 
   if not Exec(
     HelperPath,
@@ -374,6 +373,9 @@ begin
     ReportHardwareComponentFailure(ResultCode);
     Exit;
   end;
+
+  if (ResultCode = 0) or (ResultCode = HardwareCompatibilityExitCode) then
+    LegacyHardwareServiceMigrationPending := False;
 
   if ResultCode = HardwareCompatibilityExitCode then
     ReportHardwareCompatibilityMode
@@ -1369,6 +1371,8 @@ begin
     Exit;
   end;
 
+  PreserveExistingHardwareComponent := True;
+  LegacyHardwareServiceMigrationPending := True;
   Log('Retiring owned hardware service from legacy application path: ' +
     OwnedApplicationPath);
   Result := RetireOwnedHardwareServiceAt(OwnedApplicationPath);
@@ -1719,6 +1723,7 @@ begin
       Exit;
     end;
 
+    PreserveExistingHardwareComponent := True;
     if (not Exec(
       ExpandConstant('{sys}\sc.exe'),
       'stop {#HardwareServiceName}',
@@ -1732,7 +1737,7 @@ begin
         ExpandConstant('{cm:HardwareServiceStopFailed}'), [IntToStr(ResultCode), ExpandConstant('{log}')]);
       Exit;
     end;
-    StoppedOwnedHardwareService := ResultCode = 0;
+    StoppedOwnedHardwareService := StoppedOwnedHardwareService or (ResultCode = 0);
     if HardwareServiceExists then
     begin
       if not IsHardwareServiceOwned then
@@ -1866,6 +1871,8 @@ end;
 procedure DeinitializeSetup;
 begin
   RestartOwnedHardwareServiceIfNeeded;
+  if LegacyHardwareServiceMigrationPending then
+    Log('Legacy hardware service migration did not complete; repair the protected hardware component before expecting low-level sensor readings.');
   ReleaseApplicationPathLocks;
 end;
 

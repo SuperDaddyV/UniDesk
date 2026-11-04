@@ -7,38 +7,27 @@ namespace UniDesk.Controls;
 
 public partial class ModelRadarModuleView : UserControl
 {
-    private const string LeaderboardUrl = "https://modeldial.com/radar";
-    private const string LicenseUrl = "https://modeldial.com/data-license";
-
     public ModelRadarModuleView()
     {
         InitializeComponent();
     }
 
-    private void LeaderboardLink_OnRequestNavigate(object sender, RequestNavigateEventArgs args)
+    private void OfficialLink_OnRequestNavigate(object sender, RequestNavigateEventArgs args)
     {
-        OpenFixedUrl(LeaderboardUrl);
         args.Handled = true;
-    }
+        if (!ModelRadarLinkBuilder.IsAllowedNavigationUri(args.Uri))
+            return;
 
-    private void LicenseLink_OnRequestNavigate(object sender, RequestNavigateEventArgs args)
-    {
-        OpenFixedUrl(LicenseUrl);
-        args.Handled = true;
-    }
-
-    private static void OpenFixedUrl(string url)
-    {
         try
         {
-            Process.Start(new ProcessStartInfo(url)
+            Process.Start(new ProcessStartInfo(args.Uri.AbsoluteUri)
             {
                 UseShellExecute = true
             });
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "ModelRadarModuleView.OpenFixedUrl");
+            Logger.LogError(ex, "ModelRadarModuleView.OfficialLink_OnRequestNavigate");
         }
     }
 }

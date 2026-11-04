@@ -55,7 +55,7 @@ UniDesk es una barra lateral ligera, personalizable y limpia para el escritorio 
 ### Radar de modelos
 
 - Muestra el líder general y seis listas Top 5: General / Conocimiento / Backend / Estética / Frontend / Mantenibilidad. Cada categoría elige el nivel mejor puntuado de cada modelo antes de tomar los cinco primeros; las seis pestañas ocupan una fila.
-- Los datos proceden de evaluaciones públicas de [ModelDial Radar](https://modeldial.com/radar) ([CC BY 4.0](https://modeldial.com/data-license)). UniDesk no recalcula puntuaciones ni costes.
+- Los datos proceden de evaluaciones públicas de [ModelDial Radar](https://modeldial.com/radar) ([CC BY 4.0](https://modeldial.com/data-license)). UniDesk no recalcula puntuaciones ni costes. Los pesos v3, la selección de niveles y los empates siguen las reglas del publicador; se muestran duración, coste, fuente y nuevas evaluaciones, con enlaces a detalles oficiales y clasificaciones por categoría.
 - Está desactivado de forma predeterminada y no realiza solicitudes de red mientras está desactivado. Mientras UniDesk se ejecuta y el módulo está activado, primero lee la caché local, comprueba actualizaciones como máximo una vez cada seis horas desde `https://modeldial.com/data/overview.json` y también permite actualizar manualmente.
 - Es una referencia de decisión de solo lectura: UniDesk no ejecuta modelos, no realiza evaluaciones locales ni modifica la configuración de las herramientas de modelos. Los datos públicos no implican colaboración ni respaldo; el rendimiento real puede variar según la cuenta, la ruta y el endpoint.
 
@@ -117,17 +117,17 @@ Casos de uso habituales:
 
 ## 📦 Instalación
 
-El punto oficial de distribución del instalador estable `v2.2.3` es la [GitHub Release v2.2.3](https://github.com/SuperDaddyV/UniDesk/releases/tag/v2.2.3). Esta versión exacta usa una excepción estable sin firma aprobada por separado. El instalador es `Authenticode: NotSigned`, por lo que Windows puede mostrar un aviso de SmartScreen o de una política empresarial. Descárgalo desde la Release oficial y verifica el SHA-256 publicado. El nombre del instalador es:
+El punto oficial de distribución del instalador estable `v2.2.4` es la [GitHub Release v2.2.4](https://github.com/SuperDaddyV/UniDesk/releases/tag/v2.2.4). Esta versión exacta usa una excepción estable sin firma aprobada por separado. El instalador es `Authenticode: NotSigned`, por lo que Windows puede mostrar un aviso de SmartScreen o de una política empresarial. Descárgalo desde la Release oficial y verifica el SHA-256 publicado. El nombre del instalador es:
 
 ```powershell
-UniDesk_Setup_2.2.3.exe
+UniDesk_Setup_2.2.4.exe
 ```
 
 Se recomienda cerrar UniDesk antes de instalar o actualizar.
 
 Haz doble clic en el instalador normalmente y aprueba la solicitud UAC de Windows; un usuario estándar debe proporcionar credenciales de administrador, sin necesidad de usar **Ejecutar como administrador**. La aplicación principal puede instalarse en una carpeta segura de cualquier unidad local y una actualización reutiliza de forma predeterminada la ubicación anterior. El servicio de hardware, la herramienta de reparación y el desinstalador permanecen en la carpeta protegida de Windows `Common Program Files\UniDesk`. No se aceptan rutas de red, raíces de unidad, rutas con puntos de análisis ni carpetas no vacías que no estén registradas como UniDesk.
 
-El acceso directo del escritorio y la supervisión completa de hardware están seleccionados de forma predeterminada. El instalador muestra claramente que instalará el controlador compartido PawnIO y un servicio de Windows de solo lectura ejecutado como `LocalSystem`. `UniDesk.exe` se mantiene con permisos de usuario normal. La página final selecciona iniciar UniDesk de forma predeterminada y lo abre con la identidad del usuario normal original. Si desmarcas el componente o su instalación falla, el clima, las notas, los accesos directos y las demás funciones básicas seguirán disponibles, pero métricas como la temperatura de la CPU pueden no mostrarse; Configuración permite exportar diagnósticos y reintentar la reparación.
+El acceso directo del escritorio y la supervisión completa de hardware están seleccionados de forma predeterminada. El instalador muestra claramente que instalará el controlador compartido PawnIO y un servicio de Windows de solo lectura ejecutado como `LocalSystem`. `UniDesk.exe` se mantiene con permisos de usuario normal. La página final selecciona iniciar UniDesk de forma predeterminada y lo abre con la identidad del usuario normal original. Desmarcar la tarea omite la instalación si no existe un componente; durante una actualización se conserva y mantiene el componente existente que pertenece a UniDesk. Si el componente no está disponible, el clima, las notas, los accesos directos y las demás funciones básicas seguirán disponibles, pero métricas como la temperatura de la CPU pueden no mostrarse; Configuración permite exportar diagnósticos y reintentar la reparación.
 
 Requisitos del sistema:
 
@@ -159,10 +159,10 @@ dotnet run --project UniDesk\UniDesk.csproj
 Crear un candidato local sin firmar desde un árbol de trabajo limpio:
 
 ```powershell
-.\scripts\Build-Release.ps1 -Version 2.2.3
+.\scripts\Build-Release.ps1 -Version 2.2.4
 ```
 
-El script publica la aplicación, el servicio de hardware y la herramienta de reparación en un directorio nuevo con versión, y compila el instalador únicamente desde esas entradas. Un artefacto `v2.2.3` sin firmar creado desde un árbol limpio debe superar `Test-UnsignedReleaseReadiness.ps1`, la matriz manual aplicable y la aprobación final del propietario del proyecto antes de publicarse. El flujo de SignPath se conserva para futuras versiones firmadas y nunca crea una GitHub Release automáticamente.
+El script publica la aplicación, el servicio de hardware y la herramienta de reparación en un directorio nuevo con versión, y compila el instalador únicamente desde esas entradas. Un artefacto `v2.2.4` sin firmar creado desde un árbol limpio debe superar `Test-UnsignedReleaseReadiness.ps1`, la matriz manual aplicable y la aprobación final del propietario del proyecto antes de publicarse. El flujo de SignPath se conserva para futuras versiones firmadas y nunca crea una GitHub Release automáticamente.
 
 ## 🧰 Tecnología
 
@@ -184,7 +184,7 @@ El historial del portapapeles incluye filtrado de contenido sensible para reduci
 
 ## Code signing policy
 
-Los paquetes públicos siguen la [política de firma de código](CODE_SIGNING_POLICY.md) y la [política de privacidad](PRIVACY.md). `v2.2.3` usa una excepción aprobada para esta versión exacta: debe proceder de la revisión pública exacta, recibir aprobación manual, superar las comprobaciones completas de carga y SHA-256, e indicar claramente `Authenticode: NotSigned` y que Windows puede mostrar un aviso de SmartScreen o de una política empresarial.
+Los paquetes públicos siguen la [política de firma de código](CODE_SIGNING_POLICY.md) y la [política de privacidad](PRIVACY.md). `v2.2.4` usa una excepción aprobada para esta versión exacta: debe proceder de la revisión pública exacta, recibir aprobación manual, superar las comprobaciones completas de carga y SHA-256, e indicar claramente `Authenticode: NotSigned` y que Windows puede mostrar un aviso de SmartScreen o de una política empresarial.
 
 Free code signing provided by SignPath.io, certificate by SignPath Foundation.
 
@@ -195,7 +195,7 @@ Las versiones recientes incluyen:
 - Radar con líder general en una fila y seis categorías Top 5, conservando el mejor nivel de cada modelo; se retira la recomendación de valor.
 - Preferencias separadas para módulos expandidos y compactos, altura adaptable y ajustes de título, hardware y textos rápidos.
 - Corregidos la posición DPI del menú de bandeja y el bloqueo al guardar durante el cierre; la actualización solicita un cierre normal y se detiene ante rechazo o tiempo agotado.
-- La instalación / actualización / desinstalación manual del artefacto final, varios monitores / DPI físicos y la elevación de hardware siguen sin verificar; véase la [matriz](docs/release-test-matrix-2.2.3.md).
+- La instalación / actualización / desinstalación manual del artefacto final, varios monitores / DPI físicos y la elevación de hardware siguen sin verificar; véase la [matriz](docs/release-test-matrix-2.2.4.md).
 - Gestión de módulos con mostrar / ocultar y ordenación.
 - Arrastrar para añadir accesos directos y ordenación libre.
 - Notas rápidas con varias notas, guardado automático, fijar y copiar.

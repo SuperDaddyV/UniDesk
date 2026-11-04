@@ -1,4 +1,6 @@
 using System.Buffers;
+using System.Collections.Frozen;
+using System.Globalization;
 using System.IO;
 using System.IO.Compression;
 using System.Net;
@@ -13,6 +15,8 @@ public sealed class ModelRadarService : IModelRadarService, IDisposable
 {
     private const int MaximumResponseBytes = 1024 * 1024;
     private const int MaximumCacheBytes = MaximumResponseBytes + (64 * 1024);
+    private static readonly StringComparer RankingTextComparer =
+        StringComparer.Create(CultureInfo.GetCultureInfo("en-US"), ignoreCase: false);
     private static readonly Uri LatestRadarUri = new(
         "https://modeldial.com/data/overview.json",
         UriKind.Absolute);
@@ -335,19 +339,27 @@ public sealed class ModelRadarService : IModelRadarService, IDisposable
     {
         var publicationKey = RequireString(root, "publicationKey");
         var quality = RequireObject(root, "qualityScores");
-        const string supportedPolicy = "five-axis-b20-f20-k35-a15-m10-cube-half_up-v2";
+        const string currentPolicy = "five-axis-b20-f25-k35-a10-m10-cube-half_up-v3";
+        const string previousPolicy = "five-axis-b20-f20-k35-a15-m10-cube-half_up-v2";
+        var policyId = RequireString(quality, "policy_id");
         if (RequirePositiveInt32(quality, "schema_version") != 1 ||
-            RequireString(quality, "policy_id") != supportedPolicy ||
+            (policyId != currentPolicy && policyId != previousPolicy) ||
             RequireString(quality, "base_publication_key") != publicationKey)
         {
             throw new SchemaException();
         }
 
         var weights = RequireObject(quality, "weights");
+        var scoreWeights = new Dictionary<string, int>(StringComparer.Ordinal);
         foreach (var (name, expected) in new[]
-                 { ("backend", 20), ("frontend", 20), ("knowledge", 35), ("aesthetic", 15), ("maintainability", 10) })
+                 {
+                     ("backend", 20), ("frontend", policyId == currentPolicy ? 25 : 20),
+                     ("knowledge", 35), ("aesthetic", policyId == currentPolicy ? 10 : 15),
+                     ("maintainability", 10)
+                 })
         {
             if (RequirePositiveInt32(weights, name) != expected) throw new SchemaException();
+            scoreWeights.Add(name, expected);
         }
 
         var source = RequireObject(root, "snapshot");
@@ -355,9 +367,12 @@ public sealed class ModelRadarService : IModelRadarService, IDisposable
         var publishedAt = RequireDateTimeOffset(source, "published_at");
         var hiddenIds = ReadStringArray(root, "hiddenModelIds").ToHashSet(StringComparer.Ordinal);
         var names = root.TryGetProperty("displayNames", out var displayNames) ? displayNames : default;
+        var effortNames = root.TryGetProperty("effortDisplayNames", out var effortDisplayNames) ? effortDisplayNames : default;
         var metrics = root.TryGetProperty("metrics", out var metricValues) ? metricValues : default;
         if (names.ValueKind is not (JsonValueKind.Undefined or JsonValueKind.Object) ||
+            effortNames.ValueKind is not (JsonValueKind.Undefined or JsonValueKind.Object) ||
             metrics.ValueKind is not (JsonValueKind.Undefined or JsonValueKind.Object)) throw new SchemaException();
+        var recentModelIds = ReadRecentModelIds(root);
         var entries = new List<ModelRadarEntry>();
         var ids = new HashSet<string>(StringComparer.Ordinal);
         var position = 0;
@@ -383,27 +398,25 @@ public sealed class ModelRadarService : IModelRadarService, IDisposable
 
             var displayName = names.ValueKind == JsonValueKind.Object
                 ? TryGetOptionalString(names, model) ?? model : model;
-            long? elapsed = null;
-            double? cost = null;
-            if (metrics.ValueKind == JsonValueKind.Object && metrics.TryGetProperty(id, out var configurationMetrics))
+            var displayEffort = effort;
+            if (effortNames.ValueKind == JsonValueKind.Object && effortNames.TryGetProperty(model, out var modelEffortNames))
             {
-                RequireKind(configurationMetrics, JsonValueKind.Object);
-                if (configurationMetrics.TryGetProperty("overall", out var overallMetrics))
-                {
-                    RequireKind(overallMetrics, JsonValueKind.Object);
-                    elapsed = ReadOptionalNonNegativeInt64(overallMetrics, "elapsed_ms");
-                    var referenceCost = ReadOptionalNonNegativeDouble(overallMetrics, "estimated_api_cost_usd");
-                    if (TryGetOptionalString(overallMetrics, "cost_coverage") == "complete") cost = referenceCost;
-                }
+                RequireKind(modelEffortNames, JsonValueKind.Object);
+                displayEffort = TryGetOptionalString(modelEffortNames, effort) ?? effort;
             }
+            var categoryMetrics = ReadCategoryMetrics(metrics, id);
+            categoryMetrics.TryGetValue(ModelRadarCategory.Overall, out var overallMetrics);
 
             entries.Add(new ModelRadarEntry
             {
                 Id = id, Model = model, DisplayName = displayName, ModelDisplayName = displayName, ReasoningEffort = effort,
+                DisplayReasoningEffort = displayEffort, ConnectionId = TryGetOptionalString(element, "connection_id") ?? string.Empty,
+                IsRecentHighlight = recentModelIds.Contains(model),
                 PublishedPosition = position, OverallScore = overall, BackendScore = backend,
                 FrontendScore = frontend, KnowledgeScore = knowledge, AestheticScore = aesthetic,
-                MaintainabilityScore = maintainability, ElapsedMilliseconds = elapsed,
-                EstimatedReferenceCostUsd = cost, DecisionTags = ReadStringArray(element, "decisionTags")
+                MaintainabilityScore = maintainability, ElapsedMilliseconds = overallMetrics?.ElapsedMilliseconds,
+                EstimatedReferenceCostUsd = overallMetrics?.EstimatedReferenceCostUsd, Metrics = categoryMetrics,
+                DecisionTags = ReadStringArray(element, "decisionTags")
             });
         }
 
@@ -411,6 +424,8 @@ public sealed class ModelRadarService : IModelRadarService, IDisposable
         return new ModelRadarSnapshot
         {
             SchemaVersion = "publication-1", BatchId = batchId, PublishedAt = publishedAt,
+            PolicyId = policyId, ScoreWeights = scoreWeights.ToFrozenDictionary(StringComparer.Ordinal),
+            IsOutdatedPolicy = policyId != currentPolicy,
             IsPending = overallTop.Count == 0, OverallLeader = overallTop.FirstOrDefault()?.Entry,
             ValueRecommendation = entries.FirstOrDefault(entry => entry.OverallScore != null && HasValueTag(entry)),
             OverallTop = overallTop,
@@ -423,14 +438,89 @@ public sealed class ModelRadarService : IModelRadarService, IDisposable
     }
 
     private static IReadOnlyList<ModelRadarListItem> CreateModelTop(
-        IReadOnlyList<ModelRadarEntry> entries, Func<ModelRadarEntry, double?> scoreSelector) =>
-        entries.Where(entry => scoreSelector(entry) != null)
+        IReadOnlyList<ModelRadarEntry> entries, Func<ModelRadarEntry, double?> scoreSelector)
+    {
+        var rankedEntries = entries.Where(entry => scoreSelector(entry) != null)
+            .GroupBy(entry => entry.Model, StringComparer.Ordinal)
+            .Select(configurations => configurations
+                .OrderByDescending(scoreSelector)
+                .ThenByDescending(entry => entry.OverallScore)
+                .ThenBy(entry => GetEffortOrder(entry.ReasoningEffort))
+                .ThenBy(entry => entry.Id, RankingTextComparer)
+                .First())
             .OrderByDescending(scoreSelector)
-            .ThenBy(entry => entry.PublishedPosition)
-            .DistinctBy(entry => entry.Model, StringComparer.Ordinal)
+            .ThenBy(entry => entry.ModelDisplayName, RankingTextComparer)
             .Take(5)
-            .Select((entry, index) => new ModelRadarListItem(index + 1, entry, scoreSelector(entry)))
             .ToArray();
+        var result = new ModelRadarListItem[rankedEntries.Length];
+        var rank = 0;
+        double? previousScore = null;
+        for (var index = 0; index < rankedEntries.Length; index++)
+        {
+            var score = scoreSelector(rankedEntries[index]);
+            if (score != previousScore) rank = index + 1;
+            result[index] = new ModelRadarListItem(rank, rankedEntries[index], score);
+            previousScore = score;
+        }
+
+        return result;
+    }
+
+    private static int GetEffortOrder(string effort) => effort switch
+    {
+        "default" => 0,
+        "minimal" => 1,
+        "low" => 2,
+        "medium" => 3,
+        "high" => 4,
+        "xhigh" => 5,
+        "max" => 6,
+        "ultra" => 7,
+        _ => 0
+    };
+
+    private static IReadOnlyDictionary<ModelRadarCategory, ModelRadarMetrics> ReadCategoryMetrics(
+        JsonElement metrics, string candidateId)
+    {
+        if (metrics.ValueKind != JsonValueKind.Object || !metrics.TryGetProperty(candidateId, out var configurationMetrics))
+            return FrozenDictionary<ModelRadarCategory, ModelRadarMetrics>.Empty;
+
+        RequireKind(configurationMetrics, JsonValueKind.Object);
+        var values = new Dictionary<ModelRadarCategory, ModelRadarMetrics>();
+        foreach (var (name, category) in new[]
+                 {
+                     ("overall", ModelRadarCategory.Overall), ("backend", ModelRadarCategory.Backend),
+                     ("frontend", ModelRadarCategory.Frontend), ("knowledge", ModelRadarCategory.Knowledge),
+                     ("aesthetic", ModelRadarCategory.Aesthetic), ("maintainability", ModelRadarCategory.Maintainability)
+                 })
+        {
+            if (!configurationMetrics.TryGetProperty(name, out var categoryMetrics)) continue;
+            RequireKind(categoryMetrics, JsonValueKind.Object);
+            var elapsed = ReadOptionalNonNegativeInt64(categoryMetrics, "elapsed_ms");
+            var referenceCost = ReadOptionalNonNegativeDouble(categoryMetrics, "estimated_api_cost_usd");
+            var cost = TryGetOptionalString(categoryMetrics, "cost_coverage") == "complete" ? referenceCost : null;
+            values.Add(category, new ModelRadarMetrics(elapsed, cost));
+        }
+
+        return values.ToFrozenDictionary();
+    }
+
+    private static HashSet<string> ReadRecentModelIds(JsonElement root)
+    {
+        var modelIds = new HashSet<string>(StringComparer.Ordinal);
+        if (!root.TryGetProperty("highlights", out var highlights)) return modelIds;
+        RequireKind(highlights, JsonValueKind.Object);
+        foreach (var slot in RequireArray(highlights, "slots").EnumerateArray())
+        {
+            RequireKind(slot, JsonValueKind.Object);
+            var modelId = RequireString(slot, "model_id");
+            var tags = ReadStringArray(slot, "tags");
+            if (TryGetOptionalString(slot, "tag") == "new" || tags.Contains("new", StringComparer.Ordinal))
+                modelIds.Add(modelId);
+        }
+
+        return modelIds;
+    }
 
     private static IReadOnlyList<ModelRadarEntry> ParseEntries(JsonElement array)
     {

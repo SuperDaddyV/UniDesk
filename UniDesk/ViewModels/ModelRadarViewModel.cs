@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using UniDesk.Helpers;
 using UniDesk.Models;
 using UniDesk.Services;
 
@@ -13,6 +14,9 @@ public sealed record ModelRadarDecisionCard
     public string DimensionSummary { get; init; } = string.Empty;
     public IReadOnlyList<ModelRadarDimension> Dimensions { get; init; } = [];
     public string ToolTipText { get; init; } = string.Empty;
+    public Uri? ModelDetailUri { get; init; }
+    public bool IsRecentHighlight { get; init; }
+    public string RecentHighlightText { get; init; } = string.Empty;
 }
 
 public sealed record ModelRadarDimension(string Label, string ScoreText);
@@ -25,6 +29,9 @@ public sealed record ModelRadarDisplayRow
     public string ScoreText { get; init; } = "--";
     public string DecisionTagsText { get; init; } = string.Empty;
     public string ToolTipText { get; init; } = string.Empty;
+    public Uri? ModelDetailUri { get; init; }
+    public bool IsRecentHighlight { get; init; }
+    public string RecentHighlightText { get; init; } = string.Empty;
 }
 
 public partial class ModelRadarViewModel : ObservableObject, IDisposable
@@ -100,7 +107,10 @@ public partial class ModelRadarViewModel : ObservableObject, IDisposable
     public bool IsMaintainabilityCategoryEnabled => Snapshot?.MaintainabilityTop.Count > 0;
 
     public string ScoreBasisText => Snapshot == null ? string.Empty : L(
-        Snapshot.IsLegacySnapshot ? "ModelRadar.LegacyBasis" : "ModelRadar.FiveAxisBasis");
+        Snapshot.IsLegacySnapshot ? "ModelRadar.LegacyBasis" :
+        Snapshot.IsOutdatedPolicy ? "ModelRadar.OutdatedPolicyBasis" : "ModelRadar.FiveAxisBasis");
+
+    public Uri FullRankingUri => ModelRadarLinkBuilder.BuildFullRankingUri(SelectedCategory);
 
     public bool HasSnapshot => Snapshot != null;
 
@@ -131,7 +141,7 @@ public partial class ModelRadarViewModel : ObservableObject, IDisposable
         HasCompactRecommendations && Snapshot?.OverallLeader is { } leader ? DisplayModel(leader) : string.Empty;
 
     public string CompactOverallEffortText =>
-        HasCompactRecommendations && Snapshot?.OverallLeader is { } leader ? FormatDisplayReasoningEffort(leader.ReasoningEffort) : string.Empty;
+        HasCompactRecommendations && Snapshot?.OverallLeader is { } leader ? DisplayReasoningEffort(leader) : string.Empty;
 
     public string CompactOverallModelText =>
         HasCompactRecommendations && Snapshot?.OverallLeader is { } leader
@@ -206,6 +216,7 @@ public partial class ModelRadarViewModel : ObservableObject, IDisposable
             if (!string.IsNullOrWhiteSpace(PublishedText))
             {
                 lines.Add(PublishedText);
+                lines.Add(L("ModelRadar.PublicationTimingNote"));
             }
 
             if (!string.IsNullOrWhiteSpace(StatusText))
@@ -257,7 +268,9 @@ public partial class ModelRadarViewModel : ObservableObject, IDisposable
 
     public string RankingDescription => Snapshot is { IsLegacySnapshot: true }
         ? L("ModelRadar.LegacyRankingDescription")
-        : L("ModelRadar.RankingDescription");
+        : Snapshot is { IsOutdatedPolicy: true }
+            ? L("ModelRadar.OutdatedPolicyBasis")
+            : L("ModelRadar.RankingDescription");
 
     internal bool IsAutomaticRefreshScheduled { get; private set; }
 
@@ -368,7 +381,7 @@ public partial class ModelRadarViewModel : ObservableObject, IDisposable
                     CachedAtUtc: { } cachedAtUtc
                 })
             {
-                var isStale = cachedSnapshot.IsLegacySnapshot ||
+                var isStale = cachedSnapshot.IsLegacySnapshot || cachedSnapshot.IsOutdatedPolicy ||
                               _timeProvider.GetUtcNow() - cachedAtUtc >= _refreshInterval;
                 ApplySnapshot(cachedSnapshot, isStale ? ModelRadarCacheState.Stale : ModelRadarCacheState.Fresh);
                 _nextAutomaticRefreshUtc = isStale
@@ -563,12 +576,13 @@ public partial class ModelRadarViewModel : ObservableObject, IDisposable
     private void RefreshPresentation()
     {
         OverallDecision = Snapshot?.OverallLeader is { } leader
-            ? CreateDecisionCard(leader, leader.OverallScore)
+            ? CreateDecisionCard(leader, leader.OverallScore, ModelRadarCategory.Overall)
             : null;
         ValueDecision = Snapshot?.ValueRecommendation is { } value
             ? CreateDecisionCard(
                 value,
-                Snapshot.IsPending ? value.BackendScore : value.OverallScore)
+                Snapshot.IsPending ? value.BackendScore : value.OverallScore,
+                Snapshot.IsPending ? ModelRadarCategory.Backend : ModelRadarCategory.Overall)
             : null;
         VisibleRows = VisibleRankings.Select(CreateDisplayRow).ToArray();
 
@@ -602,6 +616,10 @@ public partial class ModelRadarViewModel : ObservableObject, IDisposable
             {
                 prefix += $"{L("ModelRadar.CompactLegacyBasis")} · ";
             }
+            else if (snapshot.IsOutdatedPolicy)
+            {
+                prefix += $"{L("ModelRadar.CompactOutdatedPolicy")} · ";
+            }
 
             if (IsOfflineCache || State == ModelRadarCacheState.Stale)
             {
@@ -620,7 +638,12 @@ public partial class ModelRadarViewModel : ObservableObject, IDisposable
             FormatOverallScore(entry.OverallScore));
 
     private static string FormatCompactModel(ModelRadarEntry entry)
-        => $"{DisplayModel(entry)}/{FormatDisplayReasoningEffort(entry.ReasoningEffort)}";
+        => $"{DisplayModel(entry)}/{DisplayReasoningEffort(entry)}";
+
+    private static string DisplayReasoningEffort(ModelRadarEntry entry) =>
+        FormatDisplayReasoningEffort(string.IsNullOrWhiteSpace(entry.DisplayReasoningEffort)
+            ? entry.ReasoningEffort
+            : entry.DisplayReasoningEffort);
 
     private static string DisplayModel(ModelRadarEntry entry) => FormatDisplayModel(
         string.IsNullOrWhiteSpace(entry.ModelDisplayName) ? entry.Model : entry.ModelDisplayName);
@@ -709,13 +732,16 @@ public partial class ModelRadarViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(CompactToolTipText));
     }
 
-    private ModelRadarDecisionCard CreateDecisionCard(ModelRadarEntry entry, double? score) =>
+    private ModelRadarDecisionCard CreateDecisionCard(ModelRadarEntry entry, double? score, ModelRadarCategory category) =>
         new()
         {
             ModelName = DisplayModel(entry),
-            ReasoningEffort = FormatDisplayReasoningEffort(entry.ReasoningEffort),
+            ReasoningEffort = DisplayReasoningEffort(entry),
             ScoreText = Snapshot is { IsPending: true } ? FormatScore(score) : FormatOverallScore(score),
-            ToolTipText = CreateDisplayRow(new ModelRadarListItem(0, entry, score)).ToolTipText,
+            ToolTipText = CreateToolTip(entry, category),
+            ModelDetailUri = ModelRadarLinkBuilder.BuildModelDetailUri(entry.Model, entry.ReasoningEffort, category),
+            IsRecentHighlight = entry.IsRecentHighlight,
+            RecentHighlightText = entry.IsRecentHighlight ? L("ModelRadar.New") : string.Empty,
             Dimensions =
             [
                 new(L("ModelRadar.BackendCategory"), FormatScore(entry.BackendScore)),
@@ -736,6 +762,33 @@ public partial class ModelRadarViewModel : ObservableObject, IDisposable
     private ModelRadarDisplayRow CreateDisplayRow(ModelRadarListItem item)
     {
         var entry = item.Entry;
+        return new ModelRadarDisplayRow
+        {
+            Position = item.Position,
+            ModelName = DisplayModel(entry),
+            ReasoningEffort = DisplayReasoningEffort(entry),
+            ScoreText = SelectedCategory == ModelRadarCategory.Overall ? FormatOverallScore(item.Score) : FormatScore(item.Score),
+            DecisionTagsText = string.Join(" · ", entry.DecisionTags),
+            ToolTipText = CreateToolTip(entry, SelectedCategory),
+            ModelDetailUri = ModelRadarLinkBuilder.BuildModelDetailUri(entry.Model, entry.ReasoningEffort, SelectedCategory),
+            IsRecentHighlight = entry.IsRecentHighlight,
+            RecentHighlightText = entry.IsRecentHighlight ? L("ModelRadar.New") : string.Empty
+        };
+    }
+
+    private string CreateToolTip(ModelRadarEntry entry, ModelRadarCategory category)
+    {
+        entry.Metrics.TryGetValue(category, out var metrics);
+        var isLegacy = Snapshot is { IsLegacySnapshot: true } ||
+                       Snapshot?.SchemaVersion.StartsWith("1.", StringComparison.Ordinal) == true;
+        if (metrics == null && category == ModelRadarCategory.Overall && isLegacy)
+        {
+            metrics = new ModelRadarMetrics(entry.ElapsedMilliseconds, entry.EstimatedReferenceCostUsd);
+        }
+
+        var evaluationSource = !string.IsNullOrWhiteSpace(entry.ConnectionId)
+            ? entry.ConnectionId
+            : isLegacy && !string.IsNullOrWhiteSpace(entry.Route) ? entry.Route : "--";
         var decisionTagsText = entry.DecisionTags.Count == 0
             ? string.Empty
             : string.Join(" · ", entry.DecisionTags);
@@ -749,22 +802,17 @@ public partial class ModelRadarViewModel : ObservableObject, IDisposable
             $"{L("ModelRadar.KnowledgeScore")}：{FormatScore(entry.KnowledgeScore)}",
             $"{L("ModelRadar.AestheticScore")}：{FormatScore(entry.AestheticScore)}",
             $"{L("ModelRadar.MaintainabilityScore")}：{FormatScore(entry.MaintainabilityScore)}",
-            $"{L("ModelRadar.Elapsed")}：{FormatElapsed(entry.ElapsedMilliseconds)}",
-            $"{L("ModelRadar.ReferenceCost")}：{FormatReferenceCost(entry.EstimatedReferenceCostUsd)}",
-            $"{L("ModelRadar.Route")}：{(string.IsNullOrWhiteSpace(entry.Route) ? "--" : entry.Route)}"
+            $"{L("ModelRadar.EvaluationAxis")}：{L($"ModelRadar.{category}Category")}",
+            $"{L("ModelRadar.Elapsed")}：{FormatElapsed(metrics?.ElapsedMilliseconds)}",
+            $"{L("ModelRadar.ReferenceCost")}：{FormatReferenceCost(metrics?.EstimatedReferenceCostUsd)}",
+            $"{L("ModelRadar.EvaluationSource")}：{evaluationSource}",
+            L("ModelRadar.EvaluationMetricsNote"),
+            L("ModelRadar.PublicationTimingNote")
         };
         if (decisionTagsText.Length > 0)
             tooltipLines.Add(decisionTagsText);
 
-        return new ModelRadarDisplayRow
-        {
-            Position = item.Position,
-            ModelName = DisplayModel(entry),
-            ReasoningEffort = FormatDisplayReasoningEffort(entry.ReasoningEffort),
-            ScoreText = SelectedCategory == ModelRadarCategory.Overall ? FormatOverallScore(item.Score) : FormatScore(item.Score),
-            DecisionTagsText = decisionTagsText,
-            ToolTipText = string.Join(Environment.NewLine, tooltipLines)
-        };
+        return string.Join(Environment.NewLine, tooltipLines);
     }
 
     private string FormatScore(double? value) => value is null
@@ -775,11 +823,18 @@ public partial class ModelRadarViewModel : ObservableObject, IDisposable
         ? "--"
         : value.Value.ToString("0.00", _localizationService.CurrentCulture);
 
-    private string FormatElapsed(long? value) => value is null
-        ? "--"
-        : _localizationService.Format(
-            "ModelRadar.ElapsedFormat",
-            value.Value.ToString("N0", _localizationService.CurrentCulture));
+    private string FormatElapsed(long? value)
+    {
+        if (value is null) return "--";
+
+        var seconds = Math.Round(value.Value / 1000d, 1, MidpointRounding.AwayFromZero);
+        var minutes = Math.Floor(seconds / 60);
+        var remainingSeconds = (seconds % 60).ToString("0.#", _localizationService.CurrentCulture);
+        return minutes >= 1
+            ? _localizationService.Format("ModelRadar.ElapsedFormat",
+                minutes.ToString("N0", _localizationService.CurrentCulture), remainingSeconds)
+            : _localizationService.Format("ModelRadar.ElapsedSecondsFormat", remainingSeconds);
+    }
 
     private string FormatReferenceCost(double? value) => value is null
         ? "--"
@@ -863,8 +918,11 @@ public partial class ModelRadarViewModel : ObservableObject, IDisposable
         NotifyCompactSummaryChanged();
     }
 
-    partial void OnSelectedCategoryChanged(ModelRadarCategory value) =>
+    partial void OnSelectedCategoryChanged(ModelRadarCategory value)
+    {
         OnPropertyChanged(nameof(RankingDescription));
+        OnPropertyChanged(nameof(FullRankingUri));
+    }
 
     partial void OnIsOfflineCacheChanged(bool value)
     {

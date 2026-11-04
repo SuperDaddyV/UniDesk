@@ -97,16 +97,42 @@
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Text="TOP.1" FontSize="10" FontWeight="SemiBold" Margin="0,0,6,0"
                                            Foreground="{DynamicResource SecondaryTextBrush}" VerticalAlignment="Center"/>
-                                <TextBlock x:Name="OverallConfigurationLine" Grid.Column="1" Margin="0,0,4,0"
+                                <Grid Grid.Column="1" Margin="0,0,4,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Border Margin="0,0,4,0" Padding="3,1" CornerRadius="3"
+                                            Background="{DynamicResource GlassHighlightBrush}" VerticalAlignment="Center"
+                                            Visibility="{Binding OverallDecision.IsRecentHighlight, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                        <TextBlock Text="{Binding OverallDecision.RecentHighlightText}" FontSize="8" FontWeight="SemiBold"
+                                                   Foreground="{DynamicResource PrimaryTextBrush}"/>
+                                    </Border>
+                                    <TextBlock x:Name="OverallConfigurationLine" Grid.Column="1"
                                        Foreground="{DynamicResource PrimaryTextBrush}"
                                        FontSize="{Binding DataContext.FontScale, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource ScaledFontSizeConverter}, ConverterParameter=12}"
                                        FontWeight="Bold"
                                        TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"
                                        VerticalAlignment="Center">
-                                    <Run Text="{Binding OverallDecision.ModelName, Mode=OneWay}"/>
+                                    <Hyperlink NavigateUri="{Binding OverallDecision.ModelDetailUri}"
+                                               RequestNavigate="OfficialLink_OnRequestNavigate"
+                                               Foreground="{DynamicResource PrimaryTextBrush}" TextDecorations="{x:Null}"
+                                               ToolTip="{DynamicResource ModelRadar.ModelDetails}">
+                                        <Hyperlink.Style>
+                                            <Style TargetType="Hyperlink">
+                                                <Style.Triggers>
+                                                    <Trigger Property="NavigateUri" Value="{x:Null}">
+                                                        <Setter Property="IsEnabled" Value="False"/>
+                                                    </Trigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Hyperlink.Style>
+                                        <Run Text="{Binding OverallDecision.ModelName, Mode=OneWay}"/>
+                                    </Hyperlink>
                                     <Run Text="  "/>
                                     <Run Text="{Binding OverallDecision.ReasoningEffort, Mode=OneWay}" FontSize="10" FontWeight="Normal"/>
-                                </TextBlock>
+                                    </TextBlock>
+                                </Grid>
                                 <TextBlock x:Name="OverallLeaderScore" Grid.Column="2"
                                        Text="{Binding OverallDecision.ScoreText}"
                                        Foreground="{DynamicResource PrimaryTextBrush}"
@@ -316,12 +342,39 @@
                                                FontSize="10"
                                                FontWeight="SemiBold"
                                                VerticalAlignment="Center"/>
-                                    <TextBlock Grid.Column="1"
-                                               Text="{Binding ModelName}"
+                                    <Grid Grid.Column="1">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Border Margin="0,0,4,0" Padding="3,1" CornerRadius="3"
+                                                Background="{DynamicResource GlassHighlightBrush}" VerticalAlignment="Center"
+                                                Visibility="{Binding IsRecentHighlight, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                            <TextBlock Text="{Binding RecentHighlightText}" FontSize="8" FontWeight="SemiBold"
+                                                       Foreground="{DynamicResource PrimaryTextBrush}"/>
+                                        </Border>
+                                        <TextBlock Grid.Column="1"
                                                Foreground="{DynamicResource PrimaryTextBrush}"
                                                FontSize="10"
                                                FontWeight="SemiBold"
-                                               TextWrapping="Wrap"/>
+                                               TextWrapping="Wrap">
+                                            <Hyperlink NavigateUri="{Binding ModelDetailUri}"
+                                                       RequestNavigate="OfficialLink_OnRequestNavigate"
+                                                       Foreground="{DynamicResource PrimaryTextBrush}" TextDecorations="{x:Null}"
+                                                       ToolTip="{DynamicResource ModelRadar.ModelDetails}">
+                                                <Hyperlink.Style>
+                                                    <Style TargetType="Hyperlink">
+                                                        <Style.Triggers>
+                                                            <Trigger Property="NavigateUri" Value="{x:Null}">
+                                                                <Setter Property="IsEnabled" Value="False"/>
+                                                            </Trigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Hyperlink.Style>
+                                                <Run Text="{Binding ModelName, Mode=OneWay}"/>
+                                            </Hyperlink>
+                                        </TextBlock>
+                                    </Grid>
                                     <TextBlock Grid.Column="2"
                                                Text="{Binding ReasoningEffort}"
                                                Foreground="{DynamicResource SecondaryTextBrush}"
@@ -354,7 +407,7 @@
                     <WrapPanel>
                         <TextBlock FontSize="8.5" Margin="0,0,8,0">
                             <Hyperlink NavigateUri="https://modeldial.com/radar"
-                                       RequestNavigate="LeaderboardLink_OnRequestNavigate"
+                                       RequestNavigate="OfficialLink_OnRequestNavigate"
                                        Foreground="{DynamicResource SecondaryTextBrush}"
                                        TextDecorations="{x:Null}">
                                 <Run Text="ModelDial Radar"/>
@@ -362,7 +415,7 @@
                         </TextBlock>
                         <TextBlock FontSize="8.5" Margin="0,0,8,0">
                             <Hyperlink NavigateUri="https://modeldial.com/data-license"
-                                       RequestNavigate="LicenseLink_OnRequestNavigate"
+                                       RequestNavigate="OfficialLink_OnRequestNavigate"
                                        Foreground="{DynamicResource SecondaryTextBrush}"
                                        TextDecorations="{x:Null}">
                                 <Run Text="CC BY 4.0"/>
@@ -374,8 +427,8 @@
                     </WrapPanel>
                     <TextBlock FontSize="8.5" Margin="0,3,0,0">
                         <Hyperlink x:Name="ViewFullRankingLink"
-                                   NavigateUri="https://modeldial.com/radar"
-                                   RequestNavigate="LeaderboardLink_OnRequestNavigate"
+                                   NavigateUri="{Binding FullRankingUri}"
+                                   RequestNavigate="OfficialLink_OnRequestNavigate"
                                    Foreground="{DynamicResource SecondaryTextBrush}"
                                    FontWeight="SemiBold">
                             <Run Text="{DynamicResource ModelRadar.ViewFullRanking}"/>
